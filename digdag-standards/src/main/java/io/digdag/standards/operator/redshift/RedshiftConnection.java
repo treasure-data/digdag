@@ -22,6 +22,7 @@ import org.postgresql.core.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Locale.ENGLISH;
 
 public class RedshiftConnection
@@ -89,22 +90,28 @@ public class RedshiftConnection
         sb.append("\n");
     }
 
+    private void appendCredentialsPart(StringBuilder sb, StatementConfig config)
+    {
+        sb.append(
+                // TODO: Use session token
+                String.format("CREDENTIALS '%s'\n",
+                        escapeParam(
+                                String.format("aws_access_key_id=%s;aws_secret_access_key=%s",
+                                        config.accessKeyId, config.secretAccessKey))));
+    }
+
+
     String buildCopyStatement(CopyConfig copyConfig)
     {
         StringBuilder sb = new StringBuilder();
 
         sb.append(
                 String.format("COPY %s FROM '%s'\n",
-                        escapeIdent(copyConfig.tableName),
+                        escapeIdent(copyConfig.table),
                         escapeParam(copyConfig.from)));
 
         // credentials
-        sb.append(
-                // TODO: Use session token
-                String.format("CREDENTIALS '%s'\n",
-                        escapeParam(
-                                String.format("aws_access_key_id=%s;aws_secret_access_key=%s",
-                                        copyConfig.accessKeyId, copyConfig.secretAccessKey))));
+        appendCredentialsPart(sb, copyConfig);
 
         appendOption(sb, "READRATIO", copyConfig.readratio);
         appendOption(sb, "MANIFEST", copyConfig.manifest);
@@ -154,6 +161,34 @@ public class RedshiftConnection
         appendOption(sb, "MAXERROR", copyConfig.maxerror);
         appendOption(sb, "NOLOAD", copyConfig.noload);
         appendOption(sb, "STATUPDATE", copyConfig.statupdate, true);
+
+        return sb.toString();
+    }
+
+    String buildUnloadStatement(UnloadConfig unloadConfig)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(
+                String.format("UNLOAD ('%s') TO '%s'\n",
+                        escapeParam(unloadConfig.query),
+                        escapeParam(unloadConfig.toWithPrefixDir)));
+
+        // credentials
+        appendCredentialsPart(sb, unloadConfig);
+
+        // Options
+        appendOption(sb, "MANIFEST", unloadConfig.manifest);
+        appendOption(sb, "ENCRYPTED", unloadConfig.encrypted);
+        appendOption(sb, "DELIMITER", unloadConfig.delimiter);
+        appendOption(sb, "FIXEDWIDTH", unloadConfig.fixedwidth);
+        appendOption(sb, "GZIP", unloadConfig.gzip);
+        appendOption(sb, "BZIP2", unloadConfig.bzip2);
+        appendOption(sb, "ADDQUOTES", unloadConfig.addquotes);
+        appendOption(sb, "NULL AS", unloadConfig.nullAs);
+        appendOption(sb, "ESCAPE", unloadConfig.escape);
+        appendOption(sb, "ALLOWOVERWRITE", unloadConfig.allowoverwrite);
+        appendOption(sb, "PARALLEL", unloadConfig.parallel);
 
         return sb.toString();
     }
@@ -250,25 +285,46 @@ public class RedshiftConnection
     }
 
     @FunctionalInterface
-    interface CopyConfigConfigurator
+    interface ConfigConfigurator<T>
     {
-        void config(CopyConfig orig);
+        void config(T orig);
     }
 
-    static class CopyConfig
+    abstract static class StatementConfig<T extends StatementConfig>
     {
+        static final List<String> ACCEPTED_FLAGS_FOR_XXXDATE = ImmutableList.of("ON", "OFF", "TRUE", "FALSE");
+
         String accessKeyId;
         String secretAccessKey;
-        String sessionToken;
 
-        String tableName;
+        void validate()
+        {
+            if (accessKeyId == null || secretAccessKey == null) {
+                throw new ConfigException("'accessKeyId' or 'secretAccessKey' shouldn't be null");
+            }
+
+            validateInternal();
+        }
+
+        abstract void validateInternal();
+
+        public void configure(ConfigConfigurator<T> configurator)
+        {
+            configurator.config((T) this);
+            validate();
+        }
+}
+
+    static class CopyConfig
+            extends StatementConfig<CopyConfig>
+    {
+        String table;
         Optional<String> columnList = Optional.absent();
         String from;
         Optional<Integer> readratio = Optional.absent();
         Optional<Boolean> manifest = Optional.absent();
         Optional<Boolean> encrypted = Optional.absent();
         Optional<String> region = Optional.absent();
-
         Optional<String> csv = Optional.absent();
         Optional<String> delimiter = Optional.absent();
         Optional<String> fixedwidth = Optional.absent();
@@ -301,20 +357,15 @@ public class RedshiftConnection
         Optional<Boolean> noload = Optional.absent();
         Optional<String> statupdate = Optional.absent();
 
-        private CopyConfig()
+        @Override
+        void validateInternal()
         {
-        }
-
-        private static final List<String> ACCEPTED_FLAGS_FOR_XXXDATE = ImmutableList.of("ON", "OFF", "TRUE", "FALSE");
-
-        private void validate()
-        {
-            if (accessKeyId == null || secretAccessKey == null) {
-                throw new ConfigException("'accessKeyId' or 'secretAccessKey' shouldn't be null");
+            if (table == null) {
+                throw new ConfigException("'table' shouldn't be null");
             }
 
-            if (tableName == null || from == null) {
-                throw new ConfigException("'tableName' or 'from' shouldn't be null");
+            if (from == null) {
+                throw new ConfigException("'from' shouldn't be null");
             }
 
             if (csv.isPresent()) {
@@ -341,26 +392,84 @@ public class RedshiftConnection
                 }
             }
             // As for FIXEDWIDTH, combinations with other format are already validated
-
             if (statupdate.isPresent()) {
                 if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(statupdate.get().toUpperCase())) {
                     throw new ConfigException("STATUPDATE should be in ON/OFF/TRUE/FALSE: " + statupdate.get());
                 }
             }
-
             if (compupdate.isPresent()) {
                 if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(compupdate.get().toUpperCase())) {
                     throw new ConfigException("COMPUPDATE should be in ON/OFF/TRUE/FALSE: " + compupdate.get());
                 }
             }
         }
+    }
 
-        static CopyConfig configure(CopyConfigConfigurator configurator)
+    static class UnloadConfig
+            extends StatementConfig<UnloadConfig>
+    {
+        String query;
+        String to;
+        String toWithPrefixDir;
+        String s3Bucket;
+        String s3Prefix;
+        Optional<String> parallel = Optional.absent();
+        Optional<Boolean> manifest = Optional.absent();
+        Optional<Boolean> allowoverwrite = Optional.absent();
+        Optional<Boolean> encrypted = Optional.absent();
+
+        Optional<String> delimiter = Optional.absent();
+        Optional<String> fixedwidth = Optional.absent();
+        Optional<Boolean> gzip = Optional.absent();
+        Optional<Boolean> bzip2 = Optional.absent();
+        Optional<String> nullAs = Optional.absent();
+        Optional<Boolean> escape = Optional.absent();
+        Optional<Boolean> addquotes = Optional.absent();
+
+        @Override
+        void validateInternal()
         {
-            CopyConfig copyConfig = new CopyConfig();
-            configurator.config(copyConfig);
-            copyConfig.validate();
-            return copyConfig;
+            if (query == null) {
+                throw new ConfigException("'query' shouldn't be null");
+            }
+            if (to == null) {
+                throw new ConfigException("'to' shouldn't be null");
+            }
+            if (parallel.isPresent()) {
+                if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(parallel.get().toUpperCase())) {
+                    throw new ConfigException("PARALLEL should be in ON/OFF/TRUE/FALSE: " + parallel.get());
+                }
+            }
+        }
+
+        void setupWithPrefixDir(String prefixDir)
+        {
+            checkNotNull(prefixDir);
+
+            StringBuilder sb = new StringBuilder(to);
+            if (!to.endsWith("/")) {
+                sb.append("/");
+            }
+            sb.append(prefixDir);
+            sb.append("_");
+            toWithPrefixDir = sb.toString();
+
+            String head = "s3://";
+            if (!toWithPrefixDir.startsWith(head)) {
+                throw new ConfigException("'to' should start with '" + head + "'. to=" + to);
+            }
+            int slashAfterBucket = toWithPrefixDir.indexOf("/", head.length());
+            if (slashAfterBucket < 0) {
+                throw new ConfigException("'to' should include a bucket name and key. to=" + to);
+            }
+            s3Bucket = toWithPrefixDir.substring(head.length(), slashAfterBucket);
+            if (s3Bucket.length() == 0) {
+                throw new ConfigException("'to' includes empty bucket. to=" + to);
+            }
+            s3Prefix = toWithPrefixDir.substring(slashAfterBucket + 1);
+            if (s3Prefix.length() == 0) {
+                throw new ConfigException("'to' includes empty prefix key. to=" + to);
+            }
         }
     }
 }

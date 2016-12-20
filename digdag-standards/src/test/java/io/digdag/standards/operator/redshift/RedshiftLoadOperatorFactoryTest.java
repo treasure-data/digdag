@@ -41,7 +41,7 @@ public class RedshiftLoadOperatorFactoryTest
     }
 
     @Test
-    public void getKey()
+    public void getType()
     {
         assertThat(operatorFactory.getType(), is("redshift_load"));
     }
@@ -56,12 +56,6 @@ public class RedshiftLoadOperatorFactoryTest
         RedshiftLoadOperatorFactory.RedshiftLoadOperator operator = (RedshiftLoadOperatorFactory.RedshiftLoadOperator) operatorFactory.newOperator(operatorContext);
         assertThat(operator, is(instanceOf(RedshiftLoadOperatorFactory.RedshiftLoadOperator.class)));
 
-        /*
-        Credentials credentials = mock(Credentials.class);
-        when(credentials.getAccessKeyId()).thenReturn("my-access-key-id");
-        when(credentials.getSecretAccessKey()).thenReturn("my-secret-access-key");
-        when(credentials.getSessionToken()).thenReturn("my-session-token");
-        */
         AWSCredentials credentials = mock(AWSCredentials.class);
         when(credentials.getAWSAccessKeyId()).thenReturn("my-access-key-id");
         when(credentials.getAWSSecretKey()).thenReturn("my-secret-access-key");

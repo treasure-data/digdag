@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
@@ -8,6 +9,8 @@ import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -30,6 +33,11 @@ abstract class AbstractJdbcOperator<C>
 
     protected abstract String type();
 
+    protected List<String> nestedConfigKeys()
+    {
+        return ImmutableList.of(type());
+    }
+
     protected boolean strictTransaction(Config params)
     {
         return params.get("strict_transaction", Boolean.class, true);
@@ -42,7 +50,11 @@ abstract class AbstractJdbcOperator<C>
     @Override
     public TaskResult runTask()
     {
-        Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));
+        Config params = request.getConfig();
+        for (String nestedConfigKey : nestedConfigKeys()) {
+            Config nested = request.getConfig().getNestedOrGetEmpty(nestedConfigKey);
+            params = params.mergeDefault(nested);
+        }
         Config state = request.getLastStateParams().deepCopy();
         C connectionConfig = configure(getSecretsForConnectionConfig(), params);
         return run(params, state, connectionConfig);

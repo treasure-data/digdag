@@ -3,6 +3,7 @@ package io.digdag.standards.operator.redshift;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
@@ -81,6 +82,12 @@ public class RedshiftLoadOperatorFactory
         }
 
         @Override
+        protected List<String> nestedConfigKeys()
+        {
+            return ImmutableList.of("redshift_load", "redshift");
+        }
+
+        @Override
         protected SecretProvider getSecretsForConnectionConfig()
         {
             return context.getSecrets().getSecrets("aws.redshift");
@@ -139,13 +146,14 @@ public class RedshiftLoadOperatorFactory
         @VisibleForTesting
         RedshiftConnection.CopyConfig createCopyConfig(Config config, AWSCredentials sessionCredential)
         {
-            return RedshiftConnection.CopyConfig.configure(
+            RedshiftConnection.CopyConfig cc = new RedshiftConnection.CopyConfig();
+            cc.configure(
                     copyConfig -> {
                         copyConfig.accessKeyId = sessionCredential.getAWSAccessKeyId();
                         copyConfig.secretAccessKey = sessionCredential.getAWSSecretKey();
                         // copyConfig.sessionToken = sessionCredential.getSessionToken();
 
-                        copyConfig.tableName = config.get("table", String.class);
+                        copyConfig.table = config.get("table", String.class);
                         copyConfig.columnList = config.getOptional("column_list", String.class);
                         copyConfig.from = config.get("from", String.class);
                         copyConfig.readratio = config.getOptional("readratio", Integer.class);
@@ -184,7 +192,9 @@ public class RedshiftLoadOperatorFactory
                         copyConfig.maxerror = config.getOptional("maxerror", Integer.class);
                         copyConfig.noload = config.getOptional("noload", Boolean.class);
                         copyConfig.statupdate = config.getOptional("statupdate", String.class);
-                    });
+                    }
+            );
+            return cc;
         }
 
         @Override

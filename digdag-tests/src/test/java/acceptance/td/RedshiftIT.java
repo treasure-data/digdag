@@ -12,6 +12,9 @@ import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -41,6 +44,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -128,6 +132,7 @@ public class RedshiftIT
         configFile = folder.newFile().toPath();
         Files.write(configFile, asList(
                 "secrets.aws.redshift.password= " + redshiftPassword,
+                "secrets.aws.redshift_unload.access-key-id=" + s3AccessKeyId,
                 "secrets.aws.redshift_load.access-key-id=" + s3AccessKeyId,
                 "secrets.aws.secret-access-key=" + s3SecretAccessKey
         ));
@@ -161,13 +166,14 @@ public class RedshiftIT
         copyResource("acceptance/redshift/select_download.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
         Path resultFile = folder.newFolder().toPath().resolve("result.csv");
-        TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
                 "-p", "result_file=" + resultFile.toString(),
                 "-c", configFile.toString(),
                 "redshift.dig");
+        assertThat(status.code(), is(0));
 
         assertThat(Files.exists(resultFile), is(true));
 
@@ -186,12 +192,13 @@ public class RedshiftIT
 
         setupDestTable();
 
-        TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
                 "-c", configFile.toString(),
                 "redshift.dig");
+        assertThat(status.code(), is(0));
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -215,12 +222,13 @@ public class RedshiftIT
 
         setupDestTable();
 
-        TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
                 "-c", configFile.toString(),
                 "redshift.dig");
+        assertThat(status.code(), is(0));
 
         List<String> statusTables = listStatusTables();
         assertThat(statusTables.size(), is(0));
@@ -257,12 +265,13 @@ public class RedshiftIT
 
         setupDestTable();
 
-        TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
                 "-c", configFile.toString(),
                 "redshift.dig");
+        assertThat(status.code(), is(0));
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -847,6 +856,76 @@ public class RedshiftIT
                 table.waitForDelete();
             }
         }
+    }
+
+    @Test
+    public void unloadToS3()
+            throws Exception
+    {
+        copyResource("acceptance/redshift/unload_to_s3.dig", projectDir.resolve("redshift.dig"));
+
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+                "-p", "redshift_database=" + database,
+                "-p", "redshift_host=" + redshiftHost,
+                "-p", "redshift_user=" + redshiftUser,
+                "-p", "to=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-c", configFile.toString(),
+                "redshift.dig");
+        assertThat(status.code(), is(0));
+
+        ImmutableList<Map<String, Object>> expected = ImmutableList.of(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f)
+        );
+
+        assertS3Contents(expected);
+    }
+
+    private void assertS3Contents(List<Map<String, Object>> expected)
+            throws IOException
+    {
+        ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(s3Bucket).withPrefix(s3ParentKey);
+        ListObjectsV2Result result;
+        List<String> lines = new ArrayList<>();
+        do {
+            result = s3Client.listObjectsV2(req);
+
+            for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                try (BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        s3Client.getObject(
+                                                objectSummary.getBucketName(),
+                                                objectSummary.getKey()).getObjectContent()))) {
+                    lines.addAll(reader.lines().collect(Collectors.toList()));
+                }
+
+                try {
+                    s3Client.deleteObject(objectSummary.getBucketName(), objectSummary.getKey());
+                }
+                catch (Exception e) {
+                    logger.warn("Failed to delete S3 object: bucket={}, key={}", s3Bucket, objectSummary.getKey(), e);
+                }
+            }
+            req.setContinuationToken(result.getNextContinuationToken());
+        } while (result.isTruncated());
+
+        List<ImmutableMap<String, ? extends Serializable>> actual =
+                lines.stream()
+                        .map(
+                                l -> {
+                                    String[] values = l.split("\\|");
+                                    assertThat(values.length, is(3));
+                                    return ImmutableMap.of(
+                                            "id", Integer.valueOf(values[0]),
+                                            "name", values[1],
+                                            "score", Float.valueOf(values[2]));
+                                }
+                        )
+                        .sorted((o1, o2) -> ((Integer)o1.get("id")) - ((Integer) o2.get("id")))
+                        .collect(Collectors.toList());
+        assertThat(actual, is(expected));
     }
 
     private void runDigdagWithS3(String resourceFileName)

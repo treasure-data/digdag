@@ -10,6 +10,7 @@ import io.digdag.standards.operator.aws.S3WaitOperatorFactory;
 import io.digdag.standards.operator.pg.PgOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftLoadOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftOperatorFactory;
+import io.digdag.standards.operator.redshift.RedshiftUnloadOperatorFactory;
 import io.digdag.standards.operator.td.TdDdlOperatorFactory;
 import io.digdag.standards.operator.td.TdForEachOperatorFactory;
 import io.digdag.standards.operator.td.TdLoadOperatorFactory;
@@ -49,6 +50,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, PgOperatorFactory.class);
         addStandardOperatorFactory(binder, RedshiftOperatorFactory.class);
         addStandardOperatorFactory(binder, RedshiftLoadOperatorFactory.class);
+        addStandardOperatorFactory(binder, RedshiftUnloadOperatorFactory.class);
         addStandardOperatorFactory(binder, S3WaitOperatorFactory.class);
         addStandardOperatorFactory(binder, EmrOperatorFactory.class);
         addStandardOperatorFactory(binder, HttpOperatorFactory.class);
