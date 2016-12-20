@@ -125,6 +125,9 @@ public class RedshiftConnection
         appendOption(sb, "FIXEDWIDTH", copyConfig.fixedwidth);
         appendOption(sb, "FORMAT AS JSON", copyConfig.json);
         appendOption(sb, "FORMAT AS AVRO", copyConfig.avro);
+        appendOption(sb, "GZIP", copyConfig.gzip);
+        appendOption(sb, "BZIP2", copyConfig.bzip2);
+        appendOption(sb, "LZOP", copyConfig.lzop);
 
         // Data Conversion Parameters
         appendOption(sb, "ACCEPTANYDATE", copyConfig.acceptanydate);

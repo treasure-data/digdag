@@ -138,7 +138,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .put("region", "us-east-1")
                 .put("csv", "`")
                 .put("delimiter", "$")
-                .put("compression", "gzip")
+                .put("gzip", true)
                 .put("acceptanydate", true)
                 .put("acceptinvchars", "&")
                 .put("blanksasnull", true)
@@ -172,6 +172,7 @@ public class RedshiftLoadOperatorFactoryTest
                         "REGION 'us-east-1'\n" +
                         "CSV QUOTE '`'\n" +
                         "DELIMITER '$'\n" +
+                        "GZIP\n" +
                         "ACCEPTANYDATE\n" +
                         "ACCEPTINVCHARS '&'\n" +
                         "BLANKSASNULL\n" +
@@ -207,7 +208,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .put("encrypted", false)
                 .put("region", "us-east-1")
                 .put("delimiter", "$")
-                .put("compression", "gzip")
+                .put("bzip2", true)
                 .put("acceptanydate", false)
                 .put("acceptinvchars", "&")
                 .put("blanksasnull", false)
@@ -238,6 +239,7 @@ public class RedshiftLoadOperatorFactoryTest
                         "READRATIO 123\n" +
                         "REGION 'us-east-1'\n" +
                         "DELIMITER '$'\n" +
+                        "BZIP2\n" +
                         "ACCEPTINVCHARS '&'\n" +
                         "DATEFORMAT 'yyyy-MM-dd'\n" +
                         "ENCODING UTF16\n" +
@@ -259,13 +261,16 @@ public class RedshiftLoadOperatorFactoryTest
         Map<String, Object> configInput = ImmutableMap.of(
                 "table", "my_table",
                 "from", "s3://my-bucket/my-path",
-                "fixedwidth", "col1:11,col2:222,col3:333,col4:4444"
+                "fixedwidth", "col1:11,col2:222,col3:333,col4:4444",
+                "lzop", true
         );
         String sql = getCopyConfig(configInput);
         assertThat(sql,
                 is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
-                        "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n"));
+                        "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n" +
+                        "LZOP\n"
+                ));
     }
 
     @Test
