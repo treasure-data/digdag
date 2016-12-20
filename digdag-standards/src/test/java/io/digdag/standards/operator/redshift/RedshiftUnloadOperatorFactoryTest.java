@@ -3,7 +3,6 @@ package io.digdag.standards.operator.redshift;
 import com.amazonaws.auth.AWSCredentials;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import io.digdag.client.config.ConfigException;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.jdbc.JdbcOpTestHelper;
@@ -94,7 +93,7 @@ public class RedshiftUnloadOperatorFactoryTest
         String queryId = UUID.randomUUID().toString();
         String sql = getUnloadConfig(configInput, queryId);
         assertThat(sql,
-                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "'\n" +
+                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "_'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n"));
     }
 
@@ -111,7 +110,7 @@ public class RedshiftUnloadOperatorFactoryTest
         String queryId = UUID.randomUUID().toString();
         String sql = getUnloadConfig(configInput, queryId);
         assertThat(sql,
-                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "'\n" +
+                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "_'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n" +
                         "GZIP\n"
