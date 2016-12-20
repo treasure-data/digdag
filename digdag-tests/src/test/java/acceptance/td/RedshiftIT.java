@@ -870,7 +870,7 @@ public class RedshiftIT
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
-                "-p", "table_name=" + DEST_TABLE,
+                "-p", "table=" + DEST_TABLE,
                 "-p", "from_uri=" + fromUri,
                 "-c", configFile.toString(),
                 "redshift.dig");

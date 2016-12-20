@@ -5,6 +5,6 @@ timezone: UTC
   host: ${redshift_host}
   database: ${redshift_database}
   user: ${redshift_user}
-  table_name: ${table_name}
+  table: ${table}
   from: ${from_uri}
   avro: auto

@@ -80,7 +80,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "csv", ""
         );
@@ -97,7 +97,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "csv", ""
         );
@@ -113,7 +113,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_\"table",
+                "table", "my_\"table",
                 "from", "s3://my-'bucket/my-''path",
                 "csv", "'"
         );
@@ -129,7 +129,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.<String, Object>builder()
-                .put("table_name", "my_table")
+                .put("table", "my_table")
                 .put("column_list", "name, age, email")
                 .put("from", "s3://my-bucket/my-path")
                 .put("readratio", 123)
@@ -199,7 +199,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.<String, Object>builder()
-                .put("table_name", "my_table")
+                .put("table", "my_table")
                 .put("column_list", "name, age, email")
                 .put("from", "s3://my-bucket/my-path")
                 .put("readratio", 123)
@@ -257,7 +257,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "fixedwidth", "col1:11,col2:222,col3:333,col4:4444"
         );
@@ -273,7 +273,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "json", "s3://source-bucket/jsonpaths_file"
         );
@@ -289,7 +289,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "avro", "auto"
         );
@@ -305,7 +305,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "csv", "",
                 "statupdate", "YES"
@@ -321,7 +321,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "from", "s3://my-bucket/my-path",
                 "csv", "",
                 "compupdate", "YES"
@@ -351,7 +351,7 @@ public class RedshiftLoadOperatorFactoryTest
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
-                "table_name", "my_table",
+                "table", "my_table",
                 "csv", ""
         );
 
@@ -370,7 +370,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .build();
         for (Map.Entry<String, Object> kv : kvs.entrySet()) {
             Map<String, Object> configInput = ImmutableMap.of(
-                    "table_name", "my_table",
+                    "table", "my_table",
                     "from", "s3://my-bucket/my-path",
                     "csv", "",
                     kv.getKey(), kv.getValue()
@@ -394,7 +394,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .build();
         for (Map.Entry<String, Object> kv : kvs.entrySet()) {
             Map<String, Object> configInput = ImmutableMap.of(
-                    "table_name", "my_table",
+                    "table", "my_table",
                     "from", "s3://my-bucket/my-path",
                     "fixedwidth", "col0:42",
                     kv.getKey(), kv.getValue()
@@ -422,7 +422,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .build();
         for (Map.Entry<String, Object> kv : kvs.entrySet()) {
             Map<String, Object> configInput = ImmutableMap.of(
-                    "table_name", "my_table",
+                    "table", "my_table",
                     "from", "s3://my-bucket/my-path",
                     "json", "auto",
                     kv.getKey(), kv.getValue()
@@ -445,7 +445,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .build();
         for (Map.Entry<String, Object> kv : kvs.entrySet()) {
             Map<String, Object> configInput = ImmutableMap.of(
-                    "table_name", "my_table",
+                    "table", "my_table",
                     "from", "s3://my-bucket/my-path",
                     "avro", "auto",
                     kv.getKey(), kv.getValue()

@@ -145,7 +145,7 @@ public class RedshiftLoadOperatorFactory
                         copyConfig.secretAccessKey = sessionCredential.getAWSSecretKey();
                         // copyConfig.sessionToken = sessionCredential.getSessionToken();
 
-                        copyConfig.tableName = config.get("table_name", String.class);
+                        copyConfig.tableName = config.get("table", String.class);
                         copyConfig.columnList = config.getOptional("column_list", String.class);
                         copyConfig.from = config.get("from", String.class);
                         copyConfig.readratio = config.getOptional("readratio", Integer.class);
