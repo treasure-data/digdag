@@ -7,18 +7,18 @@ timezone: UTC
   user: ${redshift_user}
   table: ${table}
   from: ${from_uri}
-  # column_list: 'name, age, email'
+  column_list: name, age, email
   # readratio: 123
   # manifest: true
   # encrypted: true
-  region: "us-east-1"
+  region: us-east-1
   csv: "`"
   delimiter: "$"
-  # compression: "gzip"
+  # compression: gzip
   acceptanydate: true
   acceptinvchars: "&"
   blanksasnull: true
-  dateformat: "yyyy-MM-dd"
+  dateformat: yyyy-MM-dd
   emptyasnull: true
   encoding: UTF8
   escape: false
@@ -26,15 +26,15 @@ timezone: UTC
   fillrecord: true
   ignoreblanklines: true
   # ignoreheader: 42
-  null_as: "nULl"
+  null_as: nULl
   removequotes: false
   roundec: true
-  timeformat: "YYYY-MM-DD HH:MI:SS"
+  timeformat: YYYY-MM-DD HH:MI:SS
   trimblanks: true
   truncatecolumns: true
   comprows: 12
-  compupdate: "ON"
+  compupdate: ON
   maxerror: 34
   # noload: true
-  statupdate: "OFF"
+  statupdate: OFF
 
