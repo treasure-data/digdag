@@ -1,6 +1,8 @@
 package io.digdag.cli;
 
 import com.beust.jcommander.Parameter;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -12,6 +14,8 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -19,6 +23,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,6 +36,32 @@ import static javax.ws.rs.core.UriBuilder.fromUri;
 public class SelfUpdate
     extends Command
 {
+    private static boolean isSelfRun()
+    {
+        return "selfrun".equals(System.getProperty("io.digdag.cli.launcher"));
+    }
+
+    private static boolean isWindows()
+    {
+        String osName = System.getProperty("os.name");
+        return osName != null && osName.toLowerCase(ENGLISH).contains("windows");
+    }
+
+    private static List<String> getJavaOptions()
+    {
+        List<String> arguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (String arg : arguments) {
+            if (arg.startsWith("-")) {
+                builder.add(arg);
+            }
+            else {
+                break;
+            }
+        }
+        return builder.build();
+    }
+
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
@@ -144,8 +175,7 @@ public class SelfUpdate
                             ex.getMessage()));
             }
             catch (FileSystemException ex) {
-                String osName = System.getProperty("os.name");
-                if (osName != null && osName.toLowerCase(ENGLISH).contains("windows")) {
+                if (isWindows()) {
                     // Windows can't change or delete a file if the file is still executing.
                     // To avoid this limitation, here creates a background process that
                     // repeats the move operation until it succeeds. The process deletes
@@ -182,7 +212,27 @@ public class SelfUpdate
     private void verify(Path path, String expectedVersion)
         throws IOException, SystemExitException, InterruptedException
     {
-        ProcessBuilder pb = new ProcessBuilder(path.toAbsolutePath().toString(), "--version");
+        List<String> cmdline;
+        String jarPath = path.toAbsolutePath().toString();
+        if (isSelfRun()) {
+            cmdline = ImmutableList.of(jarPath, "--version");
+        }
+        else {
+            String javaPath =
+                Paths.get(System.getProperty("java.home"))
+                .resolve("bin")
+                .resolve(isWindows() ? "java.exe" : "java")
+                .toString();
+            cmdline = ImmutableList.<String>builder()
+                .add(javaPath.toString())
+                .addAll(getJavaOptions())
+                .add("-jar")
+                .add(jarPath)
+                .add("--version")
+                .build();
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(cmdline);
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectErrorStream(true);
 
