@@ -92,12 +92,16 @@ public class RedshiftConnection
 
     private void appendCredentialsPart(StringBuilder sb, StatementConfig config)
     {
-        sb.append(
-                // TODO: Use session token
-                String.format("CREDENTIALS '%s'\n",
-                        escapeParam(
-                                String.format("aws_access_key_id=%s;aws_secret_access_key=%s",
-                                        config.accessKeyId, config.secretAccessKey))));
+        String credentials;
+        if (config.sessionToken.isPresent()) {
+            credentials = String.format("aws_access_key_id=%s;aws_secret_access_key=%s;token=%s",
+                            config.accessKeyId, config.secretAccessKey, config.sessionToken.get());
+        }
+        else {
+            credentials = String.format("aws_access_key_id=%s;aws_secret_access_key=%s",
+                    config.accessKeyId, config.secretAccessKey);
+        }
+        sb.append(String.format("CREDENTIALS '%s'\n", escapeParam(credentials)));
     }
 
 
@@ -296,6 +300,7 @@ public class RedshiftConnection
 
         String accessKeyId;
         String secretAccessKey;
+        Optional<String> sessionToken;
 
         void validate()
         {

@@ -2,20 +2,24 @@ package io.digdag.standards.operator.redshift;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.*;
+import io.digdag.standards.operator.AWSSessionCredentialsFactory;
 import io.digdag.standards.operator.jdbc.*;
 import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
@@ -93,8 +97,7 @@ public class RedshiftLoadOperatorFactory
             return context.getSecrets().getSecrets("aws.redshift");
         }
 
-        @VisibleForTesting
-        AWSCredentials createCredential(SecretProvider secretProvider)
+        protected AWSCredentials createBaseCredential(SecretProvider secretProvider)
         {
             SecretProvider awsSecrets = secretProvider.getSecrets("aws");
             SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
@@ -113,49 +116,31 @@ public class RedshiftLoadOperatorFactory
                     .or(() -> awsSecrets.getSecret(keyOfSecret));
 
             return new BasicAWSCredentials(accessKeyId, secretAccessKey);
-
-            // TODO: Use federated user resolving this error if possible
-            //   com.amazonaws.services.securitytoken.model.AWSSecurityTokenServiceException: User: arn:aws:iam::11111111:user/foo is not authorized to perform:
-            //   sts:GetFederationToken on resource: arn:aws:sts::11111111:federated-user/Digdag-Rrdshift-Operator
-            //   (Service: AWSSecurityTokenService; Status Code: 403; Error Code: AccessDenied; Request ID: 12345678-abcd-...)
-
-            /*
-            // In real applications, the following code is part of your trusted code. It has
-            // your security credentials you use to obtain temporary security credentials.
-            AWSSecurityTokenServiceClient stsClient =
-                    new AWSSecurityTokenServiceClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
-
-            GetFederationTokenRequest federationTokenRequest = new GetFederationTokenRequest();
-            // TODO: This should be configurable?
-            federationTokenRequest.setDurationSeconds(3600 * 6);
-            federationTokenRequest.setName("Digdag-Rrdshift-Operator");
-
-            // Define the policy and add to the request.
-            Policy policy = new Policy();
-            // Define the policy here.
-            // Add the policy to the request.
-            federationTokenRequest.setPolicy(policy.toJson());
-
-            GetFederationTokenResult federationTokenResult =
-                    stsClient.getFederationToken(federationTokenRequest);
-
-            return federationTokenResult.getCredentials();
-            */
         }
 
         @VisibleForTesting
-        RedshiftConnection.CopyConfig createCopyConfig(Config config, AWSCredentials sessionCredential)
+        RedshiftConnection.CopyConfig createCopyConfig(Config config, AWSCredentials baseCredential)
         {
+            String from = config.get("from", String.class);
+
+            AWSSessionCredentialsFactory sessionCredentialsFactory = new AWSSessionCredentialsFactory(
+                    baseCredential.getAWSAccessKeyId(),
+                    baseCredential.getAWSSecretKey(),
+                    from);
+            BasicSessionCredentials sessionCredentials = sessionCredentialsFactory.get();
+
             RedshiftConnection.CopyConfig cc = new RedshiftConnection.CopyConfig();
             cc.configure(
                     copyConfig -> {
-                        copyConfig.accessKeyId = sessionCredential.getAWSAccessKeyId();
-                        copyConfig.secretAccessKey = sessionCredential.getAWSSecretKey();
-                        // copyConfig.sessionToken = sessionCredential.getSessionToken();
+                        copyConfig.accessKeyId = sessionCredentials.getAWSAccessKeyId();
+                        copyConfig.secretAccessKey = sessionCredentials.getAWSSecretKey();
+                        if (sessionCredentials.getSessionToken() != null) {
+                            copyConfig.sessionToken = Optional.of(sessionCredentials.getSessionToken());
+                        }
 
                         copyConfig.table = config.get("table", String.class);
                         copyConfig.columnList = config.getOptional("column_list", String.class);
-                        copyConfig.from = config.get("from", String.class);
+                        copyConfig.from = from;
                         copyConfig.readratio = config.getOptional("readratio", Integer.class);
                         copyConfig.manifest = config.getOptional("manifest", Boolean.class);
                         copyConfig.encrypted = config.getOptional("encrypted", Boolean.class);
@@ -200,9 +185,9 @@ public class RedshiftLoadOperatorFactory
         @Override
         protected TaskResult run(Config params, Config state, RedshiftConnectionConfig connectionConfig)
         {
-            AWSCredentials sessionCredential = createCredential(context.getSecrets());
+            AWSCredentials baseCredential = createBaseCredential(context.getSecrets());
 
-            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, sessionCredential);
+            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, baseCredential);
 
             boolean strictTransaction = strictTransaction(params);
 
