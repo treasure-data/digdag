@@ -37,7 +37,7 @@ if "%optimize%" == "true" (
     set java_args=-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none %java_args%
 )
 
-java %java_args% -jar "%this%" %args%
+java -Dio.digdag.cli.launcher=selfrun %java_args% -jar "%this%" %args%
 
 endlocal
 
@@ -135,5 +135,5 @@ else
     java_args="-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none $java_args"
 fi
 
-exec java $java_args -jar "$0" "$@"
+exec java -Dio.digdag.cli.launcher=selfrun $java_args -jar "$0" "$@"
 exit 127
