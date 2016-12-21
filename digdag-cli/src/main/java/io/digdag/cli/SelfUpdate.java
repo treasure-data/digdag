@@ -221,7 +221,7 @@ public class SelfUpdate
             String javaPath =
                 Paths.get(System.getProperty("java.home"))
                 .resolve("bin")
-                .resolve(isWindows() ? "java.exe" : "java")
+                .resolve("java")
                 .toString();
             cmdline = ImmutableList.<String>builder()
                 .add(javaPath.toString())
