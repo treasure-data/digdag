@@ -8,4 +8,4 @@ set i=0
   set /a "i = i + 1"
   if exist %1 goto repeat
 :done
-del %0
+del "%~f0"
