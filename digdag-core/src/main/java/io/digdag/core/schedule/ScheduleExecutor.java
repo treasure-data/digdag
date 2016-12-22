@@ -229,7 +229,8 @@ public class ScheduleExecutor
         }
     }
 
-    private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
+    @VisibleForTesting
+    ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
             StoredWorkflowDefinitionWithProject def)
         throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
