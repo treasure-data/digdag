@@ -300,7 +300,7 @@ public class RedshiftConnection
 
         String accessKeyId;
         String secretAccessKey;
-        Optional<String> sessionToken;
+        Optional<String> sessionToken = Optional.absent();
 
         void validate()
         {
