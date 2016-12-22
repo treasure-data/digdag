@@ -403,8 +403,11 @@ public class ScheduleExecutor
                     else {
                         Optional<Instant> lastExecutedSessionTime =
                             lastAttempt
-                            .transform(a -> a.getSession().getSessionTime())
-                            .or(sched.getLastSessionTime());  // TODO which session time should this be??
+                            .transform(a -> a.getSession().getSessionTime());
+                        if (!lastExecutedSessionTime.isPresent()) {
+                            lastExecutedSessionTime = submitter.getLastExecutedSessionTime(
+                                    sched.getProjectId(), sched.getWorkflowName(), instant);
+                        }
                         AttemptRequest ar = newAttemptrequest(
                                 def, ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName), lastExecutedSessionTime);

@@ -1081,6 +1081,14 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public Optional<Instant> getLastExecutedSessionTime(
+            int projectId, String workflowName,
+            Instant beforeThisSessionTime)
+        {
+            return autoCommit((handle, dao) -> new DatabaseSessionControlStore(handle, siteId).getLastExecutedSessionTime(projectId, workflowName, beforeThisSessionTime));
+        }
+
+        @Override
         public <T> T sessionTransaction(SessionTransactionAction<T> func)
                 throws Exception
         {
@@ -1315,6 +1323,16 @@ public class DatabaseSessionStoreManager
                 .bind("siteId", siteId)
                 .mapTo(long.class)
                 .first();
+        }
+
+        @Override
+        public Optional<Instant> getLastExecutedSessionTime(
+                int projectId, String workflowName,
+                Instant beforeThisSessionTime)
+        {
+            Long lastExecutedSessionTime = dao.getLastExecutedSessionTime(projectId, workflowName, beforeThisSessionTime.getEpochSecond());
+            return Optional.fromNullable(lastExecutedSessionTime)
+                .transform(seconds -> Instant.ofEpochSecond(seconds));
         }
 
         @Override
@@ -1677,6 +1695,14 @@ public class DatabaseSessionStoreManager
                 " limit 1")  // here allows last_attempt_id == NULL
         StoredSession getSessionByConflictedNamesInternal(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+
+        @SqlQuery("select session_time from sessions" +
+                " where project_id = :projectId" +
+                " and workflow_name = :workflowName" +
+                " and session_time < :beforeThisSessionTime" +
+                " order by session_time desc" +
+                " limit 1")
+        Long getLastExecutedSessionTime(@Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("beforeThisSessionTime") long beforeThisSessionTime);
 
         @SqlUpdate("insert into session_attempts (session_id, site_id, project_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
                 " values (:sessionId, :siteId, :projectId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")

@@ -12,6 +12,7 @@ import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionTransaction;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import java.time.Instant;
 
 import static java.util.Locale.ENGLISH;
 
@@ -76,5 +77,14 @@ public class WorkflowSubmitter
             }
             throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
+    }
+
+    public Optional<Instant> getLastExecutedSessionTime(
+            int projectId, String workflowName,
+            Instant beforeThisSessionTime)
+    {
+        return transaction.getLastExecutedSessionTime(
+                projectId, workflowName,
+                beforeThisSessionTime);
     }
 }
