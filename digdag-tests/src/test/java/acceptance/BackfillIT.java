@@ -162,5 +162,24 @@ public class BackfillIT
         assertTrue(e1.isEmpty());
         assertThat(e2, is("2016-01-01T00:00:00+00:00"));
         assertThat(e3, is("2016-01-02T00:00:00+00:00"));
+
+        // backfill again with a future time.
+        // 20160104 and 20160105 are skipped
+        {
+            CommandStatus cmd = main("backfill",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "backfill-test", "backfill_sequential",
+                    "--from", "2016-01-06",
+                    "--count", "1");
+            assertThat(cmd.errUtf8(), cmd.code(), is(0));
+        }
+
+        sessions = client.getSessions().getSessions();
+        expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), sessions.get(0).getLastAttempt().get().getId()));
+
+        // last_executed_session_time doesn't include skipped sessions
+        String e6 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160106.txt")), UTF_8).trim();
+        assertThat(e6, is("2016-01-03T00:00:00+00:00"));
     }
 }
