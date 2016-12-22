@@ -3,10 +3,7 @@ package io.digdag.standards.operator.redshift;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -188,14 +185,27 @@ public class RedshiftLoadOperatorFactory
                             baseCredential.getAWSAccessKeyId(),
                             baseCredential.getAWSSecretKey(),
                             builder.build());
+
+            Optional<String> roleArn = config.getOptional("role_arn", String.class);
+            if (roleArn.isPresent()) {
+                sessionCredentialsFactory.withRoleArn(roleArn.get());
+                Optional<String> roleSessionName = config.getOptional("role_session_name", String.class);
+                if (roleSessionName.isPresent()) {
+                    sessionCredentialsFactory.withRoleSessionName(roleSessionName.get());
+                }
+            }
+
+            Optional<Integer> durationSeconds = config.getOptional("session_duration", Integer.class);
+            if (durationSeconds.isPresent()) {
+                sessionCredentialsFactory.WithDurationSeconds(durationSeconds.get());
+            }
+
             return sessionCredentialsFactory.get();
         }
 
         @VisibleForTesting
-        RedshiftConnection.CopyConfig createCopyConfig(Config config, AWSCredentials baseCredential)
+        RedshiftConnection.CopyConfig createCopyConfig(Config config, AWSSessionCredentials sessionCredentials)
         {
-            AWSSessionCredentials sessionCredentials = createSessionCredentials(config, baseCredential);
-
             RedshiftConnection.CopyConfig cc = new RedshiftConnection.CopyConfig();
             cc.configure(
                     copyConfig -> {
@@ -278,7 +288,8 @@ public class RedshiftLoadOperatorFactory
             queryId = state.get(QUERY_ID, UUID.class);
 
             AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
-            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, baseCredentials);
+            AWSSessionCredentials sessionCredentials = createSessionCredentials(params, baseCredentials);
+            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, sessionCredentials);
 
             try (RedshiftConnection connection = connect(connectionConfig)) {
                 String query = connection.buildCopyStatement(copyConfig);

@@ -71,6 +71,8 @@ public class RedshiftIT
     private String redshiftDatabase;
     private String redshiftUser;
     private String redshiftPassword;
+    private String s3RoleArn;
+    private String s3WrongRoleArn;
     private String s3Bucket;
     private String s3ParentKey;
     private String dynamoTableName;
@@ -115,6 +117,8 @@ public class RedshiftIT
         redshiftUser = config.get("user", String.class);
         redshiftPassword = config.get("password", String.class);
         s3Bucket = config.get("s3_bucket", String.class);
+        s3RoleArn = config.get("s3_role_arn", String.class);
+        s3WrongRoleArn = config.get("s3_wrong_role_arn", String.class);
 
         String s3AccessKeyId = config.get("s3_access_key_id", String.class);
         String s3SecretAccessKey = config.get("s3_secret_access_key", String.class);
@@ -454,6 +458,52 @@ public class RedshiftIT
 
         String statusTable = statusTables.get(0);
         assertThat(statusTable, notNullValue());
+    }
+
+    @Test
+    public void loadCSVFileFromS3WithRole()
+            throws Exception
+    {
+        loadFromS3AndAssert(
+                Arrays.asList(
+                        new Content<>(
+                                "testdata0.data",
+                                f -> buildContentAsBufferedWriter(f, w -> {
+                                    w.write("0,foo,3.14");
+                                    w.newLine();
+                                    w.write("1,bar,1.23");
+                                    w.newLine();
+                                    w.write("2,baz,5.0");
+                                    w.newLine();
+                                })
+                        )
+                ),
+                "acceptance/redshift/load_from_s3_csv_with_role.dig",
+                Arrays.asList(
+                        ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                        ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                        ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
+                        ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
+                )
+        );
+    }
+
+    @Test
+    public void loadCSVFileFromS3WithWrongRole()
+            throws Exception
+    {
+        copyResource("acceptance/redshift/load_from_s3_csv_with_role.dig", projectDir.resolve("redshift.dig"));
+        setupDestTable();
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+                "-p", "redshift_database=" + database,
+                "-p", "redshift_host=" + redshiftHost,
+                "-p", "redshift_user=" + redshiftUser,
+                "-p", "table=" + DEST_TABLE,
+                "-p", "from_uri=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-p", "role_arn_in_config=" + s3WrongRoleArn,
+                "-c", configFile.toString(),
+                "redshift.dig");
+        assertThat(status.code(), is(1));
     }
 
     @Test
@@ -980,6 +1030,7 @@ public class RedshiftIT
                 "-p", "redshift_user=" + redshiftUser,
                 "-p", "table=" + DEST_TABLE,
                 "-p", "from_uri=" + fromUri,
+                "-p", "role_arn_in_config=" + s3RoleArn,
                 "-c", configFile.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(0));

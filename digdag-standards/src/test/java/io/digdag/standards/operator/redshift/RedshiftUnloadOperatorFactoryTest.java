@@ -1,6 +1,6 @@
 package io.digdag.standards.operator.redshift;
 
-import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSSessionCredentials;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.spi.OperatorContext;
@@ -52,7 +52,7 @@ public class RedshiftUnloadOperatorFactoryTest
         RedshiftUnloadOperatorFactory.RedshiftUnloadOperator operator = (RedshiftUnloadOperatorFactory.RedshiftUnloadOperator) operatorFactory.newOperator(operatorContext);
         assertThat(operator, is(instanceOf(RedshiftUnloadOperatorFactory.RedshiftUnloadOperator.class)));
 
-        AWSCredentials credentials = mock(AWSCredentials.class);
+        AWSSessionCredentials credentials = mock(AWSSessionCredentials.class);
         when(credentials.getAWSAccessKeyId()).thenReturn("my-access-key-id");
         when(credentials.getAWSSecretKey()).thenReturn("my-secret-access-key");
 

@@ -1,0 +1,13 @@
+timezone: UTC
+
++run:
+  redshift_load>:
+  host: ${redshift_host}
+  database: ${redshift_database}
+  user: ${redshift_user}
+  table: ${table}
+  from: ${from_uri}
+  csv: ''
+  delimiter: ','
+  role_arn: ${role_arn_in_config}
+  session_duration: 1800

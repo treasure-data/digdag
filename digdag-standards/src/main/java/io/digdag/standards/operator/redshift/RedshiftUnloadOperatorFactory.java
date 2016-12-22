@@ -142,7 +142,6 @@ public class RedshiftUnloadOperatorFactory
         private AWSSessionCredentials createSessionCredentials(Config config, AWSCredentials baseCredential)
         {
             String from = config.get("to", String.class);
-            Optional<Boolean> manifest = config.getOptional("manifest", Boolean.class);
 
             ImmutableList.Builder<AWSSessionCredentialsFactory.AcceptableUri> builder = ImmutableList.builder();
             builder.add(new AcceptableUri(Mode.WRITE, from));
@@ -152,14 +151,27 @@ public class RedshiftUnloadOperatorFactory
                             baseCredential.getAWSAccessKeyId(),
                             baseCredential.getAWSSecretKey(),
                             builder.build());
+
+            Optional<String> roleArn = config.getOptional("role_arn", String.class);
+            if (roleArn.isPresent()) {
+                sessionCredentialsFactory.withRoleArn(roleArn.get());
+                Optional<String> roleSessionName = config.getOptional("role_session_name", String.class);
+                if (roleSessionName.isPresent()) {
+                    sessionCredentialsFactory.withRoleSessionName(roleSessionName.get());
+                }
+            }
+
+            Optional<Integer> durationSeconds = config.getOptional("session_duration", Integer.class);
+            if (durationSeconds.isPresent()) {
+                sessionCredentialsFactory.WithDurationSeconds(durationSeconds.get());
+            }
+
             return sessionCredentialsFactory.get();
         }
 
         @VisibleForTesting
-        RedshiftConnection.UnloadConfig createUnloadConfig(Config config, AWSCredentials baseCredential)
+        RedshiftConnection.UnloadConfig createUnloadConfig(Config config, AWSSessionCredentials sessionCredentials)
         {
-            AWSSessionCredentials sessionCredentials = createSessionCredentials(config, baseCredential);
-
             RedshiftConnection.UnloadConfig uc = new RedshiftConnection.UnloadConfig();
             uc.configure(
                     unloadConfig -> {
@@ -232,7 +244,8 @@ public class RedshiftUnloadOperatorFactory
             queryId = state.get(QUERY_ID, UUID.class);
 
             AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
-            RedshiftConnection.UnloadConfig unloadConfig = createUnloadConfig(params, baseCredentials);
+            AWSSessionCredentials sessionCredentials = createSessionCredentials(params, baseCredentials);
+            RedshiftConnection.UnloadConfig unloadConfig = createUnloadConfig(params, sessionCredentials);
             unloadConfig.setupWithPrefixDir(queryId.toString());
 
             try {

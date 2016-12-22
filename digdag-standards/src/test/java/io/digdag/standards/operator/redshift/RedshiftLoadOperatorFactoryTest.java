@@ -1,15 +1,12 @@
 package io.digdag.standards.operator.redshift;
 
-import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSSessionCredentials;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.ConfigException;
-import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.jdbc.JdbcOpTestHelper;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,7 +14,6 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -56,7 +52,7 @@ public class RedshiftLoadOperatorFactoryTest
         RedshiftLoadOperatorFactory.RedshiftLoadOperator operator = (RedshiftLoadOperatorFactory.RedshiftLoadOperator) operatorFactory.newOperator(operatorContext);
         assertThat(operator, is(instanceOf(RedshiftLoadOperatorFactory.RedshiftLoadOperator.class)));
 
-        AWSCredentials credentials = mock(AWSCredentials.class);
+        AWSSessionCredentials credentials = mock(AWSSessionCredentials.class);
         when(credentials.getAWSAccessKeyId()).thenReturn("my-access-key-id");
         when(credentials.getAWSSecretKey()).thenReturn("my-secret-access-key");
 
