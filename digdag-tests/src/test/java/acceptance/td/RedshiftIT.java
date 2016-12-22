@@ -882,6 +882,30 @@ public class RedshiftIT
         assertS3Contents(expected);
     }
 
+    @Test
+    public void unloadToS3WithManifest()
+            throws Exception
+    {
+        copyResource("acceptance/redshift/unload_to_s3_with_manifest.dig", projectDir.resolve("redshift.dig"));
+
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+                "-p", "redshift_database=" + database,
+                "-p", "redshift_host=" + redshiftHost,
+                "-p", "redshift_user=" + redshiftUser,
+                "-p", "to=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-c", configFile.toString(),
+                "redshift.dig");
+        assertThat(status.code(), is(0));
+
+        ImmutableList<Map<String, Object>> expected = ImmutableList.of(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f)
+        );
+
+        assertS3Contents(expected);
+    }
+
     private void assertS3Contents(List<Map<String, Object>> expected)
             throws IOException
     {
@@ -892,13 +916,18 @@ public class RedshiftIT
             result = s3Client.listObjectsV2(req);
 
             for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
-                try (BufferedReader reader =
-                        new BufferedReader(
-                                new InputStreamReader(
-                                        s3Client.getObject(
-                                                objectSummary.getBucketName(),
-                                                objectSummary.getKey()).getObjectContent()))) {
-                    lines.addAll(reader.lines().collect(Collectors.toList()));
+                if (objectSummary.getKey().endsWith("_part_00")) {
+                    try (BufferedReader reader =
+                            new BufferedReader(
+                                    new InputStreamReader(
+                                            s3Client.getObject(
+                                                    objectSummary.getBucketName(),
+                                                    objectSummary.getKey()).getObjectContent()))) {
+                        lines.addAll(reader.lines().collect(Collectors.toList()));
+                    }
+                }
+                else {
+                    assertThat(objectSummary.getKey(), endsWith("_manifest"));
                 }
 
                 try {

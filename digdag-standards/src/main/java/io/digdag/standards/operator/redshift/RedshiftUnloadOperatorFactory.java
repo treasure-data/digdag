@@ -146,36 +146,6 @@ public class RedshiftUnloadOperatorFactory
 
             ImmutableList.Builder<AWSSessionCredentialsFactory.AcceptableUri> builder = ImmutableList.builder();
             builder.add(new AcceptableUri(Mode.WRITE, from));
-            if (manifest.or(false)) {
-                String head = "s3://";
-                if (!from.startsWith(head)) {
-                    throw new ConfigException("Invalid manifest file uri: " + from);
-                }
-                AmazonS3Client s3Client = new AmazonS3Client(baseCredential);
-                String[] bucketAndKey = from.substring(head.length()).split("/", 2);
-                if (bucketAndKey.length < 2 || bucketAndKey[1].isEmpty())
-                    throw new ConfigException("Invalid manifest file uri: " + from);
-                try {
-                    RetryExecutor.retryExecutor().run(() -> {
-                                Map<String, Object> value = null;
-                                try (InputStream in = s3Client.getObject(bucketAndKey[0], bucketAndKey[1]).getObjectContent()) {
-                                    ObjectMapper objectMapper = new ObjectMapper();
-                                    value = objectMapper.readValue(in, new TypeReference<Map<String, Object>>() {});
-                                }
-                                catch (IOException e) {
-                                    Throwables.propagate(e);
-                                }
-                                List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");
-                                entries.forEach(file ->
-                                        builder.add(new AcceptableUri(Mode.WRITE, file.get("url"))));
-                            }
-                    );
-                }
-                catch (RetryExecutor.RetryGiveupException e) {
-                    throw new TaskExecutionException(
-                            "Failed to fetch a manifest file: " + from, buildExceptionErrorConfig(e));
-                }
-            }
 
             AWSSessionCredentialsFactory sessionCredentialsFactory =
                     new AWSSessionCredentialsFactory(
