@@ -782,7 +782,7 @@ public class EmrOperatorFactory
                     configurationJson = workspace.templateFile(templateEngine, node.asText(), UTF_8, params);
                 }
                 catch (IOException | TemplateException e) {
-                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                    throw new TaskExecutionException(e);
                 }
                 List<ConfigurationJson> values;
                 try {
@@ -900,7 +900,7 @@ public class EmrOperatorFactory
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                        throw new TaskExecutionException(e);
                     }
                 }
             }
@@ -940,7 +940,7 @@ public class EmrOperatorFactory
                         bytes = Resources.toByteArray(new URL(reference.reference().get()));
                     }
                     catch (IOException e) {
-                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                        throw new TaskExecutionException(e);
                     }
                     ObjectMetadata metadata = new ObjectMetadata();
                     metadata.setContentLength(bytes.length);

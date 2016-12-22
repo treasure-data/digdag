@@ -160,6 +160,15 @@ public class TaskExecutionException
         this.stateParams = Optional.absent();
     }
 
+    @Deprecated
+    public TaskExecutionException(Throwable cause, ConfigElement error)
+    {
+        super(formatExceptionMessage(cause), cause);
+        this.error = Optional.of(error);
+        this.retryInterval = Optional.absent();
+        this.stateParams = Optional.absent();
+    }
+
     public Optional<Config> getError(ConfigFactory cf)
     {
         return error.transform(it -> it.toConfig(cf));
