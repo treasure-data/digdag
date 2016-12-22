@@ -1,0 +1,13 @@
+timezone: UTC
+
+schedule:
+  daily>: 09:00:00
+
++sleep:
+  sh>: sleep 10
+
++write_runtime:
+  sh>: echo ${moment()} > ${outdir}/runtime_${session_date_compact}.txt
+
++write_last_executed:
+  sh>: echo ${last_executed_session_time} > ${outdir}/last_executed_${session_date_compact}.txt

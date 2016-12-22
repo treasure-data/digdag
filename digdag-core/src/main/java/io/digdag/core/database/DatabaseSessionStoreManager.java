@@ -663,7 +663,7 @@ public class DatabaseSessionStoreManager
         public DatabaseSessionAttemptControlStore(Handle handle)
         {
             this.handle = handle;
-            this.dao = handle.attach(Dao.class);
+            this.dao = handle.attach(dao(databaseType));
         }
 
         @Override
@@ -1254,7 +1254,7 @@ public class DatabaseSessionStoreManager
         {
             this.handle = handle;
             this.siteId = siteId;
-            this.dao = handle.attach(Dao.class);
+            this.dao = handle.attach(dao(databaseType));
         }
 
         @Override
@@ -1391,7 +1391,7 @@ public class DatabaseSessionStoreManager
         public DatabaseDelayedAttemptControlStore(Handle handle)
         {
             this.handle = handle;
-            this.dao = handle.attach(Dao.class);
+            this.dao = handle.attach(dao(databaseType));
         }
 
         @Override

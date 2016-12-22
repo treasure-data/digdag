@@ -423,7 +423,9 @@ public class ScheduleExecutor
     {
         try {
             control.lockSessionOfAttempt(delayedAttempt.getAttemptId(), (sessionControlStore, storedAttemptWithSession) -> {
-                // TODO throw if storedAttemptWithSession.getWorkflowDefinitionId() is absent
+                if (!storedAttemptWithSession.getWorkflowDefinitionId().isPresent()) {
+                    throw new ResourceNotFoundException("Delayed attempt must have a stored workflow");
+                }
                 WorkflowDefinition def = rm.getProjectStore(storedAttemptWithSession.getSiteId())
                             .getWorkflowDefinitionById(storedAttemptWithSession.getWorkflowDefinitionId().get());
                 workflowExecutor.storeTasks(
@@ -435,10 +437,12 @@ public class ScheduleExecutor
                 return true;
             });
         }
-        catch (ResourceConflictException | ResourceNotFoundException ex) {
-            // TODO not implemented yet
+        catch (ResourceConflictException ex) {
+            logger.warn("Delayed attempt conflicted: {}", delayedAttempt, ex);
         }
-        // TODO not implemented yet
+        catch (ResourceNotFoundException ex) {
+            logger.warn("Invalid delayed attempt: {}", delayedAttempt, ex);
+        }
         control.completeDelayedAttempt(delayedAttempt.getAttemptId());
     }
 
