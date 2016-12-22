@@ -9,23 +9,17 @@ import com.amazonaws.auth.policy.Statement;
 import com.amazonaws.auth.policy.actions.DynamoDBv2Actions;
 import com.amazonaws.auth.policy.actions.ElasticMapReduceActions;
 import com.amazonaws.auth.policy.actions.S3Actions;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
-import com.amazonaws.services.s3.event.S3EventNotification;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.services.securitytoken.model.GetFederationTokenRequest;
 import com.amazonaws.services.securitytoken.model.GetFederationTokenResult;
-import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static io.digdag.standards.operator.AWSSessionCredentialsFactory.Mode.READ;
 
 public class AWSSessionCredentialsFactory
 {
