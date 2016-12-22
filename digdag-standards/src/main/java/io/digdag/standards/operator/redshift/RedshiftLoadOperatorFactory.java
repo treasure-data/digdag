@@ -1,10 +1,17 @@
 package io.digdag.standards.operator.redshift;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -12,13 +19,18 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.*;
 import io.digdag.standards.operator.AWSSessionCredentialsFactory;
+import io.digdag.standards.operator.AWSSessionCredentialsFactory.AcceptableUri;
 import io.digdag.standards.operator.jdbc.*;
 import io.digdag.util.DurationParam;
+import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
@@ -118,16 +130,71 @@ public class RedshiftLoadOperatorFactory
             return new BasicAWSCredentials(accessKeyId, secretAccessKey);
         }
 
+        private AWSSessionCredentials createSessionCredentials(Config config, AWSCredentials baseCredential)
+        {
+            String from = config.get("from", String.class);
+            Optional<String> json = config.getOptional("json", String.class);
+            Optional<String> avro = config.getOptional("avro", String.class);
+            Optional<Boolean> manifest = config.getOptional("manifest", Boolean.class);
+
+            ImmutableList.Builder<AcceptableUri> builder = ImmutableList.builder();
+            builder.add(new AcceptableUri(AWSSessionCredentialsFactory.Mode.READ, from));
+            if (json.isPresent()) {
+                String uri = json.get();
+                if (!uri.equalsIgnoreCase("auto")) {
+                    builder.add(new AcceptableUri(AWSSessionCredentialsFactory.Mode.READ, uri));
+                }
+            }
+            if (avro.isPresent()) {
+                String uri = avro.get();
+                if (!uri.equalsIgnoreCase("auto")) {
+                    builder.add(new AcceptableUri(AWSSessionCredentialsFactory.Mode.READ, uri));
+                }
+            }
+            if (manifest.or(false)) {
+                String head = "s3://";
+                if (!from.startsWith(head)) {
+                    throw new ConfigException("Invalid manifest file uri: " + from);
+                }
+                AmazonS3Client s3Client = new AmazonS3Client(baseCredential);
+                String[] bucketAndKey = from.substring(head.length()).split("/", 2);
+                if (bucketAndKey.length < 2 || bucketAndKey[1].isEmpty()) {
+                    throw new ConfigException("Invalid manifest file uri: " + from);
+                }
+                try {
+                    RetryExecutor.retryExecutor().run(() -> {
+                                Map<String, Object> value = null;
+                                try (InputStream in = s3Client.getObject(bucketAndKey[0], bucketAndKey[1]).getObjectContent()) {
+                                    ObjectMapper objectMapper = new ObjectMapper();
+                                    value = objectMapper.readValue(in, new TypeReference<Map<String, Object>>() {});
+                                }
+                                catch (IOException e) {
+                                    Throwables.propagate(e);
+                                }
+                                List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");
+                                entries.forEach(file ->
+                                        builder.add(new AcceptableUri(AWSSessionCredentialsFactory.Mode.READ, file.get("url"))));
+                            }
+                    );
+                }
+                catch (RetryExecutor.RetryGiveupException e) {
+                    throw new TaskExecutionException(
+                            "Failed to fetch a manifest file: " + from, buildExceptionErrorConfig(e));
+                }
+            }
+
+            AWSSessionCredentialsFactory sessionCredentialsFactory =
+                    new AWSSessionCredentialsFactory(
+                            baseCredential.getAWSAccessKeyId(),
+                            baseCredential.getAWSSecretKey(),
+                            builder.build());
+            return sessionCredentialsFactory.get();
+        }
+
         @VisibleForTesting
         RedshiftConnection.CopyConfig createCopyConfig(Config config, AWSCredentials baseCredential)
         {
-            String from = config.get("from", String.class);
-
-            AWSSessionCredentialsFactory sessionCredentialsFactory = new AWSSessionCredentialsFactory(
-                    baseCredential.getAWSAccessKeyId(),
-                    baseCredential.getAWSSecretKey(),
-                    from);
-            BasicSessionCredentials sessionCredentials = sessionCredentialsFactory.get();
+            AWSSessionCredentials sessionCredentials = createSessionCredentials(config, baseCredential);
 
             RedshiftConnection.CopyConfig cc = new RedshiftConnection.CopyConfig();
             cc.configure(
@@ -140,7 +207,7 @@ public class RedshiftLoadOperatorFactory
 
                         copyConfig.table = config.get("table", String.class);
                         copyConfig.columnList = config.getOptional("column_list", String.class);
-                        copyConfig.from = from;
+                        copyConfig.from = config.get("from", String.class);
                         copyConfig.readratio = config.getOptional("readratio", Integer.class);
                         copyConfig.manifest = config.getOptional("manifest", Boolean.class);
                         copyConfig.encrypted = config.getOptional("encrypted", Boolean.class);
@@ -185,10 +252,6 @@ public class RedshiftLoadOperatorFactory
         @Override
         protected TaskResult run(Config params, Config state, RedshiftConnectionConfig connectionConfig)
         {
-            AWSCredentials baseCredential = createBaseCredential(context.getSecrets());
-
-            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, baseCredential);
-
             boolean strictTransaction = strictTransaction(params);
 
             String statusTableName;
@@ -213,6 +276,9 @@ public class RedshiftLoadOperatorFactory
                 throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
             }
             queryId = state.get(QUERY_ID, UUID.class);
+
+            AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
+            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, baseCredentials);
 
             try (RedshiftConnection connection = connect(connectionConfig)) {
                 String query = connection.buildCopyStatement(copyConfig);

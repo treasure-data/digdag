@@ -1,12 +1,16 @@
 package io.digdag.standards.operator.redshift;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -20,6 +24,7 @@ import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.standards.operator.AWSSessionCredentialsFactory;
 import io.digdag.standards.operator.jdbc.AbstractJdbcJobOperator;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.LockConflictException;
@@ -30,11 +35,15 @@ import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static io.digdag.standards.operator.AWSSessionCredentialsFactory.*;
 
 public class RedshiftUnloadOperatorFactory
         implements OperatorFactory
@@ -109,7 +118,7 @@ public class RedshiftUnloadOperatorFactory
         }
 
         @VisibleForTesting
-        AWSCredentials createCredential(SecretProvider secretProvider)
+        AWSCredentials createBaseCredential(SecretProvider secretProvider)
         {
             SecretProvider awsSecrets = secretProvider.getSecrets("aws");
             SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
@@ -130,14 +139,65 @@ public class RedshiftUnloadOperatorFactory
             return new BasicAWSCredentials(accessKeyId, secretAccessKey);
         }
 
-        @VisibleForTesting
-        RedshiftConnection.UnloadConfig createUnloadConfig(Config config, AWSCredentials sessionCredential)
+        private AWSSessionCredentials createSessionCredentials(Config config, AWSCredentials baseCredential)
         {
+            String from = config.get("to", String.class);
+            Optional<Boolean> manifest = config.getOptional("manifest", Boolean.class);
+
+            ImmutableList.Builder<AWSSessionCredentialsFactory.AcceptableUri> builder = ImmutableList.builder();
+            builder.add(new AcceptableUri(Mode.WRITE, from));
+            if (manifest.or(false)) {
+                String head = "s3://";
+                if (!from.startsWith(head)) {
+                    throw new ConfigException("Invalid manifest file uri: " + from);
+                }
+                AmazonS3Client s3Client = new AmazonS3Client(baseCredential);
+                String[] bucketAndKey = from.substring(head.length()).split("/", 2);
+                if (bucketAndKey.length < 2 || bucketAndKey[1].isEmpty())
+                    throw new ConfigException("Invalid manifest file uri: " + from);
+                try {
+                    RetryExecutor.retryExecutor().run(() -> {
+                                Map<String, Object> value = null;
+                                try (InputStream in = s3Client.getObject(bucketAndKey[0], bucketAndKey[1]).getObjectContent()) {
+                                    ObjectMapper objectMapper = new ObjectMapper();
+                                    value = objectMapper.readValue(in, new TypeReference<Map<String, Object>>() {});
+                                }
+                                catch (IOException e) {
+                                    Throwables.propagate(e);
+                                }
+                                List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");
+                                entries.forEach(file ->
+                                        builder.add(new AcceptableUri(Mode.WRITE, file.get("url"))));
+                            }
+                    );
+                }
+                catch (RetryExecutor.RetryGiveupException e) {
+                    throw new TaskExecutionException(
+                            "Failed to fetch a manifest file: " + from, buildExceptionErrorConfig(e));
+                }
+            }
+
+            AWSSessionCredentialsFactory sessionCredentialsFactory =
+                    new AWSSessionCredentialsFactory(
+                            baseCredential.getAWSAccessKeyId(),
+                            baseCredential.getAWSSecretKey(),
+                            builder.build());
+            return sessionCredentialsFactory.get();
+        }
+
+        @VisibleForTesting
+        RedshiftConnection.UnloadConfig createUnloadConfig(Config config, AWSCredentials baseCredential)
+        {
+            AWSSessionCredentials sessionCredentials = createSessionCredentials(config, baseCredential);
+
             RedshiftConnection.UnloadConfig uc = new RedshiftConnection.UnloadConfig();
             uc.configure(
                     unloadConfig -> {
-                        unloadConfig.accessKeyId = sessionCredential.getAWSAccessKeyId();
-                        unloadConfig.secretAccessKey = sessionCredential.getAWSSecretKey();
+                        unloadConfig.accessKeyId = sessionCredentials.getAWSAccessKeyId();
+                        unloadConfig.secretAccessKey = sessionCredentials.getAWSSecretKey();
+                        if (sessionCredentials.getSessionToken() != null) {
+                            unloadConfig.sessionToken = Optional.of(sessionCredentials.getSessionToken());
+                        }
 
                         unloadConfig.query = config.get("query", String.class);
                         unloadConfig.to = config.get("to", String.class);
@@ -176,10 +236,6 @@ public class RedshiftUnloadOperatorFactory
         @Override
         protected TaskResult run(Config params, Config state, RedshiftConnectionConfig connectionConfig)
         {
-            AWSCredentials sessionCredential = createCredential(context.getSecrets());
-
-            RedshiftConnection.UnloadConfig unloadConfig = createUnloadConfig(params, sessionCredential);
-
             boolean strictTransaction = strictTransaction(params);
 
             String statusTableName;
@@ -204,10 +260,13 @@ public class RedshiftUnloadOperatorFactory
                 throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
             }
             queryId = state.get(QUERY_ID, UUID.class);
+
+            AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
+            RedshiftConnection.UnloadConfig unloadConfig = createUnloadConfig(params, baseCredentials);
             unloadConfig.setupWithPrefixDir(queryId.toString());
 
             try {
-                RetryExecutor.retryExecutor() .run(() -> clearDest(sessionCredential, unloadConfig));
+                RetryExecutor.retryExecutor() .run(() -> clearDest(baseCredentials, unloadConfig));
             }
             catch (RetryExecutor.RetryGiveupException e) {
                 Throwables.propagate(e);
