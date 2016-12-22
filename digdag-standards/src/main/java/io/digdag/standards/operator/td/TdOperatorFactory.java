@@ -23,6 +23,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.util.UserSecretTemplate;
 import io.digdag.util.Workspace;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.MapValue;
@@ -101,7 +102,7 @@ public class TdOperatorFactory
         private final Optional<TableParam> insertInto;
         private final Optional<TableParam> createTable;
         private final int priority;
-        private final Optional<String> resultUrl;
+        private final Optional<UserSecretTemplate> resultUrl;
         private final int jobRetry;
         private final String engine;
         private final Optional<String> downloadFile;
@@ -124,7 +125,7 @@ public class TdOperatorFactory
             }
 
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
-            this.resultUrl = params.getOptional("result_url", String.class);
+            this.resultUrl = params.getOptional("result_url", String.class).transform(UserSecretTemplate::of);
 
             this.jobRetry = params.get("job_retry", int.class, 0);
 
@@ -207,7 +208,7 @@ public class TdOperatorFactory
             }
 
             TDJobRequest req = new TDJobRequestBuilder()
-                    .setResultOutput(resultUrl.orNull())
+                    .setResultOutput(resultUrl.transform(t -> t.format(context.getSecrets())).orNull())
                     .setType(engine)
                     .setDatabase(op.getDatabase())
                     .setQuery(stmt)

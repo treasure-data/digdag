@@ -360,6 +360,15 @@ public class TdIT
     }
 
     @Test
+    public void testRunResultUrlSecret()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_result_url.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        assertWorkflowRunsSuccessfully("td.database=" + database);
+    }
+
+    @Test
     public void testRetries()
             throws Exception
     {

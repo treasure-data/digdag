@@ -1,0 +1,8 @@
+timezone: UTC
+
++run:
+  td>: query.sql
+  result_url: td://${secret:td.apikey}@/${td.database}/result_url
+
++post:
+  sh>: touch ${outfile}
