@@ -3,6 +3,7 @@ package io.digdag.standards.operator.redshift;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
@@ -145,6 +146,15 @@ public class RedshiftUnloadOperatorFactory
 
             ImmutableList.Builder<AWSSessionCredentialsFactory.AcceptableUri> builder = ImmutableList.builder();
             builder.add(new AcceptableUri(Mode.WRITE, from));
+
+            // TODO: DRY
+            if (!config.get("use_temp_credentials", Boolean.class, true)) {
+                return new BasicSessionCredentials(
+                        baseCredential.getAWSAccessKeyId(),
+                        baseCredential.getAWSSecretKey(),
+                        null
+                );
+            }
 
             AWSSessionCredentialsFactory sessionCredentialsFactory =
                     new AWSSessionCredentialsFactory(

@@ -43,6 +43,7 @@ import utils.TestUtils;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -79,6 +80,7 @@ public class RedshiftIT
     private String database;
     private String restrictedUserPassword;
     private Path configFile;
+    private Path configFileWithoutFederation;
     private AmazonS3Client s3Client;
     private AmazonDynamoDBClient dynamoClient;
 
@@ -98,12 +100,6 @@ public class RedshiftIT
     interface ContentBuilder<T>
     {
         void build(T t) throws IOException;
-    }
-
-    @FunctionalInterface
-    interface DigdagRunner
-    {
-        void run() throws IOException;
     }
 
     @Before
@@ -139,6 +135,16 @@ public class RedshiftIT
                 "secrets.aws.redshift_unload.access-key-id=" + s3AccessKeyId,
                 "secrets.aws.redshift_load.access-key-id=" + s3AccessKeyId,
                 "secrets.aws.secret-access-key=" + s3SecretAccessKey
+        ));
+
+        String s3AccessKeyIdWithoutFederation = config.get("s3_access_key_id_wo_federation", String.class);
+        String s3SecretAccessKeyWithoutFederation = config.get("s3_secret_access_key_wo_federation", String.class);
+        configFileWithoutFederation = folder.newFile().toPath();
+        Files.write(configFileWithoutFederation, asList(
+                "secrets.aws.redshift.password= " + redshiftPassword,
+                "secrets.aws.access-key-id=" + s3AccessKeyIdWithoutFederation,
+                "secrets.aws.access-key-id=" + s3AccessKeyIdWithoutFederation,
+                "secrets.aws.redshift.secret-access-key=" + s3SecretAccessKeyWithoutFederation
         ));
 
         createTempDatabase();
@@ -504,6 +510,36 @@ public class RedshiftIT
                 "-c", configFile.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(1));
+    }
+
+    @Test
+    public void loadCSVFileFromS3WithoutFederation()
+            throws Exception
+    {
+        Files.move(configFileWithoutFederation, configFile, StandardCopyOption.REPLACE_EXISTING);
+
+        loadFromS3AndAssert(
+                Arrays.asList(
+                        new Content<>(
+                                "testdata0.data",
+                                f -> buildContentAsBufferedWriter(f, w -> {
+                                    w.write("0,foo,3.14");
+                                    w.newLine();
+                                    w.write("1,bar,1.23");
+                                    w.newLine();
+                                    w.write("2,baz,5.0");
+                                    w.newLine();
+                                })
+                        )
+                ),
+                "acceptance/redshift/load_from_s3_csv_without_temp_credentials.dig",
+                Arrays.asList(
+                        ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                        ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                        ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
+                        ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
+                )
+        );
     }
 
     @Test
@@ -913,6 +949,32 @@ public class RedshiftIT
             throws Exception
     {
         copyResource("acceptance/redshift/unload_to_s3.dig", projectDir.resolve("redshift.dig"));
+
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+                "-p", "redshift_database=" + database,
+                "-p", "redshift_host=" + redshiftHost,
+                "-p", "redshift_user=" + redshiftUser,
+                "-p", "to_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-c", configFile.toString(),
+                "redshift.dig");
+        assertThat(status.code(), is(0));
+
+        ImmutableList<Map<String, Object>> expected = ImmutableList.of(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f)
+        );
+
+        assertS3Contents(expected);
+    }
+
+    @Test
+    public void unloadToS3WithoutFederation()
+            throws Exception
+    {
+        Files.move(configFileWithoutFederation, configFile, StandardCopyOption.REPLACE_EXISTING);
+
+        copyResource("acceptance/redshift/unload_to_s3_wo_temp_credentials.dig", projectDir.resolve("redshift.dig"));
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,

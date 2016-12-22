@@ -3,6 +3,7 @@ package io.digdag.standards.operator.redshift;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -178,6 +179,15 @@ public class RedshiftLoadOperatorFactory
                     throw new TaskExecutionException(
                             "Failed to fetch a manifest file: " + from, buildExceptionErrorConfig(e));
                 }
+            }
+
+            // TODO: DRY
+            if (!config.get("use_temp_credentials", Boolean.class, true)) {
+                return new BasicSessionCredentials(
+                        baseCredential.getAWSAccessKeyId(),
+                        baseCredential.getAWSSecretKey(),
+                        null
+                );
             }
 
             AWSSessionCredentialsFactory sessionCredentialsFactory =
