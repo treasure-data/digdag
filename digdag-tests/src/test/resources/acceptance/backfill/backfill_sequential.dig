@@ -4,7 +4,7 @@ schedule:
   daily>: 09:00:00
 
 +sleep:
-  sh>: sleep 10
+  sh>: sleep 5
 
 +write_runtime:
   sh>: echo ${moment()} > ${outdir}/runtime_${session_date_compact}.txt

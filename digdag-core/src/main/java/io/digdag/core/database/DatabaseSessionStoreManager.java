@@ -618,8 +618,22 @@ public class DatabaseSessionStoreManager
     public void lockReadyDelayedAttempts(Instant currentTime, DelayedAttemptAction func)
     {
         List<RuntimeException> exceptions = transaction((handle, dao) -> {
-            return dao.lockReadyDelayedAttempts(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
-                .stream()
+            List<StoredDelayedSessionAttempt> locked = handle.createQuery(
+                    "select da.* from delayed_session_attempts da" +
+                    " where not exists (" +
+                        " select * from session_attempts sa" +
+                        " where sa.session_id = da.dependent_session_id" +
+                        " and " + bitAnd("sa.state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0" +
+                    ")" +
+                    " and next_run_time <= :currentTime" +
+                    " limit :limit" +
+                    " for update"
+                )
+                .bind("limit", 10)  // TODO 10 should be configurable?
+                .bind("currentTime", currentTime.getEpochSecond())
+                .mapTo(StoredDelayedSessionAttempt.class)
+                .list();
+            return locked.stream()
                 .map(delayedAttempt -> {
                     try {
                         func.submit(new DatabaseDelayedAttemptControlStore(handle), delayedAttempt);
@@ -1398,7 +1412,14 @@ public class DatabaseSessionStoreManager
         public <T> T lockSessionOfAttempt(long attemptId, DelayedSessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
         {
-            StoredSessionAttemptWithSession attempt = dao.lockSessionByAttemptId(attemptId);
+            StoredSessionAttemptWithSession attempt;
+            if (dao instanceof H2Dao) {
+                ((H2Dao) dao).lockSessionByAttemptId(attemptId);
+                attempt = dao.getAttemptWithSessionByIdInternal(attemptId);
+            }
+            else {
+                attempt = ((PgDao) dao).lockSessionByAttemptId(attemptId);
+            }
             return func.call(new DatabaseSessionControlStore(handle, 0), attempt);
         }
 
@@ -1425,6 +1446,14 @@ public class DatabaseSessionStoreManager
                 " values (:projectId, :workflowName, :sessionTime)")
         void upsertAndLockSession(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+
+        @SqlQuery("select id from sessions s" +
+                " where id = (" +
+                    "select session_id from session_attempts" +
+                    " where id = :attemptId" +
+                ")" +
+                " for update")
+        long lockSessionByAttemptId(@Bind("attemptId") long attemptId);
     }
 
     public interface PgDao
@@ -1439,6 +1468,14 @@ public class DatabaseSessionStoreManager
                 // doesn't lock the row
         StoredSession upsertAndLockSession(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa, sessions s" +
+                " where s.id = sa.session_id" +
+                " and sa.id = :attemptId" +
+                " limit 1" +
+                " for update of s")
+        StoredSessionAttemptWithSession lockSessionByAttemptId(@Bind("attemptId") long attemptId);
     }
 
     public interface Dao
@@ -1800,13 +1837,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id")
         void updateNextSessionMonitorRunTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime);
 
-        @SqlQuery("select da.* from delayed_session_attempts da" +
-                " where not exists (select * from sessions s where s.id = da.dependent_session_id)" +
-                " and next_run_time <= :currentTime" +
-                " limit :limit" +
-                " for update")
-        List<StoredDelayedSessionAttempt> lockReadyDelayedAttempts(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
-
         @SqlUpdate("update delayed_session_attempts" +
                 " set next_run_time = :nextRunTime, updated_at = now()" +
                 " where id = :attemptId")
@@ -1851,13 +1881,6 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("delete from delayed_session_attempts" +
                 " where id = :attemptId")
         void deleteDelayedAttempt(@Bind("attemptId") long attemptId);
-
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
-                " from session_attempts sa" +
-                " join sessions s on s.id = sa.session_id" +
-                " where sa.id = :attemptId limit 1" +
-                " for update of sessions")
-        StoredSessionAttemptWithSession lockSessionByAttemptId(@Bind("attemptId") long attemptId);
     }
 
     private static class InstantMapper

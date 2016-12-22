@@ -12,6 +12,7 @@ import utils.TemporaryDigdagServer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -23,6 +24,7 @@ import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class BackfillIT
 {
@@ -52,7 +54,6 @@ public class BackfillIT
         outdir = projectDir.resolve("outdir");
     }
 
-    /*
     @Test
     public void initPushBackfill()
             throws Exception
@@ -100,7 +101,6 @@ public class BackfillIT
         RestSession session2 = sessions.get(0);
         assertThat(session2.getSessionTime(), is(OffsetDateTime.parse("2016-01-02T00:00:00+09:00")));
     }
-    */
 
     @Test
     public void backfillSequentially()
@@ -148,14 +148,19 @@ public class BackfillIT
             expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), session.getLastAttempt().get().getId()));
         }
 
-        // sessions API return results in reversed order
+        String r1 = new String(Files.readAllBytes(outdir.resolve("runtime_20160101.txt")), UTF_8).trim();
+        String r2 = new String(Files.readAllBytes(outdir.resolve("runtime_20160102.txt")), UTF_8).trim();
+        String r3 = new String(Files.readAllBytes(outdir.resolve("runtime_20160103.txt")), UTF_8).trim();
 
-        String r1 = new String(Files.readAllBytes(outdir.resolve("runtime_20160101.txt")), UTF_8);
-        String r2 = new String(Files.readAllBytes(outdir.resolve("runtime_20160102.txt")), UTF_8);
-        String r3 = new String(Files.readAllBytes(outdir.resolve("runtime_20160103.txt")), UTF_8);
+        String e1 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160101.txt")), UTF_8).trim();
+        String e2 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160102.txt")), UTF_8).trim();
+        String e3 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160103.txt")), UTF_8).trim();
 
-        String e1 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160101.txt")), UTF_8);
-        String e2 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160102.txt")), UTF_8);
-        String e3 = new String(Files.readAllBytes(outdir.resolve("last_executed_20160103.txt")), UTF_8);
+        assertTrue(Instant.parse(r2).isAfter(Instant.parse(r1).plusSeconds(5)));
+        assertTrue(Instant.parse(r3).isAfter(Instant.parse(r2).plusSeconds(5)));
+
+        assertTrue(e1.isEmpty());
+        assertThat(e2, is("2016-01-01T00:00:00+00:00"));
+        assertThat(e3, is("2016-01-02T00:00:00+00:00"));
     }
 }
