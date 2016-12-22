@@ -5,7 +5,7 @@ timezone: UTC
   host: ${redshift_host}
   database: ${redshift_database}
   user: ${redshift_user}
-  table: ${table}
-  from: ${from_uri}
+  table: ${table_in_config}
+  from: ${from_in_config}
   csv: ''
   delimiter: ','

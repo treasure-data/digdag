@@ -9,5 +9,5 @@ _export:
 +run:
   redshift_unload>:
   query: SELECT * FROM src_tbl
-  to: ${to}
+  to: ${to_in_config}
   manifest: true

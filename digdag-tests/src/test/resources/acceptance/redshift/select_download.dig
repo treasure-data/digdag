@@ -5,4 +5,4 @@ timezone: UTC
   host: ${redshift_host}
   database: ${redshift_database}
   user: ${redshift_user}
-  download_file: ${result_file}
+  download_file: ${download_file_in_config}

@@ -174,7 +174,7 @@ public class RedshiftIT
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
-                "-p", "result_file=" + resultFile.toString(),
+                "-p", "download_file_in_config=" + resultFile.toString(),
                 "-c", configFile.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(0));
@@ -498,8 +498,8 @@ public class RedshiftIT
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
-                "-p", "table=" + DEST_TABLE,
-                "-p", "from_uri=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-p", "table_in_config=" + DEST_TABLE,
+                "-p", "from_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
                 "-p", "role_arn_in_config=" + s3WrongRoleArn,
                 "-c", configFile.toString(),
                 "redshift.dig");
@@ -918,7 +918,7 @@ public class RedshiftIT
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
-                "-p", "to=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-p", "to_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
                 "-c", configFile.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(0));
@@ -942,7 +942,7 @@ public class RedshiftIT
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
-                "-p", "to=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
+                "-p", "to_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
                 "-c", configFile.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(0));
@@ -1028,8 +1028,8 @@ public class RedshiftIT
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
-                "-p", "table=" + DEST_TABLE,
-                "-p", "from_uri=" + fromUri,
+                "-p", "table_in_config=" + DEST_TABLE,
+                "-p", "from_in_config=" + fromUri,
                 "-p", "role_arn_in_config=" + s3RoleArn,
                 "-c", configFile.toString(),
                 "redshift.dig");

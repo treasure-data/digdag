@@ -5,6 +5,6 @@ timezone: UTC
   host: ${redshift_host}
   database: ${redshift_database}
   user: ${redshift_user}
-  table: ${table}
-  from: ${from_uri}/testdata
-  avro: ${from_uri}/my-json-path-file
+  table: ${table_in_config}
+  from: ${from_in_config}/testdata
+  avro: ${from_in_config}/my-json-path-file
