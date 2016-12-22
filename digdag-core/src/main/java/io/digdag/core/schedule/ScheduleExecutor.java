@@ -18,6 +18,7 @@ import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.AttemptLimitExceededException;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.SessionAttemptConflictException;
+import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.session.DelayedAttemptControlStore;
 import io.digdag.core.session.Session;
@@ -442,6 +443,11 @@ public class ScheduleExecutor
         }
         catch (ResourceNotFoundException ex) {
             logger.warn("Invalid delayed attempt: {}", delayedAttempt, ex);
+        }
+        catch (ResourceLimitExceededException ex) {
+            logger.warn("Failed to start delayed attempt Due to too many active tasks. Will be retried after 5 minutes.", ex);
+            control.delayDelayedAttempt(delayedAttempt.getAttemptId(), Instant.now().plusSeconds(5 * 60));
+            return;
         }
         control.completeDelayedAttempt(delayedAttempt.getAttemptId());
     }

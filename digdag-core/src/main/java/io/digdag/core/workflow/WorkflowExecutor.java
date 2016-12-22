@@ -298,7 +298,12 @@ public class WorkflowExecutor
                     StoredSessionAttemptWithSession storedAttemptWithSession =
                         StoredSessionAttemptWithSession.of(siteId, storedSession, storedAttempt);
 
-                    storeTasks(store, storedAttemptWithSession, tasks, resumingTasks, ar.getSessionMonitors());
+                    try {
+                        storeTasks(store, storedAttemptWithSession, tasks, resumingTasks, ar.getSessionMonitors());
+                    }
+                    catch (TaskLimitExceededException ex) {
+                        throw new WorkflowTaskLimitExceededException(ex);
+                    }
 
                     return storedAttemptWithSession;
                 });
@@ -330,7 +335,7 @@ public class WorkflowExecutor
             WorkflowDefinition def,
             List<ResumingTask> resumingTasks,
             List<SessionMonitor> sessionMonitors)
-        throws WorkflowTaskLimitExceededException
+        throws TaskLimitExceededException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
@@ -344,6 +349,7 @@ public class WorkflowExecutor
             WorkflowTaskList tasks,
             List<ResumingTask> resumingTasks,
             List<SessionMonitor> sessionMonitors)
+        throws TaskLimitExceededException
     {
         final WorkflowTask root = tasks.get(0);
 
@@ -361,16 +367,21 @@ public class WorkflowExecutor
             .stateFlags(TaskStateFlags.empty().withInitialTask())
             .build();
 
-        store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
-            try {
-                TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                        storedTaskId, tasks, resumingTasks);
-            }
-            catch (TaskLimitExceededException ex) {
-                throw new WorkflowTaskLimitExceededException(ex);
-            }
-            return null;
-        });
+        try {
+            store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
+                try {
+                    TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
+                            storedTaskId, tasks, resumingTasks);
+                }
+                catch (TaskLimitExceededException ex) {
+                    throw new WorkflowTaskLimitExceededException(ex);
+                }
+                return null;
+            });
+        }
+        catch (WorkflowTaskLimitExceededException ex) {
+            throw ex.getCause();
+        }
 
         if (!sessionMonitors.isEmpty()) {
             for (SessionMonitor monitor : sessionMonitors) {

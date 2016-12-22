@@ -8,6 +8,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.AttemptStateFlags;
@@ -1410,7 +1411,7 @@ public class DatabaseSessionStoreManager
 
         @Override
         public <T> T lockSessionOfAttempt(long attemptId, DelayedSessionLockAction<T> func)
-            throws ResourceConflictException, ResourceNotFoundException
+            throws ResourceConflictException, ResourceNotFoundException, ResourceLimitExceededException
         {
             StoredSessionAttemptWithSession attempt;
             if (dao instanceof H2Dao) {
