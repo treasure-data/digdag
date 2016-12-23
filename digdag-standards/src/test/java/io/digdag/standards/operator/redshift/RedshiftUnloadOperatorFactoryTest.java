@@ -56,8 +56,7 @@ public class RedshiftUnloadOperatorFactoryTest
         when(credentials.getAWSAccessKeyId()).thenReturn("my-access-key-id");
         when(credentials.getAWSSecretKey()).thenReturn("my-secret-access-key");
 
-        RedshiftConnection.UnloadConfig unloadConfig = operator.createUnloadConfig(testHelper.createConfig(configInput), credentials);
-        unloadConfig.setupWithPrefixDir(queryId);
+        RedshiftConnection.UnloadConfig unloadConfig = operator.createUnloadConfig(testHelper.createConfig(configInput), credentials, queryId);
 
         Connection connection = mock(Connection.class);
 

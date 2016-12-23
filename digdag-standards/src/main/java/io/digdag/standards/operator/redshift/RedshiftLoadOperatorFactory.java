@@ -2,8 +2,6 @@ package io.digdag.standards.operator.redshift;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSSessionCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,37 +11,26 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.*;
 import io.digdag.standards.operator.AWSSessionCredentialsFactory;
 import io.digdag.standards.operator.AWSSessionCredentialsFactory.AcceptableUri;
-import io.digdag.standards.operator.jdbc.*;
-import io.digdag.util.DurationParam;
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public class RedshiftLoadOperatorFactory
         implements OperatorFactory
 {
-    private static final String POLL_INTERVAL = "pollInterval";
-    private static final int INITIAL_POLL_INTERVAL = 1;
-    private static final int MAX_POLL_INTERVAL = 1200;
-
     private static final String OPERATOR_TYPE = "redshift_load";
     private final TemplateEngine templateEngine;
-
-    private static final String QUERY_ID = "queryId";
 
     @Inject
     public RedshiftLoadOperatorFactory(TemplateEngine templateEngine)
@@ -65,7 +52,7 @@ public class RedshiftLoadOperatorFactory
 
     @VisibleForTesting
     static class RedshiftLoadOperator
-        extends AbstractJdbcJobOperator<RedshiftConnectionConfig>
+        extends BaseRedshiftLoadOperator<RedshiftConnection.CopyConfig>
     {
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -73,20 +60,6 @@ public class RedshiftLoadOperatorFactory
         RedshiftLoadOperator(OperatorContext context, TemplateEngine templateEngine)
         {
             super(context, templateEngine);
-        }
-
-        /* TODO: This method name should be connectionConfig() or something? */
-        @Override
-        protected RedshiftConnectionConfig configure(SecretProvider secrets, Config params)
-        {
-            return RedshiftConnectionConfig.configure(secrets, params);
-        }
-
-        /* TODO: This method should be in XxxxConnectionConfig ? */
-        @Override
-        protected RedshiftConnection connect(RedshiftConnectionConfig connectionConfig)
-        {
-            return RedshiftConnection.open(connectionConfig);
         }
 
         @Override
@@ -102,33 +75,13 @@ public class RedshiftLoadOperatorFactory
         }
 
         @Override
-        protected SecretProvider getSecretsForConnectionConfig()
+        protected List<SecretProvider> additionalSecretProvidersForCredentials(SecretProvider awsSecrets)
         {
-            return context.getSecrets().getSecrets("aws.redshift");
+            return ImmutableList.of(awsSecrets.getSecrets("redshift_load"));
         }
 
-        protected AWSCredentials createBaseCredential(SecretProvider secretProvider)
-        {
-            SecretProvider awsSecrets = secretProvider.getSecrets("aws");
-            SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
-            SecretProvider redshiftLoadSecrets = awsSecrets.getSecrets("redshift_load");
-
-            String keyOfAccess = "access-key-id";
-            String accessKeyId =
-                    redshiftLoadSecrets.getSecretOptional(keyOfAccess)
-                    .or(redshiftSecrets.getSecretOptional(keyOfAccess))
-                    .or(() -> awsSecrets.getSecret(keyOfAccess));
-
-            String keyOfSecret = "secret-access-key";
-            String secretAccessKey =
-                    redshiftLoadSecrets.getSecretOptional(keyOfSecret)
-                    .or(redshiftSecrets.getSecretOptional(keyOfSecret))
-                    .or(() -> awsSecrets.getSecret(keyOfSecret));
-
-            return new BasicAWSCredentials(accessKeyId, secretAccessKey);
-        }
-
-        private AWSSessionCredentials createSessionCredentials(Config config, AWSCredentials baseCredential)
+        @Override
+        protected List<AcceptableUri> buildAcceptableUriForSessionCredentials(Config config, AWSCredentials baseCredential)
         {
             String from = config.get("from", String.class);
             Optional<String> json = config.getOptional("json", String.class);
@@ -180,37 +133,7 @@ public class RedshiftLoadOperatorFactory
                             "Failed to fetch a manifest file: " + from, buildExceptionErrorConfig(e));
                 }
             }
-
-            // TODO: DRY
-            if (!config.get("use_temp_credentials", Boolean.class, true)) {
-                return new BasicSessionCredentials(
-                        baseCredential.getAWSAccessKeyId(),
-                        baseCredential.getAWSSecretKey(),
-                        null
-                );
-            }
-
-            AWSSessionCredentialsFactory sessionCredentialsFactory =
-                    new AWSSessionCredentialsFactory(
-                            baseCredential.getAWSAccessKeyId(),
-                            baseCredential.getAWSSecretKey(),
-                            builder.build());
-
-            Optional<String> roleArn = config.getOptional("role_arn", String.class);
-            if (roleArn.isPresent()) {
-                sessionCredentialsFactory.withRoleArn(roleArn.get());
-                Optional<String> roleSessionName = config.getOptional("role_session_name", String.class);
-                if (roleSessionName.isPresent()) {
-                    sessionCredentialsFactory.withRoleSessionName(roleSessionName.get());
-                }
-            }
-
-            Optional<Integer> durationSeconds = config.getOptional("session_duration", Integer.class);
-            if (durationSeconds.isPresent()) {
-                sessionCredentialsFactory.WithDurationSeconds(durationSeconds.get());
-            }
-
-            return sessionCredentialsFactory.get();
+            return builder.build();
         }
 
         @VisibleForTesting
@@ -270,87 +193,21 @@ public class RedshiftLoadOperatorFactory
         }
 
         @Override
-        protected TaskResult run(Config params, Config state, RedshiftConnectionConfig connectionConfig)
+        protected RedshiftConnection.CopyConfig createStatementConfig(Config params, AWSSessionCredentials sessionCredentials, String queryId)
         {
-            boolean strictTransaction = strictTransaction(params);
+            return createCopyConfig(params, sessionCredentials);
+        }
 
-            String statusTableName;
-            DurationParam statusTableCleanupDuration;
-            if (strictTransaction) {
-                statusTableName = params.get("status_table", String.class, "__digdag_status");
-                statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
-                        DurationParam.of(Duration.ofHours(24)));
-            }
-            else {
-                statusTableName = null;
-                statusTableCleanupDuration = null;
-            }
+        @Override
+        protected String buildSQLStatement(RedshiftConnection connection, RedshiftConnection.CopyConfig statementConfig)
+        {
+            return connection.buildCopyStatement(statementConfig);
+        }
 
-            UUID queryId;
-            // generate query id
-            if (!state.has(QUERY_ID)) {
-                // this is the first execution of this task
-                logger.debug("Generating query id for a new {} task", type());
-                queryId = UUID.randomUUID();
-                state.set(QUERY_ID, queryId);
-                throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
-            }
-            queryId = state.get(QUERY_ID, UUID.class);
-
-            AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
-            AWSSessionCredentials sessionCredentials = createSessionCredentials(params, baseCredentials);
-            RedshiftConnection.CopyConfig copyConfig = createCopyConfig(params, sessionCredentials);
-
-            try (RedshiftConnection connection = connect(connectionConfig)) {
-                String query = connection.buildCopyStatement(copyConfig);
-
-                Exception statementError = connection.validateStatement(query);
-                if (statementError != null) {
-                    copyConfig.accessKeyId = "********";
-                    copyConfig.secretAccessKey = "********";
-                    String queryForLogging = connection.buildCopyStatement(copyConfig);
-                    throw new ConfigException("Given query is invalid: " + queryForLogging, statementError);
-                }
-
-                TransactionHelper txHelper;
-                if (strictTransaction) {
-                    txHelper = connection.getStrictTransactionHelper(statusTableName,
-                            statusTableCleanupDuration.getDuration());
-                }
-                else {
-                    txHelper = new NoTransactionHelper();
-                }
-
-                txHelper.prepare(queryId);
-
-                boolean executed = txHelper.lockedTransaction(queryId, () -> {
-                    connection.executeUpdate(query);
-                });
-
-                if (!executed) {
-                    logger.debug("Query is already completed according to status table. Skipping statement execution.");
-                }
-
-                try {
-                    txHelper.cleanup();
-                }
-                catch (Exception ex) {
-                    logger.warn("Error during cleaning up status table. Ignoring.", ex);
-                }
-
-                return TaskResult.defaultBuilder(request).build();
-            }
-            catch (LockConflictException ex) {
-                int pollingInterval = state.get(POLL_INTERVAL, Integer.class, INITIAL_POLL_INTERVAL);
-                // Set next interval for exponential backoff
-                state.set(POLL_INTERVAL, Math.min(pollingInterval * 2, MAX_POLL_INTERVAL));
-                throw TaskExecutionException.ofNextPolling(pollingInterval, ConfigElement.copyOf(state));
-            }
-            catch (DatabaseException ex) {
-                // expected error that should suppress stacktrace by default
-                String message = String.format("%s [%s]", ex.getMessage(), ex.getCause().getMessage());
-                throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
-            }
+        @Override
+        protected void beforeConnect(AWSCredentials credentials, RedshiftConnection.CopyConfig statemenetConfig)
+        {
+            // Do nothing
         }
     }
 }

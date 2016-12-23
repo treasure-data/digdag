@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.digdag.standards.operator.redshift.RedshiftConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;

@@ -294,7 +294,7 @@ public class RedshiftConnection
         void config(T orig);
     }
 
-    abstract static class StatementConfig<T extends StatementConfig>
+    public abstract static class StatementConfig<T extends StatementConfig>
     {
         static final List<String> ACCEPTED_FLAGS_FOR_XXXDATE = ImmutableList.of("ON", "OFF", "TRUE", "FALSE");
 
