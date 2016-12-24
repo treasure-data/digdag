@@ -103,7 +103,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
     {
         List<AcceptableUri> acceptableUris = buildAcceptableUriForSessionCredentials(config, baseCredential);
 
-        if (!config.get("use_temp_credentials", Boolean.class, true)) {
+        if (!config.get("temp_credentials", Boolean.class, true)) {
             return new BasicSessionCredentials(
                     baseCredential.getAWSAccessKeyId(),
                     baseCredential.getAWSSecretKey(),

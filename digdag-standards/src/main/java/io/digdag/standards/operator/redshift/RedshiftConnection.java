@@ -206,6 +206,20 @@ public class RedshiftConnection
         }
 
         @Override
+        public void prepare(UUID queryId)
+        {
+            String sql = buildCreateTable(queryId);
+            executeStatement("create a status table " + escapeIdent(statusTableName(queryId))
+                            + ".\nhint: if you don't have permission to create tables, "
+                            + "please add \"strict_transaction: false\" option to disable "
+                            + "exactly-once transaction control that depends on this table.\n"
+                            + "Or please ask system administrator to prepare a schema that\n"
+                            + "this operator can create tables in and specify `status_table` parameter"
+                            + "to create tables in the schema like `writable_schema.__digdag_status`",
+                            sql);
+        }
+
+        @Override
         public void cleanup()
         {
             try (Statement stmt = connection.createStatement()) {
@@ -226,6 +240,9 @@ public class RedshiftConnection
                 statusTables.forEach(
                         statusTable -> {
                             try {
+                                // TODO: If inserting to the table fails right after creating an empty table,
+                                //       the following query can't handle that garbage tables.
+                                //       Maybe we need to use `CREATE TABLE AS SELECT` to avoid creating an empty table later...
                                 ResultSet rs = stmt.executeQuery(
                                         String.format(ENGLISH,
                                                 "SELECT query_id FROM %s WHERE created_at IS NOT NULL AND completed_at < CURRENT_TIMESTAMP - INTERVAL '%d SECOND'",
@@ -296,7 +313,7 @@ public class RedshiftConnection
 
     public abstract static class StatementConfig<T extends StatementConfig>
     {
-        static final List<String> ACCEPTED_FLAGS_FOR_XXXDATE = ImmutableList.of("ON", "OFF", "TRUE", "FALSE");
+        static final List<String> ACCEPTED_FLAGS = ImmutableList.of("ON", "OFF", "TRUE", "FALSE");
 
         String accessKeyId;
         String secretAccessKey;
@@ -398,12 +415,12 @@ public class RedshiftConnection
             }
             // As for FIXEDWIDTH, combinations with other format are already validated
             if (statupdate.isPresent()) {
-                if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(statupdate.get().toUpperCase())) {
+                if (!ACCEPTED_FLAGS.contains(statupdate.get().toUpperCase())) {
                     throw new ConfigException("STATUPDATE should be in ON/OFF/TRUE/FALSE: " + statupdate.get());
                 }
             }
             if (compupdate.isPresent()) {
-                if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(compupdate.get().toUpperCase())) {
+                if (!ACCEPTED_FLAGS.contains(compupdate.get().toUpperCase())) {
                     throw new ConfigException("COMPUPDATE should be in ON/OFF/TRUE/FALSE: " + compupdate.get());
                 }
             }
@@ -441,7 +458,7 @@ public class RedshiftConnection
                 throw new ConfigException("'to' shouldn't be null");
             }
             if (parallel.isPresent()) {
-                if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(parallel.get().toUpperCase())) {
+                if (!ACCEPTED_FLAGS.contains(parallel.get().toUpperCase())) {
                     throw new ConfigException("PARALLEL should be in ON/OFF/TRUE/FALSE: " + parallel.get());
                 }
             }
