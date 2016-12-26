@@ -76,7 +76,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
         SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
         List<SecretProvider> secretProviders = additionalSecretProvidersForCredentials(awsSecrets);
 
-        String keyOfAccess = "access-key-id";
+        String keyOfAccess = "access_key_id";
         String accessKeyId =
                 secretProviders.stream()
                         .map(sp -> sp.getSecretOptional(keyOfAccess))
@@ -86,7 +86,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
                         .or(redshiftSecrets.getSecretOptional(keyOfAccess))
                         .or(() -> awsSecrets.getSecret(keyOfAccess));
 
-        String keyOfSecret = "secret-access-key";
+        String keyOfSecret = "secret_access_key";
         String secretAccessKey =
                 secretProviders.stream()
                         .map(sp -> sp.getSecretOptional(keyOfSecret))
