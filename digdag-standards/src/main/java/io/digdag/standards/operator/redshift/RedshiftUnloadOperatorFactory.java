@@ -17,9 +17,9 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory.AcceptableUri;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory.Mode;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.AcceptableUri;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.Mode;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory;
 
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;

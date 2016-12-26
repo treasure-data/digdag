@@ -1,4 +1,4 @@
-package io.digdag.standards.operator;
+package io.digdag.standards.operator.aws;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
