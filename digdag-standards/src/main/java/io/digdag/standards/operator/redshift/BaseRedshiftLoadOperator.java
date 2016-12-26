@@ -14,8 +14,8 @@ import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory.AcceptableUri;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.AcceptableUri;
 import io.digdag.standards.operator.jdbc.AbstractJdbcJobOperator;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.LockConflictException;
@@ -76,7 +76,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
         SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
         List<SecretProvider> secretProviders = additionalSecretProvidersForCredentials(awsSecrets);
 
-        String keyOfAccess = "access-key-id";
+        String keyOfAccess = "access_key_id";
         String accessKeyId =
                 secretProviders.stream()
                         .map(sp -> sp.getSecretOptional(keyOfAccess))
@@ -86,7 +86,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
                         .or(redshiftSecrets.getSecretOptional(keyOfAccess))
                         .or(() -> awsSecrets.getSecret(keyOfAccess));
 
-        String keyOfSecret = "secret-access-key";
+        String keyOfSecret = "secret_access_key";
         String secretAccessKey =
                 secretProviders.stream()
                         .map(sp -> sp.getSecretOptional(keyOfSecret))
@@ -128,7 +128,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
 
         Optional<Integer> durationSeconds = config.getOptional("session_duration", Integer.class);
         if (durationSeconds.isPresent()) {
-            sessionCredentialsFactory.WithDurationSeconds(durationSeconds.get());
+            sessionCredentialsFactory.withDurationSeconds(durationSeconds.get());
         }
 
         return sessionCredentialsFactory.get();

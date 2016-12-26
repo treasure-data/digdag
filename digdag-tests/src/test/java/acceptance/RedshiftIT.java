@@ -1,4 +1,4 @@
-package acceptance.td;
+package acceptance;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -132,9 +132,9 @@ public class RedshiftIT
         configFile = folder.newFile().toPath();
         Files.write(configFile, asList(
                 "secrets.aws.redshift.password= " + redshiftPassword,
-                "secrets.aws.redshift_unload.access-key-id=" + s3AccessKeyId,
-                "secrets.aws.redshift_load.access-key-id=" + s3AccessKeyId,
-                "secrets.aws.secret-access-key=" + s3SecretAccessKey
+                "secrets.aws.redshift_unload.access_key_id=" + s3AccessKeyId,
+                "secrets.aws.redshift_load.access_key_id=" + s3AccessKeyId,
+                "secrets.aws.secret_access_key=" + s3SecretAccessKey
         ));
 
         String s3AccessKeyIdWithoutFederation = config.get("s3_access_key_id_wo_federation", String.class);
@@ -142,9 +142,9 @@ public class RedshiftIT
         configFileWithoutFederation = folder.newFile().toPath();
         Files.write(configFileWithoutFederation, asList(
                 "secrets.aws.redshift.password= " + redshiftPassword,
-                "secrets.aws.access-key-id=" + s3AccessKeyIdWithoutFederation,
-                "secrets.aws.access-key-id=" + s3AccessKeyIdWithoutFederation,
-                "secrets.aws.redshift.secret-access-key=" + s3SecretAccessKeyWithoutFederation
+                "secrets.aws.access_key_id=" + s3AccessKeyIdWithoutFederation,
+                "secrets.aws.access_key_id=" + s3AccessKeyIdWithoutFederation,
+                "secrets.aws.redshift.secret_access_key=" + s3SecretAccessKeyWithoutFederation
         ));
 
         createTempDatabase();

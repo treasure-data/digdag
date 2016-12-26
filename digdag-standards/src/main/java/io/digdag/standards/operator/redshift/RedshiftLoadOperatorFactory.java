@@ -12,9 +12,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.spi.*;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory.AcceptableUri;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretProvider;
+import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TemplateEngine;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.AcceptableUri;
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +127,7 @@ public class RedshiftLoadOperatorFactory
                                 catch (IOException e) {
                                     Throwables.propagate(e);
                                 }
+                                @SuppressWarnings("unchecked")
                                 List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");
                                 entries.forEach(file ->
                                         builder.add(new AcceptableUri(AWSSessionCredentialsFactory.Mode.READ, file.get("url"))));

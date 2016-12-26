@@ -17,14 +17,15 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.AWSSessionCredentialsFactory;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.AcceptableUri;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.Mode;
+import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory;
+
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-
-import static io.digdag.standards.operator.AWSSessionCredentialsFactory.*;
 
 public class RedshiftUnloadOperatorFactory
         implements OperatorFactory
@@ -89,10 +90,10 @@ public class RedshiftUnloadOperatorFactory
         @Override
         protected List<AcceptableUri> buildAcceptableUriForSessionCredentials(Config config, AWSCredentials baseCredential)
         {
-            String from = config.get("to", String.class);
+            String to = config.get("to", String.class);
 
-            ImmutableList.Builder<AWSSessionCredentialsFactory.AcceptableUri> builder = ImmutableList.builder();
-            builder.add(new AcceptableUri(Mode.WRITE, from));
+            ImmutableList.Builder<AcceptableUri> builder = ImmutableList.builder();
+            builder.add(new AcceptableUri(Mode.WRITE, to));
 
             return builder.build();
         }

@@ -332,10 +332,12 @@ public class RedshiftConnection
 
         public void configure(ConfigConfigurator<T> configurator)
         {
-            configurator.config((T) this);
+            @SuppressWarnings("unchecked")
+            T casted = (T) this;
+            configurator.config(casted);
             validate();
         }
-}
+    }
 
     static class CopyConfig
             extends StatementConfig<CopyConfig>
