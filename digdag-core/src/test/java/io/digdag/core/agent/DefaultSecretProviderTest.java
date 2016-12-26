@@ -1,9 +1,11 @@
 package io.digdag.core.agent;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.agent.DefaultSecretProvider.OperatorSecretFilter;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretAccessDeniedException;
 import io.digdag.spi.SecretAccessPolicy;
@@ -27,6 +29,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -45,7 +48,7 @@ public class DefaultSecretProviderTest
 
     @Mock SecretAccessPolicy secretAccessPolicy;
     @Mock SecretStore secretStore;
-    @Mock Predicate<String> operatorSecretFilter;
+    @Mock OperatorSecretFilter operatorSecretFilter;
 
     private final SecretAccessContext secretAccessContext = SecretAccessContext.builder()
             .siteId(SITE_ID)
@@ -76,7 +79,6 @@ public class DefaultSecretProviderTest
         Config grants = createConfig();
 
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(false);
-        when(operatorSecretFilter.test(key)).thenReturn(true);
 
         DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
@@ -89,7 +91,6 @@ public class DefaultSecretProviderTest
         }
 
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
-        verify(operatorSecretFilter).test(key);
 
         verifyNoMoreInteractions(secretStore);
     }
@@ -109,14 +110,14 @@ public class DefaultSecretProviderTest
 
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.of(expectedSecret));
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(true);
-        when(operatorSecretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key, false)).thenReturn(true);
 
         DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
-        verify(operatorSecretFilter).test(key);
+        verify(operatorSecretFilter).test(key, false);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, key);
 
         assertThat(secret, is(expectedSecret));
@@ -141,18 +142,18 @@ public class DefaultSecretProviderTest
 
         String expectedSecret = "the-secret";
 
+        Config grants = YAML_CONFIG_LOADER.loadString(grantsYaml).toConfig(CONFIG_FACTORY);
+
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, expectedKey)).thenReturn(Optional.of(expectedSecret));
         when(secretAccessPolicy.isSecretAccessible(any(SecretAccessContext.class), anyString())).thenReturn(false);
-        when(operatorSecretFilter.test(key)).thenReturn(true);
-
-        Config grants = YAML_CONFIG_LOADER.loadString(grantsYaml).toConfig(CONFIG_FACTORY);
+        when(operatorSecretFilter.test(key, true)).thenReturn(true);
 
         DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
         verifyNoMoreInteractions(secretAccessPolicy);
-        verify(operatorSecretFilter).test(key);
+        verify(operatorSecretFilter).test(key, true);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, expectedKey);
 
         assertThat(secret, is(expectedSecret));
@@ -170,7 +171,8 @@ public class DefaultSecretProviderTest
         String key = "foo";
         Config grants = createConfig();
 
-        when(operatorSecretFilter.test(key)).thenReturn(false);
+        when(operatorSecretFilter.test(key, false)).thenReturn(false);
+        when(secretAccessPolicy.isSecretAccessible(any(SecretAccessContext.class), anyString())).thenReturn(true);
 
         DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
@@ -182,9 +184,8 @@ public class DefaultSecretProviderTest
             assertThat(e.getKey(), is(key));
         }
 
-        verifyNoMoreInteractions(secretAccessPolicy);
-
-        verify(operatorSecretFilter).test(key);
+        verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
+        verify(operatorSecretFilter).test(key, false);
         verifyNoMoreInteractions(secretStore);
     }
 
@@ -200,13 +201,13 @@ public class DefaultSecretProviderTest
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.of(projectSecret));
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key)).thenReturn(Optional.of(projectDefaultSecret));
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(true);
-        when(operatorSecretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key, false)).thenReturn(true);
 
         DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
-        verify(operatorSecretFilter).test(key);
+        verify(operatorSecretFilter).test(key, false);
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, key);
         verify(secretStore, never()).getSecret(PROJECT_ID, key, SecretScopes.PROJECT_DEFAULT);
@@ -225,13 +226,13 @@ public class DefaultSecretProviderTest
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.absent());
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key)).thenReturn(Optional.of(projectDefaultSecret));
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(true);
-        when(operatorSecretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key, false)).thenReturn(true);
 
         DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
-        verify(operatorSecretFilter).test(key);
+        verify(operatorSecretFilter).test(key, false);
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key);

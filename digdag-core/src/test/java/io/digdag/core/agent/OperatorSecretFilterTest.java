@@ -71,7 +71,7 @@ public class OperatorSecretFilterTest
         @Override
         public boolean testUserSecretAccess(String key)
         {
-            return key.equals("user_key");
+            return key.equals("user_key") || key.equals("statically_declared_key");
         }
 
         @Override
@@ -135,7 +135,7 @@ public class OperatorSecretFilterTest
     @Test
     public void verifyUserGrantedAccessAllowed()
     {
-        Config config = newConfig().set("get", "user_key").set("_secret", newConfig().set("user_key", true));
+        Config config = newConfig().set("get", "user_key").set("_secrets", newConfig().set("user_key", true));
         Config stored = run("secret_access", config);
         assertThat(stored.get("got", String.class), is("user_key.value"));
     }
@@ -146,7 +146,7 @@ public class OperatorSecretFilterTest
         exception.expect(SecretAccessFilteredException.class);
         exception.expectMessage(containsString("kkk"));
 
-        Config config = newConfig().set("get", "kkk").set("_secret", newConfig().set("kkk", true));
+        Config config = newConfig().set("get", "kkk").set("_secrets", newConfig().set("kkk", true));
         run("secret_access", config);
     }
 

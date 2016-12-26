@@ -306,7 +306,7 @@ public class OperatorManager
         Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
 
         // Operator can drop access to access to unnecessary secrets
-        OperatorSecretFilter operatorSecretFilter = new OperatorSecretFilter(factory);
+        AgentOperatorSecretFilter operatorSecretFilter = new AgentOperatorSecretFilter(factory);
 
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
                 secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
@@ -324,13 +324,14 @@ public class OperatorManager
         return operator.run();
     }
 
-    private static class OperatorSecretFilter
-            implements Predicate<String>
+    private static class AgentOperatorSecretFilter
+            implements DefaultSecretProvider.OperatorSecretFilter
     {
         private final Set<String> predeclaredSecretKeys;
-        private Predicate<String> userSecretAccessFilter = (key) -> false;
+        private boolean userSecretAccess = false;
+        private Predicate<String> dynamicFilter = (key) -> true;
 
-        OperatorSecretFilter(OperatorFactory factory)
+        AgentOperatorSecretFilter(OperatorFactory factory)
         {
             this.predeclaredSecretKeys = ImmutableSet.copyOf(
                     factory.getSecretAccessList().getSecretKeys());
@@ -338,13 +339,19 @@ public class OperatorManager
 
         void allowUserSecretAccess(Operator operator)
         {
-            this.userSecretAccessFilter = (key) -> operator.testUserSecretAccess(key);
+            this.userSecretAccess = true;
+            this.dynamicFilter = (key) -> operator.testUserSecretAccess(key);
         }
 
         @Override
-        public boolean test(String key)
+        public boolean test(String key, boolean userGranted)
         {
-            return predeclaredSecretKeys.contains(key) || userSecretAccessFilter.test(key);
+            if (userGranted) {
+                return userSecretAccess && dynamicFilter.test(key);
+            }
+            else {
+                return predeclaredSecretKeys.contains(key) && dynamicFilter.test(key);
+            }
         }
     }
 

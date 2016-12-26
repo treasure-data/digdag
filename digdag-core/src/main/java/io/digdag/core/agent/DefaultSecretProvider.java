@@ -16,19 +16,25 @@ import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 
 import java.util.List;
-import java.util.function.Predicate;
+
+import static java.util.Locale.ENGLISH;
 
 class DefaultSecretProvider
         implements SecretProvider
 {
+    static interface OperatorSecretFilter
+    {
+        boolean test(String key, boolean userGranted);
+    }
+
     private final SecretAccessContext context;
     private final SecretAccessPolicy secretAccessPolicy;
     private final Config grants;
-    private final Predicate<String> operatorSecretFilter;
+    private final OperatorSecretFilter operatorSecretFilter;
     private final SecretStore secretStore;
 
     DefaultSecretProvider(
-            SecretAccessContext context, SecretAccessPolicy secretAccessPolicy, Config grants, Predicate<String> operatorSecretFilter, SecretStore secretStore)
+            SecretAccessContext context, SecretAccessPolicy secretAccessPolicy, Config grants, OperatorSecretFilter operatorSecretFilter, SecretStore secretStore)
     {
         this.context = context;
         this.secretAccessPolicy = secretAccessPolicy;
@@ -46,22 +52,20 @@ class DefaultSecretProvider
         Preconditions.checkArgument(key.indexOf('*') == -1, errorMessage);
 
         //// Secret access control:
-        // 1. Reject if the operator doesn't need the access to the secret (operatorSecretFilter).
-        // 2. Allow if users explicitly grant access using _secret directive (Config grants).
-        // 3. Allow if system access policy (SecretAccessPolicy) allows.
-        // 4. Reject.
+        // 1. If users explicitly grant access using _secret directive in workflow definition (Config grants):
+        //    1-a. Allow if the operator wants to use it (operatorSecretFilter)
+        //    1-b. Reject.
+        // 2. If the system access policy file (SecretAccessPolicy) allows:
+        //    2-a. Allow if the operator wants to use it (operatorSecretFilter)
+        //    2-b. Reject.
+        // 3. Otherwise, reject.
 
         List<String> segments = Splitter.on('.').splitToList(key);
         segments.forEach(segment -> Preconditions.checkArgument(!Strings.isNullOrEmpty(segment)));
 
-        //// Step 1.
-        // Operator can drop access privilege to a key because it knows whether the secret is necessary or not.
-        if (!operatorSecretFilter.test(key)) {
-            throw new SecretAccessFilteredException(key, "Unexpected access to a secret key: '" + key + "'");
-        }
-
-        //// Step 2.
-        // If the key falls under the scope of an explicit grant, then fetch the secret identified by remounting the key path into the grant path.
+        //// Case 1.
+        // If the key falls under the scope of a grant explicitly written by users,
+        // then fetch the secret identified by remounting the key path into the grant path.
         JsonNode scope = grants.getInternalObjectNode();
         int i = 0;
 
@@ -89,10 +93,18 @@ class DefaultSecretProvider
                         .from(base)
                         .append(remainder)
                         .join(Joiner.on('.'));
+                if (!operatorSecretFilter.test(key, true)) {
+                    throw new SecretAccessFilteredException(key, String.format(ENGLISH,
+                            "Unexpected access to a secret key '%s' aliased from '%s'", key, remounted));
+                }
                 return fetchSecret(remounted);
             }
             else if (node.isBoolean() && node.asBoolean()) {
                 // Reached a grant leaf.
+                if (!operatorSecretFilter.test(key, true)) {
+                    throw new SecretAccessFilteredException(key, String.format(ENGLISH,
+                            "Unexpected access to a secret key '%s'", key));
+                }
                 return fetchSecret(key);
             }
             else {
@@ -100,9 +112,13 @@ class DefaultSecretProvider
             }
         }
 
-        //// Step 3.
-        // No explicit grant. Check key against system acl to see if access is granted by default.
+        //// Case 2.
+        // No explicit grant by users. Check key against system acl to see if access is granted by default.
         if (secretAccessPolicy.isSecretAccessible(context, key)) {
+            if (!operatorSecretFilter.test(key, false)) {
+                throw new SecretAccessFilteredException(key, String.format(ENGLISH,
+                            "Undeclared access to a secret key '%s'. OperatorFactory must declare this key in getSecretAccessList method.", key));
+            }
             return fetchSecret(key);
         }
 
