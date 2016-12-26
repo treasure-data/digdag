@@ -197,26 +197,127 @@ public class RedshiftConnection
         return sb.toString();
     }
 
+    // Redshift doesn't support row-level locks or FOR UPDATE NOWAIT. Therefore, unlike
+    // PgPersistentTransactionHelper, here uses following strategy:
+    //
+    //   1. BEGIN transaction
+    //   2. CREATE TABLE ${status_table}_${queryId} (query_id, created_at, completed_at)
+    //      AS SELECT '${queryId}'::text, CURRENT_TIMESTAMP::timestamptz, NULL::timestamptz";
+    //   3. If CREATE TABLE succeeded, this transaction is locking the table. Run the action,
+    //      and COMMIT the transaction.
+    //   4. If CREATE TABLE failed with SQL state 23505, another thread or node succeeded to
+    //      commit CREATE TABLE statement before. Thus skip the action.
+    //
     private class RedshiftPersistentTransactionHelper
-            extends PgPersistentTransactionHelper
+            implements TransactionHelper
     {
-        RedshiftPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+        private String statusTableNamePrefix;
+        private final Duration cleanupDuration;
+
+        RedshiftPersistentTransactionHelper(String statusTableNamePrefix, Duration cleanupDuration)
         {
-            super(statusTableName, cleanupDuration);
+            this.statusTableNamePrefix = statusTableNamePrefix;
+            this.cleanupDuration = cleanupDuration;
+        }
+
+        private String statusTableName(UUID queryId)
+        {
+            return String.format("%s_%s", statusTableNamePrefix, queryId);
         }
 
         @Override
         public void prepare(UUID queryId)
         {
-            String sql = buildCreateTable(queryId);
-            executeStatement("create a status table " + escapeIdent(statusTableName(queryId))
-                            + ".\nhint: if you don't have permission to create tables, "
-                            + "please add \"strict_transaction: false\" option to disable "
-                            + "exactly-once transaction control that depends on this table.\n"
-                            + "Or please ask system administrator to prepare a schema that\n"
-                            + "this operator can create tables in and specify `status_table` parameter"
-                            + "to create tables in the schema like `writable_schema.__digdag_status`",
-                            sql);
+            // do nothing
+        }
+
+        @Override
+        public boolean lockedTransaction(UUID queryId, TransactionAction action)
+                throws LockConflictException
+        {
+            beginTransaction();
+            boolean created = createLockedTableWithStatusRow(queryId);
+
+            if (created) {
+                // CREATE TABLE AS succeeded in this transaction.
+                // No other threads / nodes has succeeded to commit before.
+                // This transaction is responsible to run the action.
+                action.run();
+                updateStatusRowAndCommitTransaction(queryId);
+                return true;
+            }
+            else {
+                // CREATE TABLE AS conflicted.
+                // A thread / node succeeded to commit before.
+                // Skip the action.
+                abortTransaction();
+                return false;
+            }
+        }
+
+        private void beginTransaction()
+        {
+            executeStatement("begin a transaction", "BEGIN");
+        }
+
+        private void abortTransaction()
+        {
+            executeStatement("rollback a transaction", "ROLLBACK");
+        }
+
+        private void updateStatusRowAndCommitTransaction(UUID queryId)
+        {
+            executeStatement("update status row",
+                    String.format(ENGLISH,
+                        "UPDATE %s SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '%s'",
+                        escapeIdent(statusTableName(queryId)),
+                        queryId.toString())
+                    );
+            executeStatement("commit updated status row", "COMMIT");
+        }
+
+        private void executeStatement(String desc, String sql)
+        {
+            try {
+                execute(sql);
+            }
+            catch (SQLException ex) {
+                throw new DatabaseException("Failed to " + desc, ex);
+            }
+        }
+
+        private boolean createLockedTableWithStatusRow(UUID queryId)
+        {
+            String sql = String.format(ENGLISH,
+                    "CREATE TABLE IF NOT EXISTS %s" +
+                    " (query_id, created_at, completed_at)" +
+                    " AS SELECT '%s'::text, CURRENT_TIMESTAMP::timestamptz, NULL::timestamptz",
+                    escapeIdent(statusTableName(queryId)),
+                    queryId.toString());
+            try {
+                execute(sql);
+                return true;
+            }
+            catch (SQLException ex) {
+                if (isConflictException(ex)) {
+                    abortTransaction();
+                    return false;
+                }
+                else {
+                    String desc = "Failed to create a status table."
+                        + ".\nhint: if you don't have permission to create tables, "
+                        + "please add \"strict_transaction: false\" option to disable "
+                        + "exactly-once transaction control that depends on this table.\n"
+                        + "Or please ask system administrator to let this user create tables\n"
+                        + "in this schema.";
+                    throw new DatabaseException(desc, ex);
+                }
+            }
+        }
+
+        boolean isConflictException(SQLException ex)
+        {
+            return "23505".equals(ex.getSQLState());
         }
 
         @Override
@@ -229,23 +330,20 @@ public class RedshiftConnection
                     ResultSet rs = stmt.executeQuery(
                             String.format(ENGLISH,
                                     "SELECT tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
-                                    escapeParam(statusTableName))
+                                    escapeParam(statusTableNamePrefix))
                     );
                     while (rs.next()) {
                         statusTables.add(rs.getString(1));
                     }
                 }
 
-                // Drop a status table if it is expired
+                // Drop a status table if its completed_at is older than cleanupDuration
                 statusTables.forEach(
                         statusTable -> {
                             try {
-                                // TODO: If inserting to the table fails right after creating an empty table,
-                                //       the following query can't handle that garbage tables.
-                                //       Maybe we need to use `CREATE TABLE AS SELECT` to avoid creating an empty table later...
                                 ResultSet rs = stmt.executeQuery(
                                         String.format(ENGLISH,
-                                                "SELECT query_id FROM %s WHERE created_at IS NOT NULL AND completed_at < CURRENT_TIMESTAMP - INTERVAL '%d SECOND'",
+                                                "SELECT query_id FROM %s WHERE completed_at < CURRENT_TIMESTAMP - INTERVAL '%d SECOND'",
                                                 escapeIdent(statusTable),
                                                 cleanupDuration.getSeconds())
                                 );
@@ -254,53 +352,13 @@ public class RedshiftConnection
                                 }
                             }
                             catch (SQLException e) {
-                                logger.warn("Failed to drop expired status table: {}. Ignoring...", statusTable, e);
+                                logger.warn("Failed to drop expired status table: {}. Ignoring this error. To not show this warning message, please confirm that this user has privilege to DROP tables whose name is prefixed with '{}_'", statusTable, statusTableNamePrefix, e);
                             }
                         }
                 );
             }
             catch (SQLException ex) {
                 throw new DatabaseException("Failed to list up expired status tables", ex);
-            }
-        }
-
-        @Override
-        protected String statusTableName(UUID queryId)
-        {
-            return String.format("%s_%s", statusTableName, queryId);
-        }
-
-        @Override
-        protected StatusRow lockStatusRow(UUID queryId)
-                throws LockConflictException
-        {
-            try (Statement stmt = connection.createStatement()) {
-                String escapedStatusTableName = escapeIdent(statusTableName(queryId));
-
-                stmt.executeUpdate(String.format(ENGLISH, "LOCK TABLE %s", escapedStatusTableName));
-
-                ResultSet rs = stmt.executeQuery(
-                        String.format(ENGLISH, "SELECT completed_at FROM %s WHERE query_id = '%s'",
-                                escapedStatusTableName, queryId.toString())
-                );
-                if (rs.next()) {
-                    // status row exists and locked. get status of it.
-                    rs.getTimestamp(1);
-                    if (rs.wasNull()) {
-                        return StatusRow.LOCKED_NOT_COMPLETED;
-                    }
-                    else {
-                        return StatusRow.LOCKED_COMPLETED;
-                    }
-                }
-                else {
-                    return StatusRow.NOT_EXISTS;
-                }
-            }
-            catch (SQLException ex) {
-                // Redshift doesn't support "LOCK TABLE NOWAIT",
-                // so "55P03 lock_not_available" shouldn't happen here
-                throw new DatabaseException("Failed to lock a status row", ex);
             }
         }
     }
