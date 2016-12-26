@@ -128,7 +128,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
 
         Optional<Integer> durationSeconds = config.getOptional("session_duration", Integer.class);
         if (durationSeconds.isPresent()) {
-            sessionCredentialsFactory.WithDurationSeconds(durationSeconds.get());
+            sessionCredentialsFactory.withDurationSeconds(durationSeconds.get());
         }
 
         return sessionCredentialsFactory.get();

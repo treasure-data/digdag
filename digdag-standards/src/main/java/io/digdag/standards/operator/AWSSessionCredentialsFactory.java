@@ -28,6 +28,7 @@ public class AWSSessionCredentialsFactory
     private static final String URI_S3_PREFIX = "s3://";
     private static final String URI_DYNAMODB_PREFIX = "dynamodb://";
     private static final String URI_EMR_PREFIX = "emr://";
+
     private final String accessKeyId;
     private final String secretAccessKey;
     private final List<AcceptableUri> acceptableUris;
@@ -77,7 +78,7 @@ public class AWSSessionCredentialsFactory
         return this;
     }
 
-    public AWSSessionCredentialsFactory WithDurationSeconds(int durationSeconds)
+    public AWSSessionCredentialsFactory withDurationSeconds(int durationSeconds)
     {
         this.durationSeconds = durationSeconds;
         return this;
@@ -142,9 +143,10 @@ public class AWSSessionCredentialsFactory
 
         Credentials credentials;
 
+        AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(baseCredentials);
+
         if (roleArn != null && !roleArn.isEmpty()) {
             // use STS to assume role
-            AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(baseCredentials);
             AssumeRoleResult assumeResult = stsClient.assumeRole(new AssumeRoleRequest()
                     .withRoleArn(roleArn)
                     .withDurationSeconds(durationSeconds)
@@ -155,9 +157,6 @@ public class AWSSessionCredentialsFactory
         }
         else {
             // Maybe we'd better add an option command later like `without_federated_token`
-            AWSSecurityTokenServiceClient stsClient =
-                    new AWSSecurityTokenServiceClient(baseCredentials);
-
             GetFederationTokenRequest federationTokenRequest = new GetFederationTokenRequest()
                     .withDurationSeconds(durationSeconds)
                     .withName(sessionName)
