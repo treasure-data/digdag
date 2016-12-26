@@ -1,4 +1,4 @@
-package acceptance.td;
+package acceptance;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
