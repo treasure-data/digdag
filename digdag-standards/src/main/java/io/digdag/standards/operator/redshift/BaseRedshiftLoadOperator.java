@@ -138,7 +138,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
 
     protected abstract T createStatementConfig(Config params, AWSSessionCredentials sessionCredentials, String queryId);
 
-    protected abstract String buildSQLStatement(RedshiftConnection connection, T statementConfig);
+    protected abstract String buildSQLStatement(RedshiftConnection connection, T statementConfig, boolean maskCredentials);
 
     protected abstract void beforeConnect(AWSCredentials credentials, T statemenetConfig);
 
@@ -177,13 +177,13 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
         beforeConnect(baseCredentials, statementConfig);
 
         try (RedshiftConnection connection = connect(connectionConfig)) {
-            String query = buildSQLStatement(connection, statementConfig);
+            String query = buildSQLStatement(connection, statementConfig, false);
 
             Exception statementError = connection.validateStatement(query);
             if (statementError != null) {
                 statementConfig.accessKeyId = "********";
                 statementConfig.secretAccessKey = "********";
-                String queryForLogging = buildSQLStatement(connection, statementConfig);
+                String queryForLogging = buildSQLStatement(connection, statementConfig, true);
                 throw new ConfigException("Given query is invalid: " + queryForLogging, statementError);
             }
 

@@ -45,6 +45,12 @@ public class RedshiftLoadOperatorFactoryTest
     private String getCopyConfig(Map<String, Object> configInput)
             throws IOException
     {
+        return getCopyConfig(configInput, false);
+    }
+
+    private String getCopyConfig(Map<String, Object> configInput, boolean maskConfig)
+            throws IOException
+    {
         TaskRequest taskRequest = testHelper.createTaskRequest(configInput, Optional.absent());
         OperatorContext operatorContext = mock(OperatorContext.class);
         when(operatorContext.getProjectPath()).thenReturn(testHelper.projectPath());
@@ -62,7 +68,7 @@ public class RedshiftLoadOperatorFactoryTest
 
         RedshiftConnection redshiftConnection = new RedshiftConnection(connection);
 
-        return redshiftConnection.buildCopyStatement(copyConfig);
+        return redshiftConnection.buildCopyStatement(copyConfig, maskConfig);
     }
 
     @Test
@@ -111,6 +117,22 @@ public class RedshiftLoadOperatorFactoryTest
         assertThat(sql,
                 is("COPY \"my_\"\"table\" FROM 's3://my-''bucket/my-''''path'\n" +
                 "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
+                "CSV QUOTE ''''\n"));
+    }
+
+    @Test
+    public void createCopyConfigWithSimpleCsvOptionWithQuotesInParamsWithMaskingCredentials()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "table", "my_\"table",
+                "from", "s3://my-'bucket/my-''path",
+                "csv", "'"
+        );
+        String sql = getCopyConfig(configInput, true);
+        assertThat(sql,
+                is("COPY \"my_\"\"table\" FROM 's3://my-''bucket/my-''''path'\n" +
+                "CREDENTIALS 'aws_access_key_id=********;aws_secret_access_key=********'\n" +
                 "CSV QUOTE ''''\n"));
     }
 

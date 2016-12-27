@@ -105,9 +105,9 @@ public class RedshiftUnloadOperatorFactory
         }
 
         @Override
-        protected String buildSQLStatement(RedshiftConnection connection, RedshiftConnection.UnloadConfig statementConfig)
+        protected String buildSQLStatement(RedshiftConnection connection, RedshiftConnection.UnloadConfig statementConfig, boolean maskCredential)
         {
-            return connection.buildUnloadStatement(statementConfig);
+            return connection.buildUnloadStatement(statementConfig, maskCredential);
         }
 
         @Override

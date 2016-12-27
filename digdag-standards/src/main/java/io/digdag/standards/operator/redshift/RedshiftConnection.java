@@ -90,22 +90,40 @@ public class RedshiftConnection
         sb.append("\n");
     }
 
-    private void appendCredentialsPart(StringBuilder sb, StatementConfig config)
+    private void appendCredentialsPart(StringBuilder sb, StatementConfig config, boolean maskCredentials)
     {
         String credentials;
+        String accessKeyId;
+        String secretAccessKey;
+        if (maskCredentials) {
+            accessKeyId = "********";
+            secretAccessKey = "********";
+        }
+        else {
+            accessKeyId = config.accessKeyId;
+            secretAccessKey = config.secretAccessKey;
+        }
+
         if (config.sessionToken.isPresent()) {
+            String sessionToken;
+            if (maskCredentials) {
+                sessionToken = "********";
+            }
+            else {
+                sessionToken = (String) config.sessionToken.get();
+            }
             credentials = String.format("aws_access_key_id=%s;aws_secret_access_key=%s;token=%s",
-                            config.accessKeyId, config.secretAccessKey, config.sessionToken.get());
+                            accessKeyId, secretAccessKey, sessionToken);
         }
         else {
             credentials = String.format("aws_access_key_id=%s;aws_secret_access_key=%s",
-                    config.accessKeyId, config.secretAccessKey);
+                    accessKeyId, secretAccessKey);
         }
         sb.append(String.format("CREDENTIALS '%s'\n", escapeParam(credentials)));
     }
 
 
-    String buildCopyStatement(CopyConfig copyConfig)
+    String buildCopyStatement(CopyConfig copyConfig, boolean maskCredentials)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -115,7 +133,7 @@ public class RedshiftConnection
                         escapeParam(copyConfig.from)));
 
         // credentials
-        appendCredentialsPart(sb, copyConfig);
+        appendCredentialsPart(sb, copyConfig, maskCredentials);
 
         appendOption(sb, "READRATIO", copyConfig.readratio);
         appendOption(sb, "MANIFEST", copyConfig.manifest);
@@ -169,7 +187,7 @@ public class RedshiftConnection
         return sb.toString();
     }
 
-    String buildUnloadStatement(UnloadConfig unloadConfig)
+    String buildUnloadStatement(UnloadConfig unloadConfig, boolean maskCredentials)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -179,7 +197,7 @@ public class RedshiftConnection
                         escapeParam(unloadConfig.toWithPrefixDir)));
 
         // credentials
-        appendCredentialsPart(sb, unloadConfig);
+        appendCredentialsPart(sb, unloadConfig, maskCredentials);
 
         // Options
         appendOption(sb, "MANIFEST", unloadConfig.manifest);

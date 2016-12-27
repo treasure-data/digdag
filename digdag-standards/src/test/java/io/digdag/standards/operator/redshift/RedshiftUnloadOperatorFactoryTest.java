@@ -45,6 +45,12 @@ public class RedshiftUnloadOperatorFactoryTest
     private String getUnloadConfig(Map<String, Object> configInput, String queryId)
             throws IOException
     {
+        return getUnloadConfig(configInput, queryId, false);
+    }
+
+    private String getUnloadConfig(Map<String, Object> configInput, String queryId, boolean maskConfig)
+            throws IOException
+    {
         TaskRequest taskRequest = testHelper.createTaskRequest(configInput, Optional.absent());
         OperatorContext operatorContext = mock(OperatorContext.class);
         when(operatorContext.getProjectPath()).thenReturn(testHelper.projectPath());
@@ -62,7 +68,7 @@ public class RedshiftUnloadOperatorFactoryTest
 
         RedshiftConnection redshiftConnection = new RedshiftConnection(connection);
 
-        return redshiftConnection.buildUnloadStatement(unloadConfig);
+        return redshiftConnection.buildUnloadStatement(unloadConfig, maskConfig);
     }
 
     @Test
@@ -94,6 +100,21 @@ public class RedshiftUnloadOperatorFactoryTest
         assertThat(sql,
                 is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "_'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n"));
+    }
+
+    @Test
+    public void createUnloadConfigWithSimpleOptionWithMaskingCredentials()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "query", "select * from users",
+                "to", "s3://my-bucket/my-path"
+        );
+        String queryId = UUID.randomUUID().toString();
+        String sql = getUnloadConfig(configInput, queryId, true);
+        assertThat(sql,
+                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "_'\n" +
+                        "CREDENTIALS 'aws_access_key_id=********;aws_secret_access_key=********'\n"));
     }
 
     @Test

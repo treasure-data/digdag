@@ -205,9 +205,9 @@ public class RedshiftLoadOperatorFactory
         }
 
         @Override
-        protected String buildSQLStatement(RedshiftConnection connection, RedshiftConnection.CopyConfig statementConfig)
+        protected String buildSQLStatement(RedshiftConnection connection, RedshiftConnection.CopyConfig statementConfig, boolean maskCredential)
         {
-            return connection.buildCopyStatement(statementConfig);
+            return connection.buildCopyStatement(statementConfig, maskCredential);
         }
 
         @Override
