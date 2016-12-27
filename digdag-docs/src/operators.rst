@@ -1185,7 +1185,6 @@ redshift_load>: Redshift load operations
         maxerror: 34
         # noload: true
         statupdate: false
-        role_arn: arn:aws:iam::1234567890:role/s3-only
         role_session_name: federated_user
         session_duration: 1800
         # temp_credentials: false
@@ -1202,6 +1201,10 @@ Secrets
 
 :command:`aws.redshift_load.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
   The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
+
+:command:`aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn`
+  Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires ``temp_credentials`` to be true.
+  If this option isn't specified, this operator tries to use a federated user
 
 
 Parameters
@@ -1450,12 +1453,6 @@ Parameters
 
   * :command:`temp_credentials: false`
 
-:command:`role_arn: STRING`
-  Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires ``temp_credentials`` to be true.
-  If this option isn't specified, this operator tries to use a federated user
-
-  * :command:`role_arn: arn:aws:iam::1234567890:role/s3-only`
-
 :command:`session_duration INTEGER`
   Session duration of temporary security credentials. *Default*: ``3 hour``.
   This option isn't used when disabling `temp_credentials`
@@ -1506,6 +1503,10 @@ Secrets
 
 :command:`aws.redshift_unload.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
   The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
+
+:command:`aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn`
+  Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires ``temp_credentials`` to be true.
+  If this option isn't specified, this operator tries to use a federated user
 
 
 Parameters
@@ -1642,12 +1643,6 @@ temp_credentials
   But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.
 
   * :command:`temp_credentials: false`
-
-:command:`role_arn: STRING`
-  Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires ``temp_credentials`` to be true.
-  If this option isn't specified, this operator tries to use a federated user
-
-  * :command:`role_arn: arn:aws:iam::1234567890:role/s3-only`
 
 :command:`session_duration INTEGER`
   Session duration of temporary security credentials. *Default*: ``3 hour``.

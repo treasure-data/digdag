@@ -99,7 +99,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
         return new BasicAWSCredentials(accessKeyId, secretAccessKey);
     }
 
-    private AWSSessionCredentials createSessionCredentials(Config config, AWSCredentials baseCredential)
+    private AWSSessionCredentials createSessionCredentials(Config config, SecretProvider secrets, AWSCredentials baseCredential)
     {
         List<AcceptableUri> acceptableUris = buildAcceptableUriForSessionCredentials(config, baseCredential);
 
@@ -117,10 +117,10 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
                         baseCredential.getAWSSecretKey(),
                         acceptableUris);
 
-        Optional<String> roleArn = config.getOptional("role_arn", String.class);
+        Optional<String> roleArn = secrets.getSecretOptional("role_arn");
         if (roleArn.isPresent()) {
             sessionCredentialsFactory.withRoleArn(roleArn.get());
-            Optional<String> roleSessionName = config.getOptional("role_session_name", String.class);
+            Optional<String> roleSessionName = secrets.getSecretOptional("role_session_name");
             if (roleSessionName.isPresent()) {
                 sessionCredentialsFactory.withRoleSessionName(roleSessionName.get());
             }
@@ -171,7 +171,7 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
         queryId = state.get(QUERY_ID, UUID.class);
 
         AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
-        AWSSessionCredentials sessionCredentials = createSessionCredentials(params, baseCredentials);
+        AWSSessionCredentials sessionCredentials = createSessionCredentials(params, context.getSecrets(), baseCredentials);
         T statementConfig = createStatementConfig(params, sessionCredentials, queryId.toString());
 
         beforeConnect(baseCredentials, statementConfig);
