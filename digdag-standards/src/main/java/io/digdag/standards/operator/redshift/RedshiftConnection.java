@@ -289,7 +289,7 @@ public class RedshiftConnection
         private boolean createLockedTableWithStatusRow(UUID queryId)
         {
             String sql = String.format(ENGLISH,
-                    "CREATE TABLE IF NOT EXISTS %s" +
+                    "CREATE TABLE %s" +
                     " (query_id, created_at, completed_at)" +
                     " AS SELECT '%s'::text, CURRENT_TIMESTAMP::timestamptz, NULL::timestamptz",
                     escapeIdent(statusTableName(queryId)),
