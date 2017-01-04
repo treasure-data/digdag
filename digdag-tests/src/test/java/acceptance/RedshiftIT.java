@@ -59,6 +59,8 @@ public class RedshiftIT
     private static final String RESTRICTED_USER = "not_admin";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
+    private static final String DATA_SECHEMA = "data_schema";
+    private static final String STATUS_TABLE_SECHEMA = "status_table_schema";
 
     private static final Config EMPTY_CONFIG = configFactory().create();
 
@@ -79,8 +81,11 @@ public class RedshiftIT
     private String dynamoTableName;
     private String database;
     private String restrictedUserPassword;
+    private String dataSchemaName;
+    private String statusTableSchemaName;
     private Path configFile;
     private Path configFileWithoutFederation;
+    private Path configFileWithRestrictedUser;
     private AmazonS3Client s3Client;
     private AmazonDynamoDBClient dynamoClient;
 
@@ -147,11 +152,17 @@ public class RedshiftIT
                 "secrets.aws.redshift.secret_access_key=" + s3SecretAccessKeyWithoutFederation
         ));
 
+        configFileWithRestrictedUser = folder.newFile().toPath();
+        Files.write(configFileWithRestrictedUser, asList(
+                "secrets.aws.redshift.password= " + restrictedUserPassword,
+                "secrets.aws.redshift_unload.access_key_id=" + s3AccessKeyId,
+                "secrets.aws.redshift_load.access_key_id=" + s3AccessKeyId,
+                "secrets.aws.secret_access_key=" + s3SecretAccessKey
+        ));
+
         createTempDatabase();
 
         setupRestrictedUser();
-
-        setupSourceTable();
     }
 
     @After
@@ -175,6 +186,9 @@ public class RedshiftIT
     {
         copyResource("acceptance/redshift/select_download.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
+
+        setupSourceTable();
+
         Path resultFile = folder.newFolder().toPath().resolve("result.csv");
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
@@ -200,6 +214,7 @@ public class RedshiftIT
         copyResource("acceptance/redshift/create_table.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
 
+        setupSourceTable();
         setupDestTable();
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
@@ -230,6 +245,7 @@ public class RedshiftIT
         copyResource("acceptance/redshift/create_table_with_short_ttl_status_table.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
 
+        setupSourceTable();
         setupDestTable();
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
@@ -267,19 +283,28 @@ public class RedshiftIT
     }
 
     @Test
-    public void insertInto()
+    public void insertIntoWithRestrictionOnPublicSchema()
             throws Exception
     {
-        copyResource("acceptance/redshift/insert_into.dig", projectDir.resolve("redshift.dig"));
+        copyResource("acceptance/redshift/insert_into_with_schema.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
 
+        dataSchemaName = DATA_SECHEMA;
+        setupSchema(dataSchemaName);
+        setupSourceTable();
         setupDestTable();
+        grantRestrictedUserOnTheSchema(dataSchemaName);
+
+        String statusTableSchema = STATUS_TABLE_SECHEMA;
+        setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
-                "-p", "redshift_user=" + redshiftUser,
-                "-c", configFile.toString(),
+                "-p", "redshift_user=" + RESTRICTED_USER,
+                "-p", "schema_in_config=" + dataSchemaName,
+                "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-c", configFileWithRestrictedUser.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(0));
 
@@ -291,11 +316,48 @@ public class RedshiftIT
         ));
     }
 
+    private void setupSchema(String schemaName)
+    {
+        setupSchema(schemaName, false);
+    }
+
+    private void setupSchema(String schemaName, boolean withCreatePrivilegeToRestrictedUser)
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate(String.format("CREATE SCHEMA %s", schemaName));
+            conn.executeUpdate(String.format("GRANT USAGE ON SCHEMA %s TO %s", schemaName, RESTRICTED_USER));
+            if (withCreatePrivilegeToRestrictedUser) {
+                conn.executeUpdate(String.format("GRANT CREATE ON SCHEMA %s TO %s", schemaName, RESTRICTED_USER));
+            }
+        }
+    }
+
+    private void grantRestrictedUserOnTheSchema(String schemaName)
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
+            conn.executeUpdate(String.format("GRANT SELECT ON %s TO %s", SRC_TABLE, RESTRICTED_USER));
+            conn.executeUpdate(String.format("GRANT INSERT ON %s TO %s", DEST_TABLE, RESTRICTED_USER));
+        }
+    }
+
+    private void switchSearchPath(RedshiftConnection conn)
+    {
+        if (dataSchemaName != null) {
+            conn.executeUpdate(String.format("SET SEARCH_PATH TO '%s'", dataSchemaName));
+        }
+    }
+
     private void setupSourceTable()
     {
         SecretProvider secrets = getDatabaseSecrets();
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
             conn.executeUpdate("CREATE TABLE " + SRC_TABLE + " (id integer, name text, score real)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (0, 'foo', 3.14)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (1, 'bar', 1.23)");
@@ -327,6 +389,7 @@ public class RedshiftIT
         SecretProvider secrets = getDatabaseSecrets();
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
             conn.executeUpdate("CREATE TABLE IF NOT EXISTS " + DEST_TABLE + " (id integer, name text, score real)");
             conn.executeUpdate("DELETE FROM " + DEST_TABLE + " WHERE id = 9");
             conn.executeUpdate("INSERT INTO " + DEST_TABLE + " (id, name, score) VALUES (9, 'zzz', 9.99)");
@@ -341,6 +404,7 @@ public class RedshiftIT
         SecretProvider secrets = getDatabaseSecrets();
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
             conn.executeReadOnlyQuery(String.format("SELECT * FROM %s ORDER BY id", table),
                     (rs) -> {
                         assertThat(rs.getColumnNames(), is(asList("id", "name", "score")));
@@ -450,6 +514,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_csv.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -484,6 +549,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_csv_with_role.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -499,6 +565,7 @@ public class RedshiftIT
             throws Exception
     {
         copyResource("acceptance/redshift/load_from_s3_csv_with_role.dig", projectDir.resolve("redshift.dig"));
+        setupSourceTable();
         setupDestTable();
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
@@ -516,8 +583,6 @@ public class RedshiftIT
     public void loadCSVFileFromS3WithoutFederation()
             throws Exception
     {
-        Files.move(configFileWithoutFederation, configFile, StandardCopyOption.REPLACE_EXISTING);
-
         loadFromS3AndAssert(
                 Arrays.asList(
                         new Content<>(
@@ -532,6 +597,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFileWithoutFederation,
                 "acceptance/redshift/load_from_s3_csv_without_temp_credentials.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -560,6 +626,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_csv_with_short_ttl_status_table.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -625,6 +692,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_csv_with_manifest.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -655,6 +723,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_csv_with_noload.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
@@ -680,6 +749,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_csv_with_many_options.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -691,7 +761,7 @@ public class RedshiftIT
     }
 
     @Test
-    public void loadFixedWidthFileFromS3()
+    public void loadFixedWidthFileFromS3WithRestrictionOnPublicSchema()
             throws Exception
     {
         loadFromS3AndAssert(
@@ -708,13 +778,25 @@ public class RedshiftIT
                                 })
                         )
                 ),
-                "acceptance/redshift/load_from_s3_fixedwidth.dig",
+                configFileWithRestrictedUser,
+                "acceptance/redshift/load_from_s3_fixedwidth_with_schema.dig",
+                RESTRICTED_USER,
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
                         ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
                         ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
                         ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
-                )
+                ),
+                Optional.of(() -> {
+                    dataSchemaName = DATA_SECHEMA;
+                    setupSchema(dataSchemaName);
+                    setupSourceTable();
+                    setupDestTable();
+                    grantRestrictedUserOnTheSchema(dataSchemaName);
+
+                    String statusTableSchema = STATUS_TABLE_SECHEMA;
+                    setupSchema(statusTableSchema, true);
+                })
         );
     }
 
@@ -733,6 +815,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_json.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -764,6 +847,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_json_with_json_path_file.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -831,6 +915,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_avro.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -882,6 +967,7 @@ public class RedshiftIT
                                 })
                         )
                 ),
+                configFile,
                 "acceptance/redshift/load_from_s3_avro_with_json_path_file.dig",
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -932,7 +1018,7 @@ public class RedshiftIT
 
             items.forEach(table::putItem);
 
-            runDigdagWithDynamoDB("acceptance/redshift/load_from_dynamodb.dig");
+            runDigdagWithDynamoDB(configFile, "acceptance/redshift/load_from_dynamodb.dig", redshiftUser, Optional.absent());
 
             assertTableContents(DEST_TABLE, expected);
         }
@@ -949,6 +1035,8 @@ public class RedshiftIT
             throws Exception
     {
         copyResource("acceptance/redshift/unload_to_s3.dig", projectDir.resolve("redshift.dig"));
+
+        setupSourceTable();
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
@@ -976,6 +1064,8 @@ public class RedshiftIT
 
         copyResource("acceptance/redshift/unload_to_s3_wo_temp_credentials.dig", projectDir.resolve("redshift.dig"));
 
+        setupSourceTable();
+
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
@@ -999,6 +1089,8 @@ public class RedshiftIT
             throws Exception
     {
         copyResource("acceptance/redshift/unload_to_s3_with_manifest.dig", projectDir.resolve("redshift.dig"));
+
+        setupSourceTable();
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
@@ -1069,39 +1161,63 @@ public class RedshiftIT
         assertThat(actual, is(expected));
     }
 
-    private void runDigdagWithS3(String resourceFileName)
+    private void runDigdagWithS3(Path configFilePath, String resourceFileName, String redshiftUserName, Optional<Runnable> prepare)
             throws IOException
     {
-        runDigdag(resourceFileName, String.format("s3://%s/%s", s3Bucket, s3ParentKey));
+        runDigdag(configFilePath, resourceFileName, redshiftUserName, String.format("s3://%s/%s", s3Bucket, s3ParentKey), prepare);
     }
 
-    private void runDigdagWithDynamoDB(String resourceFileName)
+    private void runDigdagWithDynamoDB(Path configFilePath, String resourceFileName, String redshiftUserName, Optional<Runnable> prepare)
             throws IOException
     {
-        runDigdag(resourceFileName, String.format("dynamodb://%s", dynamoTableName));
+        runDigdag(configFilePath, resourceFileName, redshiftUserName, String.format("dynamodb://%s", dynamoTableName), prepare);
     }
 
-    private void runDigdag(String resourceFileName, String fromUri)
+    private void runDigdag(Path configFilePath, String resourceFileName, String redshiftUserName, String fromUri, Optional<Runnable> prepare)
             throws IOException
     {
         copyResource(resourceFileName, projectDir.resolve("redshift.dig"));
-        setupDestTable();
+
+        if (prepare.isPresent()) {
+            prepare.get().run();
+        }
+        else {
+            setupSourceTable();
+            setupDestTable();
+        }
+
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
-                "-p", "redshift_user=" + redshiftUser,
+                "-p", "redshift_user=" + redshiftUserName,
                 "-p", "table_in_config=" + DEST_TABLE,
                 "-p", "from_in_config=" + fromUri,
+                // Most diddag configs don't use the followings
                 "-p", "role_arn_in_config=" + s3RoleArn,
-                "-c", configFile.toString(),
+                "-p", "schema_in_config=" + DATA_SECHEMA,
+                "-p", "status_table_schema_in_config=" + STATUS_TABLE_SECHEMA,
+                "-c", configFilePath.toString(),
                 "redshift.dig");
         assertThat(status.code(), is(0));
     }
 
     private void loadFromS3AndAssert(
             List<Content<File>> contents,
+            Path configFilePath,
             String resourceFileName,
             List<Map<String, Object>> expected)
+            throws Exception
+    {
+        loadFromS3AndAssert(contents, configFilePath, resourceFileName, redshiftUser, expected, Optional.absent());
+    }
+
+    private void loadFromS3AndAssert(
+            List<Content<File>> contents,
+            Path configFilePath,
+            String resourceFileName,
+            String redshiftUserName,
+            List<Map<String, Object>> expected,
+            Optional<Runnable> prepare)
             throws Exception
     {
         s3Client.createBucket(s3Bucket);
@@ -1120,7 +1236,7 @@ public class RedshiftIT
                 keys.add(key);
             }
 
-            runDigdagWithS3(resourceFileName);
+            runDigdagWithS3(configFilePath, resourceFileName, redshiftUserName, prepare);
 
             assertTableContents(DEST_TABLE, expected);
         }

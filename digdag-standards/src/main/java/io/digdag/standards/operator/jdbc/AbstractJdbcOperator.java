@@ -7,9 +7,11 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -20,6 +22,9 @@ abstract class AbstractJdbcOperator<C>
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final TemplateEngine templateEngine;
+    protected String statusTableName;
+    protected String statusTableSchema;
+    protected DurationParam statusTableCleanupDuration;
 
     AbstractJdbcOperator(OperatorContext context, TemplateEngine templateEngine)
     {
@@ -57,6 +62,14 @@ abstract class AbstractJdbcOperator<C>
         }
         Config state = request.getLastStateParams().deepCopy();
         C connectionConfig = configure(getSecretsForConnectionConfig(), params);
+
+        if (strictTransaction(params)) {
+            statusTableName = params.get("status_table", String.class, "__digdag_status");
+            statusTableSchema = params.get("status_table_schema", String.class, null);
+            statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
+                    DurationParam.of(Duration.ofHours(24)));
+        }
+
         return run(params, state, connectionConfig);
     }
 }

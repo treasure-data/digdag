@@ -1013,10 +1013,15 @@ Parameters
 
   * :command:`strict_transaction: false`
 
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
+
+  * :command:`status_table_schema: writable_schema`
+
 :command:`status_table: NAME`
   Table name of status table. *Default*: ``__digdag_status``.
 
-  * :command:`status_table: writable_schema.digdag_status_table`
+  * :command:`status_table: customized_status_table`
 
 
 redshift>: Redshift operations
@@ -1117,10 +1122,15 @@ Parameters
 
   * :command:`strict_transaction: false`
 
-:command:`status_table: NAME`
-  Table name of status table. *Default*: ``__digdag_status``.
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
 
-  * :command:`status_table: writable_schema.digdag_status_table`
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name prefix of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
 
 
 redshift_load>: Redshift load operations
@@ -1246,11 +1256,15 @@ Parameters
 
   * :command:`strict_transaction: false`
 
-:command:`status_table: NAME`
-  Prefix of status table names. *Default*: ``__digdag_status``.
-  So status table names are like `__digdag_status_0123abcd-456789ef`
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
 
-  * :command:`status_table: writable_schema.digdag_status_table`
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name prefix of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
 
 :command:`table: NAME`
   Table name in Redshift database to be loaded data
@@ -1548,11 +1562,15 @@ Parameters
 
   * :command:`strict_transaction: false`
 
-:command:`status_table: STRING`
-  Prefix of status table names. *Default*: ``__digdag_status``.
-  So status table names are like `__digdag_status_0123abcd-456789ef`
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
 
-  * :command:`status_table: writable_schema.digdag_status_table`
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name prefix of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
 
 :command:`query: STRING`
   SELECT query. The results of the query are unloaded.

@@ -6,12 +6,10 @@ import java.util.UUID;
 public abstract class AbstractPersistentTransactionHelper
     implements TransactionHelper
 {
-    protected final String statusTableName;
     protected final Duration cleanupDuration;
 
-    protected AbstractPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+    protected AbstractPersistentTransactionHelper(Duration cleanupDuration)
     {
-        this.statusTableName = statusTableName;
         this.cleanupDuration = cleanupDuration;
     }
 

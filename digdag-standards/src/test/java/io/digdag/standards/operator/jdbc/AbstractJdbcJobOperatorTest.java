@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -66,7 +67,7 @@ public class AbstractJdbcJobOperatorTest
         }
 
         @Override
-        public TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration)
+        public TransactionHelper getStrictTransactionHelper(String statusTableName, String statusTableSchema, Duration cleanupDuration)
         {
             return null;
         }
@@ -222,7 +223,7 @@ public class AbstractJdbcJobOperatorTest
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
@@ -256,7 +257,7 @@ public class AbstractJdbcJobOperatorTest
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
@@ -319,7 +320,7 @@ public class AbstractJdbcJobOperatorTest
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
@@ -354,7 +355,7 @@ public class AbstractJdbcJobOperatorTest
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("___my_status_table"), eq(Duration.ofHours(48)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
@@ -389,7 +390,7 @@ public class AbstractJdbcJobOperatorTest
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
             TransactionHelper txHelper = mock(TransactionHelper.class);
-            when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+            when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
@@ -408,7 +409,7 @@ public class AbstractJdbcJobOperatorTest
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
             TransactionHelper txHelper = mock(TransactionHelper.class);
-            when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+            when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
@@ -427,7 +428,7 @@ public class AbstractJdbcJobOperatorTest
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
             TransactionHelper txHelper = mock(TransactionHelper.class);
-            when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+            when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {

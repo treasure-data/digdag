@@ -3,6 +3,7 @@ package io.digdag.standards.operator.redshift;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.ConfigException;
+import io.digdag.standards.operator.jdbc.TableReference;
 import io.digdag.standards.operator.pg.PgConnection;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 
@@ -42,9 +43,9 @@ public class RedshiftConnection
     }
 
     @Override
-    public TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration)
+    public TransactionHelper getStrictTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration)
     {
-        return new RedshiftPersistentTransactionHelper(statusTableName, cleanupDuration);
+        return new RedshiftPersistentTransactionHelper(statusTableSchema, statusTableName, cleanupDuration);
     }
 
     private static String escapeParam(String param)
@@ -229,18 +230,26 @@ public class RedshiftConnection
     private class RedshiftPersistentTransactionHelper
             implements TransactionHelper
     {
+        private String statusTableSchema;
         private String statusTableNamePrefix;
         private final Duration cleanupDuration;
 
-        RedshiftPersistentTransactionHelper(String statusTableNamePrefix, Duration cleanupDuration)
+        RedshiftPersistentTransactionHelper(String statusTableSchema, String statusTableNamePrefix, Duration cleanupDuration)
         {
+            this.statusTableSchema = statusTableSchema;
             this.statusTableNamePrefix = statusTableNamePrefix;
             this.cleanupDuration = cleanupDuration;
         }
 
-        private String statusTableName(UUID queryId)
+        private TableReference statusTableReference(UUID queryId)
         {
-            return String.format("%s_%s", statusTableNamePrefix, queryId);
+            String tableName = String.format("%s_%s", statusTableNamePrefix, queryId);
+            if (statusTableSchema != null) {
+                return TableReference.of(statusTableSchema, tableName);
+            }
+            else {
+                return TableReference.of(tableName);
+            }
         }
 
         @Override
@@ -288,7 +297,7 @@ public class RedshiftConnection
             executeStatement("update status row",
                     String.format(ENGLISH,
                         "UPDATE %s SET completed_at = SYSDATE WHERE query_id = '%s'",
-                        escapeIdent(statusTableName(queryId)),
+                        escapeTableReference(statusTableReference(queryId)),
                         queryId.toString())
                     );
             executeStatement("commit updated status row", "COMMIT");
@@ -310,7 +319,7 @@ public class RedshiftConnection
                     "CREATE TABLE %s" +
                     " (query_id, created_at, completed_at)" +
                     " AS SELECT '%s'::text, SYSDATE::timestamptz, NULL::timestamptz",
-                    escapeIdent(statusTableName(queryId)),
+                    escapeTableReference(statusTableReference(queryId)),
                     queryId.toString());
             try {
                 execute(sql);
@@ -322,12 +331,13 @@ public class RedshiftConnection
                     return false;
                 }
                 else {
-                    String desc = "Failed to create a status table."
-                        + ".\nhint: if you don't have permission to create tables, "
-                        + "please add \"strict_transaction: false\" option to disable "
-                        + "exactly-once transaction control that depends on this table.\n"
-                        + "Or please ask system administrator to let this user create tables\n"
-                        + "in this schema.";
+                    String desc = "Failed to create a status table.\n"
+                            + "hint: if you don't have permission to create tables, "
+                            + "please try one of these options:\n"
+                            + "1. add 'strict_transaction: false' option to disable "
+                            + "exactly-once transaction control that depends on this table.\n"
+                            + "2. ask system administrator to create a schema that this user can create a table "
+                            + "and set 'status_table_schema' option to it\n";
                     throw new DatabaseException(desc, ex);
                 }
             }
@@ -343,15 +353,15 @@ public class RedshiftConnection
         {
             try (Statement stmt = connection.createStatement()) {
                 // List up status tables
-                List<String> statusTables = new ArrayList<>();
+                List<TableReference> statusTables = new ArrayList<>();
                 {
                     ResultSet rs = stmt.executeQuery(
                             String.format(ENGLISH,
-                                    "SELECT tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
+                                    "SELECT schemaname, tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
                                     escapeParam(statusTableNamePrefix))
                     );
                     while (rs.next()) {
-                        statusTables.add(rs.getString(1));
+                        statusTables.add(TableReference.of(rs.getString(1), rs.getString(2)));
                     }
                 }
 
@@ -362,11 +372,11 @@ public class RedshiftConnection
                                 ResultSet rs = stmt.executeQuery(
                                         String.format(ENGLISH,
                                                 "SELECT query_id FROM %s WHERE completed_at < SYSDATE - INTERVAL '%d SECOND'",
-                                                escapeIdent(statusTable),
+                                                escapeTableReference(statusTable),
                                                 cleanupDuration.getSeconds())
                                 );
                                 if (rs.next()) {
-                                    stmt.executeUpdate(String.format("DROP TABLE %s", escapeIdent(statusTable)));
+                                    stmt.executeUpdate(String.format("DROP TABLE %s", escapeTableReference(statusTable)));
                                 }
                             }
                             catch (SQLException e) {

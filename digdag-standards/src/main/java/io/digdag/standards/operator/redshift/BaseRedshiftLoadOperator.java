@@ -178,18 +178,6 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
     {
         boolean strictTransaction = strictTransaction(params);
 
-        String statusTableName;
-        DurationParam statusTableCleanupDuration;
-        if (strictTransaction) {
-            statusTableName = params.get("status_table", String.class, "__digdag_status");
-            statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
-                    DurationParam.of(Duration.ofHours(24)));
-        }
-        else {
-            statusTableName = null;
-            statusTableCleanupDuration = null;
-        }
-
         try (RedshiftConnection connection = connect(connectionConfig)) {
             String query = buildSQLStatement(connection, statementConfig, false);
 
@@ -203,8 +191,8 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
 
             TransactionHelper txHelper;
             if (strictTransaction) {
-                txHelper = connection.getStrictTransactionHelper(statusTableName,
-                        statusTableCleanupDuration.getDuration());
+                txHelper = connection.getStrictTransactionHelper(
+                        statusTableSchema, statusTableName, statusTableCleanupDuration.getDuration());
             }
             else {
                 txHelper = new NoTransactionHelper();

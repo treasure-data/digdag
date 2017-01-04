@@ -113,7 +113,7 @@ public class PgConnectionTest
     public void txHelperPrepare()
             throws SQLException
     {
-        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
         UUID queryId = UUID.randomUUID();
         txHelper.prepare(queryId);
         verify(pgConnection).execute(eq(
@@ -136,7 +136,7 @@ public class PgConnectionTest
     {
         UUID queryId = UUID.randomUUID();
 
-        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
 
         // A corresponding status record exists which isn't completed
         ResultSet selectRs = setupMockSelectResultSet(queryId);
@@ -156,7 +156,7 @@ public class PgConnectionTest
     {
         UUID queryId = UUID.randomUUID();
 
-        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
 
         // A corresponding status record exists which is completed
         ResultSet selectRs = setupMockSelectResultSet(queryId);

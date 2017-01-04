@@ -14,6 +14,7 @@ import io.digdag.standards.operator.jdbc.AbstractJdbcConnection;
 import io.digdag.standards.operator.jdbc.AbstractPersistentTransactionHelper;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
+import io.digdag.standards.operator.jdbc.TableReference;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
 import static java.util.Locale.ENGLISH;
@@ -73,54 +74,66 @@ public class PgConnection
     }
 
     @Override
-    public TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration)
+    public TransactionHelper getStrictTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration)
     {
-        return new PgPersistentTransactionHelper(statusTableName, cleanupDuration);
+        return new PgPersistentTransactionHelper(statusTableSchema, statusTableName, cleanupDuration);
     }
 
-    protected class PgPersistentTransactionHelper
+    private class PgPersistentTransactionHelper
             extends AbstractPersistentTransactionHelper
     {
-        protected PgPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+        private final TableReference statusTableReference;
+
+        PgPersistentTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration)
         {
-            super(statusTableName, cleanupDuration);
+            super(cleanupDuration);
+            if (statusTableSchema != null) {
+                statusTableReference = TableReference.of(statusTableSchema, statusTableName);
+            }
+            else {
+                statusTableReference = TableReference.of(statusTableName);
+            }
         }
 
-        protected String statusTableName(UUID queryId)
+        TableReference statusTableReference()
         {
-            return statusTableName;
+            return statusTableReference;
         }
 
-        protected String buildCreateTable(UUID queryId)
+        String buildCreateTable()
         {
             return String.format(ENGLISH,
                     "CREATE TABLE IF NOT EXISTS %s" +
                     " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
-                    escapeIdent(statusTableName(queryId)));
+                    escapeTableReference(statusTableReference()));
         }
 
         @Override
         public void prepare(UUID queryId)
         {
-            String sql = buildCreateTable(queryId);
-            executeStatement("create a status table " + escapeIdent(statusTableName(queryId))
-                            + ".\nhint: if you don't have permission to create tables, "
-                            + "please add \"strict_transaction: false\" option to disable "
+            String sql = buildCreateTable();
+            executeStatement("create a status table " + escapeTableReference(statusTableReference()) + ".\n"
+                            + "hint: if you don't have permission to create tables, "
+                            + "please try one of these options:\n"
+                            + "1. add 'strict_transaction: false' option to disable "
                             + "exactly-once transaction control that depends on this table.\n"
-                            + "Or please ask system administrator to create this table using following command: "
-                            + sql + ";", sql);
+                            + "2. ask system administrator to create this table using the following command "
+                            + "and grant INSERT privilege to this user: " + sql + ";\n"
+                            + "3. ask system administrator to create a schema that this user can create a table "
+                            + "and set 'status_table_schema' option to it\n"
+                            , sql);
         }
 
         @Override
         public void cleanup()
         {
-            executeStatement("delete old query status rows from " + escapeIdent(statusTableName) + " table",
+            executeStatement("delete old query status rows from " + escapeTableReference(statusTableReference()) + " table",
                     String.format(ENGLISH,
                         "DELETE FROM %s WHERE query_id = ANY(" +
                         "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d' second" +
                         ")",
-                        escapeIdent(statusTableName),
-                        escapeIdent(statusTableName),
+                        escapeTableReference(statusTableReference()),
+                        escapeTableReference(statusTableReference()),
                         cleanupDuration.getSeconds())
                     );
         }
@@ -132,7 +145,7 @@ public class PgConnection
             try (Statement stmt = connection.createStatement()) {
                 ResultSet rs = stmt.executeQuery(String.format(ENGLISH,
                             "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
-                            escapeIdent(statusTableName),
+                            escapeTableReference(statusTableReference()),
                             queryId.toString())
                         );
                 if (rs.next()) {
@@ -165,7 +178,7 @@ public class PgConnection
             executeStatement("update status row",
                     String.format(ENGLISH,
                         "UPDATE %s SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '%s'",
-                        escapeIdent(statusTableName(queryId)),
+                        escapeTableReference(statusTableReference()),
                         queryId.toString())
                     );
             executeStatement("commit updated status row", "COMMIT");
@@ -177,7 +190,7 @@ public class PgConnection
             try {
                 execute(String.format(ENGLISH,
                             "INSERT INTO %s (query_id, created_at) VALUES ('%s', CURRENT_TIMESTAMP)",
-                            escapeIdent(statusTableName(queryId)), queryId.toString()));
+                            escapeTableReference(statusTableReference()), queryId.toString()));
                 // succeeded to insert a status row.
                 execute("COMMIT");
             }

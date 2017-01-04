@@ -19,7 +19,7 @@ interface JdbcConnection
     void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler)
         throws NotReadOnlyException;
 
-    TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration);
+    TransactionHelper getStrictTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration);
 
     default String escapeTableReference(TableReference ref)
     {
