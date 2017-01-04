@@ -342,6 +342,7 @@ public class AbstractJdbcJobOperatorTest
                 put("user", "testuser").
                 put("database", "testdb").
                 put("insert_into", "desttbl").
+                put("status_table_schema", "writable_schema").
                 put("status_table", "___my_status_table").
                 put("status_table_cleanup", "48h").
                 put("query", sql).build();
@@ -355,7 +356,7 @@ public class AbstractJdbcJobOperatorTest
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq("writable_schema"), eq("___my_status_table"), eq(Duration.ofDays(2)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
