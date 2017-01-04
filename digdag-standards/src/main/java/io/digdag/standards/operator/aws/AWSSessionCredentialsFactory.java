@@ -53,14 +53,15 @@ public class AWSSessionCredentialsFactory
         }
     }
 
-    public AWSSessionCredentialsFactory(String accessKeyId, String secretAccessKey, List<AcceptableUri> acceptableUris)
+    public AWSSessionCredentialsFactory(AWSCredentials base, List<AcceptableUri> acceptableUris)
     {
-        checkNotNull(accessKeyId);
-        checkNotNull(secretAccessKey);
+        checkNotNull(base);
+        checkNotNull(base.getAWSAccessKeyId());
+        checkNotNull(base.getAWSSecretKey());
         checkNotNull(acceptableUris);
 
-        this.accessKeyId = accessKeyId;
-        this.secretAccessKey = secretAccessKey;
+        this.accessKeyId = base.getAWSAccessKeyId();
+        this.secretAccessKey = base.getAWSSecretKey();
         this.acceptableUris = acceptableUris;
     }
 

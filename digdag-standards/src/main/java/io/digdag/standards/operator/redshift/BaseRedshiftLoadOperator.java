@@ -110,10 +110,7 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
         }
 
         AWSSessionCredentialsFactory sessionCredentialsFactory =
-                new AWSSessionCredentialsFactory(
-                        baseCredential.getAWSAccessKeyId(),
-                        baseCredential.getAWSSecretKey(),
-                        acceptableUris);
+                new AWSSessionCredentialsFactory(baseCredential, acceptableUris);
 
         Optional<String> roleArn = secrets.getSecretOptional("role_arn");
         if (roleArn.isPresent()) {
