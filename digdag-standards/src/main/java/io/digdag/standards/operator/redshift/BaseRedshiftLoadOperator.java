@@ -21,6 +21,7 @@ import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.LockConflictException;
 import io.digdag.standards.operator.jdbc.NoTransactionHelper;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +31,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 
-public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementConfig>
+abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementConfig>
         extends AbstractJdbcJobOperator<RedshiftConnectionConfig>
 {
-    private static final String POLL_INTERVAL = "pollInterval";
-    private static final int INITIAL_POLL_INTERVAL = 1;
-    private static final int MAX_POLL_INTERVAL = 1200;
-
     private static final String QUERY_ID = "queryId";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -145,20 +143,6 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
     @Override
     protected TaskResult run(Config params, Config state, RedshiftConnectionConfig connectionConfig)
     {
-        boolean strictTransaction = strictTransaction(params);
-
-        String statusTableName;
-        DurationParam statusTableCleanupDuration;
-        if (strictTransaction) {
-            statusTableName = params.get("status_table", String.class, "__digdag_status");
-            statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
-                    DurationParam.of(Duration.ofHours(24)));
-        }
-        else {
-            statusTableName = null;
-            statusTableCleanupDuration = null;
-        }
-
         UUID queryId;
         // generate query id
         if (!state.has(QUERY_ID)) {
@@ -175,6 +159,31 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
         T statementConfig = createStatementConfig(params, sessionCredentials, queryId.toString());
 
         beforeConnect(baseCredentials, statementConfig);
+
+        pollingRetryExecutor(TaskState.of(state), "load")
+                .retryIf(LockConflictException.class, x -> true)
+                .withErrorMessage("Redshift Load/Unload operation failed")
+                .runAction(s -> executeTask(params, connectionConfig, statementConfig, queryId));
+
+        return TaskResult.defaultBuilder(request).build();
+    }
+
+    private void executeTask(Config params, RedshiftConnectionConfig connectionConfig, T statementConfig, UUID queryId)
+            throws LockConflictException
+    {
+        boolean strictTransaction = strictTransaction(params);
+
+        String statusTableName;
+        DurationParam statusTableCleanupDuration;
+        if (strictTransaction) {
+            statusTableName = params.get("status_table", String.class, "__digdag_status");
+            statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
+                    DurationParam.of(Duration.ofHours(24)));
+        }
+        else {
+            statusTableName = null;
+            statusTableCleanupDuration = null;
+        }
 
         try (RedshiftConnection connection = connect(connectionConfig)) {
             String query = buildSQLStatement(connection, statementConfig, false);
@@ -212,14 +221,6 @@ public abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.Stat
             catch (Exception ex) {
                 logger.warn("Error during cleaning up status table. Ignoring.", ex);
             }
-
-            return TaskResult.defaultBuilder(request).build();
-        }
-        catch (LockConflictException ex) {
-            int pollingInterval = state.get(POLL_INTERVAL, Integer.class, INITIAL_POLL_INTERVAL);
-            // Set next interval for exponential backoff
-            state.set(POLL_INTERVAL, Math.min(pollingInterval * 2, MAX_POLL_INTERVAL));
-            throw TaskExecutionException.ofNextPolling(pollingInterval, ConfigElement.copyOf(state));
         }
         catch (DatabaseException ex) {
             // expected error that should suppress stacktrace by default

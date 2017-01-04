@@ -84,12 +84,12 @@ public class RedshiftIT
     private AmazonS3Client s3Client;
     private AmazonDynamoDBClient dynamoClient;
 
-    static class Content<T>
+    private static class Content<T>
     {
         String sourceFileName;
         ContentBuilder<T> builder;
 
-        public Content(String sourceFileName, ContentBuilder<T> builder)
+        Content(String sourceFileName, ContentBuilder<T> builder)
         {
             this.sourceFileName = sourceFileName;
             this.builder = builder;
