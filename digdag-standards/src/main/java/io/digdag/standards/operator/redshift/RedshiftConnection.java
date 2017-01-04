@@ -220,7 +220,7 @@ public class RedshiftConnection
     //
     //   1. BEGIN transaction
     //   2. CREATE TABLE ${status_table}_${queryId} (query_id, created_at, completed_at)
-    //      AS SELECT '${queryId}'::text, CURRENT_TIMESTAMP::timestamptz, NULL::timestamptz";
+    //      AS SELECT '${queryId}'::text, SYSDATE::timestamptz, NULL::timestamptz";
     //   3. If CREATE TABLE succeeded, this transaction is locking the table. Run the action,
     //      and COMMIT the transaction.
     //   4. If CREATE TABLE failed with SQL state 23505, another thread or node succeeded to
@@ -287,7 +287,7 @@ public class RedshiftConnection
         {
             executeStatement("update status row",
                     String.format(ENGLISH,
-                        "UPDATE %s SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '%s'",
+                        "UPDATE %s SET completed_at = SYSDATE WHERE query_id = '%s'",
                         escapeIdent(statusTableName(queryId)),
                         queryId.toString())
                     );
@@ -309,7 +309,7 @@ public class RedshiftConnection
             String sql = String.format(ENGLISH,
                     "CREATE TABLE %s" +
                     " (query_id, created_at, completed_at)" +
-                    " AS SELECT '%s'::text, CURRENT_TIMESTAMP::timestamptz, NULL::timestamptz",
+                    " AS SELECT '%s'::text, SYSDATE::timestamptz, NULL::timestamptz",
                     escapeIdent(statusTableName(queryId)),
                     queryId.toString());
             try {
@@ -361,7 +361,7 @@ public class RedshiftConnection
                             try {
                                 ResultSet rs = stmt.executeQuery(
                                         String.format(ENGLISH,
-                                                "SELECT query_id FROM %s WHERE completed_at < CURRENT_TIMESTAMP - INTERVAL '%d SECOND'",
+                                                "SELECT query_id FROM %s WHERE completed_at < SYSDATE - INTERVAL '%d SECOND'",
                                                 escapeIdent(statusTable),
                                                 cleanupDuration.getSeconds())
                                 );
