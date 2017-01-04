@@ -15,11 +15,13 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory;
 import io.digdag.standards.operator.aws.AWSSessionCredentialsFactory.AcceptableUri;
+import io.digdag.util.ConfigSelector;
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,28 @@ public class RedshiftLoadOperatorFactory
     public String getType()
     {
         return OPERATOR_TYPE;
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        ConfigSelector configSelectorForRedshift = RedshiftConnectionConfig.getSecretAccessList();
+        return configSelectorForRedshift
+                .withExtraSecretAccessList(
+                        ConfigSelector.builderOfScope("aws.redshift_load")
+                                .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn")
+                                .build()
+                )
+                .withExtraSecretAccessList(
+                        ConfigSelector.builderOfScope("aws.redshift")
+                                .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn")
+                                .build()
+                )
+                .withExtraSecretAccessList(
+                        ConfigSelector.builderOfScope("aws")
+                                .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn")
+                                .build()
+                );
     }
 
     @Override

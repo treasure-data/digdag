@@ -68,33 +68,41 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
 
     protected abstract List<SecretProvider> additionalSecretProvidersForCredentials(SecretProvider awsSecrets);
 
-    protected AWSCredentials createBaseCredential(SecretProvider secretProvider)
+    private String getSecretValue(SecretProvider secretProvider, String key)
     {
         SecretProvider awsSecrets = secretProvider.getSecrets("aws");
         SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
         List<SecretProvider> secretProviders = additionalSecretProvidersForCredentials(awsSecrets);
 
-        String keyOfAccess = "access_key_id";
-        String accessKeyId =
-                secretProviders.stream()
-                        .map(sp -> sp.getSecretOptional(keyOfAccess))
-                        .filter(Optional::isPresent)
-                        .findFirst()
-                        .orElse(Optional.absent())
-                        .or(redshiftSecrets.getSecretOptional(keyOfAccess))
-                        .or(() -> awsSecrets.getSecret(keyOfAccess));
+        return secretProviders.stream()
+                .map(sp -> sp.getSecretOptional(key))
+                .filter(Optional::isPresent)
+                .findFirst()
+                .orElse(Optional.absent())
+                .or(redshiftSecrets.getSecretOptional(key))
+                .or(() -> awsSecrets.getSecret(key));
+    }
 
-        String keyOfSecret = "secret_access_key";
-        String secretAccessKey =
-                secretProviders.stream()
-                        .map(sp -> sp.getSecretOptional(keyOfSecret))
-                        .filter(Optional::isPresent)
-                        .findFirst()
-                        .orElse(Optional.absent())
-                        .or(redshiftSecrets.getSecretOptional(keyOfSecret))
-                        .or(() -> awsSecrets.getSecret(keyOfSecret));
+    private Optional<String> getSecretOptionalValue(SecretProvider secretProvider, String key)
+    {
+        SecretProvider awsSecrets = secretProvider.getSecrets("aws");
+        SecretProvider redshiftSecrets = awsSecrets.getSecrets("redshift");
+        List<SecretProvider> secretProviders = additionalSecretProvidersForCredentials(awsSecrets);
 
-        return new BasicAWSCredentials(accessKeyId, secretAccessKey);
+        return secretProviders.stream()
+                .map(sp -> sp.getSecretOptional(key))
+                .filter(Optional::isPresent)
+                .findFirst()
+                .orElse(Optional.absent())
+                .or(redshiftSecrets.getSecretOptional(key))
+                .or(awsSecrets.getSecretOptional(key));
+    }
+
+    private AWSCredentials createBaseCredential(SecretProvider secretProvider)
+    {
+        return new BasicAWSCredentials(
+                getSecretValue(secretProvider, "access_key_id"),
+                getSecretValue(secretProvider, "secret_access_key"));
     }
 
     private AWSSessionCredentials createSessionCredentials(Config config, SecretProvider secrets, AWSCredentials baseCredential)
@@ -112,7 +120,7 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
         AWSSessionCredentialsFactory sessionCredentialsFactory =
                 new AWSSessionCredentialsFactory(baseCredential, acceptableUris);
 
-        Optional<String> roleArn = secrets.getSecretOptional("role_arn");
+        Optional<String> roleArn = getSecretOptionalValue(secrets, "role_arn");
         if (roleArn.isPresent()) {
             sessionCredentialsFactory.withRoleArn(roleArn.get());
             Optional<String> roleSessionName = secrets.getSecretOptional("role_session_name");

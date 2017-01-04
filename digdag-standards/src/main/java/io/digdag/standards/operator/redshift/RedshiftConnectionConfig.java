@@ -20,7 +20,7 @@ public abstract class RedshiftConnectionConfig
 
     static ConfigSelector getSecretAccessList()
     {
-        return ConfigSelector.builderOfScope("redshift")
+        return ConfigSelector.builderOfScope("aws.redshift")
             .addSecretAccess("user", "host", "port", "database", "ssl", "schema")
             .addSecretOnlyAccess("password")
             .build();

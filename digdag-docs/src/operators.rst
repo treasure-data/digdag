@@ -1051,7 +1051,7 @@ redshift>: Redshift operations
 Secrets
 ~~~~~~~
 
-:command:`redshift.password: NAME`
+:command:`aws.redshift.password: NAME`
   Optional user password to use when connecting to the Redshift database.
 
 Parameters
@@ -1193,7 +1193,7 @@ redshift_load>: Redshift load operations
 Secrets
 ~~~~~~~
 
-:command:`redshift.password: NAME`
+:command:`aws.redshift.password: NAME`
   Optional user password to use when connecting to the Redshift database.
 
 :command:`aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
@@ -1495,7 +1495,7 @@ redshift_unload>: Redshift load operations
 Secrets
 ~~~~~~~
 
-:command:`redshift.password: NAME`
+:command:`aws.redshift.password: NAME`
   Optional user password to use when connecting to the Redshift database.
 
 :command:`aws.redshift_unload.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
