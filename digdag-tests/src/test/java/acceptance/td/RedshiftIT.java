@@ -82,7 +82,6 @@ public class RedshiftIT
     private String database;
     private String restrictedUserPassword;
     private String dataSchemaName;
-    private String statusTableSchemaName;
     private Path configFile;
     private Path configFileWithoutFederation;
     private Path configFileWithRestrictedUser;

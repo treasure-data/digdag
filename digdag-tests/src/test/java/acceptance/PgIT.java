@@ -1,8 +1,10 @@
 package acceptance;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.jdbc.DatabaseException;
@@ -14,6 +16,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
 import utils.TestUtils;
 
 import java.io.BufferedReader;
@@ -31,26 +34,30 @@ import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
-import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
 import static utils.TestUtils.configFactory;
 import static utils.TestUtils.copyResource;
 
 public class PgIT
 {
-    private static final String POSTGRESQL = System.getenv("DIGDAG_TEST_POSTGRESQL");
+    private static final String PG_PROPERTIES = System.getenv("DIGDAG_TEST_POSTGRESQL");
+    private static final String PG_IT_CONFIG = System.getenv("PG_IT_CONFIG");
     private static final String RESTRICTED_USER = "not_admin";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
+    private static final String DATA_SECHEMA = "data_schema";
+    private static final String STATUS_TABLE_SECHEMA = "status_table_schema";
 
     private static final Config EMPTY_CONFIG = configFactory().create();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+    private String host;
+    private String user;
     private String database;
-    private Properties props;
+    private String tempDatabase;
+    private String dataSchemaName;
 
     private Path root()
     {
@@ -59,38 +66,87 @@ public class PgIT
 
     @Before
     public void setUp()
+            throws IOException
     {
-        assumeThat(POSTGRESQL, not(isEmptyOrNullString()));
+        assumeTrue((PG_PROPERTIES != null && !PG_PROPERTIES.isEmpty())
+                || (PG_IT_CONFIG != null && !PG_IT_CONFIG.isEmpty()));
 
-        props = new Properties();
-        try (StringReader reader = new StringReader(POSTGRESQL)) {
-            props.load(reader);
+        if (PG_PROPERTIES != null && !PG_PROPERTIES.isEmpty()) {
+            Properties props = new Properties();
+            try (StringReader reader = new StringReader(PG_PROPERTIES)) {
+                props.load(reader);
+            }
+            catch (IOException ex) {
+                throw Throwables.propagate(ex);
+            }
+
+            host = (String) props.get("host");
+            user = (String) props.get("user");
+            database = (String) props.get("database");
         }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
+        else {
+            ObjectMapper objectMapper = DigdagClient.objectMapper();
+            Config config = Config.deserializeFromJackson(objectMapper, objectMapper.readTree(PG_IT_CONFIG));
+            host = config.get("host", String.class);
+            user = config.get("user", String.class);
+            database = config.get("database", String.class);
+
         }
+        tempDatabase = "pgoptest_" + UUID.randomUUID().toString().replace('-', '_');
 
-        database = "pgoptest_" + UUID.randomUUID().toString().replace('-', '_');
+        createTempDatabase();
 
-        createTempDatabase(props, database);
-
-        setupRestrictedUser(props, database);
-
-        setupSourceTable(props, database);
+        setupRestrictedUser();
     }
 
     @After
     public void tearDown()
     {
-        if (props != null) {
+        if (user != null) {
             try {
-                if (database != null) {
-                    removeTempDatabase(props, database);
+                if (tempDatabase != null) {
+                    removeTempDatabase();
                 }
             }
             finally {
-                removeRestrictedUser(props);
+                removeRestrictedUser();
             }
+        }
+    }
+
+    private void switchSearchPath(PgConnection conn)
+    {
+        if (dataSchemaName != null) {
+            conn.executeUpdate(String.format("SET SEARCH_PATH TO '%s'", dataSchemaName));
+        }
+    }
+
+    private void setupSchema(String schemaName)
+    {
+        setupSchema(schemaName, false);
+    }
+
+    private void setupSchema(String schemaName, boolean withCreatePrivilegeToRestrictedUser)
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate(String.format("CREATE SCHEMA %s", schemaName));
+            conn.executeUpdate(String.format("GRANT USAGE ON SCHEMA %s TO %s", schemaName, RESTRICTED_USER));
+            if (withCreatePrivilegeToRestrictedUser) {
+                conn.executeUpdate(String.format("GRANT CREATE ON SCHEMA %s TO %s", schemaName, RESTRICTED_USER));
+            }
+        }
+    }
+
+    private void grantRestrictedUserOnTheSchema(String schemaName)
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
+            conn.executeUpdate(String.format("GRANT SELECT ON %s TO %s", SRC_TABLE, RESTRICTED_USER));
+            conn.executeUpdate(String.format("GRANT INSERT ON %s TO %s", DEST_TABLE, RESTRICTED_USER));
         }
     }
 
@@ -100,7 +156,11 @@ public class PgIT
     {
         copyResource("acceptance/pg/select_download.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
-        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + database, "pg.dig");
+
+        setupSourceTable();
+
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        assertThat(status.code(), is(0));
 
         List<String> csvLines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
@@ -121,11 +181,13 @@ public class PgIT
         copyResource("acceptance/pg/create_table.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
-        setupDestTable(props, database);
+        setupSourceTable();
+        setupDestTable();
 
-        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + database, "pg.dig");
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        assertThat(status.code(), is(0));
 
-        assertTableContents(props, database, DEST_TABLE, Arrays.asList(
+        assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
                 ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
                 ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f)
@@ -139,11 +201,45 @@ public class PgIT
         copyResource("acceptance/pg/insert_into.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
-        setupDestTable(props, database);
+        setupSourceTable();
+        setupDestTable();
 
-        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + database, "pg.dig");
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        assertThat(status.code(), is(0));
 
-        assertTableContents(props, database, DEST_TABLE, Arrays.asList(
+        assertTableContents(DEST_TABLE, Arrays.asList(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
+                ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
+        ));
+    }
+
+    @Test
+    public void insertIntoWithRestrictionOnPublicSchema()
+            throws Exception
+    {
+        copyResource("acceptance/pg/insert_into_with_schema.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        dataSchemaName = DATA_SECHEMA;
+        setupSchema(dataSchemaName);
+        setupSourceTable();
+        setupDestTable();
+        grantRestrictedUserOnTheSchema(dataSchemaName);
+
+        String statusTableSchema = STATUS_TABLE_SECHEMA;
+        setupSchema(statusTableSchema, true);
+
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "user_in_config=" + RESTRICTED_USER,
+                "-p", "schema_in_config=" + dataSchemaName,
+                "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "pg.dig");
+        assertThat(status.code(), is(0));
+
+        assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
                 ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
                 ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
@@ -158,11 +254,13 @@ public class PgIT
         copyResource("acceptance/pg/insert_into_wo_st.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
-        setupDestTable(props, database);
+        setupSourceTable();
+        setupDestTable();
 
-        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + database, "pg.dig");
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        assertThat(status.code(), is(0));
 
-        assertTableContents(props, database, DEST_TABLE, Arrays.asList(
+        assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
                 ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
                 ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
@@ -170,11 +268,12 @@ public class PgIT
         ));
     }
 
-    private void setupSourceTable(Properties props, String database)
+    private void setupSourceTable()
     {
-        SecretProvider secrets = getDatabaseSecrets(props, database);
+        SecretProvider secrets = getDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
             conn.executeUpdate("CREATE TABLE " + SRC_TABLE + " (id integer, name text, score real)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (0, 'foo', 3.14)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (1, 'bar', 1.23)");
@@ -184,9 +283,9 @@ public class PgIT
         }
     }
 
-    private void setupRestrictedUser(Properties props, String database)
+    private void setupRestrictedUser()
     {
-        SecretProvider secrets = getDatabaseSecrets(props, database);
+        SecretProvider secrets = getDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             try {
@@ -202,11 +301,12 @@ public class PgIT
         }
     }
 
-    private void setupDestTable(Properties props, String database)
+    private void setupDestTable()
     {
-        SecretProvider secrets = getDatabaseSecrets(props, database);
+        SecretProvider secrets = getDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
             conn.executeUpdate("CREATE TABLE IF NOT EXISTS " + DEST_TABLE + " (id integer, name text, score real)");
             conn.executeUpdate("DELETE FROM " + DEST_TABLE + " WHERE id = 9");
             conn.executeUpdate("INSERT INTO " + DEST_TABLE + " (id, name, score) VALUES (9, 'zzz', 9.99)");
@@ -215,12 +315,13 @@ public class PgIT
         }
     }
 
-    private void assertTableContents(Properties props, String database, String table, List<Map<String, Object>> expected)
+    private void assertTableContents(String table, List<Map<String, Object>> expected)
             throws NotReadOnlyException
     {
-        SecretProvider secrets = getDatabaseSecrets(props, database);
+        SecretProvider secrets = getDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            switchSearchPath(conn);
             conn.executeReadOnlyQuery(String.format("SELECT * FROM %s ORDER BY id", table),
                     (rs) -> {
                         assertThat(rs.getColumnNames(), is(Arrays.asList("id", "name", "score")));
@@ -246,44 +347,44 @@ public class PgIT
         }
     }
 
-    private SecretProvider getDatabaseSecrets(Properties props, String database)
+    private SecretProvider getDatabaseSecrets()
     {
         return key -> Optional.fromNullable(ImmutableMap.of(
-                "host", (String) props.get("host"),
-                "user", (String) props.get("user"),
+                "host", host,
+                "user", user,
+                "database", tempDatabase
+        ).get(key));
+    }
+
+    private SecretProvider getAdminDatabaseSecrets()
+    {
+        return key -> Optional.fromNullable(ImmutableMap.of(
+                "host", host,
+                "user", user,
                 "database", database
         ).get(key));
     }
 
-    private SecretProvider getAdminDatabaseSecrets(Properties props)
+    private void createTempDatabase()
     {
-        return key -> Optional.fromNullable(ImmutableMap.of(
-                "host", (String) props.get("host"),
-                "user", (String) props.get("user"),
-                "database", (String) props.get("database")
-        ).get(key));
-    }
-
-    private void createTempDatabase(Properties props, String tempDatabase)
-    {
-        SecretProvider secrets = getAdminDatabaseSecrets(props);
+        SecretProvider secrets = getAdminDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("CREATE DATABASE " + tempDatabase);
         }
     }
 
-    private void removeTempDatabase(Properties props, String tempDatabase)
+    private void removeTempDatabase()
     {
-        SecretProvider secrets = getAdminDatabaseSecrets(props);
+        SecretProvider secrets = getAdminDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("DROP DATABASE IF EXISTS " + tempDatabase);
         }
     }
-    private void removeRestrictedUser(Properties props)
+    private void removeRestrictedUser()
     {
-        SecretProvider secrets = getAdminDatabaseSecrets(props);
+        SecretProvider secrets = getAdminDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("DROP ROLE IF EXISTS " + RESTRICTED_USER);
