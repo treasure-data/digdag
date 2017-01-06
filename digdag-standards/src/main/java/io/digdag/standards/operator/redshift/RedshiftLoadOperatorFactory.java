@@ -31,8 +31,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
-
 public class RedshiftLoadOperatorFactory
         implements OperatorFactory
 {
@@ -160,7 +158,7 @@ public class RedshiftLoadOperatorFactory
                 }
                 catch (RetryExecutor.RetryGiveupException e) {
                     throw new TaskExecutionException(
-                            "Failed to fetch a manifest file: " + from, buildExceptionErrorConfig(e));
+                            "Failed to fetch a manifest file: " + from, e);
                 }
             }
             return builder.build();
