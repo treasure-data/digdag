@@ -6,17 +6,17 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Exchanger;
 
-public class CsvWriter
+class CsvWriter
     implements Closeable
 {
     private final Writer out;
 
-    public CsvWriter(Writer out)
+    CsvWriter(Writer out)
     {
         this.out = out;
     }
 
-    public void addCsvHeader(List<String> columnNames)
+    void addCsvHeader(List<String> columnNames)
             throws IOException
     {
         boolean first = true;
@@ -28,7 +28,7 @@ public class CsvWriter
         out.write("\r\n");
     }
 
-    public void addCsvRow(List<String> row)
+    void addCsvRow(List<String> row)
             throws IOException
     {
         for (int i = 0; i < row.size(); i++) {
@@ -41,7 +41,7 @@ public class CsvWriter
         out.write("\r\n");
     }
 
-    public void addCsvText(String value)
+    private void addCsvText(String value)
             throws IOException
     {
         if (value != null) {
@@ -53,7 +53,7 @@ public class CsvWriter
     private static final char ESCAPE_CHAR = '"';
     private static final char QUOTE_CHAR = '"';
 
-    public String escapeAndQuoteCsvValue(String v)
+    private String escapeAndQuoteCsvValue(String v)
     {
         if (v.isEmpty()) {
             StringBuilder sb = new StringBuilder();

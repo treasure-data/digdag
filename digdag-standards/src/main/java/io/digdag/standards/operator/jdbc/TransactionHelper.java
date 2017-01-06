@@ -9,7 +9,7 @@ public interface TransactionHelper
         void run();
     }
 
-    void prepare();
+    void prepare(UUID queryId);
 
     void cleanup();
 

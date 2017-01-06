@@ -6,12 +6,10 @@ import java.util.UUID;
 public abstract class AbstractPersistentTransactionHelper
     implements TransactionHelper
 {
-    protected final String statusTableName;
     protected final Duration cleanupDuration;
 
-    public AbstractPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+    protected AbstractPersistentTransactionHelper(Duration cleanupDuration)
     {
-        this.statusTableName = statusTableName;
         this.cleanupDuration = cleanupDuration;
     }
 
@@ -36,7 +34,7 @@ public abstract class AbstractPersistentTransactionHelper
         }
     }
 
-    protected boolean beginTransactionAndLockStatusRow(UUID queryId)
+    private boolean beginTransactionAndLockStatusRow(UUID queryId)
             throws LockConflictException
     {
         do {
@@ -55,7 +53,7 @@ public abstract class AbstractPersistentTransactionHelper
         } while (true);
     }
 
-    protected static enum StatusRow
+    protected enum StatusRow
     {
         LOCKED_COMPLETED,
         LOCKED_NOT_COMPLETED,
@@ -65,7 +63,7 @@ public abstract class AbstractPersistentTransactionHelper
     protected abstract StatusRow lockStatusRow(UUID queryId)
             throws LockConflictException;
 
-    protected void beginTransaction()
+    private void beginTransaction()
     {
         executeStatement("begin a transaction", "BEGIN");
     }

@@ -1,0 +1,8 @@
+timezone: UTC
+
++run:
+  redshift>: select_table.sql
+  host: ${redshift_host}
+  database: ${redshift_database}
+  user: ${redshift_user}
+  download_file: ${download_file_in_config}

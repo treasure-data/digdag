@@ -113,8 +113,9 @@ public class PgConnectionTest
     public void txHelperPrepare()
             throws SQLException
     {
-        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
-        txHelper.prepare();
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
+        UUID queryId = UUID.randomUUID();
+        txHelper.prepare(queryId);
         verify(pgConnection).execute(eq(
                 "CREATE TABLE IF NOT EXISTS \"__digdag_status\"" +
                         " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)"));
@@ -135,7 +136,7 @@ public class PgConnectionTest
     {
         UUID queryId = UUID.randomUUID();
 
-        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
 
         // A corresponding status record exists which isn't completed
         ResultSet selectRs = setupMockSelectResultSet(queryId);
@@ -145,7 +146,7 @@ public class PgConnectionTest
         AtomicBoolean called = new AtomicBoolean(false);
         assertThat(txHelper.lockedTransaction(queryId, () -> called.set(true)), is(true));
         verify(pgConnection).execute(eq("BEGIN"));
-        verify(pgConnection).execute(eq("UPDATE \"__digdag_status\" SET completed_at = now() WHERE query_id = '" + queryId + "'"));
+        verify(pgConnection).execute(eq("UPDATE \"__digdag_status\" SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '" + queryId + "'"));
         verify(pgConnection).execute(eq("COMMIT"));
     }
 
@@ -155,7 +156,7 @@ public class PgConnectionTest
     {
         UUID queryId = UUID.randomUUID();
 
-        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
 
         // A corresponding status record exists which is completed
         ResultSet selectRs = setupMockSelectResultSet(queryId);

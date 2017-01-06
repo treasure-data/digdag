@@ -6,12 +6,14 @@ public class NoTransactionHelper
     implements TransactionHelper
 {
     @Override
-    public void prepare()
-    { }
+    public void prepare(UUID queryId)
+    {
+    }
 
     @Override
     public void cleanup()
-    { }
+    {
+    }
 
     @Override
     public boolean lockedTransaction(UUID queryId, TransactionAction action)

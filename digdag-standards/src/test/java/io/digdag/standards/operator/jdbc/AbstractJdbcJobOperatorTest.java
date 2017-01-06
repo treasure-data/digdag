@@ -11,10 +11,8 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import org.immutables.value.Value;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -28,6 +26,7 @@ import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -38,7 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AbstractJdbcOperatorTest
+public class AbstractJdbcJobOperatorTest
 {
     public void setUp()
             throws Exception
@@ -68,16 +67,16 @@ public class AbstractJdbcOperatorTest
         }
 
         @Override
-        public TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration)
+        public TransactionHelper getStrictTransactionHelper(String statusTableName, String statusTableSchema, Duration cleanupDuration)
         {
             return null;
         }
     }
 
-    public static class TestOperator
-        extends AbstractJdbcOperator<TestConnectionConfig>
+    public static class TestJobOperator
+        extends AbstractJdbcJobOperator<TestConnectionConfig>
     {
-        public TestOperator(OperatorContext context, TemplateEngine templateEngine)
+        public TestJobOperator(OperatorContext context, TemplateEngine templateEngine)
         {
             super(context, templateEngine);
         }
@@ -99,14 +98,20 @@ public class AbstractJdbcOperatorTest
         {
             return "testop";
         }
+
+        @Override
+        protected SecretProvider getSecretsForConnectionConfig()
+        {
+            return context.getSecrets().getSecrets("test");
+        }
     }
 
-    private TestOperator getJdbcOperator(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
+    private TestJobOperator getJdbcOperator(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
             throws IOException
     {
         final TaskRequest taskRequest = testHelper.createTaskRequest(configInput, lastState);
         TemplateEngine templateEngine = testHelper.injector().getInstance(TemplateEngine.class);
-        return Mockito.spy(new TestOperator(new OperatorContext() {
+        return Mockito.spy(new TestJobOperator(new OperatorContext() {
             @Override
             public Path getProjectPath()
             {
@@ -141,7 +146,7 @@ public class AbstractJdbcOperatorTest
     private void runTaskReadOnly(Map<String, Object> configInput, String sql)
             throws IOException, NotReadOnlyException
     {
-        TestOperator operator = getJdbcOperator(configInput, Optional.absent());
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.absent());
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
@@ -155,7 +160,7 @@ public class AbstractJdbcOperatorTest
     private UUID runTaskWithoutQueryId(Map<String, Object> configInput)
             throws IOException
     {
-        TestOperator operator = getJdbcOperator(configInput, Optional.absent());
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.absent());
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
@@ -173,7 +178,7 @@ public class AbstractJdbcOperatorTest
         return queryId;
     }
 
-    private void runTaskWithQueryId(TestOperator operator)
+    private void runTaskWithQueryId(TestJobOperator operator)
     {
         TaskResult taskResult = operator.runTask();
         assertThat(taskResult, is(notNullValue()));
@@ -213,19 +218,19 @@ public class AbstractJdbcOperatorTest
         UUID queryId = runTaskWithoutQueryId(configInput);
 
         // Next, executes the query and updates statuses
-        TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -247,19 +252,19 @@ public class AbstractJdbcOperatorTest
         UUID queryId = runTaskWithoutQueryId(configInput);
 
         // Next, executes the query and updates statuses
-        TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -281,7 +286,7 @@ public class AbstractJdbcOperatorTest
         UUID queryId = runTaskWithoutQueryId(configInput);
 
         // Next, executes the query and updates statuses
-        TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
@@ -310,19 +315,19 @@ public class AbstractJdbcOperatorTest
         UUID queryId = runTaskWithoutQueryId(configInput);
 
         // Next, executes the query and updates statuses
-        TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildInsertStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -337,6 +342,7 @@ public class AbstractJdbcOperatorTest
                 put("user", "testuser").
                 put("database", "testdb").
                 put("insert_into", "desttbl").
+                put("status_table_schema", "writable_schema").
                 put("status_table", "___my_status_table").
                 put("status_table_cleanup", "48h").
                 put("query", sql).build();
@@ -345,19 +351,19 @@ public class AbstractJdbcOperatorTest
         UUID queryId = runTaskWithoutQueryId(configInput);
 
         // Next, executes the query and updates statuses
-        TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
+        TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
         TransactionHelper txHelper = mock(TransactionHelper.class);
-        when(connection.getStrictTransactionHelper(eq("___my_status_table"), eq(Duration.ofHours(48)))).thenReturn(txHelper);
+        when(connection.getStrictTransactionHelper(eq("writable_schema"), eq("___my_status_table"), eq(Duration.ofDays(2)))).thenReturn(txHelper);
 
         runTaskWithQueryId(operator);
 
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildInsertStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -380,12 +386,12 @@ public class AbstractJdbcOperatorTest
 
         // Next, executes the query and updates statuses
         {
-            TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
+            TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
             TransactionHelper txHelper = mock(TransactionHelper.class);
-            when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+            when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
@@ -399,12 +405,12 @@ public class AbstractJdbcOperatorTest
         }
 
         {
-            TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId, "pollInterval", 2)));
+            TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId, "pollInterval", 2)));
 
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
             TransactionHelper txHelper = mock(TransactionHelper.class);
-            when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+            when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
@@ -418,12 +424,12 @@ public class AbstractJdbcOperatorTest
         }
 
         {
-            TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId, "pollInterval", 1024)));
+            TestJobOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId, "pollInterval", 1024)));
 
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
             TransactionHelper txHelper = mock(TransactionHelper.class);
-            when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
+            when(connection.getStrictTransactionHelper(eq(null), eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {

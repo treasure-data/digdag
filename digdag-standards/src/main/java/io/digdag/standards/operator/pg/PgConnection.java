@@ -6,18 +6,15 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
-import io.digdag.client.config.Config;
 import io.digdag.standards.operator.jdbc.LockConflictException;
-import io.digdag.util.DurationParam;
 import io.digdag.standards.operator.jdbc.AbstractJdbcConnection;
 import io.digdag.standards.operator.jdbc.AbstractPersistentTransactionHelper;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
+import io.digdag.standards.operator.jdbc.TableReference;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
 import static java.util.Locale.ENGLISH;
@@ -77,40 +74,66 @@ public class PgConnection
     }
 
     @Override
-    public TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration)
+    public TransactionHelper getStrictTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration)
     {
-        return new PgPersistentTransactionHelper(statusTableName, cleanupDuration);
+        return new PgPersistentTransactionHelper(statusTableSchema, statusTableName, cleanupDuration);
     }
 
     private class PgPersistentTransactionHelper
             extends AbstractPersistentTransactionHelper
     {
-        PgPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+        private final TableReference statusTableReference;
+
+        PgPersistentTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration)
         {
-            super(statusTableName, cleanupDuration);
+            super(cleanupDuration);
+            if (statusTableSchema != null) {
+                statusTableReference = TableReference.of(statusTableSchema, statusTableName);
+            }
+            else {
+                statusTableReference = TableReference.of(statusTableName);
+            }
+        }
+
+        TableReference statusTableReference()
+        {
+            return statusTableReference;
+        }
+
+        String buildCreateTable()
+        {
+            return String.format(ENGLISH,
+                    "CREATE TABLE IF NOT EXISTS %s" +
+                    " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
+                    escapeTableReference(statusTableReference()));
         }
 
         @Override
-        public void prepare()
+        public void prepare(UUID queryId)
         {
-            executeStatement("create a status table " + escapeIdent(statusTableName),
-                    String.format(ENGLISH,
-                        "CREATE TABLE IF NOT EXISTS %s" +
-                        " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
-                        escapeIdent(statusTableName))
-                   );
+            String sql = buildCreateTable();
+            executeStatement("create a status table " + escapeTableReference(statusTableReference()) + ".\n"
+                            + "hint: if you don't have permission to create tables, "
+                            + "please try one of these options:\n"
+                            + "1. add 'strict_transaction: false' option to disable "
+                            + "exactly-once transaction control that depends on this table.\n"
+                            + "2. ask system administrator to create this table using the following command "
+                            + "and grant INSERT privilege to this user: " + sql + ";\n"
+                            + "3. ask system administrator to create a schema that this user can create a table "
+                            + "and set 'status_table_schema' option to it\n"
+                            , sql);
         }
 
         @Override
         public void cleanup()
         {
-            executeStatement("delete old query status rows from " + escapeIdent(statusTableName) + " table",
+            executeStatement("delete old query status rows from " + escapeTableReference(statusTableReference()) + " table",
                     String.format(ENGLISH,
                         "DELETE FROM %s WHERE query_id = ANY(" +
                         "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d' second" +
                         ")",
-                        escapeIdent(statusTableName),
-                        escapeIdent(statusTableName),
+                        escapeTableReference(statusTableReference()),
+                        escapeTableReference(statusTableReference()),
                         cleanupDuration.getSeconds())
                     );
         }
@@ -122,7 +145,7 @@ public class PgConnection
             try (Statement stmt = connection.createStatement()) {
                 ResultSet rs = stmt.executeQuery(String.format(ENGLISH,
                             "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
-                            escapeIdent(statusTableName),
+                            escapeTableReference(statusTableReference()),
                             queryId.toString())
                         );
                 if (rs.next()) {
@@ -154,12 +177,11 @@ public class PgConnection
         {
             executeStatement("update status row",
                     String.format(ENGLISH,
-                        "UPDATE %s SET completed_at = now() WHERE query_id = '%s'",
-                        escapeIdent(statusTableName),
+                        "UPDATE %s SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '%s'",
+                        escapeTableReference(statusTableReference()),
                         queryId.toString())
                     );
-            executeStatement("commit updated status row",
-                    "COMMIT");
+            executeStatement("commit updated status row", "COMMIT");
         }
 
         @Override
@@ -167,8 +189,8 @@ public class PgConnection
         {
             try {
                 execute(String.format(ENGLISH,
-                            "INSERT INTO %s (query_id, created_at) VALUES ('%s', now())",
-                            escapeIdent(statusTableName), queryId.toString()));
+                            "INSERT INTO %s (query_id, created_at) VALUES ('%s', CURRENT_TIMESTAMP)",
+                            escapeTableReference(statusTableReference()), queryId.toString()));
                 // succeeded to insert a status row.
                 execute("COMMIT");
             }
@@ -184,7 +206,7 @@ public class PgConnection
             }
         }
 
-        private boolean isConflictException(SQLException ex)
+        boolean isConflictException(SQLException ex)
         {
             return "23505".equals(ex.getSQLState());
         }

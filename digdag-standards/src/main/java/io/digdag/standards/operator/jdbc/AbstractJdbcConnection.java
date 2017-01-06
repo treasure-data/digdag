@@ -1,17 +1,15 @@
 package io.digdag.standards.operator.jdbc;
 
-import java.util.Properties;
 import java.util.regex.Pattern;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
+import io.digdag.standards.operator.redshift.RedshiftConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;
@@ -25,7 +23,7 @@ public abstract class AbstractJdbcConnection
 
     private String quoteString;
 
-    public AbstractJdbcConnection(Connection connection)
+    protected AbstractJdbcConnection(Connection connection)
     {
         this.connection = connection;
         try {
@@ -94,7 +92,7 @@ public abstract class AbstractJdbcConnection
         }
     }
 
-    protected void skipResultSet(ResultSet rs)
+    private void skipResultSet(ResultSet rs)
         throws SQLException
     {
         while (rs.next())
@@ -114,7 +112,7 @@ public abstract class AbstractJdbcConnection
 
     @VisibleForTesting
     public void execute(String sql)
-        throws SQLException
+            throws SQLException
     {
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(sql);

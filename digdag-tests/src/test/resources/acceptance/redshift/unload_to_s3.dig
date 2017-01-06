@@ -1,0 +1,17 @@
+timezone: UTC
+
+_export:
+  redshift:
+    host: bad-redshift-hostname.com
+    database: ${redshift_database}
+    user: ${redshift_user}
+
+  redshift_unload:
+    host: ${redshift_host}
+    database: ${redshift_database}
+    user: ${redshift_user}
+
++run:
+  redshift_unload>:
+  query: SELECT * FROM src_tbl
+  to: ${to_in_config}

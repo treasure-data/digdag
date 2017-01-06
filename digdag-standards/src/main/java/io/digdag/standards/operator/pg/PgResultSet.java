@@ -1,14 +1,12 @@
 package io.digdag.standards.operator.pg;
 
-import java.sql.Statement;
-import java.sql.SQLException;
 import java.sql.ResultSet;
 import io.digdag.standards.operator.jdbc.AbstractJdbcResultSet;
 
-public class PgResultSet
+class PgResultSet
     extends AbstractJdbcResultSet
 {
-    public PgResultSet(ResultSet resultSet)
+    PgResultSet(ResultSet resultSet)
     {
         super(resultSet);
     }

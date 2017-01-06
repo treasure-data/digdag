@@ -9,10 +9,10 @@ import com.google.common.collect.ImmutableList;
 public abstract class AbstractJdbcResultSet
     implements JdbcResultSet
 {
-    protected final ResultSet resultSet;
+    private final ResultSet resultSet;
     private final List<String> columnNames;
 
-    public AbstractJdbcResultSet(ResultSet resultSet)
+    protected AbstractJdbcResultSet(ResultSet resultSet)
     {
         this.resultSet = resultSet;
         try {
@@ -50,7 +50,7 @@ public abstract class AbstractJdbcResultSet
         }
     }
 
-    protected List<Object> getObjects() throws SQLException
+    private List<Object> getObjects() throws SQLException
     {
         Object[] results = new Object[columnNames.size()];
         for (int i=0; i < results.length; i++) {
