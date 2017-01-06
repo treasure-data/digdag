@@ -98,14 +98,14 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
                 .or(awsSecrets.getSecretOptional(key));
     }
 
-    private AWSCredentials createBaseCredential(SecretProvider secretProvider)
+    private BasicAWSCredentials createBaseCredential(SecretProvider secretProvider)
     {
         return new BasicAWSCredentials(
                 getSecretValue(secretProvider, "access_key_id"),
                 getSecretValue(secretProvider, "secret_access_key"));
     }
 
-    private AWSSessionCredentials createSessionCredentials(Config config, SecretProvider secrets, AWSCredentials baseCredential)
+    private AWSSessionCredentials createSessionCredentials(Config config, SecretProvider secrets, BasicAWSCredentials baseCredential)
     {
         List<AcceptableUri> acceptableUris = buildAcceptableUriForSessionCredentials(config, baseCredential);
 
@@ -159,7 +159,7 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
         }
         queryId = state.get(QUERY_ID, UUID.class);
 
-        AWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
+        BasicAWSCredentials baseCredentials = createBaseCredential(context.getSecrets());
         AWSSessionCredentials sessionCredentials = createSessionCredentials(params, context.getSecrets(), baseCredentials);
         T statementConfig = createStatementConfig(params, sessionCredentials, queryId.toString());
 

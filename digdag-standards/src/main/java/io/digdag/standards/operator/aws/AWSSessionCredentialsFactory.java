@@ -53,7 +53,7 @@ public class AWSSessionCredentialsFactory
         }
     }
 
-    public AWSSessionCredentialsFactory(AWSCredentials base, List<AcceptableUri> acceptableUris)
+    public AWSSessionCredentialsFactory(BasicAWSCredentials base, List<AcceptableUri> acceptableUris)
     {
         checkNotNull(base);
         checkNotNull(base.getAWSAccessKeyId());
