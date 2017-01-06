@@ -22,7 +22,7 @@ import static java.util.Locale.ENGLISH;
 class DefaultSecretProvider
         implements SecretProvider
 {
-    static interface OperatorSecretFilter
+    interface OperatorSecretFilter
     {
         boolean test(String key, boolean userGranted);
     }
@@ -53,10 +53,12 @@ class DefaultSecretProvider
 
         //// Secret access control:
         // 1. If users explicitly grant access using _secret directive in workflow definition (Config grants):
-        //    1-a. Allow if the operator wants to use it (operatorSecretFilter)
+        //    1-a. Allow if the operator wants to use it (operatorSecretFilter.test(key, true)).
+        //         This lets operators access to the secrets not declared in OperatorFactory.getSecretAccessList.
         //    1-b. Reject.
         // 2. If the system access policy file (SecretAccessPolicy) allows:
-        //    2-a. Allow if the operator wants to use it (operatorSecretFilter)
+        //    2-a. Allow if the operator wants to use it (operatorSecretFilter.test(key, false)).
+        //         Operators must declare the name of the key in OperatorFactory.getSecretAccessList in advance.
         //    2-b. Reject.
         // 3. Otherwise, reject.
 
