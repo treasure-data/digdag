@@ -922,7 +922,6 @@ pg>: PostgreSQL operations
 
 .. code-block:: yaml
 
-
     _export:
       pg:
         host: 192.0.2.1
@@ -930,6 +929,8 @@ pg>: PostgreSQL operations
         database: production_db
         user: app_user
         ssl: true
+        schema: myschema
+        # strict_transaction: false
 
     +replace_deduplicated_master_table:
       pg>: queries/dedup_master_table.sql
@@ -947,7 +948,7 @@ Secrets
 ~~~~~~~
 
 :command:`pg.password: NAME`
-  Optional user password to use when connecting to the postgres database (default: empty)
+  Optional user password to use when connecting to the postgres database.
 
 Parameters
 ~~~~~~~~~~
@@ -987,7 +988,7 @@ Parameters
   * :command:`host: db.foobar.com`
 
 :command:`port: NUMBER`
-  Port number to connect to the database (default: 5432).
+  Port number to connect to the database. *Default*: ``5432``.
 
   * :command:`port: 2345`
 
@@ -997,15 +998,676 @@ Parameters
   * :command:`user: app_user`
 
 :command:`ssl: BOOLEAN`
-  Enable SSL to connect to the database (default: false).
+  Enable SSL to connect to the database. *Default*: ``false``.
 
   * :command:`ssl: true`
 
 :command:`schema: NAME`
-  Default schema name (default: public)
+  Default schema name. *Default*: ``public``.
 
   * :command:`schema: my_schema`
 
+:command:`strict_transaction: BOOLEAN`
+  Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: ``true``.
+  This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
+
+  * :command:`strict_transaction: false`
+
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
+
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
+
+
+redshift>: Redshift operations
+----------------------------------
+
+**redshift>** operator runs queries and/or DDLs on Redshift
+
+.. code-block:: yaml
+
+    _export:
+      redshift:
+        host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
+        # port: 5439
+        database: production_db
+        user: app_user
+        ssl: true
+        schema: myschema
+        # strict_transaction: false
+
+    +replace_deduplicated_master_table:
+      redshift>: queries/dedup_master_table.sql
+      create_table: dedup_master
+
+    +prepare_summary_table:
+      redshift>: queries/create_summary_table_ddl.sql
+
+    +insert_to_summary_table:
+      redshift>: queries/join_log_with_master.sql
+      insert_into: summary_table
+
+
+Secrets
+~~~~~~~
+
+:command:`aws.redshift.password: NAME`
+  Optional user password to use when connecting to the Redshift database.
+
+Parameters
+~~~~~~~~~~
+
+:command:`redshift>: FILE.sql`
+  Path of the query template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`redshift>: queries/complex_queries.sql`
+
+:command:`create_table: NAME`
+  Table name to create from the results. This option deletes the table if it already exists.
+
+  This option adds DROP TABLE IF EXISTS; CREATE TABLE AS before the statements written in the query template file. Also, CREATE TABLE statement can be written in the query template file itself without this command.
+
+  * :command:`create_table: dest_table`
+
+:command:`insert_into: NAME`
+  Table name to append results into.
+
+  This option adds INSERT INTO before the statements written in the query template file. Also, INSERT INTO statement can be written in the query template file itself without this command.
+
+  * :command:`insert_into: dest_table`
+
+:command:`download_file: NAME`
+  Local CSV file name to be downloaded. The file includes the result of query.
+
+  * :command:`download_file: output.csv`
+
+:command:`database: NAME`
+  Database name.
+
+  * :command:`database: my_db`
+
+:command:`host: NAME`
+  Hostname or IP address of the database.
+
+  * :command:`host: db.foobar.com`
+
+:command:`port: NUMBER`
+  Port number to connect to the database. *Default*: ``5439``.
+
+  * :command:`port: 2345`
+
+:command:`user: NAME`
+  User to connect to the database
+
+  * :command:`user: app_user`
+
+:command:`ssl: BOOLEAN`
+  Enable SSL to connect to the database. *Default*: ``false``.
+
+  * :command:`ssl: true`
+
+:command:`schema: NAME`
+  Default schema name. *Default*: ``public``.
+
+  * :command:`schema: my_schema`
+
+:command:`strict_transaction: BOOLEAN`
+  Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: ``true``.
+  This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
+
+  * :command:`strict_transaction: false`
+
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
+
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name prefix of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
+
+
+redshift_load>: Redshift load operations
+----------------------------------
+
+**redshift_load>** operator runs COPY statement to load data from external storage on Redshift
+
+.. code-block:: yaml
+
+    _export:
+      redshift:
+        host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
+        # port: 5439
+        database: production_db
+        user: app_user
+        ssl: true
+        # strict_transaction: false
+
+    +load_from_dynamodb_simple:
+        redshift_load>:
+        schema: myschema
+        table: transactions
+        from: dynamodb://transaction-table
+        readratio: 123
+
+    +load_from_s3_with_many_options:
+        redshift_load>:
+        schema: myschema
+        table: access_logs
+        from: s3://my-app-bucket/access_logs/today
+        column_list: host, path, referer, code, agent, size, method
+        manifest: true
+        encrypted: true
+        region: us-east-1
+        csv: "'"
+        delimiter: "$"
+        # json: s3://my-app-bucket/access_logs/jsonpathfile
+        # avro: auto
+        # fixedwidth: host:15,code:3,method:15
+        gzip: true
+        # bzip2: true
+        # lzop: true
+        acceptanydate: true
+        acceptinvchars: "&"
+        blanksasnull: true
+        dateformat: yyyy-MM-dd
+        emptyasnull: true
+        encoding: UTF8
+        escape: false
+        explicit_ids: true
+        fillrecord: true
+        ignoreblanklines: true
+        ignoreheader: 2
+        null_as: nULl
+        removequotes: false
+        roundec: true
+        timeformat: YYYY-MM-DD HH:MI:SS
+        trimblanks: true
+        truncatecolumns: true
+        comprows: 12
+        compupdate: ON
+        maxerror: 34
+        # noload: true
+        statupdate: false
+        role_session_name: federated_user
+        session_duration: 1800
+        # temp_credentials: false
+
+
+Secrets
+~~~~~~~
+
+:command:`aws.redshift.password: NAME`
+  Optional user password to use when connecting to the Redshift database.
+
+:command:`aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+  The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
+
+:command:`aws.redshift_load.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
+  The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
+
+:command:`aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn`
+  Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires ``temp_credentials`` to be true.
+  If this option isn't specified, this operator tries to use a federated user
+
+
+Parameters
+~~~~~~~~~~
+
+:command:`database: NAME`
+  Database name.
+
+  * :command:`database: my_db`
+
+:command:`host: NAME`
+  Hostname or IP address of the database.
+
+  * :command:`host: db.foobar.com`
+
+:command:`port: NUMBER`
+  Port number to connect to the database. *Default*: ``5439``.
+
+  * :command:`port: 2345`
+
+:command:`user: NAME`
+  User to connect to the database
+
+  * :command:`user: app_user`
+
+:command:`ssl: BOOLEAN`
+  Enable SSL to connect to the database. *Default*: ``false``.
+
+  * :command:`ssl: true`
+
+:command:`schema: NAME`
+  Default schema name. *Default*: ``public``.
+
+  * :command:`schema: my_schema`
+
+:command:`strict_transaction: BOOLEAN`
+  Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: ``true``.
+  This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
+
+  * :command:`strict_transaction: false`
+
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
+
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name prefix of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
+
+:command:`table: NAME`
+  Table name in Redshift database to be loaded data
+
+  * :command:`table: access_logs`
+
+:command:`from: URI`
+  Parameter mapped to `FROM` parameter of Redshift`s `COPY` statement
+
+  * :command:`from: s3://my-app-bucket/access_logs/today`
+
+:command:`column_list: CSV`
+  Parameter mapped to `COLUMN_LIST` parameter of Redshift`s `COPY` statement
+
+  * :command:`column_list: host, path, referer, code, agent, size, method`
+
+:command:`manifest: BOOLEAN`
+  Parameter mapped to `MANIFEST` parameter of Redshift`s `COPY` statement
+
+  * :command:`manifest: true`
+
+:command:`encrypted: BOOLEAN`
+  Parameter mapped to `ENCRYPTED` parameter of Redshift`s `COPY` statement
+
+  * :command:`encrypted: true`
+
+:command:`readratio: NUMBER`
+  Parameter mapped to `READRATIO` parameter of Redshift`s `COPY` statement
+
+  * :command:`readratio: 150`
+
+:command:`region: NAME`
+  Parameter mapped to `REGION` parameter of Redshift`s `COPY` statement
+
+  * :command:`region: us-east-1`
+
+:command:`csv: CHARACTER`
+  Parameter mapped to `CSV` parameter of Redshift`s `COPY` statement.
+  If you want to just use default quote charactor of `CSV` parameter, set empty string like `csv: ''`
+
+  * :command:`csv: "'"`
+
+:command:`delimiter: CHARACTER`
+  Parameter mapped to `DELIMITER` parameter of Redshift`s `COPY` statement
+
+  * :command:`delimiter: "$"`
+
+:command:`json: URI`
+  Parameter mapped to `JSON` parameter of Redshift`s `COPY` statement
+
+  * :command:`json: auto`
+  * :command:`json: s3://my-app-bucket/access_logs/jsonpathfile`
+
+:command:`avro: URI`
+  Parameter mapped to `AVRO` parameter of Redshift`s `COPY` statement
+
+  * :command:`avro: auto`
+  * :command:`avro: s3://my-app-bucket/access_logs/jsonpathfile`
+
+:command:`fixedwidth: CSV`
+  Parameter mapped to `FIXEDWIDTH` parameter of Redshift`s `COPY` statement
+
+  * :command:`fixedwidth: host:15,code:3,method:15`
+
+:command:`gzip: BOOLEAN`
+  Parameter mapped to `GZIP` parameter of Redshift`s `COPY` statement
+
+  * :command:`gzip: true`
+
+:command:`bzip2: BOOLEAN`
+  Parameter mapped to `BZIP2` parameter of Redshift`s `COPY` statement
+
+  * :command:`bzip2: true`
+
+:command:`lzop: BOOLEAN`
+  Parameter mapped to `LZOP` parameter of Redshift`s `COPY` statement
+
+  * :command:`lzop: true`
+
+:command:`acceptanydate: BOOLEAN`
+  Parameter mapped to `ACCEPTANYDATE` parameter of Redshift`s `COPY` statement
+
+  * :command:`acceptanydate: true`
+
+:command:`acceptinvchars: CHARACTER`
+  Parameter mapped to `ACCEPTINVCHARS` parameter of Redshift`s `COPY` statement
+
+  * :command:`acceptinvchars: "&"`
+
+:command:`blanksasnull: BOOLEAN`
+  Parameter mapped to `BLANKSASNULL` parameter of Redshift`s `COPY` statement
+
+  * :command:`blanksasnull: true`
+
+:command:`dateformat: STRING`
+  Parameter mapped to `DATEFORMAT` parameter of Redshift`s `COPY` statement
+
+  * :command:`dateformat: yyyy-MM-dd`
+
+:command:`emptyasnull: BOOLEAN`
+  Parameter mapped to `EMPTYASNULL` parameter of Redshift`s `COPY` statement
+
+  * :command:`emptyasnull: true`
+
+:command:`encoding: TYPE`
+  Parameter mapped to `ENCODING` parameter of Redshift`s `COPY` statement
+
+  * :command:`encoding: UTF8`
+
+:command:`escape: BOOLEAN`
+  Parameter mapped to `ESCAPE` parameter of Redshift`s `COPY` statement
+
+  * :command:`escape: false`
+
+:command:`explicit_ids: BOOLEAN`
+  Parameter mapped to `EXPLICIT_IDS` parameter of Redshift`s `COPY` statement
+
+  * :command:`explicit_ids: true`
+
+:command:`fillrecord: BOOLEAN`
+  Parameter mapped to `FILLRECORD` parameter of Redshift`s `COPY` statement
+
+  * :command:`fillrecord: true`
+
+:command:`ignoreblanklines: BOOLEAN`
+  Parameter mapped to `IGNOREBLANKLINES` parameter of Redshift`s `COPY` statement
+
+  * :command:`ignoreblanklines: true`
+
+:command:`ignoreheader: NUMBER`
+  Parameter mapped to `IGNOREHEADER` parameter of Redshift`s `COPY` statement
+
+  * :command:`ignoreheader: 2`
+
+:command:`null_as: STRING`
+  Parameter mapped to `NULL AS` parameter of Redshift`s `COPY` statement
+
+  * :command:`null_as: nULl`
+
+:command:`removequotes: BOOLEAN`
+  Parameter mapped to `REMOVEQUOTES` parameter of Redshift`s `COPY` statement
+
+  * :command:`removequotes: false`
+
+:command:`roundec: BOOLEAN`
+  Parameter mapped to `ROUNDEC` parameter of Redshift`s `COPY` statement
+
+  * :command:`roundec: true`
+
+:command:`timeformat: STRING`
+  Parameter mapped to `TIMEFORMAT` parameter of Redshift`s `COPY` statement
+
+  * :command:`timeformat: YYYY-MM-DD HH:MI:SS`
+
+:command:`trimblanks: BOOLEAN`
+  Parameter mapped to `TRIMBLANKS` parameter of Redshift`s `COPY` statement
+
+  * :command:`trimblanks: true`
+
+:command:`truncatecolumns: BOOLEAN`
+  Parameter mapped to `TRUNCATECOLUMNS` parameter of Redshift`s `COPY` statement
+
+  * :command:`truncatecolumns: true`
+
+:command:`comprows: NUMBER`
+  Parameter mapped to `COMPROWS` parameter of Redshift`s `COPY` statement
+
+  * :command:`comprows: 12`
+
+:command:`compupdate: TYPE`
+  Parameter mapped to `COMPUPDATE` parameter of Redshift`s `COPY` statement
+
+  * :command:`compupdate: ON`
+
+:command:`maxerror: NUMBER`
+  Parameter mapped to `MAXERROR` parameter of Redshift`s `COPY` statement
+
+  * :command:`maxerror: 34`
+
+:command:`noload: BOOLEAN`
+  Parameter mapped to `NOLOAD` parameter of Redshift`s `COPY` statement
+
+  * :command:`noload: true`
+
+:command:`statupdate: TYPE`
+  Parameter mapped to `STATUPDATE` parameter of Redshift`s `COPY` statement
+
+  * :command:`statupdate: off`
+
+:command:`temp_credentials`
+  Whether this operator uses temporary security credentials. *Default*: ``true``.
+  This operator tries to use temporary security credentials as follows:
+    - If `role_arn` is specified, it calls `AssumeRole` action
+    - If not, it calls `GetFederationToken` action
+
+  See details about `AssumeRole` and `GetFederationToken` in the documents of AWS Security Token Service.
+
+  So either of `AssumeRole` or `GetFederationToken` action is called to use temporary security credentials by default for secure operation.
+  But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.
+
+  * :command:`temp_credentials: false`
+
+:command:`session_duration INTEGER`
+  Session duration of temporary security credentials. *Default*: ``3 hour``.
+  This option isn't used when disabling `temp_credentials`
+
+  * :command:`session_duration: 1800`
+        
+
+redshift_unload>: Redshift load operations
+----------------------------------
+
+**redshift_unload>** operator runs UNLOAD statement to export data to external storage on Redshift
+
+.. code-block:: yaml
+
+    _export:
+      redshift:
+        host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
+        # port: 5439
+        database: production_db
+        user: app_user
+        ssl: true
+        schema: myschema
+        # strict_transaction: false
+
+    +load_from_s3_with_many_options:
+        redshift_unload>:
+        query: select * from access_logs
+        to: s3://my-app-bucket/access_logs/today
+        manifest: true
+        encrypted: true
+        delimiter: "$"
+        # fixedwidth: host:15,code:3,method:15
+        gzip: true
+        # bzip2: true
+        null_as: nULl
+        escape: false
+        addquotes: true
+        parallel: true
+
+Secrets
+~~~~~~~
+
+:command:`aws.redshift.password: NAME`
+  Optional user password to use when connecting to the Redshift database.
+
+:command:`aws.redshift_unload.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+  The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
+
+:command:`aws.redshift_unload.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
+  The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
+
+:command:`aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn`
+  Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires ``temp_credentials`` to be true.
+  If this option isn't specified, this operator tries to use a federated user
+
+
+Parameters
+~~~~~~~~~~
+
+:command:`database: NAME`
+  Database name.
+
+  * :command:`database: my_db`
+
+:command:`host: NAME`
+  Hostname or IP address of the database.
+
+  * :command:`host: db.foobar.com`
+
+:command:`port: NUMBER`
+  Port number to connect to the database. *Default*: ``5439``.
+
+  * :command:`port: 2345`
+
+:command:`user: NAME`
+  User to connect to the database
+
+  * :command:`user: app_user`
+
+:command:`ssl: BOOLEAN`
+  Enable SSL to connect to the database. *Default*: ``false``.
+
+  * :command:`ssl: true`
+
+:command:`schema: NAME`
+  Default schema name. *Default*: ``public``.
+
+  * :command:`schema: my_schema`
+
+:command:`strict_transaction: BOOLEAN`
+  Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: ``true``.
+  This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
+
+  * :command:`strict_transaction: false`
+
+:command:`status_table_schema: NAME`
+  Schema name of status table. *Default*: same as the value of ``schema`` option.
+
+  * :command:`status_table_schema: writable_schema`
+
+:command:`status_table: NAME`
+  Table name prefix of status table. *Default*: ``__digdag_status``.
+
+  * :command:`status_table: customized_status_table`
+
+:command:`query: STRING`
+  SELECT query. The results of the query are unloaded.
+
+  * :command:`query: select * from access_logs`
+
+:command:`to: URI`
+  Parameter mapped to `TO` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`to: s3://my-app-bucket/access_logs/today`
+
+manifest
+:command:`manifest: BOOLEAN`
+  Parameter mapped to `MANIFEST` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`manifest: true`
+
+encrypted
+:command:`encrypted: BOOLEAN`
+  Parameter mapped to `ENCRYPTED` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`encrypted: true`
+
+allowoverwrite
+:command:`allowoverwrite: BOOLEAN`
+  Parameter mapped to `ALLOWOVERWRITE` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`allowoverwrite: true`
+
+delimiter
+:command:`delimiter: CHARACTER`
+  Parameter mapped to `DELIMITER` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`delimiter: "$"`
+
+fixedwidth
+:command:`fixedwidth: BOOLEAN`
+  Parameter mapped to `FIXEDWIDTH` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`fixedwidth: host:15,code:3,method:15`
+
+gzip
+:command:`gzip: BOOLEAN`
+  Parameter mapped to `GZIP` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`gzip: true`
+
+bzip2
+:command:`bzip2: BOOLEAN`
+  Parameter mapped to `BZIP2` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`bzip2: true`
+
+null_as
+:command:`null_as: BOOLEAN`
+  Parameter mapped to `NULL_AS` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`null_as: nuLL`
+
+escape
+:command:`escape: BOOLEAN`
+  Parameter mapped to `ESCAPE` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`escape: true`
+
+addquotes
+:command:`addquotes: BOOLEAN`
+  Parameter mapped to `ADDQUOTES` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`addquotes: true`
+
+parallel
+:command:`parallel: TYPE`
+  Parameter mapped to `PARALLEL` parameter of Redshift`s `UNLOAD` statement
+
+  * :command:`parallel: ON`
+
+temp_credentials
+:command:`temp_credentials`
+  Whether this operator uses temporary security credentials. *Default*: ``true``.
+  This operator tries to use temporary security credentials as follows:
+    - If `role_arn` is specified, it calls `AssumeRole` action
+    - If not, it calls `GetFederationToken` action
+
+  See details about `AssumeRole` and `GetFederationToken` in the documents of AWS Security Token Service.
+
+  So either of `AssumeRole` or `GetFederationToken` action is called to use temporary security credentials by default for secure operation.
+  But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.
+
+  * :command:`temp_credentials: false`
+
+:command:`session_duration INTEGER`
+  Session duration of temporary security credentials. *Default*: ``3 hour``.
+  This option isn't used when disabling `temp_credentials`
+
+  * :command:`session_duration: 1800`
+        
 
 mail>: Sending email
 ----------------------------------
