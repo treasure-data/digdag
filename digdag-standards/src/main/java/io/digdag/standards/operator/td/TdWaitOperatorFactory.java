@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -31,6 +32,7 @@ import java.util.Map;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
+import static io.digdag.standards.operator.td.BaseTdJobOperator.propagateTDClientException;
 import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -126,6 +128,9 @@ public class TdWaitOperatorFactory
                 // The query condition was fulfilled, we're done.
                 return TaskResult.empty(request);
             }
+            catch (TDClientException ex) {
+                throw propagateTDClientException(ex);
+            }
         }
 
         private String startJob(TDOperator op, String domainKey)
@@ -163,7 +168,7 @@ public class TdWaitOperatorFactory
 
             ArrayValue row = firstRow.get();
             if (row.size() < 1) {
-                throw new TaskExecutionException("Got empty row in result of query", ConfigElement.empty());
+                throw new TaskExecutionException("Got empty row in result of query");
             }
 
             Value firstCol = row.get(0);

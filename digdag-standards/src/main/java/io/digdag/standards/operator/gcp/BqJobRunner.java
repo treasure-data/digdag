@@ -109,7 +109,7 @@ class BqJobRunner
                         case "RUNNING":
                             return Optional.absent();
                         default:
-                            throw new TaskExecutionException("Unknown job state: " + canonicalJobId + ": " + status.getState(), ConfigElement.empty());
+                            throw new TaskExecutionException("Unknown job state: " + canonicalJobId + ": " + status.getState());
                     }
                 });
 
@@ -121,7 +121,7 @@ class BqJobRunner
             for (ErrorProto error : status.getErrors()) {
                 logger.error(toPrettyString(error));
             }
-            throw new TaskExecutionException("BigQuery job failed: " + canonicalJobId, errorConfig(status.getErrors()));
+            throw new TaskExecutionException("BigQuery job failed: " + canonicalJobId, errorProperties(status.getErrors()));
         }
 
         // Success
@@ -130,13 +130,12 @@ class BqJobRunner
         return completed;
     }
 
-    private static ConfigElement errorConfig(List<ErrorProto> errors)
+    private static Map<String, String> errorProperties(List<ErrorProto> errors)
     {
-        Map<String, String> map = ImmutableMap.of(
+        return ImmutableMap.of(
                 "errors", errors.stream()
                         .map(BqJobRunner::toPrettyString)
                         .collect(Collectors.joining(", ")));
-        return ConfigElement.ofMap(map);
     }
 
     private static String toPrettyString(ErrorProto error)

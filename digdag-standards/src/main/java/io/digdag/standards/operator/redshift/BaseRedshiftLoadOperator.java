@@ -30,7 +30,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 
 abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementConfig>
@@ -218,7 +217,7 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
         catch (DatabaseException ex) {
             // expected error that should suppress stacktrace by default
             String message = String.format("%s [%s]", ex.getMessage(), ex.getCause().getMessage());
-            throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
+            throw new TaskExecutionException(message, ex);
         }
     }
 }

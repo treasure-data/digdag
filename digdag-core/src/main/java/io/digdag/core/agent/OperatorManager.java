@@ -387,13 +387,16 @@ public class OperatorManager
                 sb.append("\n> ");
             }
             sb.append(message);
-            sb.append(" (");
-            sb.append(ex.getClass().getSimpleName()
-                        .replaceFirst("(?:Exception|Error)$", "")
-                        .replaceAll("([A-Z]+)([A-Z][a-z])", "$1 $2")
-                        .replaceAll("([a-z])([A-Z])", "$1 $2")
-                        .toLowerCase());
-            sb.append(")");
+            if (!(ex instanceof TaskExecutionException)) {
+                // skip TaskExecutionException because it's expected to have well-formatted message
+                sb.append(" (");
+                sb.append(ex.getClass().getSimpleName()
+                            .replaceFirst("(?:Exception|Error)$", "")
+                            .replaceAll("([A-Z]+)([A-Z][a-z])", "$1 $2")
+                            .replaceAll("([a-z])([A-Z])", "$1 $2")
+                            .toLowerCase());
+                sb.append(")");
+            }
         }
         if (ex.getCause() != null) {
             collectExceptionMessage(sb, ex.getCause(), used);

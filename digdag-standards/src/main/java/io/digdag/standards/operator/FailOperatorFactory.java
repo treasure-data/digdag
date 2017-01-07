@@ -49,7 +49,7 @@ public class FailOperatorFactory
             Config errorParams = params.getFactory().create();
             errorParams.set("message", message);
 
-            throw new TaskExecutionException(message, ConfigElement.copyOf(errorParams));
+            throw new TaskExecutionException(message);
         }
     }
 }

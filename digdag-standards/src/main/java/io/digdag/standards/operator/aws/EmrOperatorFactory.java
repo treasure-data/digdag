@@ -395,7 +395,7 @@ public class EmrOperatorFactory
                                             details != null ? details : "{}");
                                 }
 
-                                throw new TaskExecutionException("EMR job failed", ConfigElement.empty());
+                                throw new TaskExecutionException("EMR job failed");
 
                             case "COMPLETED":
                                 logger.info("EMR steps done");
@@ -519,7 +519,7 @@ public class EmrOperatorFactory
                     if (createOnly) {
                         // TODO: log more information about the errors
                         // TODO: inspect state change reason to figure out whether it was the boot that failed or e.g. steps submitted by another agent
-                        throw new TaskExecutionException("EMR boot failed: " + cluster.id(), ConfigElement.empty());
+                        throw new TaskExecutionException("EMR boot failed: " + cluster.id());
                     }
                     return Optional.of(clusterState);
 
@@ -782,7 +782,7 @@ public class EmrOperatorFactory
                     configurationJson = workspace.templateFile(templateEngine, node.asText(), UTF_8, params);
                 }
                 catch (IOException | TemplateException e) {
-                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                    throw new TaskExecutionException(e);
                 }
                 List<ConfigurationJson> values;
                 try {
@@ -900,7 +900,7 @@ public class EmrOperatorFactory
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                        throw new TaskExecutionException(e);
                     }
                 }
             }
@@ -940,7 +940,7 @@ public class EmrOperatorFactory
                         bytes = Resources.toByteArray(new URL(reference.reference().get()));
                     }
                     catch (IOException e) {
-                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                        throw new TaskExecutionException(e);
                     }
                     ObjectMetadata metadata = new ObjectMetadata();
                     metadata.setContentLength(bytes.length);

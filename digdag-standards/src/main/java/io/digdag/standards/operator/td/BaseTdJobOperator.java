@@ -2,8 +2,11 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.treasuredata.client.TDClientException;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
@@ -74,6 +77,14 @@ abstract class BaseTdJobOperator
 
             return taskResult;
         }
+        catch (TDClientException ex) {
+            throw propagateTDClientException(ex);
+        }
+    }
+
+    protected static TaskExecutionException propagateTDClientException(TDClientException ex)
+    {
+        return new TaskExecutionException(ex);
     }
 
     protected abstract String startJob(TDOperator op, String domainKey);

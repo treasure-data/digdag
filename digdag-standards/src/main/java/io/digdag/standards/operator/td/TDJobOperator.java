@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
 
 class TDJobOperator
@@ -146,7 +145,7 @@ class TDJobOperator
             try {
                 TDJob job = getJobInfo();
                 String message = job.getCmdOut() + "\n" + job.getStdErr();
-                throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
+                throw new TaskExecutionException(message, ex);
             }
             catch (Exception getJobInfoFailed) {
                 getJobInfoFailed.addSuppressed(ex);

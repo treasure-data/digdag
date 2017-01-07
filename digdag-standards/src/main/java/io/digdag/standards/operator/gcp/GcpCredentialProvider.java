@@ -11,7 +11,6 @@ import io.digdag.spi.TaskExecutionException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 class GcpCredentialProvider
@@ -40,7 +39,7 @@ class GcpCredentialProvider
             node = objectMapper.readTree(credential);
         }
         catch (IOException e) {
-            throw new TaskExecutionException("Unable to parse 'gcp.credential' secret", TaskExecutionException.buildExceptionErrorConfig(e));
+            throw new TaskExecutionException("Unable to parse 'gcp.credential' secret", e);
         }
         JsonNode projectId = node.get("project_id");
         if (projectId == null || !projectId.isTextual()) {
@@ -55,7 +54,7 @@ class GcpCredentialProvider
             return GoogleCredential.fromStream(new ByteArrayInputStream(credential.getBytes(UTF_8)));
         }
         catch (IOException e) {
-            throw new TaskExecutionException(e, buildExceptionErrorConfig(e));
+            throw new TaskExecutionException(e);
         }
     }
 }

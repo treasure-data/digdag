@@ -178,7 +178,7 @@ public class MailOperatorFactory
                 Transport.send(msg);
             }
             catch (MessagingException | IOException ex) {
-                throw new TaskExecutionException(ex, TaskExecutionException.buildExceptionErrorConfig(ex));
+                throw new TaskExecutionException(ex);
             }
 
             return TaskResult.empty(request);
@@ -214,7 +214,7 @@ public class MailOperatorFactory
                     .orNull();
 
             if (smtpConfig == null) {
-                throw new TaskExecutionException("Missing SMTP configuration", ConfigElement.empty());
+                throw new TaskExecutionException("Missing SMTP configuration");
             }
 
             Properties props = new Properties();
