@@ -395,7 +395,7 @@ public class EmrOperatorFactory
                                             details != null ? details : "{}");
                                 }
 
-                                throw new TaskExecutionException("EMR job failed", ConfigElement.empty());
+                                throw new TaskExecutionException("EMR job failed");
 
                             case "COMPLETED":
                                 logger.info("EMR steps done");
@@ -519,7 +519,7 @@ public class EmrOperatorFactory
                     if (createOnly) {
                         // TODO: log more information about the errors
                         // TODO: inspect state change reason to figure out whether it was the boot that failed or e.g. steps submitted by another agent
-                        throw new TaskExecutionException("EMR boot failed: " + cluster.id(), ConfigElement.empty());
+                        throw new TaskExecutionException("EMR boot failed: " + cluster.id());
                     }
                     return Optional.of(clusterState);
 
