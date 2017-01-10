@@ -4,3 +4,5 @@
     - foo: foo-value-1
     - bar: bar-value
     - foo: foo-value-2
+    - plain_header_name_1: ${secret:header_value_1}
+    - ${secret:header_name_2}: ${secret:header_value_2}

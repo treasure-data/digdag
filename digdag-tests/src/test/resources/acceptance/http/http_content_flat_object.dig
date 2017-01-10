@@ -5,5 +5,8 @@
     a: foo
     b&foo: 4711
     c?bar: qu=ux
+    plain_content_name_1: ${secret:content_value_1}
+    ${secret:content_name_2}: ${secret:content_value_2}
+    foo_${secret:content_name_2}_bar: foo_${secret:content_value_2}_bar
   content_format: form
 

@@ -8,7 +8,13 @@
       - c1
       - c2
       - true
+      - ${secret:content_value_1}
+      - foo_${secret:content_value_1}_bar
     d:
       d1: [d1a, d1b]
       d2: {}
+      plain_content_name_1: ${secret:content_value_1}
+      foo_plain_content_name_1_bar: foo_${secret:content_value_1}_bar
+      ${secret:content_name_2}: ${secret:content_value_2}
+      foo_${secret:content_name_2}_bar: foo_${secret:content_value_2}_bar
 

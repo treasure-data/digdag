@@ -1,5 +1,5 @@
 +http:
   http>: ${test_uri}
   method: POST
-  content: hello world
+  content: hello foo_${secret:content_value_1}_bar
 

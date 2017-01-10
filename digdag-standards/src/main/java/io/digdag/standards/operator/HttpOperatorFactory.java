@@ -1,15 +1,15 @@
 package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
@@ -17,17 +17,18 @@ import io.digdag.core.Environment;
 import io.digdag.core.Version;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.ConfigSelector;
+import io.digdag.util.UserSecretTemplate;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.client.HttpClient;
@@ -51,7 +52,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -115,9 +115,9 @@ public class HttpOperatorFactory
     public SecretAccessList getSecretAccessList()
     {
         return ConfigSelector.builderOfScope("http")
-            .addSecretAccess("authorization")
-            .addSecretOnlyAccess("uri", "user", "password", "authorization")
-            .build();
+                .addSecretAccess("authorization")
+                .addSecretOnlyAccess("uri", "user", "password", "authorization")
+                .build();
     }
 
     private class HttpOperator
@@ -153,13 +153,21 @@ public class HttpOperatorFactory
 
         private TaskResult run(HttpClient httpClient)
         {
-            // TODO: support secrets in headers, uri fragments, payload fragments, etc
-
             SecretProvider httpSecrets = context.getSecrets().getSecrets("http");
 
             Optional<String> secretUri = httpSecrets.getSecretOptional("uri");
-            boolean uriIsSecret = secretUri.isPresent();
-            URI uri = URI.create(secretUri.or(() -> params.get("_command", String.class)));
+            String rawUri;
+            boolean uriIsSecret;
+            if (secretUri.isPresent()) {
+                uriIsSecret = true;
+                rawUri = secretUri.get();
+            }
+            else {
+                UserSecretTemplate uriTemplate = UserSecretTemplate.of(params.get("_command", String.class));
+                uriIsSecret = uriTemplate.containsSecrets();
+                rawUri = uriTemplate.format(context.getSecrets());
+            }
+            URI uri = URI.create(rawUri);
 
             Optional<String> user = httpSecrets.getSecretOptional("user");
             Optional<String> authorization = httpSecrets.getSecretOptional("authorization");
@@ -183,7 +191,7 @@ public class HttpOperatorFactory
 
             if (content.isPresent()) {
                 // TODO: support files on disk etc
-                request.content(contentProvider(content.get(), contentFormat, contentType));
+                request.content(contentProvider(content.get(), contentFormat, contentType, context.getSecrets()));
             }
 
             LinkedHashMultimap<String, String> headers = headers();
@@ -202,16 +210,17 @@ public class HttpOperatorFactory
 
         private void configureQueryParameters(Request request)
         {
-            // TODO: allow secret query parameters
-
             try {
                 Config queryParameters = params.parseNestedOrGetEmpty("query");
                 for (String name : queryParameters.getKeys()) {
-                    request.param(name, queryParameters.get(name, String.class));
+                    request.param(
+                            UserSecretTemplate.of(name).format(context.getSecrets()),
+                            UserSecretTemplate.of(queryParameters.get(name, String.class)).format(context.getSecrets()));
                 }
             }
             catch (ConfigException e) {
-                Optional<String> query = params.getOptional("query", String.class);
+                Optional<String> query = params.getOptional("query", String.class)
+                        .transform(s -> UserSecretTemplate.of(s).format(context.getSecrets()));
                 if (query.isPresent()) {
                     List<NameValuePair> parameters = URLEncodedUtils.parse(query.get(), UTF_8);
                     for (NameValuePair parameter : parameters) {
@@ -233,8 +242,9 @@ public class HttpOperatorFactory
                 if (o.size() != 1) {
                     throw new ConfigException("Invalid header: " + entry);
                 }
-                String name = o.fieldNames().next();
-                String value = o.get(name).asText();
+                String key = o.fieldNames().next();
+                String name = UserSecretTemplate.of(key).format(context.getSecrets());
+                String value = UserSecretTemplate.of(o.get(key).asText()).format(context.getSecrets());
                 headers.put(name, value);
             }
 
@@ -448,7 +458,7 @@ public class HttpOperatorFactory
         }
     }
 
-    private static ContentProvider contentProvider(JsonNode content, Optional<String> contentFormat, Optional<String> contentType)
+    private static ContentProvider contentProvider(JsonNode content, Optional<String> contentFormat, Optional<String> contentType, SecretProvider secrets)
     {
         // content-type can be inferred from the actual content and content_format parameters.
 
@@ -473,13 +483,13 @@ public class HttpOperatorFactory
             String format = contentFormat.or("json");
             switch (format) {
                 case "json":
-                    return new StringContentProvider(contentType.or("application/json"), content.toString(), UTF_8);
+                    return new StringContentProvider(contentType.or("application/json"), resolveSecrets(content, secrets).toString(), UTF_8);
                 case "form":
                     if (content.isArray()) {
                         throw invalidContentFormat(format, nodeType);
                     }
                     else {
-                        return new FormContentProvider(formFields((ObjectNode) content));
+                        return new FormContentProvider(formFields((ObjectNode) resolveSecrets(content, secrets)));
                     }
                 default:
                     throw invalidContentFormat(format, nodeType);
@@ -490,12 +500,36 @@ public class HttpOperatorFactory
             String format = contentFormat.or("text");
             switch (format) {
                 case "text":
-                    return new StringContentProvider(contentType.or("plain/text"), content.asText(), UTF_8);
+                    return new StringContentProvider(contentType.or("plain/text"), resolveSecrets(content, secrets).asText(), UTF_8);
                 case "json":
-                    return new StringContentProvider(contentType.or("application/json"), content.toString(), UTF_8);
+                    return new StringContentProvider(contentType.or("application/json"), resolveSecrets(content, secrets).toString(), UTF_8);
                 default:
                     throw invalidContentFormat(format, nodeType);
             }
+        }
+    }
+
+    private static JsonNode resolveSecrets(JsonNode node, SecretProvider secrets)
+    {
+        if (node.isObject()) {
+            ObjectNode object = (ObjectNode) node;
+            ObjectNode newObject = object.objectNode();
+            object.fields().forEachRemaining(entry -> newObject.set(
+                    UserSecretTemplate.of(entry.getKey()).format(secrets),
+                    resolveSecrets(entry.getValue(), secrets)));
+            return newObject;
+        }
+        else if (node.isArray()) {
+            ArrayNode array = (ArrayNode) node;
+            ArrayNode newArray = array.arrayNode();
+            array.elements().forEachRemaining(element -> newArray.add(resolveSecrets(element, secrets)));
+            return newArray;
+        }
+        else if (node.isTextual()) {
+            return new TextNode(UserSecretTemplate.of(node.textValue()).format(secrets));
+        }
+        else {
+            return node;
         }
     }
 
