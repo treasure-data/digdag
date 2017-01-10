@@ -1346,7 +1346,7 @@ public class EmrOperatorFactory
 
         private List<Parameter> parameters(Config config, String key)
         {
-            return config.getListOrEmpty(key, String.class).stream()
+            return config.parseListOrGetEmpty(key, String.class).stream()
                     .map(value -> parameter(value, Function.identity()))
                     .collect(toList());
         }
