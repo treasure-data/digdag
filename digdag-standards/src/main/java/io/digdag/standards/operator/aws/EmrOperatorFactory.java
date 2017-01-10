@@ -290,7 +290,7 @@ public class EmrOperatorFactory
         private TaskResult run(String tag, AmazonElasticMapReduce emr, AWSKMSClient kms, Filer filer)
                 throws IOException
         {
-            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, context, cf);
+            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, context);
 
             // Set up step compiler
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
@@ -1330,13 +1330,11 @@ public class EmrOperatorFactory
     {
         private final AWSKMSClient kms;
         private final OperatorContext context;
-        private final ConfigFactory cf;
 
-        ParameterCompiler(AWSKMSClient kms, OperatorContext context, ConfigFactory cf)
+        ParameterCompiler(AWSKMSClient kms, OperatorContext context)
         {
             this.kms = Preconditions.checkNotNull(kms, "kms");
             this.context = Preconditions.checkNotNull(context, "context");
-            this.cf = Preconditions.checkNotNull(cf, "cf");
         }
 
         private List<Parameter> parameters(String flag, Config config, BiFunction<String, String, String> f)
