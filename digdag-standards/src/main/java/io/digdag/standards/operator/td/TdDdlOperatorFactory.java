@@ -83,15 +83,15 @@ public class TdDdlOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            List<String> dropDatabaseList = params.getListOrEmpty("drop_databases", String.class);
-            List<String> createDatabaseList = params.getListOrEmpty("create_databases", String.class);
-            List<String> emptyDatabaseList = params.getListOrEmpty("empty_databases", String.class);
+            List<String> dropDatabaseList = params.parseListOrGetEmpty("drop_databases", String.class);
+            List<String> createDatabaseList = params.parseListOrGetEmpty("create_databases", String.class);
+            List<String> emptyDatabaseList = params.parseListOrGetEmpty("empty_databases", String.class);
 
-            List<TableParam> dropTableList = params.getListOrEmpty("drop_tables", TableParam.class);
-            List<TableParam> createTableList = params.getListOrEmpty("create_tables", TableParam.class);
-            List<TableParam> emptyTableList = params.getListOrEmpty("empty_tables", TableParam.class);
+            List<TableParam> dropTableList = params.parseListOrGetEmpty("drop_tables", TableParam.class);
+            List<TableParam> createTableList = params.parseListOrGetEmpty("create_tables", TableParam.class);
+            List<TableParam> emptyTableList = params.parseListOrGetEmpty("empty_tables", TableParam.class);
 
-            List<RenameTableConfig> renameTableList = params.getListOrEmpty("rename_tables", RenameTableConfig.class);
+            List<RenameTableConfig> renameTableList = params.parseListOrGetEmpty("rename_tables", RenameTableConfig.class);
 
             List<Consumer<TDOperator>> operations = new ArrayList<>();
 
