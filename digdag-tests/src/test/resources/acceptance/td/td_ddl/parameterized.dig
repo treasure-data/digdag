@@ -1,0 +1,30 @@
+timezone: UTC
+
+_export:
+  tables:
+    create: ["create_table_1", "create_table_2"]
+    empty: ["empty_table_1", "empty_table_2"]
+    drop: ["drop_table_1", "drop_table_2"]
+    rename: [{from: "rename_table_1_from", to: "rename_table_1_to"}, {from: "rename_table_2_from", to: "rename_table_2_to"}]
+  databases:
+    create: ["${create_db_1}", "${create_db_2}"]
+    drop: ["${drop_db_1}", "${drop_db_2}"]
+    empty: ["${empty_db_1}", "${empty_db_2}"]
+
++prep:
+  td_ddl>:
+  create_tables: ["drop_table_1", "drop_table_2", "rename_table_1_from", "rename_table_2_from", "rename_table_2_to"]
+  create_databases: ["${drop_db_1}", "${drop_db_2}"]
+
++ddl:
+  td_ddl>:
+  create_tables: ${tables.create}
+  empty_tables: ${tables.empty}
+  drop_tables: ${tables.drop}
+  rename_tables: ${tables.rename}
+  create_databases: ${databases.create}
+  drop_databases: ${databases.drop}
+  empty_databases: ${databases.empty}
+
++post:
+  sh>: touch ${outfile}

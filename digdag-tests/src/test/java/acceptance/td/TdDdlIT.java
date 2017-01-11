@@ -225,7 +225,7 @@ public class TdDdlIT
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
         ), APPEND);
 
-        runDdlWorkflow();
+        runDdlWorkflow("td_ddl.dig");
 
         String dropDatabases[] = {dropDb1, dropDb2};
         String createDatabases[] = {createDb1, createDb2};
@@ -270,7 +270,7 @@ public class TdDdlIT
     public void testDdl()
             throws Exception
     {
-        runDdlWorkflow();
+        runDdlWorkflow("td_ddl.dig");
 
         Set<String> databases = ImmutableSet.copyOf(client.listDatabaseNames());
         assertThat(databases, hasItem(createDb1));
@@ -284,11 +284,29 @@ public class TdDdlIT
         assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2", "rename_table_1_to", "rename_table_2_to"));
     }
 
-    private void runDdlWorkflow()
+    @Test
+    public void testParameterizedDdl()
+            throws Exception
+    {
+        runDdlWorkflow("parameterized.dig");
+
+        Set<String> databases = ImmutableSet.copyOf(client.listDatabaseNames());
+        assertThat(databases, hasItem(createDb1));
+        assertThat(databases, hasItem(createDb2));
+        assertThat(databases, hasItem(emptyDb1));
+        assertThat(databases, hasItem(emptyDb2));
+        assertThat(databases, not(hasItem(dropDb1)));
+        assertThat(databases, not(hasItem(dropDb2)));
+
+        List<String> tables = client.listTables(database).stream().map(TDTable::getName).collect(toList());
+        assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2", "rename_table_1_to", "rename_table_2_to"));
+    }
+
+    private void runDdlWorkflow(String workflow)
             throws IOException
     {
-        addWorkflow(projectDir, "acceptance/td/td_ddl/td_ddl.dig");
-        CommandStatus runStatus = runWorkflow("td_ddl",
+        addWorkflow(projectDir, "acceptance/td/td_ddl/" + workflow);
+        CommandStatus runStatus = runWorkflow(workflow,
                 "database=" + database,
                 "drop_db_1=" + dropDb1,
                 "drop_db_2=" + dropDb2,
