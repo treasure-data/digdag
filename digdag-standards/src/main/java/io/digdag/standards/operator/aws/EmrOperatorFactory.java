@@ -159,6 +159,7 @@ public class EmrOperatorFactory
                 .addSecretOnlyAccess("emr.endpoint", "s3.endpoint", "kms.endpoint")
                 .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn", "role_session_name")
                 .addSecretOnlyAccess("emr.access_key_id", "emr.secret_access_key", "emr.role_arn", "emr.role_session_name")
+                .addSecretOnlyAccess("emr.kms_key_id")
                 .build();
     }
 
