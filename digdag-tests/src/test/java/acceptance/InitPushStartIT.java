@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.closeTo;
@@ -106,7 +107,7 @@ public class InitPushStartIT
         assertThat(project.getRevision(), is("4711"));
         assertThat((double) project.getCreatedAt().toEpochMilli(), is(closeTo(Instant.now().toEpochMilli(), MINUTES.toMillis(1))));
 
-        Instant startTime = Instant.now();
+        Instant startTime = Instant.now().truncatedTo(SECONDS);
 
         // Start the workflow
         Id sessionId;
