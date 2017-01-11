@@ -18,7 +18,7 @@ import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -74,7 +74,7 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
-import static io.digdag.core.Version.buildVersion;
+import static io.digdag.client.Version.buildVersion;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;

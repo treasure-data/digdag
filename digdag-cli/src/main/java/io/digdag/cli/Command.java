@@ -5,7 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.core.Environment;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.plugin.LocalPluginLoader;

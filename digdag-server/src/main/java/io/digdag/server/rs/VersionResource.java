@@ -2,7 +2,7 @@ package io.digdag.server.rs;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

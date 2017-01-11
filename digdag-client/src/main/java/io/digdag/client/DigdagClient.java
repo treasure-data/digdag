@@ -50,6 +50,8 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -76,6 +78,7 @@ import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.exponentialWait;
 import static com.google.common.base.Predicates.not;
 import static java.util.Locale.ENGLISH;
+import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.jboss.resteasy.client.jaxrs.internal.ClientInvocation.handleErrorStatus;
 
@@ -226,6 +229,7 @@ public class DigdagClient implements AutoCloseable
         ObjectMapper mapper = objectMapper();
 
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
+                .register(new UserAgentFilter("DigdagClient/" + io.digdag.client.Version.buildVersion()))
                 .register(new JacksonJsonProvider(mapper));
 
         // TODO: support proxy user/pass
@@ -864,5 +868,23 @@ public class DigdagClient implements AutoCloseable
         return target.request("application/json")
             .headers(headers.get())
             .delete(type);
+    }
+
+    private static class UserAgentFilter
+            implements ClientRequestFilter
+    {
+        private final String userAgent;
+
+        UserAgentFilter(String userAgent)
+        {
+            this.userAgent = userAgent;
+        }
+
+        @Override
+        public void filter(ClientRequestContext requestContext)
+                throws IOException
+        {
+            requestContext.getHeaders().putSingle(USER_AGENT, userAgent);
+        }
     }
 }

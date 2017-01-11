@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.client;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.Resources;
