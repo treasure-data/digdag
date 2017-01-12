@@ -10,9 +10,11 @@ public class Secrets
 {
     static final String TD_API_KEY;
 
+    static final String TD_SECRETS_ENABLED_PROP_KEY = "io.digdag.standards.td.secrets.enabled";
+
     static {
         // Do not pick up apikey from ~/.td/td.conf during local test runs
-        System.setProperty("io.digdag.standards.td.secrets.enabled", "false");
+        System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "false");
 
         TD_API_KEY = System.getenv().getOrDefault("TD_API_KEY", "");
     }
