@@ -1,12 +1,9 @@
 in:
-  type: sftp
-  host: treasure.brickftp.com
-  port: 22
-  user: ${td_load_sftp_user}
-  password: ${td_load_sftp_password}
-  user_directory_is_root: true
-  timeout: 600
-  path_prefix: "/nasdaq_dataset_small_test.csv"
+  type: s3
+  access_key_id: ${secret:access_key_id}
+  secret_access_key: ${secret:secret_access_key}
+  bucket: ${s3_bucket}
+  path_prefix: ${s3_path_prefix}
   parser:
     charset: UTF-8
     newline: CRLF
@@ -19,24 +16,12 @@ in:
     allow_extra_columns: false
     allow_optional_columns: false
     columns:
-    - name: symbol
-      type: string
-    - name: open
-      type: string
-    - name: volume
-      type: long
-    - name: high
-      type: string
-    - name: low
-      type: string
-    - name: close
-      type: string
     - name: time
-      type: timestamp
-      format: "%Y%m%d%H"
-filters: []
+      type: long
+    - name: foo
+      type: string
+    - name: bar
+      type: string
 out:
   mode: replace
-  exec: {}
   type: td
-  time_column:

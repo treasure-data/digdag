@@ -18,6 +18,7 @@ import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
+import io.digdag.standards.operator.Secrets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static io.digdag.standards.operator.Secrets.resolveSecrets;
 import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -157,7 +159,7 @@ public class TdLoadOperatorFactory
                     .setType(TDJob.Type.BULKLOAD)
                     .setDatabase(table.getDatabase().or(op.getDatabase()))
                     .setTable(table.getTable())
-                    .setConfig(embulkConfig)
+                    .setConfig(resolveSecrets(embulkConfig, context.getSecrets()))
                     .setQuery("")
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
