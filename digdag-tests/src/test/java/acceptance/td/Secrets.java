@@ -8,7 +8,15 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Secrets
 {
-    static final String TD_API_KEY = System.getenv().getOrDefault("TD_API_KEY", "");
+    static final String TD_API_KEY;
+
+    static {
+        // Do not pick up apikey from ~/.td/td.conf during local test runs
+        System.setProperty("io.digdag.standards.td.secrets.enabled", "false");
+
+        TD_API_KEY = System.getenv().getOrDefault("TD_API_KEY", "");
+    }
+
     static final byte[] ENCRYPTION_KEY_BYTES = new byte[128 / 8];
     {
         ThreadLocalRandom.current().nextBytes(ENCRYPTION_KEY_BYTES);

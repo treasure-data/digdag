@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import static acceptance.td.Secrets.TD_API_KEY;
 import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
@@ -42,8 +43,6 @@ import static utils.TestUtils.objectMapper;
 
 public class TdPartialDeleteIT
 {
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
