@@ -413,7 +413,7 @@ task setVersion << {
     gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
 
     List<String> files = [
-        'digdag-core/src/main/resources/io/digdag/core/version.txt',
+        'digdag-client/src/main/resources/io/digdag/client/version.txt',
         'digdag-cli/src/main/java/io/digdag/cli/Main.java',
         'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
     ]
