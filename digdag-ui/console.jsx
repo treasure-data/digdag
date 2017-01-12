@@ -846,6 +846,7 @@ class WorkflowView extends React.Component {
             </Measure>
           </pre>
         </div>
+        <div><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></div>
         <div className='row'>
           <h2>Sessions</h2>
           <SessionListView sessions={this.state.sessions} />
