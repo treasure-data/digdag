@@ -335,6 +335,10 @@ export class Model {
     })
   }
 
+  putProject(projectName: string, revision: string, targz: ArrayBuffer): Promise<Project> {
+    return this.putBinary(`projects?project=${projectName}&revision=${revision}`, 'application/gzip', targz)
+  }
+
   retrySession (session: Session, sessionUUID: string) {
     const { lastAttempt } = session
     return this.put('attempts', {
@@ -426,6 +430,23 @@ export class Model {
       }),
       method: 'PUT',
       body: JSON.stringify(body)
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText)
+      }
+      return response.json()
+    })
+  }
+
+  putBinary (url: string, contentType: string, body: ArrayBuffer): Promise<*> {
+    return fetch(this.config.url + url, {
+      credentials: 'include',
+      headers: Object.assign({}, this.headers(), {
+        'Content-Type': contentType,
+        'Content-Length': body.size,
+      }),
+      method: 'PUT',
+      body: body
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
