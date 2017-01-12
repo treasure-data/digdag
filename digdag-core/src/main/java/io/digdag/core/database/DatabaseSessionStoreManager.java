@@ -8,13 +8,16 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.DelayedAttemptControlStore;
 import io.digdag.core.session.ImmutableArchivedTask;
 import io.digdag.core.session.ImmutableResumingTask;
 import io.digdag.core.session.ImmutableSession;
 import io.digdag.core.session.ImmutableSessionAttemptSummary;
+import io.digdag.core.session.ImmutableStoredDelayedSessionAttempt;
 import io.digdag.core.session.ImmutableStoredSession;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import io.digdag.core.session.ImmutableStoredSessionAttemptWithSession;
@@ -34,6 +37,8 @@ import io.digdag.core.session.SessionControlStore;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.SessionTransaction;
+import io.digdag.core.session.StoredDelayedSessionAttempt;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -139,6 +144,7 @@ public class DatabaseSessionStoreManager
         dbi.registerMapper(new TaskAttemptSummaryMapper());
         dbi.registerMapper(new SessionAttemptSummaryMapper());
         dbi.registerMapper(new StoredSessionMonitorMapper(cfm));
+        dbi.registerMapper(new StoredDelayedSessionAttemptMapper());
         dbi.registerMapper(new TaskRelationMapper());
         dbi.registerMapper(new InstantMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
@@ -609,6 +615,48 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    @Override
+    public void lockReadyDelayedAttempts(Instant currentTime, DelayedAttemptAction func)
+    {
+        List<RuntimeException> exceptions = transaction((handle, dao) -> {
+            List<StoredDelayedSessionAttempt> locked = handle.createQuery(
+                    "select da.* from delayed_session_attempts da" +
+                    " where not exists (" +
+                        " select * from session_attempts sa" +
+                        " where sa.session_id = da.dependent_session_id" +
+                        " and " + bitAnd("sa.state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0" +
+                    ")" +
+                    " and next_run_time <= :currentTime" +
+                    " order by next_run_time" +
+                    " limit :limit" +
+                    " for update"
+                )
+                .bind("limit", 10)  // TODO 10 should be configurable?
+                .bind("currentTime", currentTime.getEpochSecond())
+                .mapTo(StoredDelayedSessionAttempt.class)
+                .list();
+            return locked.stream()
+                .map(delayedAttempt -> {
+                    try {
+                        func.submit(new DatabaseDelayedAttemptControlStore(handle), delayedAttempt);
+                        return null;
+                    }
+                    catch (RuntimeException ex) {
+                        return ex;
+                    }
+                })
+                .filter(exception -> exception != null)
+                .collect(Collectors.toList());
+        });
+        if (!exceptions.isEmpty()) {
+            RuntimeException first = exceptions.get(0);
+            for (RuntimeException ex : exceptions.subList(1, exceptions.size())) {
+                first.addSuppressed(ex);
+            }
+            throw first;
+        }
+    }
+
     private StoredTask getTaskById(Handle handle, long taskId)
         throws ResourceNotFoundException
     {
@@ -631,7 +679,7 @@ public class DatabaseSessionStoreManager
         public DatabaseSessionAttemptControlStore(Handle handle)
         {
             this.handle = handle;
-            this.dao = handle.attach(Dao.class);
+            this.dao = handle.attach(dao(databaseType));
         }
 
         @Override
@@ -1027,18 +1075,27 @@ public class DatabaseSessionStoreManager
             this.siteId = siteId;
         }
 
+        @Override
         public long getActiveAttemptCount()
         {
-            return autoCommit((handle, dao) ->
-                    handle.createQuery(
-                        "select count(*) from session_attempts" +
-                        " where site_id = :siteId" +
-                        " and " + bitAnd("state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0"
-                    )
-                    .bind("siteId", siteId)
-                    .mapTo(long.class)
-                    .first()
-                );
+            return autoCommit((handle, dao) -> new DatabaseSessionControlStore(handle, siteId).getActiveAttemptCount());
+        }
+
+        @Override
+        public Optional<Instant> getLastExecutedSessionTime(
+            int projectId, String workflowName,
+            Instant beforeThisSessionTime)
+        {
+            return autoCommit((handle, dao) -> new DatabaseSessionControlStore(handle, siteId).getLastExecutedSessionTime(projectId, workflowName, beforeThisSessionTime));
+        }
+
+        @Override
+        public <T> T sessionTransaction(SessionTransactionAction<T> func)
+                throws Exception
+        {
+            return DatabaseSessionStoreManager.this.<T, Exception>transaction((handle, dao) -> {
+                return func.call(new DatabaseSessionControlStore(handle, siteId));
+            }, Exception.class);
         }
 
         @Override
@@ -1046,47 +1103,8 @@ public class DatabaseSessionStoreManager
             throws ResourceConflictException, ResourceNotFoundException
         {
             return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao) -> {
-                StoredSession storedSession;
-
-                // select first so that conflicting insert (postgresql) or foreign key constraint violation (h2)
-                // doesn't increment sequence of primary key unnecessarily
-                storedSession = dao.getSessionByConflictedNamesInternal(
-                        session.getProjectId(),
-                        session.getWorkflowName(),
-                        session.getSessionTime().getEpochSecond());
-
-                if (storedSession == null) {
-                    if (dao instanceof H2Dao) {
-                        catchForeignKeyNotFound(
-                            () -> {
-                                ((H2Dao) dao).upsertAndLockSession(
-                                    session.getProjectId(),
-                                    session.getWorkflowName(),
-                                    session.getSessionTime().getEpochSecond());
-                                return 0;
-                            },
-                            "project id=%d", session.getProjectId());
-                        storedSession = dao.getSessionByConflictedNamesInternal(
-                                session.getProjectId(),
-                                session.getWorkflowName(),
-                                session.getSessionTime().getEpochSecond());
-                        if (storedSession == null) {
-                            throw new IllegalStateException(String.format(ENGLISH,
-                                        "Database state error: locked session is null: project_id=%d, workflow_name=%s, session_time=%d",
-                                        session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()));
-                        }
-                    }
-                    else {
-                        storedSession = catchForeignKeyNotFound(
-                                () -> ((PgDao) dao).upsertAndLockSession(
-                                    session.getProjectId(),
-                                    session.getWorkflowName(),
-                                    session.getSessionTime().getEpochSecond()),
-                                "project id=%d", session.getProjectId());
-                    }
-                }
-
-                return func.call(new DatabaseSessionControlStore(handle, siteId), storedSession);
+                DatabaseSessionControlStore tran = new DatabaseSessionControlStore(handle, siteId);
+                return tran.putAndLockSession(session, func);
             }, ResourceConflictException.class, ResourceNotFoundException.class);
         }
 
@@ -1250,7 +1268,7 @@ public class DatabaseSessionStoreManager
     }
 
     private class DatabaseSessionControlStore
-            implements SessionControlStore
+            implements SessionControlStore, SessionTransaction
     {
         private final Handle handle;
         private final int siteId;
@@ -1260,7 +1278,7 @@ public class DatabaseSessionStoreManager
         {
             this.handle = handle;
             this.siteId = siteId;
-            this.dao = handle.attach(Dao.class);
+            this.dao = handle.attach(dao(databaseType));
         }
 
         @Override
@@ -1283,6 +1301,39 @@ public class DatabaseSessionStoreManager
             catch (ResourceNotFoundException ex) {
                 throw new IllegalStateException("Database state error", ex);
             }
+        }
+
+        @Override
+        public StoredSessionAttempt insertDelayedAttempt(long sessionId, int projId, SessionAttempt attempt,
+                Optional<Long> dependentSessionId)
+            throws ResourceConflictException, ResourceNotFoundException
+        {
+            StoredSessionAttempt stored = insertAttempt(sessionId, projId, attempt);
+            dao.insertDelayedAttempt(stored.getId(), dependentSessionId.orNull(), Instant.now().getEpochSecond());
+            return stored;
+        }
+
+        @Override
+        public long getActiveAttemptCount()
+        {
+            return handle.createQuery(
+                    "select count(*) from session_attempts" +
+                    " where site_id = :siteId" +
+                    " and " + bitAnd("state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0"
+                )
+                .bind("siteId", siteId)
+                .mapTo(long.class)
+                .first();
+        }
+
+        @Override
+        public Optional<Instant> getLastExecutedSessionTime(
+                int projectId, String workflowName,
+                Instant beforeThisSessionTime)
+        {
+            Long lastExecutedSessionTime = dao.getLastExecutedSessionTime(projectId, workflowName, beforeThisSessionTime.getEpochSecond());
+            return Optional.fromNullable(lastExecutedSessionTime)
+                .transform(seconds -> Instant.ofEpochSecond(seconds));
         }
 
         @Override
@@ -1316,6 +1367,93 @@ public class DatabaseSessionStoreManager
                 dao.insertSessionMonitor(attemptId, monitor.getNextRunTime().getEpochSecond(), monitor.getType(), monitor.getConfig());  // session_monitors table don't have unique index
             }
         }
+
+        @Override
+        public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
+            throws ResourceConflictException, ResourceNotFoundException
+        {
+            StoredSession storedSession;
+
+            // select first so that conflicting insert (postgresql) or foreign key constraint violation (h2)
+            // doesn't increment sequence of primary key unnecessarily
+            storedSession = dao.getSessionByConflictedNamesInternal(
+                    session.getProjectId(),
+                    session.getWorkflowName(),
+                    session.getSessionTime().getEpochSecond());
+
+            if (storedSession == null) {
+                if (dao instanceof H2Dao) {
+                    catchForeignKeyNotFound(
+                        () -> {
+                            ((H2Dao) dao).upsertAndLockSession(
+                                session.getProjectId(),
+                                session.getWorkflowName(),
+                                session.getSessionTime().getEpochSecond());
+                            return 0;
+                        },
+                        "project id=%d", session.getProjectId());
+                    storedSession = dao.getSessionByConflictedNamesInternal(
+                            session.getProjectId(),
+                            session.getWorkflowName(),
+                            session.getSessionTime().getEpochSecond());
+                    if (storedSession == null) {
+                        throw new IllegalStateException(String.format(ENGLISH,
+                                    "Database state error: locked session is null: project_id=%d, workflow_name=%s, session_time=%d",
+                                    session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()));
+                    }
+                }
+                else {
+                    storedSession = catchForeignKeyNotFound(
+                            () -> ((PgDao) dao).upsertAndLockSession(
+                                session.getProjectId(),
+                                session.getWorkflowName(),
+                                session.getSessionTime().getEpochSecond()),
+                            "project id=%d", session.getProjectId());
+                }
+            }
+
+            return func.call(this, storedSession);
+        }
+    }
+
+    private class DatabaseDelayedAttemptControlStore
+            implements DelayedAttemptControlStore
+    {
+        private final Handle handle;
+        private final Dao dao;
+
+        public DatabaseDelayedAttemptControlStore(Handle handle)
+        {
+            this.handle = handle;
+            this.dao = handle.attach(dao(databaseType));
+        }
+
+        @Override
+        public <T> T lockSessionOfAttempt(long attemptId, DelayedSessionLockAction<T> func)
+            throws ResourceConflictException, ResourceNotFoundException, ResourceLimitExceededException
+        {
+            StoredSessionAttemptWithSession attempt;
+            if (dao instanceof H2Dao) {
+                ((H2Dao) dao).lockSessionByAttemptId(attemptId);
+                attempt = dao.getAttemptWithSessionByIdInternal(attemptId);
+            }
+            else {
+                attempt = ((PgDao) dao).lockSessionByAttemptId(attemptId);
+            }
+            return func.call(new DatabaseSessionControlStore(handle, 0), attempt);
+        }
+
+        @Override
+        public void delayDelayedAttempt(long attemptId, Instant nextRunTime)
+        {
+            dao.updateNextDelayedAttemptRunTime(attemptId, nextRunTime.getEpochSecond());
+        }
+
+        @Override
+        public void completeDelayedAttempt(long attemptId)
+        {
+            dao.deleteDelayedAttempt(attemptId);
+        }
     }
 
     public interface H2Dao
@@ -1328,6 +1466,14 @@ public class DatabaseSessionStoreManager
                 " values (:projectId, :workflowName, :sessionTime)")
         void upsertAndLockSession(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+
+        @SqlQuery("select id from sessions s" +
+                " where id = (" +
+                    "select session_id from session_attempts" +
+                    " where id = :attemptId" +
+                ")" +
+                " for update")
+        long lockSessionByAttemptId(@Bind("attemptId") long attemptId);
     }
 
     public interface PgDao
@@ -1342,6 +1488,14 @@ public class DatabaseSessionStoreManager
                 // doesn't lock the row
         StoredSession upsertAndLockSession(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa, sessions s" +
+                " where s.id = sa.session_id" +
+                " and sa.id = :attemptId" +
+                " limit 1" +
+                " for update of s")
+        StoredSessionAttemptWithSession lockSessionByAttemptId(@Bind("attemptId") long attemptId);
     }
 
     public interface Dao
@@ -1543,10 +1697,22 @@ public class DatabaseSessionStoreManager
         StoredSession getSessionByConflictedNamesInternal(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
+        @SqlQuery("select session_time from sessions" +
+                " where project_id = :projectId" +
+                " and workflow_name = :workflowName" +
+                " and session_time < :beforeThisSessionTime" +
+                " order by session_time desc" +
+                " limit 1")
+        Long getLastExecutedSessionTime(@Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("beforeThisSessionTime") long beforeThisSessionTime);
+
         @SqlUpdate("insert into session_attempts (session_id, site_id, project_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
                 " values (:sessionId, :siteId, :projectId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")
         @GetGeneratedKeys
         long insertAttempt(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
+
+        @SqlUpdate("insert into delayed_session_attempts (id, dependent_session_id, next_run_time, updated_at)" +
+                " values (:attemptId, :dependentSessionId, :nextRunTime, now())")
+        void insertDelayedAttempt(@Bind("attemptId") long attemptId, @Bind("dependentSessionId") Long dependentSessionId, @Bind("nextRunTime") long nextRunTime);
 
         @SqlUpdate("update sessions" +
                 " set last_attempt_id = :attemptId" +
@@ -1699,6 +1865,11 @@ public class DatabaseSessionStoreManager
                 " where id = :id")
         void updateNextSessionMonitorRunTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime);
 
+        @SqlUpdate("update delayed_session_attempts" +
+                " set next_run_time = :nextRunTime, updated_at = now()" +
+                " where id = :attemptId")
+        void updateNextDelayedAttemptRunTime(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime);
+
         @SqlQuery("select tasks" +
                 " from task_archives ta" +
                 " join session_attempts sa on sa.id = ta.id" +
@@ -1734,6 +1905,10 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("delete from resuming_tasks" +
                 " where attempt_id = :attemptId")
         int deleteResumingTasks(@Bind("attemptId") long attemptId);
+
+        @SqlUpdate("delete from delayed_session_attempts" +
+                " where id = :attemptId")
+        void deleteDelayedAttempt(@Bind("attemptId") long attemptId);
     }
 
     private static class InstantMapper
@@ -2083,6 +2258,22 @@ public class DatabaseSessionStoreManager
                 .type(r.getString("type"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .createdAt(getTimestampInstant(r, "created_at"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
+                .build();
+        }
+    }
+
+    private static class StoredDelayedSessionAttemptMapper
+            implements ResultSetMapper<StoredDelayedSessionAttempt>
+    {
+        @Override
+        public StoredDelayedSessionAttempt map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredDelayedSessionAttempt.builder()
+                .attemptId(r.getLong("id"))
+                .dependentSessionId(getOptionalLong(r, "dependent_session_id"))
+                .nextRunTime(Instant.ofEpochSecond(r.getLong("next_run_time")))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .build();
         }

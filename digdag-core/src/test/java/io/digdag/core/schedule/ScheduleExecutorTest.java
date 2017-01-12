@@ -11,12 +11,15 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.workflow.AttemptBuilder;
+import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Instant;
@@ -29,6 +32,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.spy;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScheduleExecutorTest
@@ -42,7 +46,6 @@ public class ScheduleExecutorTest
     @Mock ProjectStoreManager projectStoreManager;
     @Mock ScheduleStoreManager scheduleStoreManager;
     @Mock SchedulerManager schedulerManager;
-    @Mock ScheduleHandler scheduleHandler;
     @Mock SessionStore sessionStore;
     @Mock SessionStoreManager sessionStoreManager;
     @Mock Scheduler scheduler;
@@ -52,6 +55,8 @@ public class ScheduleExecutorTest
     @Mock StoredWorkflowDefinitionWithProject workflowDefinition;
     @Mock StoredSessionAttemptWithSession attempt;
     @Mock ScheduleTime nextScheduleTime;
+    @Mock AttemptBuilder attemptBuilder;
+    @Mock WorkflowExecutor workflowExecutor;
 
     private ScheduleExecutor scheduleExecutor;
 
@@ -62,7 +67,7 @@ public class ScheduleExecutorTest
     public void setUp()
             throws Exception
     {
-        scheduleExecutor = new ScheduleExecutor(projectStoreManager, scheduleStoreManager, schedulerManager, scheduleHandler, sessionStoreManager);
+        scheduleExecutor = spy(new ScheduleExecutor(projectStoreManager, scheduleStoreManager, schedulerManager, sessionStoreManager, attemptBuilder, workflowExecutor, CONFIG_FACTORY));
 
         now = Instant.now();
 
@@ -107,10 +112,10 @@ public class ScheduleExecutorTest
                 .thenReturn(ImmutableList.of(attempt));
 
         // Run the schedule executor...
-        scheduleExecutor.run(now);
+        scheduleExecutor.runSchedules(now);
 
         // Verify that another attempt was not started
-        verify(scheduleHandler, never()).start(any(StoredWorkflowDefinitionWithProject.class), any(ScheduleTime.class), any(Optional.class), any(Optional.class));
+        verify(scheduleExecutor, never()).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
 
         // Verify that the schedule skipped to the next time
         verify(scs).updateNextScheduleTime(SCHEDULE_ID, nextScheduleTime);
@@ -129,10 +134,10 @@ public class ScheduleExecutorTest
                 .thenReturn(ImmutableList.of(attempt));
 
         // Run the schedule executor...
-        scheduleExecutor.run(now);
+        scheduleExecutor.runSchedules(now);
 
         // Verify that another attempt was started
-        verify(scheduleHandler).start(any(StoredWorkflowDefinitionWithProject.class), any(ScheduleTime.class), any(Optional.class), any(Optional.class));
+        verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
 
         // Verify that the schedule progressed to the next time
         verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);

@@ -22,9 +22,11 @@ import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.ParameterUpdate;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionAttempt;
+import io.digdag.core.session.SessionControlStore;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
@@ -206,6 +208,28 @@ public class WorkflowExecutor
     private static final DateTimeFormatter SESSION_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
 
+    public static interface WorkflowSubmitterAction <T>
+    {
+        T call(WorkflowSubmitter submitter)
+            throws ResourceNotFoundException, AttemptLimitExceededException, SessionAttemptConflictException;
+    };
+
+    public <T> T submitTransaction(int siteId, WorkflowSubmitterAction<T> func)
+        throws ResourceNotFoundException, AttemptLimitExceededException, SessionAttemptConflictException
+    {
+        try {
+            return sm.getSessionStore(siteId).sessionTransaction((transaction) -> {
+                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId)));
+            });
+        }
+        catch (Exception ex) {
+            Throwables.propagateIfInstanceOf(ex, ResourceNotFoundException.class);
+            Throwables.propagateIfInstanceOf(ex, AttemptLimitExceededException.class);
+            Throwables.propagateIfInstanceOf(ex, SessionAttemptConflictException.class);
+            throw Throwables.propagate(ex);
+        }
+    }
+
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks)
         throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
@@ -220,6 +244,7 @@ public class WorkflowExecutor
         }
 
         int projId = ar.getStored().getProjectId();
+
         Session session = Session.of(projId, ar.getWorkflowName(), ar.getSessionTime());
 
         SessionAttempt attempt = SessionAttempt.of(
@@ -230,10 +255,9 @@ public class WorkflowExecutor
 
         TaskConfig.validateAttempt(attempt);
 
-        final WorkflowTask root = tasks.get(0);
-
         List<ResumingTask> resumingTasks;
         if (ar.getResumingAttemptId().isPresent()) {
+            WorkflowTask root = tasks.get(0);
             resumingTasks = TaskControl.buildResumingTaskMap(
                     sm.getSessionStore(siteId),
                     ar.getResumingAttemptId().get(),
@@ -247,10 +271,6 @@ public class WorkflowExecutor
         else {
             resumingTasks = ImmutableList.of();
         }
-
-        TaskStateCode rootTaskState = root.getTaskType().isGroupingOnly()
-                ? TaskStateCode.PLANNED
-                : TaskStateCode.READY;
 
         StoredSessionAttemptWithSession stored;
         try {
@@ -275,32 +295,17 @@ public class WorkflowExecutor
                     logger.info("Starting a new session project id={} workflow name={} session_time={}",
                             projId, ar.getWorkflowName(), SESSION_TIME_FORMATTER.withZone(ar.getTimeZone()).format(ar.getSessionTime()));
 
-                    // root task is already ready to run
-                    final Task rootTask = Task.taskBuilder()
-                        .parentId(Optional.absent())
-                        .fullName(root.getFullName())
-                        .config(TaskConfig.validate(root.getConfig()))
-                        .taskType(root.getTaskType())
-                        .state(rootTaskState)
-                        .stateFlags(TaskStateFlags.empty().withInitialTask())
-                        .build();
-                    store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
-                        try {
-                            TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                                    storedTaskId, tasks, resumingTasks);
-                        }
-                        catch (TaskLimitExceededException ex) {
-                            throw new WorkflowTaskLimitExceededException(ex);
-                        }
-                        return null;
-                    });
-                    if (!ar.getSessionMonitors().isEmpty()) {
-                        for (SessionMonitor monitor : ar.getSessionMonitors()) {
-                            logger.debug("Using session monitor: {}", monitor);
-                        }
-                        store.insertMonitors(storedAttempt.getId(), ar.getSessionMonitors());
+                    StoredSessionAttemptWithSession storedAttemptWithSession =
+                        StoredSessionAttemptWithSession.of(siteId, storedSession, storedAttempt);
+
+                    try {
+                        storeTasks(store, storedAttemptWithSession, tasks, resumingTasks, ar.getSessionMonitors());
                     }
-                    return StoredSessionAttemptWithSession.of(siteId, storedSession, storedAttempt);
+                    catch (TaskLimitExceededException ex) {
+                        throw new WorkflowTaskLimitExceededException(ex);
+                    }
+
+                    return storedAttemptWithSession;
                 });
         }
         catch (WorkflowTaskLimitExceededException ex) {
@@ -319,23 +324,71 @@ public class WorkflowExecutor
             throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
 
-        if (rootTaskState == TaskStateCode.READY) {
-            // this is an optimization to dispatch tasks to a queue quickly.
-            try {
-                enqueueTask(dispatcher, stored.getId());
-            }
-            catch (Exception ex) {
-                // fallback to the normal operation.
-                // exception of the optimization shouldn't be propagated to
-                // the caller. enqueueReadyTasks will get the same error later.
-                noticeStatusPropagate();
-            }
-        }
-        else {
-            noticeStatusPropagate();
-        }
+        noticeStatusPropagate();
 
         return stored;
+    }
+
+    public void storeTasks(
+            SessionControlStore store,
+            StoredSessionAttemptWithSession storedAttempt,
+            WorkflowDefinition def,
+            List<ResumingTask> resumingTasks,
+            List<SessionMonitor> sessionMonitors)
+        throws TaskLimitExceededException
+    {
+        Workflow workflow = compiler.compile(def.getName(), def.getConfig());
+        WorkflowTaskList tasks = workflow.getTasks();
+
+        storeTasks(store, storedAttempt, tasks, resumingTasks, sessionMonitors);
+    }
+
+    public void storeTasks(
+            SessionControlStore store,
+            StoredSessionAttemptWithSession storedAttempt,
+            WorkflowTaskList tasks,
+            List<ResumingTask> resumingTasks,
+            List<SessionMonitor> sessionMonitors)
+        throws TaskLimitExceededException
+    {
+        final WorkflowTask root = tasks.get(0);
+
+        TaskStateCode rootTaskState = root.getTaskType().isGroupingOnly()
+                ? TaskStateCode.PLANNED
+                : TaskStateCode.READY;
+
+        // root task is already ready to run
+        final Task rootTask = Task.taskBuilder()
+            .parentId(Optional.absent())
+            .fullName(root.getFullName())
+            .config(TaskConfig.validate(root.getConfig()))
+            .taskType(root.getTaskType())
+            .state(rootTaskState)
+            .stateFlags(TaskStateFlags.empty().withInitialTask())
+            .build();
+
+        try {
+            store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
+                try {
+                    TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
+                            storedTaskId, tasks, resumingTasks);
+                }
+                catch (TaskLimitExceededException ex) {
+                    throw new WorkflowTaskLimitExceededException(ex);
+                }
+                return null;
+            });
+        }
+        catch (WorkflowTaskLimitExceededException ex) {
+            throw ex.getCause();
+        }
+
+        if (!sessionMonitors.isEmpty()) {
+            for (SessionMonitor monitor : sessionMonitors) {
+                logger.debug("Using session monitor: {}", monitor);
+            }
+            store.insertMonitors(storedAttempt.getId(), sessionMonitors);
+        }
     }
 
     private static class WorkflowTaskLimitExceededException
