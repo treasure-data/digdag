@@ -627,6 +627,7 @@ public class DatabaseSessionStoreManager
                         " and " + bitAnd("sa.state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0" +
                     ")" +
                     " and next_run_time <= :currentTime" +
+                    " order by next_run_time" +
                     " limit :limit" +
                     " for update"
                 )

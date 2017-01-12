@@ -237,7 +237,7 @@ public class ScheduleExecutor
         Instant scheduleTime = sched.getNextScheduleTime();
         Instant runTime = sched.getNextRunTime();
 
-        AttemptRequest ar = newAttemptrequest(
+        AttemptRequest ar = newAttemptRequest(
                 def, ScheduleTime.of(scheduleTime, runTime),
                 Optional.absent(), sched.getLastSessionTime());
         try {
@@ -336,8 +336,6 @@ public class ScheduleExecutor
         SessionStore ss = sessionStoreManager.getSessionStore(siteId);
 
         return sm.getScheduleStore(siteId).lockScheduleById(schedId, (store, sched) -> {
-            ScheduleControl lockedSched = new ScheduleControl(store, sched);
-
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
             Scheduler sr = srm.getScheduler(def);
 
@@ -409,7 +407,7 @@ public class ScheduleExecutor
                             lastExecutedSessionTime = submitter.getLastExecutedSessionTime(
                                     sched.getProjectId(), sched.getWorkflowName(), instant);
                         }
-                        AttemptRequest ar = newAttemptrequest(
+                        AttemptRequest ar = newAttemptRequest(
                                 def, ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName), lastExecutedSessionTime);
                         StoredSessionAttemptWithSession attempt =
@@ -456,7 +454,7 @@ public class ScheduleExecutor
         control.completeDelayedAttempt(delayedAttempt.getAttemptId());
     }
 
-    private AttemptRequest newAttemptrequest(
+    private AttemptRequest newAttemptRequest(
             StoredWorkflowDefinitionWithProject def,
             ScheduleTime time, Optional<String> retryAttemptName,
             Optional<Instant> lastExecutedSessionTime)
