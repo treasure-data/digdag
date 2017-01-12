@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
@@ -313,7 +314,7 @@ public class OperatorManager
 
         // Grant access to all ${secret:<key>} template secrets
         forEachUserSecretTemplateKey(mergedRequest.getConfig().getInternalObjectNode(),
-                key -> setPath(grants, key, true));
+                key -> setKey(grants, ConfigKey.parse(key), true));
 
         // Operator can drop access to access to unnecessary secrets
         AgentOperatorSecretFilter operatorSecretFilter = new AgentOperatorSecretFilter(factory);
@@ -334,14 +335,12 @@ public class OperatorManager
         return operator.run();
     }
 
-    private static void setPath(Config config, String path, Object value)
+    private static void setKey(Config config, ConfigKey configKey, Object value)
     {
-        Preconditions.checkArgument(!path.isEmpty(), "path");
-        List<String> parts = Splitter.on('.').splitToList(path);
-        for (int i = 0; i < parts.size() - 1; i++) {
-            config = config.getNestedOrSetEmpty(parts.get(i));
+        for (String key : configKey.getNestNames()) {
+            config = config.getNestedOrSetEmpty(key);
         }
-        config.set(parts.get(parts.size() - 1), value);
+        config.set(configKey.getLastName(), value);
     }
 
     private static void forEachUserSecretTemplateKey(JsonNode node, Consumer<String> action)
@@ -349,7 +348,7 @@ public class OperatorManager
         if (node.isObject()) {
             ObjectNode object = (ObjectNode) node;
             object.fields().forEachRemaining(entry -> {
-                UserSecretTemplate.of(entry.getKey()).forEachKey(action);
+                UserSecretTemplate.of(entry.getKey()).getKeys().forEach(action);
                 forEachUserSecretTemplateKey(entry.getValue(), action);
             });
         }
@@ -358,7 +357,7 @@ public class OperatorManager
             array.elements().forEachRemaining(element -> forEachUserSecretTemplateKey(element, action));
         }
         else if (node.isTextual()) {
-            UserSecretTemplate.of(node.textValue()).forEachKey(action);
+            UserSecretTemplate.of(node.textValue()).getKeys().forEach(action);
         }
     }
 

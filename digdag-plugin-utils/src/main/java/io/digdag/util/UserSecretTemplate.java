@@ -32,11 +32,13 @@ public class UserSecretTemplate
         return TEMPLATE_PATTERN.matcher(source).find();
     }
 
-    public void forEachKey(Consumer<String> action) {
+    public List<String> getKeys() {
+        ImmutableList.Builder<String> keys = ImmutableList.builder();
         Matcher m = TEMPLATE_PATTERN.matcher(source);
         while (m.find()) {
-            action.accept(m.group(1).trim());
+            keys.add(m.group(1).trim());
         }
+        return keys.build();
     }
 
     public String format(SecretProvider secrets)
