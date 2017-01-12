@@ -1826,6 +1826,7 @@ const ProjectsPage = (props:{}) =>
 const WorkflowsPage = () =>
   <div className='container-fluid'>
     <WorkflowsView />
+    <div><Link to={`/projects/new`}>New project</Link></div>
     <SessionsView />
   </div>
 
@@ -2160,7 +2161,7 @@ class ProjectEditor extends React.Component {
     var title
     var header
     if (project) {
-      title = "Edit Project"
+      title = "Edit Workflows"
       header = (
         <table className='table table-condensed'>
           <tbody>
