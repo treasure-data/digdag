@@ -1,6 +1,11 @@
 package io.digdag.core.agent;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -18,15 +23,14 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretAccessContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretAccessPolicy;
-import io.digdag.spi.SecretSelector;
 import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateException;
+import io.digdag.util.UserSecretTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -304,6 +309,11 @@ public class OperatorManager
 
         // Users can grant access to secrets explicitly
         Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
+        mergedRequest.getConfig().remove("_secrets");
+
+        // Grant access to all ${secret:<key>} template secrets
+        forEachUserSecretTemplateKey(mergedRequest.getConfig().getInternalObjectNode(),
+                key -> setPath(grants, key, true));
 
         // Operator can drop access to access to unnecessary secrets
         AgentOperatorSecretFilter operatorSecretFilter = new AgentOperatorSecretFilter(factory);
@@ -322,6 +332,34 @@ public class OperatorManager
         operatorSecretFilter.allowUserSecretAccess(operator);
 
         return operator.run();
+    }
+
+    private static void setPath(Config config, String path, Object value)
+    {
+        Preconditions.checkArgument(!path.isEmpty(), "path");
+        List<String> parts = Splitter.on('.').splitToList(path);
+        for (int i = 0; i < parts.size() - 1; i++) {
+            config = config.getNestedOrSetEmpty(parts.get(i));
+        }
+        config.set(parts.get(parts.size() - 1), value);
+    }
+
+    private static void forEachUserSecretTemplateKey(JsonNode node, Consumer<String> action)
+    {
+        if (node.isObject()) {
+            ObjectNode object = (ObjectNode) node;
+            object.fields().forEachRemaining(entry -> {
+                UserSecretTemplate.of(entry.getKey()).forEachKey(action);
+                forEachUserSecretTemplateKey(entry.getValue(), action);
+            });
+        }
+        else if (node.isArray()) {
+            ArrayNode array = (ArrayNode) node;
+            array.elements().forEachRemaining(element -> forEachUserSecretTemplateKey(element, action));
+        }
+        else if (node.isTextual()) {
+            UserSecretTemplate.of(node.textValue()).forEachKey(action);
+        }
     }
 
     private static class AgentOperatorSecretFilter

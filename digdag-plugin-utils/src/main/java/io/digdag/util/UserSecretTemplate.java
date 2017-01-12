@@ -1,7 +1,13 @@
 package io.digdag.util;
 
+import com.google.common.collect.ImmutableList;
 import io.digdag.spi.SecretProvider;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +30,13 @@ public class UserSecretTemplate
     public boolean containsSecrets()
     {
         return TEMPLATE_PATTERN.matcher(source).find();
+    }
+
+    public void forEachKey(Consumer<String> action) {
+        Matcher m = TEMPLATE_PATTERN.matcher(source);
+        while (m.find()) {
+            action.accept(m.group(1).trim());
+        }
     }
 
     public String format(SecretProvider secrets)
