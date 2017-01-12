@@ -1,0 +1,13 @@
++http_embedded_query:
+  http>: ${test_uri}?foo=bar&plain_arg_name_1=${secret:arg_value_1}&${secret:arg_name_2}=${secret:arg_value_2}
+
++http_separate_query:
+  http>: ${test_uri}
+  query: foo=bar&plain_arg_name_1=${secret:arg_value_1}&${secret:arg_name_2}=${secret:arg_value_2}
+
++http_structured_query:
+  http>: ${test_uri}
+  query:
+    foo: bar
+    plain_arg_name_1: ${secret:arg_value_1}
+    ${secret:arg_name_2}: ${secret:arg_value_2}
