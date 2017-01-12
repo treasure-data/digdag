@@ -17,4 +17,4 @@ bootstrap:
     path: bootstrap_hello.sh
     env:
       FOOBAR: foo.bar
-    args: [baz, quux, {secret: foo.bar}]
+    args: [baz, quux, "${secret:foo.bar}"]
