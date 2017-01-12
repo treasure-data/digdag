@@ -1,6 +1,6 @@
 package acceptance;
 
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

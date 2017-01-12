@@ -8,7 +8,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;

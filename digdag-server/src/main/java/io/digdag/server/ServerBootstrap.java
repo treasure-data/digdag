@@ -4,7 +4,7 @@ import com.google.inject.Scopes;
 
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.guice.rs.GuiceRsServerControl;

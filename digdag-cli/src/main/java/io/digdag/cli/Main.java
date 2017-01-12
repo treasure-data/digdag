@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
@@ -41,26 +40,25 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
 import static io.digdag.cli.SystemExitException.systemExit;
-import static io.digdag.core.Version.buildVersion;
+import static io.digdag.client.Version.buildVersion;
 import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
 
 public class Main
 {
     private static final String DEFAULT_PROGRAM_NAME = "digdag";
 
-    private final io.digdag.core.Version version;
+    private final io.digdag.client.Version version;
     private final Map<String, String> env;
     private final PrintStream out;
     private final PrintStream err;
     private final InputStream in;
     private final String programName;
 
-    public Main(io.digdag.core.Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
+    public Main(io.digdag.client.Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
     {
         this.version = version;
         this.env = env;
@@ -115,7 +113,7 @@ public class Main
             protected void configure()
             {
                 bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(Environment.class).toInstance(env);
-                bind(io.digdag.core.Version.class).toInstance(version);
+                bind(io.digdag.client.Version.class).toInstance(version);
                 bind(String.class).annotatedWith(ProgramName.class).toInstance(programName);
                 bind(InputStream.class).annotatedWith(StdIn.class).toInstance(in);
                 bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);

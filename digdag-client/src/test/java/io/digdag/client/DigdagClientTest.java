@@ -10,6 +10,7 @@ import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,8 +21,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
 
+import static io.digdag.client.Version.buildVersion;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.hamcrest.Matchers.is;
@@ -222,5 +225,21 @@ public class DigdagClientTest
         }
 
         assertThat(mockWebServer.getRequestCount(), is(10));
+    }
+
+    @Test
+    public void testUserAgent()
+            throws Exception
+    {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200)
+                .setHeader(CONTENT_TYPE, "application/json")
+                .setBody("{\"version\":\"1.2.3\"}"));
+
+        client.getVersion();
+
+        assertThat(mockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = mockWebServer.takeRequest();
+
+        assertThat(request.getHeader(USER_AGENT), is("DigdagClient/" + buildVersion()));
     }
 }

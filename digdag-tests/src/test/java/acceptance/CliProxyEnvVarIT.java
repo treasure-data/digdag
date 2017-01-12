@@ -1,7 +1,7 @@
 package acceptance;
 
 import com.google.common.collect.ImmutableMap;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import io.netty.handler.codec.http.HttpRequest;
 import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;

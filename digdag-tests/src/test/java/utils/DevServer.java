@@ -2,7 +2,7 @@ package utils;
 
 import com.google.common.collect.ImmutableMap;
 import io.digdag.cli.Main;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 
 import java.io.IOException;
 import java.nio.file.Files;
