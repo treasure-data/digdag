@@ -31,6 +31,7 @@ public class ArchiveManagerTest
         Config config = Config.deserializeFromJackson(objectMapper,
                 objectMapper.readTree(
                         "{\"archive.type\":\"s3\"," +
+                                "\"archive.s3.path\":\"projects\"," +
                                 "\"archive.s3.bucket\":\"digdag-bucket\"," +
                                 "\"archive.s3.credentials.access-key-id\":\"my-access-key-id\"," +
                                 "\"archive.s3.credentials.secret-access-key\":\"my-secret-acccess-key\"}"));
