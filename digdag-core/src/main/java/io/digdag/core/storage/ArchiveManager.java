@@ -5,25 +5,24 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.storage.StorageManager;
 import io.digdag.client.config.Config;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ENGLISH;
-import static io.digdag.core.storage.StorageManager.decodeHex;
 
 public class ArchiveManager
 {
@@ -66,6 +65,7 @@ public class ArchiveManager
     private final StorageManager storageManager;
     private final ArchiveType uploadArchiveType;
     private final Config systemConfig;
+    private final String pathPrefix;
 
     @Inject
     public ArchiveManager(StorageManager storageManager, Config systemConfig)
@@ -73,6 +73,19 @@ public class ArchiveManager
         this.storageManager = storageManager;
         this.systemConfig = systemConfig;
         this.uploadArchiveType = systemConfig.get("archive.type", ArchiveType.class, ArchiveType.DB);
+        this.pathPrefix = getArchivePathPrefix(systemConfig, uploadArchiveType);
+    }
+
+    private String getArchivePathPrefix(Config systemConfig, ArchiveType type)
+    {
+        String pathPrefix = systemConfig.get("archive." + type + ".path", String.class, "");
+        if (pathPrefix.startsWith("/")) {
+            pathPrefix = pathPrefix.substring(1);
+        }
+        if (!pathPrefix.endsWith("/") && !pathPrefix.isEmpty()) {
+            pathPrefix = pathPrefix + "/";
+        }
+        return pathPrefix;
     }
 
     public Location newArchiveLocation(
@@ -99,9 +112,17 @@ public class ArchiveManager
     {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(projectName), "projectName");
         Preconditions.checkArgument(!Strings.isNullOrEmpty(revisionName), "revisionName");
+        // It's possible the storage used to store a project archive in doesn't accept some characters.
+        // For instance, AWS S3 says the following characters are generally safe
+        //   - Alphanumeric characters [0-9a-zA-Z]
+        //   - Special characters !, -, _, ., *, ', (, and )
+        //
+        // So we'd better encode a project name into the characters above
+        String encodedProjectName = Base64.getEncoder().encodeToString(projectName.getBytes(UTF_8)).replace("=", "_");
         return String.format(ENGLISH,
-                "%d/%s/%s.%s.tar.gz",
-                siteId, projectName, revisionName, DATE_TIME_SUFFIX_FORMAT.format(Instant.now()));
+                "%s%d/%s/%s.%s.tar.gz",
+                pathPrefix, siteId, encodedProjectName, revisionName,
+                DATE_TIME_SUFFIX_FORMAT.format(Instant.now()));
     }
 
     public Optional<StorageObject> openArchive(ProjectStore ps, int projectId, String revisionName)
