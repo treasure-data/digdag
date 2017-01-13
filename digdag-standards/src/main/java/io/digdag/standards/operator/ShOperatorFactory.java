@@ -18,6 +18,7 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.UserSecretTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,8 @@ public class ShOperatorFactory
             if (shell.isEmpty()) {
                 shell = ImmutableList.of("/bin/sh");
             }
-            String command = params.get("_command", String.class);
+            String command = UserSecretTemplate.of(params.get("_command", String.class))
+                    .format(context.getSecrets());
 
             ProcessBuilder pb = new ProcessBuilder(shell);
             pb.directory(workspace.getPath().toFile());

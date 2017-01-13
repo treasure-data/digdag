@@ -324,4 +324,33 @@ public class SecretsIT
         String logs = getAttemptLogs(client, attemptId);
         assertThat(logs, containsString("\"key1\" is not defined"));
     }
+
+    @Test
+    public void verifyAccessIsGrantedToUserSecretTemplateKeys()
+            throws Exception
+    {
+        String projectName = "test";
+
+        // Push the project
+        copyResource("acceptance/secrets/user_secret_template.dig", projectDir);
+        pushProject(server.endpoint(), projectDir, projectName);
+
+        // Set secrets
+        CommandStatus setStatus = main("secrets",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "--project", projectName,
+                "--set", "foo=foo_value", "nested.bar=bar_value");
+        assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
+
+        Path outfile = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out");
+        Id attemptId = startWorkflow(server.endpoint(), projectName, "user_secret_template", ImmutableMap.of(
+                "OUTFILE", outfile.toString()
+        ));
+
+        expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+
+        List<String> output = Files.readAllLines(outfile);
+        assertThat(output, contains("foo=foo_value bar=bar_value"));
+    }
 }
