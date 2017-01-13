@@ -11,24 +11,30 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.bouncycastle.util.io.Streams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.WebApplicationException;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
 
 import static io.digdag.client.Version.buildVersion;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class DigdagClientTest
@@ -241,5 +247,40 @@ public class DigdagClientTest
         RecordedRequest request = mockWebServer.takeRequest();
 
         assertThat(request.getHeader(USER_AGENT), is("DigdagClient/" + buildVersion()));
+    }
+
+    @Test
+    public void getProjectArchiveWithRedirect()
+            throws IOException, InterruptedException
+    {
+        String redirectUrl = String.format("https://%s:%d/redirect/pathname", mockWebServer.getHostName(), mockWebServer.getPort());
+        mockWebServer.enqueue(new MockResponse().setResponseCode(303).setHeader("Location", redirectUrl));
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("foobar"));
+        InputStream archive = client.getProjectArchive(Id.of("42"), "12345678-abcdef");
+        assertArrayEquals("foobar".getBytes(UTF_8), Streams.readAll(archive));
+        assertThat(mockWebServer.getRequestCount(), is(2));
+        assertThat(mockWebServer.takeRequest().getPath(), is("/api/projects/42/archive?revision=12345678-abcdef"));
+        assertThat(mockWebServer.takeRequest().getPath(), is("/redirect/pathname"));
+    }
+
+    @Test
+    public void getProjectArchiveWithRedirect10Times()
+            throws IOException, InterruptedException
+    {
+        String redirectUrl = String.format("https://%s:%d/redirect/pathname", mockWebServer.getHostName(), mockWebServer.getPort());
+        for (int i = 0; i < 10; i++) {
+            mockWebServer.enqueue(new MockResponse().setResponseCode(303).setHeader("Location", redirectUrl));
+        }
+        try {
+            client.getProjectArchive(Id.of("42"), "12345678-abcdef");
+            assertTrue(false);
+        }
+        catch (WebApplicationException e) {
+            assertThat(mockWebServer.getRequestCount(), is(10));
+            assertThat(mockWebServer.takeRequest().getPath(), is("/api/projects/42/archive?revision=12345678-abcdef"));
+            for (int i = 0; i < 10 - 1; i++) {
+                assertThat(mockWebServer.takeRequest().getPath(), is("/redirect/pathname"));
+            }
+        }
     }
 }
