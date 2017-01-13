@@ -1,5 +1,13 @@
 package utils;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,11 +22,11 @@ import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.Version;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -53,6 +61,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,6 +84,7 @@ import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
 import static io.digdag.client.Version.buildVersion;
+import static io.digdag.util.RetryExecutor.retryExecutor;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -397,7 +407,8 @@ public class TestUtils
         return pushProject(endpoint, project, projectName);
     }
 
-    public static Id pushProject(String endpoint, Path project, String projectName) {
+    public static Id pushProject(String endpoint, Path project, String projectName)
+    {
         return pushProject(endpoint, project, projectName, ImmutableMap.of());
     }
 
@@ -694,5 +705,38 @@ public class TestUtils
                         };
                     }
                 }).start();
+    }
+
+    public static void s3Put(AmazonS3 s3, String bucket, String key, String resource)
+            throws IOException
+    {
+        logger.info("put {} -> s3://{}/{}", resource, bucket, key);
+        URL resourceUrl = Resources.getResource(resource);
+        byte[] bytes = Resources.toByteArray(resourceUrl);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(bytes.length);
+        s3.putObject(bucket, key, new ByteArrayInputStream(bytes), metadata);
+    }
+
+    public static void s3DeleteRecursively(AmazonS3 s3, String bucket, String prefix)
+            throws Exception
+    {
+        ListObjectsRequest request = new ListObjectsRequest()
+                .withBucketName(bucket)
+                .withPrefix(prefix);
+
+        while (true) {
+            ObjectListing listing = s3.listObjects(request);
+            String[] keys = listing.getObjectSummaries().stream().map(S3ObjectSummary::getKey).toArray(String[]::new);
+            for (String key : keys) {
+                logger.info("delete s3://{}/{}", bucket, key);
+            }
+            retryExecutor()
+                    .retryIf(e -> e instanceof AmazonServiceException)
+                    .run(() -> s3.deleteObjects(new DeleteObjectsRequest(bucket).withKeys(keys)));
+            if (listing.getNextMarker() == null) {
+                break;
+            }
+        }
     }
 }

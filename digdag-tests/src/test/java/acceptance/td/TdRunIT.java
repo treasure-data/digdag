@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static acceptance.td.Secrets.TD_API_KEY;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
@@ -30,8 +31,6 @@ import static org.junit.Assume.assumeThat;
 
 public class TdRunIT
 {
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 

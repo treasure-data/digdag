@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
@@ -12,6 +14,7 @@ import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TemplateEngine;
@@ -20,10 +23,13 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.standards.operator.td.YamlLoader;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
+
+import static io.digdag.standards.operator.Secrets.resolveSecrets;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class EmbulkOperatorFactory
@@ -78,7 +84,19 @@ public class EmbulkOperatorFactory
                 if (params.has("_command")) {
                     String command = params.get("_command", String.class);
                     String data = workspace.templateFile(templateEngine, command, UTF_8, params);
-                    Files.write(workspace.getPath(tempFile), data.getBytes(UTF_8));
+
+                    ObjectNode embulkConfig;
+                    try {
+                        embulkConfig = new YamlLoader().loadString(data);
+                    }
+                    catch (RuntimeException | IOException ex) {
+                        Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+                        throw new ConfigException("Failed to parse yaml file", ex);
+                    }
+
+                    Files.write(
+                            workspace.getPath(tempFile),
+                            mapper.writeValueAsBytes(resolveSecrets(embulkConfig, context.getSecrets())));
                 }
                 else {
                     Config embulkConfig = params.getNested("config");

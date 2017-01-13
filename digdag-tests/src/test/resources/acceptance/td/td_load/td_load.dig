@@ -1,6 +1,9 @@
 timezone: UTC
 
 +run:
+  _secrets:
+    access_key_id: true
+    secret_access_key: true
   td_load>: td_load_config.yml
   table: td_load_test
 
