@@ -66,6 +66,7 @@ public class ArchiveManager
     private final ArchiveType uploadArchiveType;
     private final Config systemConfig;
     private final String pathPrefix;
+    private final boolean directDownloadEnabled;
 
     @Inject
     public ArchiveManager(StorageManager storageManager, Config systemConfig)
@@ -74,6 +75,7 @@ public class ArchiveManager
         this.systemConfig = systemConfig;
         this.uploadArchiveType = systemConfig.get("archive.type", ArchiveType.class, ArchiveType.DB);
         this.pathPrefix = getArchivePathPrefix(systemConfig, uploadArchiveType);
+        this.directDownloadEnabled = systemConfig.get("archive." + uploadArchiveType + ".direct_download", Boolean.class, false);
     }
 
     private String getArchivePathPrefix(Config systemConfig, ArchiveType type)
@@ -185,6 +187,9 @@ public class ArchiveManager
 
                 public Optional<DirectDownloadHandle> getDirectDownloadHandle()
                 {
+                    if (!directDownloadEnabled) {
+                        return Optional.absent();
+                    }
                     return storage.getDirectDownloadHandle(rev.getArchivePath().or(""));
                 }
 
