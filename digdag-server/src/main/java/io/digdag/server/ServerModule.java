@@ -71,7 +71,6 @@ public class ServerModule
         binder().bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
         binder().bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
         binder().bind(SecretControlStoreManager.class).to(DatabaseSecretControlStoreManager.class);
-        binder().bind(SecretAccessPolicy.class).to(DefaultSecretAccessPolicy.class);
     }
 
     protected void bindResources(ApplicationBindingBuilder builder)

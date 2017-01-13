@@ -2,10 +2,7 @@ package io.digdag.core.agent;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -69,7 +66,6 @@ public class OperatorManager
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
     private final SecretStoreManager secretStoreManager;
-    private final SecretAccessPolicy secretAccessPolicy;
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
@@ -82,7 +78,7 @@ public class OperatorManager
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
-            SecretStoreManager secretStoreManager, SecretAccessPolicy secretAccessPolicy)
+            SecretStoreManager secretStoreManager)
     {
         this.agentConfig = agentConfig;
         this.agentId = agentId;
@@ -94,7 +90,6 @@ public class OperatorManager
 
         this.registry = registry;
         this.secretStoreManager = secretStoreManager;
-        this.secretAccessPolicy = secretAccessPolicy;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -308,88 +303,23 @@ public class OperatorManager
                 .operatorType(type)
                 .build();
 
-        // Users can grant access to secrets explicitly
-        Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
+        // Users can mount secrets
+        Config secretMounts = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
         mergedRequest.getConfig().remove("_secrets");
 
-        // Grant access to all ${secret:<key>} template secrets
-        forEachUserSecretTemplateKey(mergedRequest.getConfig().getInternalObjectNode(),
-                key -> setKey(grants, ConfigKey.parse(key), true));
-
-        // Operator can drop access to access to unnecessary secrets
-        AgentOperatorSecretFilter operatorSecretFilter = new AgentOperatorSecretFilter(factory);
-
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
-                secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
+                secretContext, secretMounts, secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
-                GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
+                GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretStore));
 
         OperatorContext context = new DefaultOperatorContext(
                 projectPath, mergedRequest, secretProvider, privilegedVariables);
 
         Operator operator = factory.newOperator(context);
-        operatorSecretFilter.allowUserSecretAccess(operator);
 
         return operator.run();
-    }
-
-    private static void setKey(Config config, ConfigKey configKey, Object value)
-    {
-        for (String key : configKey.getNestNames()) {
-            config = config.getNestedOrSetEmpty(key);
-        }
-        config.set(configKey.getLastName(), value);
-    }
-
-    private static void forEachUserSecretTemplateKey(JsonNode node, Consumer<String> action)
-    {
-        if (node.isObject()) {
-            ObjectNode object = (ObjectNode) node;
-            object.fields().forEachRemaining(entry -> {
-                UserSecretTemplate.of(entry.getKey()).getKeys().forEach(action);
-                forEachUserSecretTemplateKey(entry.getValue(), action);
-            });
-        }
-        else if (node.isArray()) {
-            ArrayNode array = (ArrayNode) node;
-            array.elements().forEachRemaining(element -> forEachUserSecretTemplateKey(element, action));
-        }
-        else if (node.isTextual()) {
-            UserSecretTemplate.of(node.textValue()).getKeys().forEach(action);
-        }
-    }
-
-    private static class AgentOperatorSecretFilter
-            implements DefaultSecretProvider.OperatorSecretFilter
-    {
-        private final Set<String> predeclaredSecretKeys;
-        private boolean userSecretAccess = false;
-        private Predicate<String> dynamicFilter = (key) -> true;
-
-        AgentOperatorSecretFilter(OperatorFactory factory)
-        {
-            this.predeclaredSecretKeys = ImmutableSet.copyOf(
-                    factory.getSecretAccessList().getSecretKeys());
-        }
-
-        void allowUserSecretAccess(Operator operator)
-        {
-            this.userSecretAccess = true;
-            this.dynamicFilter = (key) -> operator.testUserSecretAccess(key);
-        }
-
-        @Override
-        public boolean test(String key, boolean userGranted)
-        {
-            if (userGranted) {
-                return userSecretAccess && dynamicFilter.test(key);
-            }
-            else {
-                return predeclaredSecretKeys.contains(key) && dynamicFilter.test(key);
-            }
-        }
     }
 
     private void heartbeat()

@@ -15,7 +15,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.LocalSecretAccessPolicy;
 import io.digdag.core.LocalSite;
 import io.digdag.core.LocalSite.StoreWorkflowResult;
 import io.digdag.core.agent.AgentConfig;
@@ -26,7 +25,6 @@ import io.digdag.core.agent.OperatorRegistry;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.WorkspaceManager;
-import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
@@ -52,7 +50,6 @@ import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
-import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.TaskRequest;
@@ -222,7 +219,6 @@ public class Run
                 .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
                 .setSystemPlugins(loadSystemPlugins(systemProps))
                 .addModules(binder -> {
-                    binder.bind(SecretAccessPolicy.class).to(LocalSecretAccessPolicy.class).in(Scopes.SINGLETON);
                     Multibinder.newSetBinder(binder, SecretStore.class);
                     binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
                     binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
@@ -635,9 +631,9 @@ public class Run
                 WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, OperatorRegistry registry,
                 Run cmd, YamlMapper yamlMapper,
-                SecretStoreManager secretStoreManager, SecretAccessPolicy secretAccessPolicy)
+                SecretStoreManager secretStoreManager)
         {
-            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, secretStoreManager, secretAccessPolicy);
+            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, secretStoreManager);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;

@@ -1,9 +1,4 @@
 +emr_job:
-  _secrets:
-    td:
-      apikey: true
-    foo:
-      bar: true
   emr>:
   cluster: ${test_cluster}
   staging: ${test_s3_folder}/staging/
