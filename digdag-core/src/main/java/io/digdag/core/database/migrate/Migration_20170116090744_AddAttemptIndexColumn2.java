@@ -3,7 +3,7 @@ package io.digdag.core.database.migrate;
 import java.util.List;
 import org.skife.jdbi.v2.Handle;
 
-public class Migration_20161207220744_AddAttemptIndexColumn2
+public class Migration_20170116090744_AddAttemptIndexColumn2
         implements Migration
 {
     @Override
