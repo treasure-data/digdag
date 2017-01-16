@@ -60,7 +60,7 @@ public class ProjectArchive
     }
 
     // reused by ProjectArchiveLoader.load
-    static void listFiles(Path projectPath, PathConsumer consumer)
+    public static void listFiles(Path projectPath, PathConsumer consumer)
         throws IOException
     {
         listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>());

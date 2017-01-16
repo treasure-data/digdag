@@ -5,11 +5,10 @@ import com.google.inject.Inject;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.config.Config;
-import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.WorkflowResourceMatcher;
-import io.digdag.core.repository.WorkflowDefinition;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
@@ -19,34 +18,35 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.Date;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Locale.ENGLISH;
 
 class Archiver
 {
     private final PrintStream out;
+    private final ConfigFactory cf;
     private final ProjectArchiveLoader projectLoader;
-    private final YamlMapper yamlMapper;
 
     @Inject
-    Archiver(@StdOut PrintStream out, ProjectArchiveLoader projectLoader, YamlMapper yamlMapper)
+    Archiver(@StdOut PrintStream out, ProjectArchiveLoader projectLoader, ConfigFactory cf)
     {
         this.out = out;
         this.projectLoader = projectLoader;
-        this.yamlMapper = yamlMapper;
+        this.cf = cf;
     }
 
-    void createArchive(Path projectPath, Path output, Config overrideParams)
+    void createArchive(Path projectPath, Path output)
             throws IOException
     {
         out.println("Creating " + output + "...");
 
-        ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overrideParams);
-        ArchiveMetadata meta = project.getArchiveMetadata();
+        ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), cf.create());
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(output)))) {
             // default mode for file names longer than 100 bytes is throwing an exception (LONGFILE_ERROR)
@@ -56,7 +56,7 @@ class Archiver
                 if (!Files.isDirectory(absPath)) {
                     out.println("  Archiving " + resourceName);
 
-                    TarArchiveEntry e = buildTarArchiveEntry(project, absPath, resourceName);
+                    TarArchiveEntry e = buildTarArchiveEntry(projectPath, absPath, resourceName);
                     tar.putArchiveEntry(e);
                     if (e.isSymbolicLink()) {
                         out.println("    symlink -> " + e.getLinkName());
@@ -69,26 +69,10 @@ class Archiver
                     tar.closeArchiveEntry();
                 }
             });
-
-            // create .digdag.dig
-            // TODO set default time zone if not set?
-            byte[] metaBody = yamlMapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
-            TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
-            metaEntry.setSize(metaBody.length);
-            metaEntry.setModTime(new Date());
-            tar.putArchiveEntry(metaEntry);
-            tar.write(metaBody);
-            tar.closeArchiveEntry();
         }
-
-        out.println("Workflows:");
-        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
-            out.println("  " + workflow.getName());
-        }
-        out.println("");
     }
 
-    private TarArchiveEntry buildTarArchiveEntry(ProjectArchive project, Path absPath, String name)
+    private TarArchiveEntry buildTarArchiveEntry(Path projectPath, Path absPath, String name)
             throws IOException
     {
         TarArchiveEntry e;
@@ -96,12 +80,12 @@ class Archiver
             e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
             Path rawDest = Files.readSymbolicLink(absPath);
             Path normalizedAbsDest = absPath.getParent().resolve(rawDest).normalize();
-            try {
-                project.pathToResourceName(normalizedAbsDest);
+
+            if (!normalizedAbsDest.startsWith(projectPath)) {
+                throw new IllegalArgumentException(String.format(ENGLISH,
+                        "Invalid symbolic link: Given path '%s' is outside of project directory '%s'", normalizedAbsDest, projectPath));
             }
-            catch (IllegalArgumentException ex) {
-                throw new IllegalArgumentException("Invalid symbolic link: " + ex.getMessage());
-            }
+
             // absolute path will be invalid on a server. convert it to a relative path
             Path normalizedRelativeDest = absPath.getParent().relativize(normalizedAbsDest);
 

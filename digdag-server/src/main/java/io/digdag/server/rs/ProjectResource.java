@@ -58,6 +58,9 @@ import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
+import io.digdag.core.archive.WorkflowResourceMatcher;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.Project;
@@ -160,6 +163,7 @@ public class ProjectResource
     private final TempFileManager tempFiles;
     private final SessionStoreManager ssm;
     private final SecretControlStoreManager scsp;
+    private final ProjectArchiveLoader projectArchiveLoader;
 
     @Inject
     public ProjectResource(
@@ -172,7 +176,8 @@ public class ProjectResource
             SchedulerManager srm,
             TempFileManager tempFiles,
             SessionStoreManager ssm,
-            SecretControlStoreManager scsp)
+            SecretControlStoreManager scsp,
+            ProjectArchiveLoader projectArchiveLoader)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -184,6 +189,7 @@ public class ProjectResource
         this.tempFiles = tempFiles;
         this.ssm = ssm;
         this.scsp = scsp;
+        this.projectArchiveLoader = projectArchiveLoader;
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -589,14 +595,13 @@ public class ProjectResource
                             totalSize, ARCHIVE_TOTAL_SIZE_LIMIT));
             }
 
-            Config renderedConfig = rawLoader.loadFile(
-                    dir.child(ArchiveMetadata.FILE_NAME).toFile()).toConfig(cf);
-            return renderedConfig.convert(ArchiveMetadata.class);
+            ProjectArchive archive = projectArchiveLoader.load(dir.get(), WorkflowResourceMatcher.defaultMatcher(), cf.create());
+
+            return archive.getArchiveMetadata();
         }
     }
 
-    // TODO here doesn't have to extract files exception ArchiveMetadata.FILE_NAME
-    //      rawLoader.loadFile doesn't have to render the file because it's already rendered.
+    // TODO: only write .dig files
     private long extractConfigFiles(java.nio.file.Path dir, TarArchiveInputStream archive)
         throws IOException
     {

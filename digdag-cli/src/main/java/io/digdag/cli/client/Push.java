@@ -36,12 +36,6 @@ public class Push
     @Parameter(names = {"--project"})
     String projectDirName = null;
 
-    @DynamicParameter(names = {"-p", "--param"})
-    Map<String, String> params = new HashMap<>();
-
-    @Parameter(names = {"-P", "--params-file"})
-    String paramsFile = null;
-
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
@@ -96,12 +90,6 @@ public class Push
                 .initialize()
                 .getInjector();
 
-        ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
-
-        // read parameters
-        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
-
         // schedule_from will be server's current time if not set
         Optional<Instant> scheduleFrom;
         if (scheduleFromString == null) {
@@ -115,7 +103,7 @@ public class Push
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, overrideParams);
+        injector.getInstance(Archiver.class).createArchive(projectPath, archivePath);
 
         DigdagClient client = buildClient();
         if ("".equals(revision)) {
