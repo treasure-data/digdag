@@ -78,7 +78,7 @@ public class ServerGracefulShutdownIT
                     projectDir.toString());
             assertThat(initStatus.code(), is(0));
 
-            Files.write(projectDir.resolve("acceptance/server_graceful_shutdown/sleep.dig"), asList(Resources.toString(
+            Files.write(projectDir.resolve("sleep.dig"), asList(Resources.toString(
                     Resources.getResource("acceptance/server_graceful_shutdown/sleep.dig"), UTF_8)
                     .replace("${outdir}", root().toString())));
 
