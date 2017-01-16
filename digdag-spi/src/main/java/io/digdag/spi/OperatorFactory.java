@@ -17,8 +17,6 @@ public interface OperatorFactory
      * If this operator wants to use secret keys given by configuration parameters
      * (e.g. secrets.getSecrets(config.get("secret", String.class))), the keys won't be (can't be)
      * included here. Instead, users must grant the access explicitly using _secret directive.
-     * Operators should test the access to the key by overriding
-     * {@link Operator#testUserSecretAccess(String)} method.
      */
     default SecretAccessList getSecretAccessList()
     {
