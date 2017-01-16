@@ -28,6 +28,15 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-s3:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-emr:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-dynamodb:${project.ext.awsJavaSdkVersion}"
+    compile("com.amazonaws:aws-java-sdk-core:${project.ext.awsJavaSdkVersion}") {
+        // aws-java-sdk-core depends on an old version of commons-logging (version 1.1.3).
+        // It conflicts with org.apache.httpcomponents:httpclient used by resteasy-client.
+        // Here removes dependency to commons-logging:1.1.3...
+        exclude group: 'commons-logging', module: 'commons-logging'
+    }
+    // ...then adds commons-logging:1.2 here. Remove this line if aws-java-sdk-core is updated
+    // to use newer version of commons-logging.
+    compile "commons-logging:commons-logging:1.2"
 
     // bigquery
     compile ('com.google.apis:google-api-services-bigquery:v2-rev325-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
