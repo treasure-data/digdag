@@ -2002,7 +2002,7 @@ class FileEditor extends React.Component {
             { ({ width }) =>
                 <CodeEditor
                   className='editor'
-                  language=''  // TODO how to let ace guess language?
+                  language='yaml'  // TODO how to let ace guess language?
                   value={file ? fileString(file.name, this.props.projectArchive) : ''}
                   style={{ width }}
                   ref={(vlaue) => { this.editor = vlaue }}
