@@ -23,13 +23,9 @@ import java.util.function.Supplier;
 public class GrantedPrivilegedVariables
     implements PrivilegedVariables
 {
-    static SecretProvider privilegedSecretProvider(SecretAccessContext context, SecretAccessPolicy accessPolicy, SecretStore store)
+    static SecretProvider privilegedSecretProvider(SecretAccessContext context, SecretStore store)
     {
         return (key) -> {
-            if (!accessPolicy.isSecretAccessible(context, key)) {
-                return Optional.absent();
-            }
-
             Optional<String> projectSecret = store.getSecret(context.projectId(), SecretScopes.PROJECT, key);
 
             if (projectSecret.isPresent()) {

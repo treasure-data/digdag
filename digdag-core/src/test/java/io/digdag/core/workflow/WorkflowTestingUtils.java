@@ -3,13 +3,11 @@ package io.digdag.core.workflow;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
-import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.LocalSecretAccessPolicy;
 import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.crypto.SecretCrypto;
@@ -29,12 +27,9 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.SchedulerFactory;
-import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretStoreManager;
-import io.digdag.spi.TaskRequest;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -63,7 +58,6 @@ public class WorkflowTestingUtils
 
                 binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
                 binder.bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
-                binder.bind(SecretAccessPolicy.class).to(LocalSecretAccessPolicy.class);
 
                 Multibinder<SchedulerFactory> schedulerFactoryBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
 

@@ -142,24 +142,6 @@ public class OperatorTestingUtils
         {
             return privilegedVariables;
         }
-
-        public TestingOperatorContext withSecrets(Properties secretsProps)
-        {
-            return new TestingOperatorContext(
-                    projectPath,
-                    taskRequest,
-                    TestingSecretProvider.fromProperties(secretsProps),
-                    privilegedVariables);
-        }
-
-        public TestingOperatorContext withPrivilegedVariables(Config grants)
-        {
-            return new TestingOperatorContext(
-                    projectPath,
-                    taskRequest,
-                    secrets,
-                    GrantedPrivilegedVariables.build(grants, secrets));
-        }
     }
 
     private static class TestingSecretProvider
