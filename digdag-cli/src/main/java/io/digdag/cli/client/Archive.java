@@ -50,7 +50,6 @@ public class Archive
         err.println("Usage: " + programName + " archive [options...]");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions(env, err);
         return systemExit(error);
