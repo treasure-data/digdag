@@ -1,5 +1,6 @@
 package acceptance;
 
+import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
@@ -14,6 +15,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
@@ -162,13 +165,15 @@ public class RetryIT
     private void pushRevision(String resourceName, String workflowName)
             throws IOException
     {
-        copyResource(resourceName, projectDir.resolve(workflowName + ".dig"));
+        Files.write(projectDir.resolve(workflowName + ".dig"), asList(Resources.toString(
+                Resources.getResource(resourceName), UTF_8)
+                .replace("${outdir}", root().toString())));
+
         CommandStatus pushStatus = main("push",
                 "retry",
                 "-c", config.toString(),
                 "--project", projectDir.toString(),
-                "-e", server.endpoint(),
-                "-p", "outdir=" + root());
+                "-e", server.endpoint());
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
     }
 
