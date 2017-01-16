@@ -1,7 +1,7 @@
 package acceptance.td;
 
 import com.google.common.collect.ImmutableList;
-import utils.CommandStatus;
+import com.google.common.io.Resources;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDSaveQueryRequest;
@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,14 +21,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static acceptance.td.Secrets.TD_API_KEY;
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.main;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
+import static utils.TestUtils.main;
 
 public class TdRunIT
 {
@@ -84,34 +84,52 @@ public class TdRunIT
     public void testRunSavedQuery()
             throws Exception
     {
-        testRunSavedQuery("test_" + UUID.randomUUID().toString().replace('-', '_'));
+        String name = "test_" + UUID.randomUUID().toString().replace('-', '_');
+        createQuery(name);
+        testRunSavedQuery(name);
     }
 
     @Test
     public void testRunSavedQueryWithUnicodeName()
             throws Exception
     {
-        testRunSavedQuery("test query with  space\tand 漢字　and räksmörgås " + UUID.randomUUID().toString().replace('-', '_'));
+        String name = "test query with  space\tand 漢字　and räksmörgås " + UUID.randomUUID().toString().replace('-', '_');
+        createQuery(name);
+        testRunSavedQuery(name);
     }
 
-    private void testRunSavedQuery(String queryName)
-            throws IOException
+    @Test
+    public void testRunSavedQueryById()
+            throws Exception
     {
-        TDSavedQuery savedQuery = saveQuery(TDSavedQuery.newBuilder(
-                queryName,
+        // TODO: create a query when https://github.com/treasure-data/td-client-java/pull/79 has been deployed
+//        String name = "test_" + UUID.randomUUID().toString().replace('-', '_');
+//        TDSavedQuery query = createQuery(name);
+        testRunSavedQuery("53833");
+    }
+
+    private TDSavedQuery createQuery(String name)
+    {
+        return saveQuery(TDSavedQuery.newBuilder(
+                name,
                 TDJob.Type.PRESTO,
                 database,
                 "select 1",
                 "Asia/Tokyo")
                 .build());
+    }
 
-        copyResource("acceptance/td/td_run/td_run.dig", projectDir.resolve("workflow.dig"));
+    private void testRunSavedQuery(String queryReference)
+            throws IOException
+    {
+        Files.write(projectDir.resolve("workflow.dig"),
+                Resources.toString(Resources.getResource("acceptance/td/td_run/td_run.dig"), UTF_8)
+                        .replace("${saved_query_reference}", queryReference).getBytes(UTF_8));
 
         CommandStatus runStatus = main("run",
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
                 "--project", projectDir.toString(),
-                "-p", "saved_query_name=" + savedQuery.getName(),
                 "-p", "outfile=" + outfile,
                 "workflow.dig");
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));

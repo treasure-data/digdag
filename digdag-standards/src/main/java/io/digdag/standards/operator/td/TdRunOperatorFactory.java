@@ -1,9 +1,11 @@
 package io.digdag.standards.operator.td;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -49,7 +51,7 @@ public class TdRunOperatorFactory
             extends BaseTdJobOperator
     {
         private final Config params;
-        private final String name;
+        private final JsonNode command;
         private final Instant sessionTime;
         private final Optional<String> downloadFile;
         private final boolean storeLastResults;
@@ -62,7 +64,7 @@ public class TdRunOperatorFactory
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            this.name = params.get("_command", String.class);
+            this.command = params.get("_command", JsonNode.class);
             this.sessionTime = params.get("session_time", Instant.class);
             this.downloadFile = params.getOptional("download_file", String.class);
             this.storeLastResults = params.get("store_last_results", boolean.class, false);
@@ -71,6 +73,32 @@ public class TdRunOperatorFactory
 
         @Override
         protected String startJob(TDOperator op, String domainKey)
+        {
+            switch (command.getNodeType()) {
+                case NUMBER:
+                    return startById(op, domainKey, command.longValue());
+                case STRING:
+                    return startByName(op, domainKey, command.textValue());
+                default:
+                    throw new ConfigException("Invalid saved query reference: " + command);
+            }
+        }
+
+        private String startById(TDOperator op, String domainKey, long id)
+        {
+            TDSavedQueryStartRequest req = TDSavedQueryStartRequest.builder()
+                    .name("")
+                    .id(id)
+                    .scheduledTime(Date.from(sessionTime))
+                    .domainKey(domainKey)
+                    .build();
+
+            String jobId = op.submitNewJobWithRetry(client -> client.startSavedQuery(req));
+            logger.info("Started a saved query id={} with time={}, job id= {}", id, sessionTime, jobId);
+            return jobId;
+        }
+
+        private String startByName(TDOperator op, String domainKey, String name)
         {
             TDSavedQueryStartRequest req = TDSavedQueryStartRequest.builder()
                     .name(name)
