@@ -45,7 +45,7 @@ public class ArchiveManagerTest
         String rev = UUID.randomUUID().toString();
         ArchiveManager.Location location = archiveManager.newArchiveLocation(42, "my-proj", rev, 123456);
         assertThat(location.getArchiveType(), is(ArchiveType.of("s3")));
-        String encodeProjectName = new String(Base64.getEncoder().encode("my-proj".getBytes(UTF_8)), UTF_8).replace("=", "_");
+        String encodeProjectName = new String(Base64.getEncoder().encode("my-proj".getBytes(UTF_8)), UTF_8).replace("=", "");
         assertThat(location.getPath(), is(startsWith(String.format("projects/42/%s/%s.", encodeProjectName, rev))));
         assertThat(location.getPath(), is(endsWith(".tar.gz")));
     }
