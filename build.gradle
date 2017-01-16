@@ -326,8 +326,8 @@ project(':digdag-ui') {
 project(':digdag-cli') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
-    // Include digdag-ui and digdag-storage-s3 in the shadow jar which are not
-    // in the dependencies of digdag-cli but should be included.
+    // Include digdag-ui in the shadow jar which are not in the dependencies
+    // of digdag-cli but should be included.
     configurations {
         shadow {
             extendsFrom runtime
@@ -335,8 +335,8 @@ project(':digdag-cli') {
     }
     dependencies {
         shadow project(':digdag-ui')
-        shadow project(':digdag-storage-s3')
     }
+    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     shadowJar {
         configurations = [project.configurations.shadow]
@@ -368,8 +368,6 @@ project(':digdag-cli') {
         exclude 'org/weakref/jmx/internal/guava/**/*'
         relocate 'org.weakref.jmx.internal.guava', 'com.google.common'
     }
-
-    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     task classpath(type: Copy, dependsOn: ['jar']) {
         File dest = file("${rootProject.projectDir}/classpath")

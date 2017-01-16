@@ -10,4 +10,5 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.5'
     compile 'org.fusesource.jansi:jansi:1.11'
     compile 'com.beust:jcommander:1.55'
+    runtime project(':digdag-storage-s3')  // to include digdag-storage-s3 in CLI (shadow jar)
 }
