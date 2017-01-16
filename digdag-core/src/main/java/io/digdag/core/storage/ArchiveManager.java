@@ -6,9 +6,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.io.BaseEncoding;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.core.repository.ArchiveType;
@@ -120,11 +122,11 @@ public class ArchiveManager
         //   - Special characters !, -, _, ., *, ', (, and )
         //
         // So we'd better encode a project name into the characters above
-        String encodedProjectName = Base64.getEncoder().encodeToString(projectName.getBytes(UTF_8)).replace("=", "_");
+        String encodedProjectName = BaseEncoding.base64Url().omitPadding().encode(projectName.getBytes(UTF_8));
         return String.format(ENGLISH,
                 "%s%d/%s/%s.%s.tar.gz",
                 pathPrefix, siteId, encodedProjectName, revisionName,
-                DATE_TIME_SUFFIX_FORMAT.format(Instant.now()));
+                UUID.randomUUID().toString());
     }
 
     public Optional<StorageObject> openArchive(ProjectStore ps, int projectId, String revisionName)

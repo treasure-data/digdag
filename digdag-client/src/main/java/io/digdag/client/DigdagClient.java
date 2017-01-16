@@ -440,7 +440,9 @@ public class DigdagClient implements AutoCloseable
                 return request.invoke(webTarget);
             }
             catch (WebApplicationException e) {
-                firstRedirectException = e;
+                if (firstRedirectException == null) {
+                    firstRedirectException = e;
+                }
                 Response response = checkNotNull(e.getResponse());
                 int status = response.getStatus();
                 if (status % 100 == 3 && response.getLocation() != null) {

@@ -417,7 +417,8 @@ public class ProjectResource
                     return Response.seeOther(URI.create(String.valueOf(direct.get().getUrl()))).build();
                 }
                 catch (IllegalArgumentException ex) {
-                    logger.warn("Failed to create a HTTP response", ex);
+                    logger.warn("Failed to create a HTTP response to redirect /api/projects/{id}/archive to a direct download URL. " +
+                            "Falling back to fetching from the server.", ex);
                 }
             }
 
