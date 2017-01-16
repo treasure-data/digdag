@@ -325,7 +325,8 @@ project(':digdag-ui') {
 project(':digdag-cli') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
-    // include digdag-ui in the shadow jar
+    // Include digdag-ui and digdag-storage-s3 in the shadow jar which are not
+    // in the dependencies of digdag-cli but should be included.
     configurations {
         shadow {
             extendsFrom runtime
@@ -333,6 +334,7 @@ project(':digdag-cli') {
     }
     dependencies {
         shadow project(':digdag-ui')
+        shadow project(':digdag-storage-s3')
     }
 
     shadowJar {
