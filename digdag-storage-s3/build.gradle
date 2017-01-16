@@ -4,6 +4,5 @@ dependencies {
     compile project(':digdag-plugin-utils')
     testCompile project(':digdag-core')
 
-    compile 'com.amazonaws:aws-java-sdk-s3:1.11.63'
-    compile 'commons-logging:commons-logging:1.2'
+    compile "com.amazonaws:aws-java-sdk-s3:${project.ext.awsJavaSdkVersion}"
 }
