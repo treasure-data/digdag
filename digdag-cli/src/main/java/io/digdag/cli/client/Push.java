@@ -58,8 +58,6 @@ public class Push
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
-        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("        --schedule-from \"yyyy-MM-dd HH:mm:ss Z\"  start schedules from this time instead of current time");
         showCommonOptions();
         return systemExit(error);

@@ -31,12 +31,6 @@ public class Archive
     @Parameter(names = {"--project"})
     String projectDirName = null;
 
-    @DynamicParameter(names = {"-p", "--param"})
-    Map<String, String> params = new HashMap<>();
-
-    @Parameter(names = {"-P", "--params-file"})
-    String paramsFile = null;
-
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
@@ -83,9 +77,6 @@ public class Archive
     private void archive(Injector injector)
             throws IOException
     {
-        ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
-
         // load project
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
