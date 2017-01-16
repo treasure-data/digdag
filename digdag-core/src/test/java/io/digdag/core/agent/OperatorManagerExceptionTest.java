@@ -1,37 +1,29 @@
 package io.digdag.core.agent;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.SecretStore;
-import io.digdag.spi.SecretStoreManager;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import java.nio.file.Paths;
 import io.digdag.spi.TaskExecutionException;
-
+import io.digdag.spi.TaskResult;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import io.digdag.client.config.ConfigUtils;
+
+import java.nio.file.Paths;
+import java.util.Map;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 

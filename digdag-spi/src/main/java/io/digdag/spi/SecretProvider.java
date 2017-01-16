@@ -14,7 +14,6 @@ public interface SecretProvider
      *
      * @param key A key identifing the secret to get.
      * @return A secret.
-     * @throws SecretAccessDeniedException if access to the secret was not permitted.
      * @throws SecretNotFoundException if no matching secret was found.
      */
     default String getSecret(String key) {
@@ -28,7 +27,6 @@ public interface SecretProvider
      *
      * @param key A key identifing the secret to get.
      * @return {@link Optional#of(Object)} with a secret or {@link Optional#absent()} if no matching secret was found.
-     * @throws SecretAccessDeniedException if access to the secret was not permitted.
      */
     Optional<String> getSecretOptional(String key);
 

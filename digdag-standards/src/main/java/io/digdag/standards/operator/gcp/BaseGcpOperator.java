@@ -1,16 +1,10 @@
 package io.digdag.standards.operator.gcp;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
-
-import java.nio.file.Path;
-import java.util.List;
 
 abstract class BaseGcpOperator
         extends BaseOperator

@@ -2,7 +2,6 @@ package io.digdag.core.database;
 
 import com.google.common.base.Optional;
 import io.digdag.core.crypto.SecretCrypto;
-import io.digdag.spi.SecretAccessDeniedException;
 import io.digdag.spi.SecretStore;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.StatementContext;
