@@ -12,17 +12,14 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.api.services.bigquery.model.ViewDefinition;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.TimestampParam;
 import io.digdag.standards.operator.state.TaskState;
-import io.digdag.util.ConfigSelector;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 
@@ -56,15 +53,6 @@ class BqDdlOperatorFactory
     public String getType()
     {
         return "bq_ddl";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("gcp")
-            .addSecretAccess("project")
-            .addSecretOnlyAccess("credential")
-            .build();
     }
 
     @Override

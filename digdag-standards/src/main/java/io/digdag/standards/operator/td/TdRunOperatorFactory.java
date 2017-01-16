@@ -8,18 +8,14 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
-import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildResetStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.downloadJobResult;
@@ -41,13 +37,6 @@ public class TdRunOperatorFactory
     public String getType()
     {
         return "td_run";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return configSelectorBuilder()
-            .build();
     }
 
     @Override

@@ -76,7 +76,6 @@ import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
@@ -85,7 +84,6 @@ import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
-import io.digdag.util.ConfigSelector;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.UserSecretTemplate;
 import io.digdag.util.Workspace;
@@ -150,17 +148,6 @@ public class EmrOperatorFactory
         this.objectMapper = objectMapper;
         this.cf = cf;
         this.environment = environment;
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("aws")
-                .addSecretOnlyAccess("emr.endpoint", "s3.endpoint", "kms.endpoint")
-                .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn", "role_session_name")
-                .addSecretOnlyAccess("emr.access_key_id", "emr.secret_access_key", "emr.role_arn", "emr.role_session_name")
-                .addSecretOnlyAccess("emr.kms_key_id")
-                .build();
     }
 
     @Override

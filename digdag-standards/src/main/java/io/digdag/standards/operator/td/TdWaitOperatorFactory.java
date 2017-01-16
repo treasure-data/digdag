@@ -1,21 +1,17 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
@@ -26,14 +22,10 @@ import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
-import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static io.digdag.standards.operator.td.BaseTdJobOperator.propagateTDClientException;
-import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdWaitOperatorFactory
@@ -63,13 +55,6 @@ public class TdWaitOperatorFactory
     public String getType()
     {
         return "td_wait";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return configSelectorBuilder()
-            .build();
     }
 
     @Override
