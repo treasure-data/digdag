@@ -28,7 +28,6 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-s3:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-emr:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-dynamodb:${project.ext.awsJavaSdkVersion}"
-    compile "com.amazonaws:aws-java-sdk-core:${project.ext.awsJavaSdkVersion}"
 
     // bigquery
     compile ('com.google.apis:google-api-services-bigquery:v2-rev325-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
