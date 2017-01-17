@@ -235,7 +235,7 @@ public class TDOperatorTest
                 errorPollIteration++;
                 reset(jobStarter);
                 when(jobStarter.startJob(any(TDOperator.class), anyString()))
-                        .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503));
+                        .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503, null));
                 TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollInterval, retryInterval, jobStarter);
                 verify(jobStarter).startJob(operator, domainKey);
                 state = e.getStateParams(configFactory).get();
@@ -290,7 +290,7 @@ public class TDOperatorTest
                     errorPollIteration++;
                     reset(client);
                     when(client.jobStatus(jobId))
-                            .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503));
+                            .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503, null));
                     TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollInterval, retryInterval, jobStarter);
                     verify(client, times(4)).jobStatus(jobId);
                     state = e.getStateParams(configFactory).get();

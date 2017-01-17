@@ -1,7 +1,7 @@
 timezone: UTC
 
 +run:
-  td_run>: ${saved_query_name}
+  td_run>: ${saved_query_reference}
   database: sample_datasets
 
 +post:
