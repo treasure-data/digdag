@@ -104,6 +104,7 @@ subprojects {
 
     ext {
         jacksonVersion = "2.6.7"
+        awsJavaSdkVersion = "1.11.63"
     }
 
     tasks.withType(JavaCompile) {
@@ -325,7 +326,8 @@ project(':digdag-ui') {
 project(':digdag-cli') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
-    // include digdag-ui in the shadow jar
+    // Include digdag-ui in the shadow jar which are not in the dependencies
+    // of digdag-cli but should be included.
     configurations {
         shadow {
             extendsFrom runtime
@@ -334,6 +336,7 @@ project(':digdag-cli') {
     dependencies {
         shadow project(':digdag-ui')
     }
+    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     shadowJar {
         configurations = [project.configurations.shadow]
@@ -365,8 +368,6 @@ project(':digdag-cli') {
         exclude 'org/weakref/jmx/internal/guava/**/*'
         relocate 'org.weakref.jmx.internal.guava', 'com.google.common'
     }
-
-    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     task classpath(type: Copy, dependsOn: ['jar']) {
         File dest = file("${rootProject.projectDir}/classpath")
