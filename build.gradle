@@ -447,8 +447,8 @@ task releaseCheck << {
         println "Releasing a SNAPSHOT version."
     }
     else {
-        if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
-            throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
+        if (!file("digdag-client/src/main/resources/io/digdag/client/version.txt").getText().contains("${project.version}")) {
+            throw new GradleException("digdag-client/src/main/resources/io/digdag/client/version.txt doesn't include ${project.version}")
         }
         if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
             throw new GradleException("Release note for ${project.version} doesn't exist")
