@@ -1,21 +1,15 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.treasuredata.client.TDClientException;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
-import io.digdag.util.ConfigSelector;
 
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 
 abstract class BaseTdJobOperator
@@ -42,14 +36,6 @@ abstract class BaseTdJobOperator
 
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
-    }
-
-    static ConfigSelector.Builder configSelectorBuilder()
-    {
-        return ConfigSelector.builderOfScope("td")
-            .addSecretAccess("use_ssl", "proxy.enabled", "proxy.host", "proxy.port", "proxy.user", "proxy.password", "proxy.use_ssl", "endpoint", "host", "port", "user", "database")
-            .addSecretOnlyAccess("apikey")
-            ;
     }
 
     @Override

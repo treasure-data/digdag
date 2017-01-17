@@ -15,11 +15,8 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
-import io.digdag.util.ConfigSelector;
 import io.digdag.standards.operator.td.YamlLoader;
 
 import java.io.IOException;
@@ -59,15 +56,6 @@ class BqLoadOperatorFactory
     public Operator newOperator(OperatorContext context)
     {
         return new BqLoadOperator(context);
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("gcp")
-            .addSecretAccess("project")
-            .addSecretOnlyAccess("credential")
-            .build();
     }
 
     private class BqLoadOperator

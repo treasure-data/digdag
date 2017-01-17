@@ -19,7 +19,6 @@ import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
@@ -27,7 +26,6 @@ import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
-import io.digdag.util.ConfigSelector;
 import io.digdag.util.UserSecretTemplate;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -109,15 +107,6 @@ public class HttpOperatorFactory
     public Operator newOperator(OperatorContext context)
     {
         return new HttpOperator(context);
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("http")
-                .addSecretAccess("authorization")
-                .addSecretOnlyAccess("uri", "user", "password", "authorization")
-                .build();
     }
 
     private class HttpOperator

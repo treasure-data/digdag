@@ -17,8 +17,6 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
@@ -38,7 +36,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,7 +44,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
-import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
 import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -79,13 +75,6 @@ public class TdOperatorFactory
     public String getType()
     {
         return "td";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return configSelectorBuilder()
-            .build();
     }
 
     @Override

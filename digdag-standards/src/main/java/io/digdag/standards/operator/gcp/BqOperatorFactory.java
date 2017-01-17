@@ -11,9 +11,7 @@ import com.google.inject.Inject;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.util.ConfigSelector;
 
 import java.util.List;
 import java.util.Map;
@@ -42,15 +40,6 @@ class BqOperatorFactory
     public String getType()
     {
         return "bq";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("gcp")
-            .addSecretAccess("project")
-            .addSecretOnlyAccess("credential")
-            .build();
     }
 
     @Override
