@@ -70,8 +70,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -195,13 +197,41 @@ public class TestUtils
     public static void fakeHome(String home, Action a)
             throws Exception
     {
-        String orig = System.setProperty("user.home", home);
+        withSystemProperty("user.home", home, a);
+    }
+
+    public static void withSystemProperty(String key, String value, Action a)
+            throws Exception
+    {
+        withSystemProperties(ImmutableMap.of(key, value), a);
+    }
+
+    private static final Object NOT_PRESENT = new Object();
+
+    public static void withSystemProperties(Map<String, String> props, Action a)
+            throws Exception
+    {
+        Properties systemProperties = System.getProperties();
+        Map<String, Object> prev = new HashMap<>();
+        for (String key : props.keySet()) {
+            if (systemProperties.contains(key)) {
+                prev.put(key, systemProperties.getProperty(key));
+            } else {
+                prev.put(key, NOT_PRESENT);
+            }
+        }
         try {
-            Files.createDirectories(Paths.get(home).resolve(".config").resolve("digdag"));
+            systemProperties.putAll(props);
             a.run();
         }
         finally {
-            System.setProperty("user.home", orig);
+            for (Map.Entry<String, Object> e : prev.entrySet()) {
+                if (e.getValue() == NOT_PRESENT) {
+                    systemProperties.remove(e.getKey());
+                } else {
+                    systemProperties.put(e.getKey(), e.getValue());
+                }
+            }
         }
     }
 
