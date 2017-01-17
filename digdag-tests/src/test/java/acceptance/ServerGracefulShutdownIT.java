@@ -1,5 +1,6 @@
 package acceptance;
 
+import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
@@ -21,6 +22,8 @@ import java.util.List;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.ServiceUnavailableException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
@@ -75,14 +78,15 @@ public class ServerGracefulShutdownIT
                     projectDir.toString());
             assertThat(initStatus.code(), is(0));
 
-            copyResource("acceptance/server_graceful_shutdown/sleep.dig", projectDir.resolve("sleep.dig"));
+            Files.write(projectDir.resolve("sleep.dig"), asList(Resources.toString(
+                    Resources.getResource("acceptance/server_graceful_shutdown/sleep.dig"), UTF_8)
+                    .replace("${outdir}", root().toString())));
 
             CommandStatus pushStatus = main("push",
                     "--project", projectDir.toString(),
                     "server_graceful_shutdown",
                     "-c", config.toString(),
-                    "-e", server.endpoint(),
-                    "-p", "outdir=" + root());
+                    "-e", server.endpoint());
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
             CommandStatus startStatus = main("start",

@@ -2,7 +2,6 @@ package utils;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -409,11 +408,6 @@ public class TestUtils
 
     public static Id pushProject(String endpoint, Path project, String projectName)
     {
-        return pushProject(endpoint, project, projectName, ImmutableMap.of());
-    }
-
-    public static Id pushProject(String endpoint, Path project, String projectName, Map<String, String> params)
-    {
         List<String> command = new ArrayList<>();
         command.addAll(asList(
                 "push",
@@ -421,7 +415,6 @@ public class TestUtils
                 projectName,
                 "-c", "/dev/null",
                 "-e", endpoint));
-        params.forEach((k, v) -> command.addAll(asList("-p", k + "=" + v)));
         CommandStatus pushStatus = main(command);
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());

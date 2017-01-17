@@ -1,5 +1,6 @@
 package acceptance;
 
+import com.google.common.io.Resources;
 import io.digdag.client.api.Id;
 import org.junit.Before;
 import org.junit.Rule;
@@ -13,14 +14,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.getAttemptId;
-import static utils.TestUtils.expect;
-import static utils.TestUtils.main;
-import static utils.TestUtils.attemptSuccess;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static utils.TestUtils.attemptSuccess;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.main;
 
 public class CallIT
 {
@@ -55,11 +56,14 @@ public class CallIT
                 projectDir.toString());
         assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
 
+        String childWf = Resources.toString(Resources.getResource("acceptance/call/child.dig"), UTF_8)
+                .replace("${outdir}", root().toString());
+
         copyResource("acceptance/call/parent.dig", projectDir.resolve("parent.dig"));
-        copyResource("acceptance/call/child.dig", projectDir.resolve("child.dig"));
+        Files.write(projectDir.resolve("child.dig"), childWf.getBytes(UTF_8));
         Files.createDirectories(projectDir.resolve("sub").resolve("subsub"));
-        copyResource("acceptance/call/child.dig", projectDir.resolve("sub").resolve("child.dig"));
-        copyResource("acceptance/call/child.dig", projectDir.resolve("sub").resolve("subsub").resolve("child.dig"));
+        Files.write(projectDir.resolve("sub").resolve("child.dig"), childWf.getBytes(UTF_8));
+        Files.write(projectDir.resolve("sub").resolve("subsub").resolve("child.dig"), childWf.getBytes(UTF_8));
     }
 
     @Test
@@ -101,8 +105,7 @@ public class CallIT
                 "--project", projectDir.toString(),
                 "call",
                 "-c", config.toString(),
-                "-e", server.endpoint(),
-                "-p", "outdir=" + root());
+                "-e", server.endpoint());
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
         // Start the workflow

@@ -13,8 +13,6 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableArchiveMetadata.class)
 public abstract class ArchiveMetadata
 {
-    public static final String FILE_NAME = ".digdag.dig";
-
     @JsonProperty("workflows")
     public abstract WorkflowDefinitionList getWorkflowList();
 

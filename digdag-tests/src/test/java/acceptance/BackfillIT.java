@@ -1,5 +1,6 @@
 package acceptance;
 
+import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSession;
 import org.junit.Before;
@@ -17,6 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.copyResource;
@@ -114,14 +116,15 @@ public class BackfillIT
             assertThat(cmd.code(), is(0));
         }
 
-        copyResource("acceptance/backfill/backfill_sequential.dig", projectDir.resolve("backfill_sequential.dig"));
+        Files.write(projectDir.resolve("backfill_sequential.dig"), asList(Resources.toString(
+                Resources.getResource("acceptance/backfill/backfill_sequential.dig"), UTF_8)
+                .replace("${outdir}", outdir.toString())));
 
         // Push
         {
             CommandStatus cmd = main("push",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "-p", "outdir="+outdir.toString(),
                     "--project", projectDir.toString(),
                     "backfill-test");
             assertThat(cmd.errUtf8(), cmd.code(), is(0));
