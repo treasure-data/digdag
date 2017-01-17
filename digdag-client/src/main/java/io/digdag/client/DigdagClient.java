@@ -22,7 +22,6 @@ import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestLogFileHandleCollection;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
-import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
@@ -36,7 +35,6 @@ import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestSetSecretRequest;
-import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestTaskCollection;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowDefinitionCollection;
@@ -72,10 +70,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.exponentialWait;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.not;
 import static java.util.Locale.ENGLISH;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
@@ -86,6 +84,7 @@ public class DigdagClient implements AutoCloseable
 {
     private static final int TOO_MANY_REQUESTS_429 = 429;
     private static final int REQUEST_TIMEOUT_408 = 408;
+    private static final int MAX_REDIRECT = 10;
 
     public static class Builder
     {
@@ -425,17 +424,54 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
+    @FunctionalInterface
+    interface RequestWithFollowingRedirect<T>
+    {
+        T invoke(WebTarget webTarget);
+    }
+
+    private <T> T withFollowingRedirect(WebTarget initialWebTarget, RequestWithFollowingRedirect<T> request)
+    {
+        WebApplicationException firstRedirectException = null;
+        WebTarget webTarget = initialWebTarget;
+
+        for (int i = 0; i < MAX_REDIRECT; i++) {
+            try {
+                return request.invoke(webTarget);
+            }
+            catch (WebApplicationException e) {
+                if (firstRedirectException == null) {
+                    firstRedirectException = e;
+                }
+                Response response = checkNotNull(e.getResponse());
+                int status = response.getStatus();
+                if (status % 100 == 3 && response.getLocation() != null) {
+                    webTarget = client.target(UriBuilder.fromUri(response.getLocation()));
+                    continue;
+                }
+                throw e;
+            }
+        }
+        throw firstRedirectException;
+    }
+
     // TODO getArchive with streaming
     public InputStream getProjectArchive(Id projId, String revision)
     {
-        Invocation request = target("/api/projects/{id}/archive")
-            .resolveTemplate("id", projId)
-            .queryParam("revision", revision)
-            .request()
-            .headers(headers.get())
-            .buildGet();
-        return invokeWithRetry(request)
-            .readEntity(InputStream.class);
+        WebTarget webTarget = target("/api/projects/{id}/archive")
+                .resolveTemplate("id", projId)
+                .queryParam("revision", revision);
+
+        return withFollowingRedirect(webTarget,
+                (x) -> {
+                    Invocation request = x
+                            .request()
+                            .headers(headers.get())
+                            .buildGet();
+                    return invokeWithRetry(request)
+                            .readEntity(InputStream.class);
+                }
+        );
     }
 
     public RestScheduleCollection getSchedules()
@@ -650,7 +686,8 @@ public class DigdagClient implements AutoCloseable
 
     private static boolean isDeterministicError(int status)
     {
-        if (status >= 400 && status < 500) {
+        // Retrying against 3xx doesn't make sense
+        if (status >= 300 && status < 500) {
             switch (status) {
                 case TOO_MANY_REQUESTS_429:
                 case REQUEST_TIMEOUT_408:

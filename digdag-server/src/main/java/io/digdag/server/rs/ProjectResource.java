@@ -80,6 +80,7 @@ import io.digdag.core.session.StoredSessionWithLastAttempt;
 import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.server.GenericJsonExceptionHandler;
+import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretScopes;
@@ -90,6 +91,8 @@ import io.digdag.util.Md5CountInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -147,6 +150,7 @@ public class ProjectResource
     // GET  /api/projects/{id}/workflow?name=name        # lookup a workflow of a project by name
     // GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
 
+    private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
     private static final int ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
     private static final int ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
 
@@ -407,16 +411,16 @@ public class ProjectResource
         else {
             ArchiveManager.StoredArchive archive = archiveOrNone.get();
 
-            // TODO DigdagClient doesn't follow redirection. It should be fixed.
-            //Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
-            //if (direct.isPresent()) {
-            //    try {
-            //        return Response.seeOther(URI.create(direct.get().getUrl())).build();
-            //    }
-            //    catch (IllegalArgumentException ex) {
-            //        // pass-through if invalid url
-            //    }
-            //}
+            Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
+            if (direct.isPresent()) {
+                try {
+                    return Response.seeOther(URI.create(String.valueOf(direct.get().getUrl()))).build();
+                }
+                catch (IllegalArgumentException ex) {
+                    logger.warn("Failed to create a HTTP response to redirect /api/projects/{id}/archive to a direct download URL. " +
+                            "Falling back to fetching from the server.", ex);
+                }
+            }
 
             Optional<byte[]> bytes = archive.getByteArray();
             if (bytes.isPresent()) {
