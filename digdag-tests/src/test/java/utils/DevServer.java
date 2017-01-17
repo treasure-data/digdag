@@ -2,11 +2,12 @@ package utils;
 
 import com.google.common.collect.ImmutableMap;
 import io.digdag.cli.Main;
-import io.digdag.client.Version;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static io.digdag.client.DigdagVersion.buildVersion;
 
 public class DevServer
 {
@@ -14,7 +15,7 @@ public class DevServer
             throws IOException
     {
         Path logdir = Files.createTempDirectory("digdag-task-logs");
-        Main main = new Main(Version.buildVersion(), ImmutableMap.of(), System.out, System.err, System.in);
+        Main main = new Main(buildVersion(), ImmutableMap.of(), System.out, System.err, System.in);
         main.cli("server",
                 "-c", "/dev/null",
                 "-m",

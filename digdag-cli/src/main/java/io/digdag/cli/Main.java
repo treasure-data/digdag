@@ -44,7 +44,7 @@ import java.util.Map;
 
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
 import static io.digdag.cli.SystemExitException.systemExit;
-import static io.digdag.client.Version.buildVersion;
+import static io.digdag.client.DigdagVersion.buildVersion;
 import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
 
 public class Main
@@ -89,7 +89,7 @@ public class Main
     {
         for (String arg : args) {
             if ("--version".equals(arg)) {
-                out.println(version.version());
+                out.println(version.toString());
                 return 0;
             }
         }
