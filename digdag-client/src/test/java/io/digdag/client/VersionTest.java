@@ -25,7 +25,7 @@ public class VersionTest
         assertValidVersion("8.9.10.11");
         assertValidVersion("0-SNAPSHOT");
         assertValidVersion("0.8.32-20170117T115910-a60cad1343c71489d752f39250470e10109e3425");
-        assertValidVersion(DigdagVersion.getBuildVersion().toString());
+        assertValidVersion(DigdagVersion.buildVersion().toString());
     }
 
     private void assertValidVersion(String versionString)
