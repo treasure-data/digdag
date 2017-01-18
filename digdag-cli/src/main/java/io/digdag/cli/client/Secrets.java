@@ -102,6 +102,7 @@ public class Secrets
         for (String key : deleteSecrets.keySet()) {
             Path secretFilePath = secretsDir.resolve(key);
             Files.deleteIfExists(secretFilePath);
+            err.println("Secret '" + key + "' deleted");
         }
     }
 
@@ -113,6 +114,7 @@ public class Secrets
         for (Map.Entry<String, String> entry : setSecrets.entrySet()) {
             Path secretFilePath = secretsDir.resolve(entry.getKey());
             Files.write(secretFilePath, entry.getValue().getBytes(UTF_8), CREATE);
+            err.println("Secret '" + entry.getKey() + "' set");
         }
     }
 
