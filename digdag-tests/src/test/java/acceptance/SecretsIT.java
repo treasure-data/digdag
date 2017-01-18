@@ -9,6 +9,7 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,13 +26,16 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptFailure;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
@@ -46,10 +50,7 @@ public class SecretsIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration("digdag.secret-encryption-key = " + Base64.getEncoder().encodeToString(RandomUtils.nextBytes(16)))
-            .build();
+    private TemporaryDigdagServer server;
 
     private Path config;
     private Path projectDir;
@@ -61,6 +62,36 @@ public class SecretsIT
     {
         projectDir = folder.newFolder().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
+    }
+
+    @After
+    public void tearDownClient()
+            throws Exception
+    {
+        if (client != null) {
+            client.close();
+            client = null;
+        }
+    }
+
+    @After
+    public void tearDownServer()
+            throws Exception
+    {
+        if (server != null) {
+            server.close();
+            server = null;
+        }
+    }
+
+    private void startServer()
+            throws Exception
+    {
+        server = TemporaryDigdagServer.builder()
+                .configuration("digdag.secret-encryption-key = " + Base64.getEncoder().encodeToString(RandomUtils.nextBytes(16)))
+                .build();
+
+        server.start();
 
         client = DigdagClient.builder()
                 .host(server.host())
@@ -72,6 +103,8 @@ public class SecretsIT
     public void testSetListDeleteProjectSecrets()
             throws Exception
     {
+        startServer();
+
         String projectName = "test";
 
         // Push the project
@@ -217,6 +250,8 @@ public class SecretsIT
     public void testUseProjectSecret()
             throws Exception
     {
+        startServer();
+
         String projectName = "test";
 
         // Push the project
@@ -293,9 +328,101 @@ public class SecretsIT
     }
 
     @Test
+    public void testUseLocalSecret()
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/secrets/echo_secret.dig");
+
+        String key1 = "key1";
+        String value1 = "value1";
+        String key2 = "key2";
+        String value2 = "value2";
+
+        Map<String, String> env = ImmutableMap.of("DIGDAG_CONFIG_HOME", folder.newFolder().toPath().toString());
+
+        // Set secrets
+        {
+            CommandStatus status = main(env, "secrets",
+                    "-c", config.toString(),
+                    "--local",
+                    "--set", key1 + '=' + value1, key2 + '=' + value2);
+            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.errUtf8(), containsString("Secret 'key1' set"));
+            assertThat(status.errUtf8(), containsString("Secret 'key2' set"));
+        }
+
+        // List secrets
+        {
+            CommandStatus status = main(env, "secrets",
+                    "-c", config.toString(),
+                    "--local");
+            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.outUtf8(), containsString("key1"));
+            assertThat(status.outUtf8(), containsString("key2"));
+            assertThat(status.outUtf8(), not(containsString("value1")));
+            assertThat(status.outUtf8(), not(containsString("value2")));
+        }
+
+        // Run workflows using secrets
+        {
+            Path outfile = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out");
+
+            CommandStatus status = TestUtils.main(env, "run",
+                    "-c", config.toString(),
+                    "-o", folder.newFolder().toString(),
+                    "--project", projectDir.toString(),
+                    "-p", "OUTFILE=" + outfile.toString(),
+                    "echo_secret");
+
+            assertThat(status.errUtf8(), status.code(), is(0));
+
+            List<String> output = Files.readAllLines(outfile);
+            assertThat(output, contains(value1));
+        }
+
+        // Delete a secret
+        {
+            CommandStatus deleteStatus = main(env, "secrets",
+                    "-c", config.toString(),
+                    "--local",
+                    "--delete", key1);
+            assertThat(deleteStatus.errUtf8(), deleteStatus.code(), is(0));
+            assertThat(deleteStatus.errUtf8(), containsString("Secret 'key1' deleted"));
+        }
+
+        // List secrets
+        {
+            CommandStatus status = main(env, "secrets",
+                    "-c", config.toString(),
+                    "--local");
+            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.outUtf8(), not(containsString("key1")));
+            assertThat(status.outUtf8(), containsString("key2"));
+            assertThat(status.outUtf8(), not(containsString("value1")));
+            assertThat(status.outUtf8(), not(containsString("value2")));
+        }
+
+        // Attempt to run a workflow that uses the deleted secret
+        {
+            Path outfile = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out");
+
+            CommandStatus status = main(env, "run",
+                    "-c", config.toString(),
+                    "-o", folder.newFolder().toString(),
+                    "--project", projectDir.toString(),
+                    "-p", "OUTFILE=" + outfile.toString(),
+                    "echo_secret");
+            assertThat(status.errUtf8(), status.code(), not(is(0)));
+            assertThat(status.errUtf8(), containsString("Secret not found for key: 'key1'"));
+        }
+    }
+
+    @Test
     public void verifyInvalidSecretUseFails()
             throws Exception
     {
+        startServer();
+
         String projectName = "test";
 
         // Push the project
@@ -329,6 +456,8 @@ public class SecretsIT
     public void verifyAccessIsGrantedToUserSecretTemplateKeys()
             throws Exception
     {
+        startServer();
+
         String projectName = "test";
 
         // Push the project
