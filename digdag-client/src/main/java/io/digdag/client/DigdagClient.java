@@ -427,17 +427,18 @@ public class DigdagClient implements AutoCloseable
     @FunctionalInterface
     interface RequestWithFollowingRedirect<T>
     {
-        T invoke(WebTarget webTarget);
+        T invoke(WebTarget webTarget, Optional<Response> lastResponse);
     }
 
     private <T> T withFollowingRedirect(WebTarget initialWebTarget, RequestWithFollowingRedirect<T> request)
     {
         WebApplicationException firstRedirectException = null;
         WebTarget webTarget = initialWebTarget;
+        Optional<Response> lastResponse = Optional.absent();
 
         for (int i = 0; i < MAX_REDIRECT; i++) {
             try {
-                return request.invoke(webTarget);
+                return request.invoke(webTarget, lastResponse);
             }
             catch (WebApplicationException e) {
                 if (firstRedirectException == null) {
@@ -446,6 +447,7 @@ public class DigdagClient implements AutoCloseable
                 Response response = checkNotNull(e.getResponse());
                 int status = response.getStatus();
                 if (status % 100 == 3 && response.getLocation() != null) {
+                    lastResponse = Optional.of(response);
                     webTarget = client.target(UriBuilder.fromUri(response.getLocation()));
                     continue;
                 }
@@ -463,12 +465,14 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("revision", revision);
 
         return withFollowingRedirect(webTarget,
-                (x) -> {
-                    Invocation request = x
-                            .request()
-                            .headers(headers.get())
-                            .buildGet();
-                    return invokeWithRetry(request)
+                (wt, lastResponse) -> {
+                    Invocation.Builder request = wt.request();
+                    if (!lastResponse.isPresent()) {
+                        // Headers shouldn't be appended when redirecting.
+                        // With headers S3 can return "Bad Request"
+                        request.headers(headers.get());
+                    }
+                    return invokeWithRetry(request.buildGet())
                             .readEntity(InputStream.class);
                 }
         );
