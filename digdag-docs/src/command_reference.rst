@@ -691,7 +691,7 @@ secrets
 
 Digdag provides basic secret management that can be used to securely provide e.g. passwords and api keys etc to operators.
 
-Secrets are handled separately from normal workflow parameters and are stored encrypted by the server.
+Secrets are handled separately from normal workflow parameters and are stored encrypted by the server. Local secrets are stored in the user home directory.
 
 .. code-block:: console
 
@@ -750,6 +750,26 @@ To delete secrets, use the `--delete` command.
 .. code-block:: console
 
     $ digdag secrets --project <project> --delete foo bar
+
+Secrets can also be used in local mode. Local secrets are used when running workflows in local mode using `digdag run`.
+
+.. code-block:: console
+
+    $ digdag secrets --local
+
+The above command lists all local secrets.
+
+.. code-block:: console
+
+    $ digdag secrets --local --set foo
+
+The above command sets the local secret `foo`.
+
+.. code-block:: console
+
+    $ digdag secrets --local --delete foo bar
+
+The above command deletes the local secrets `foo` and `bar`.
 
 Common options
 ----------------------------------
