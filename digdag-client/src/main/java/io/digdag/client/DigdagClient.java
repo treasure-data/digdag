@@ -36,6 +36,7 @@ import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestTaskCollection;
+import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowDefinitionCollection;
 import io.digdag.client.api.RestWorkflowSessionTime;
@@ -75,6 +76,7 @@ import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.exponentialWait;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.not;
+import static io.digdag.client.DigdagVersion.buildVersion;
 import static java.util.Locale.ENGLISH;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
@@ -228,7 +230,7 @@ public class DigdagClient implements AutoCloseable
         ObjectMapper mapper = objectMapper();
 
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
-                .register(new UserAgentFilter("DigdagClient/" + io.digdag.client.Version.buildVersion()))
+                .register(new UserAgentFilter("DigdagClient/" + buildVersion()))
                 .register(new JacksonJsonProvider(mapper));
 
         // TODO: support proxy user/pass
@@ -805,6 +807,13 @@ public class DigdagClient implements AutoCloseable
     public Map<String, Object> getVersion()
     {
         return doGet(Version.class, target("/api/version")).get();
+    }
+
+    public RestVersionCheckResult checkClientVersion(String clientVersion)
+    {
+        return doGet(RestVersionCheckResult.class,
+                target("/api/version/check")
+                .queryParam("client", clientVersion));
     }
 
     public void setProjectSecret(Id projectId, String key, String value)

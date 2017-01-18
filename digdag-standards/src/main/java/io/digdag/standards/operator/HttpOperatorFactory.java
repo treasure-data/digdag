@@ -14,7 +14,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
-import io.digdag.client.Version;
+import io.digdag.client.DigdagVersion;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
@@ -81,7 +81,7 @@ public class HttpOperatorFactory
         this.maxRedirects = systemConfig.get("config.http.max_redirects", int.class, 8);
         this.maxStoredResponseContentSize = systemConfig.get("config.http.max_stored_response_content_size", int.class, 64 * 1024);
         this.env = env;
-        this.userAgent = systemConfig.get("config.http.user_agent", String.class, "Digdag/" + Version.buildVersion());
+        this.userAgent = systemConfig.get("config.http.user_agent", String.class, "Digdag/" + DigdagVersion.buildVersion());
     }
 
     private static Optional<ProxyConfiguration.Proxy> systemProxy(Config systemConfig)

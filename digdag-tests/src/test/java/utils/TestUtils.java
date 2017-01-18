@@ -82,7 +82,6 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
-import static io.digdag.client.Version.buildVersion;
 import static io.digdag.util.RetryExecutor.retryExecutor;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
@@ -116,12 +115,12 @@ public class TestUtils
 
     public static CommandStatus main(String... args)
     {
-        return main(buildVersion(), args);
+        return main(LocalVersion.of(), args);
     }
 
     public static CommandStatus main(InputStream in, String... args)
     {
-        return main(buildVersion(), in, asList(args));
+        return main(LocalVersion.of(), in, asList(args));
     }
 
     public static CommandStatus main(Map<String, String> env, String... args)
@@ -134,27 +133,27 @@ public class TestUtils
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         InputStream in = new ByteArrayInputStream(new byte[0]);
-        int code = main(env, buildVersion(), args, out, err, in);
+        int code = main(env, LocalVersion.of(), args, out, err, in);
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
     public static CommandStatus main(Collection<String> args)
     {
-        return main(buildVersion(), args);
+        return main(LocalVersion.of(), args);
     }
 
-    public static CommandStatus main(Version localVersion, String... args)
+    public static CommandStatus main(LocalVersion localVersion, String... args)
     {
         return main(localVersion, asList(args));
     }
 
-    public static CommandStatus main(Version localVersion, Collection<String> args)
+    public static CommandStatus main(LocalVersion localVersion, Collection<String> args)
     {
         InputStream in = new ByteArrayInputStream(new byte[0]);
         return main(localVersion, in, args);
     }
 
-    public static CommandStatus main(Version localVersion, InputStream in, Collection<String> args)
+    public static CommandStatus main(LocalVersion localVersion, InputStream in, Collection<String> args)
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -162,13 +161,14 @@ public class TestUtils
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
-    public static int main(Map<String, String> env, Version localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
+    public static int main(Map<String, String> env, LocalVersion localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
     {
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            Main main = new Main(localVersion, env, outp, errp, in);
+            Main main = new Main(localVersion.getVersion(), env, outp, errp, in);
+            System.setProperty("io.digdag.cli.versionCheckMode", localVersion.isBatchModeCheck() ? "batch" : "interactive");
             return main.cli(args.stream().toArray(String[]::new));
         }
         catch (RuntimeException | UnsupportedEncodingException e) {
