@@ -5,32 +5,42 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 import com.google.common.io.CharStreams;
+import io.digdag.cli.ConfigUtil;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSecretList;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.client.api.SecretValidation.isValidSecretKey;
 import static io.digdag.client.api.SecretValidation.isValidSecretValue;
 import static java.lang.Boolean.TRUE;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.CREATE;
 
 public class Secrets
         extends ClientCommand
 {
-    @Parameter(names = {"--project"}, required = true)
+    @Parameter(names = {"--project"})
     String projectName = null;
 
     @Parameter(names = {"--set"}, variableArity = true)
@@ -38,6 +48,9 @@ public class Secrets
 
     @Parameter(names = {"--delete"}, variableArity = true)
     List<String> delete = new ArrayList<>();
+
+    @Parameter(names = {"--local"})
+    boolean local = false;
 
     @Override
     public void mainWithClientException()
@@ -47,12 +60,78 @@ public class Secrets
             throw usage(null);
         }
 
-        DigdagClient client = buildClient();
-        RestProject project = client.getProject(projectName);
-
         if (!set.isEmpty() && !delete.isEmpty()) {
             throw usage("Please specify only one of --set or --delete");
         }
+
+        if (local) {
+            localMain();
+        }
+        else if (projectName != null) {
+            clientMain();
+        }
+        else {
+            throw usage("Please specify either --project or --local");
+        }
+    }
+
+    private void localMain()
+            throws Exception
+    {
+        Path secretsDir = ConfigUtil.digdagConfigHome(env).resolve("secrets");
+
+        if (set.isEmpty() && delete.isEmpty()) {
+            listLocalSecrets(secretsDir);
+        }
+        else if (!set.isEmpty()) {
+            setLocalSecrets(secretsDir, set);
+        }
+        else if (!delete.isEmpty()) {
+            deleteLocalSecrets(secretsDir, delete);
+        }
+        else {
+            throw new AssertionError();
+        }
+    }
+
+    private void deleteLocalSecrets(Path secretsDir, List<String> delete)
+            throws SystemExitException, IOException
+    {
+        Map<String, Boolean> deleteSecrets = parseDelete(delete);
+
+        for (String key : deleteSecrets.keySet()) {
+            Path secretFilePath = secretsDir.resolve(key);
+            Files.deleteIfExists(secretFilePath);
+        }
+    }
+
+    private void setLocalSecrets(Path secretsDir, List<String> set)
+            throws SystemExitException, IOException
+    {
+        Files.createDirectories(secretsDir);
+        Map<String, String> setSecrets = parseSet(set);
+        for (Map.Entry<String, String> entry : setSecrets.entrySet()) {
+            Path secretFilePath = secretsDir.resolve(entry.getKey());
+            Files.write(secretFilePath, entry.getValue().getBytes(UTF_8), CREATE);
+        }
+    }
+
+    private void listLocalSecrets(Path secretsDir)
+            throws IOException
+    {
+        try {
+            Files.list(secretsDir).forEach(
+                    p -> out.println(p.getFileName().toString()));
+        }
+        catch (NoSuchFileException ignore) {
+        }
+    }
+
+    private void clientMain()
+            throws Exception
+    {
+        DigdagClient client = buildClient();
+        RestProject project = client.getProject(projectName);
 
         if (set.isEmpty() && delete.isEmpty()) {
             listProjectSecrets(client, project.getId());
@@ -69,6 +148,36 @@ public class Secrets
     }
 
     private void deleteProjectSecrets(DigdagClient client, Id projectId, List<String> delete)
+            throws SystemExitException
+    {
+        Map<String, Boolean> deleteSecrets = parseDelete(delete);
+
+        // Delete secrets
+        for (String key : deleteSecrets.keySet()) {
+            client.deleteProjectSecret(projectId, key);
+            err.println("Secret '" + key + "' deleted");
+        }
+    }
+
+    private void setProjectSecrets(DigdagClient client, Id projectId, List<String> set)
+            throws Exception
+    {
+        Map<String, String> setSecrets = parseSet(set);
+
+        // Set secrets
+        for (Map.Entry<String, String> entry : setSecrets.entrySet()) {
+            client.setProjectSecret(projectId, entry.getKey(), entry.getValue());
+            err.println("Secret '" + entry.getKey() + "' set");
+        }
+    }
+
+    private void listProjectSecrets(DigdagClient client, Id projectId)
+    {
+        RestSecretList secretList = client.listProjectSecrets(projectId);
+        secretList.secrets().forEach(s -> out.println(s.key()));
+    }
+
+    private Map<String, Boolean> parseDelete(List<String> delete)
             throws SystemExitException
     {
         Map<String, Boolean> deleteSecrets = new LinkedHashMap<>();
@@ -88,15 +197,11 @@ public class Secrets
                 throw usage("Invalid secret key: " + key);
             }
         }
-        // Delete secrets
-        for (String key : deleteSecrets.keySet()) {
-            client.deleteProjectSecret(projectId, key);
-            err.println("Secret '" + key + "' deleted");
-        }
+        return deleteSecrets;
     }
 
-    private void setProjectSecrets(DigdagClient client, Id projectId, List<String> set)
-            throws Exception
+    private Map<String, String> parseSet(List<String> set)
+            throws SystemExitException, IOException
     {
         Map<String, String> setSecrets = new LinkedHashMap<>();
 
@@ -172,7 +277,7 @@ public class Secrets
                     }
                     Path path = Paths.get(filename);
                     byte[] rawValue = Files.readAllBytes(path);
-                    value = new String(rawValue, StandardCharsets.UTF_8);
+                    value = new String(rawValue, UTF_8);
                     setSecrets.put(key, value);
                     continue;
                 }
@@ -213,23 +318,12 @@ public class Secrets
                 throw usage("Invalid secret value for key: " + entry.getKey());
             }
         }
-
-        // Set secrets
-        for (Map.Entry<String, String> entry : setSecrets.entrySet()) {
-            client.setProjectSecret(projectId, entry.getKey(), entry.getValue());
-            err.println("Secret '" + entry.getKey() + "' set");
-        }
-    }
-
-    private void listProjectSecrets(DigdagClient client, Id projectId)
-    {
-        RestSecretList secretList = client.listProjectSecrets(projectId);
-        secretList.secrets().forEach(s -> out.println(s.key()));
+        return setSecrets;
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " secrets --project <project> [--set <key>=<value>] [--delete key]");
+        err.println("Usage: " + programName + " secrets [--local] [--project <project>] [--set <key>=<value>] [--delete key]");
         showCommonOptions();
         return systemExit(error);
     }
