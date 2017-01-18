@@ -325,61 +325,7 @@ In the config file, following parameters are available
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
-* digdag.secret-access-policy-file (filename)
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
-
-Secret Access Policy File
-*************************
-
-The secret access policy specifies which secrets operators can access by default, without needing to explicitly grant secret access in the workflow definition file.
-
-Example:
-
-.. code-block:: none
-
-  digdag.secret-access-policy-file = secret-access-policy.yaml
-
-.. code-block:: yaml
-
-  # secret-access-policy.yaml
-  operators:
-    mail:
-      secrets:
-        - mail.*
-    pg:
-      secrets:
-        - pg.*
-    s3_wait:
-      secrets:
-        - aws.*
-    td:
-      secrets:
-        - td.*
-    td_load:
-      secrets:
-        - td.*
-    td_for_each:
-      secrets:
-        - td.*
-    td_run:
-      secrets:
-        - td.*
-    td_ddl:
-      secrets:
-        - td.*
-    td_partial_delete:
-      secrets:
-        - td.*
-    td_table_export:
-      secrets:
-        - td.*
-        - aws.*
-    td_wait:
-      secrets:
-        - td.*
-    td_wait_table:
-      secrets:
-        - td.*
 
 
 Secret Encryption Key
@@ -745,9 +691,7 @@ secrets
 
 Digdag provides basic secret management that can be used to securely provide e.g. passwords and api keys etc to operators.
 
-Secrets are handled separately from normal workflow parameters and are stored encrypted by the server. Workflow operators
-can only access secrets that they are permitted access to by server policy or explicitly granted access to by the workflow
-author using the `_secrets` directive.
+Secrets are handled separately from normal workflow parameters and are stored encrypted by the server.
 
 .. code-block:: console
 
