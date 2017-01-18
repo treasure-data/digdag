@@ -325,6 +325,12 @@ In the config file, following parameters are available
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
+* archive.type (type of project archiving, "db" or "s3". default: "db")
+* archive.s3.endpoint (string. default: "s3.amazonaws.com")
+* archive.s3.bucket (string)
+* archive.s3.path (string)
+* archive.s3.credentials.access-key-id (string. default: instance profile)
+* archive.s3.credentials.secret-access-key (string. default: instance profile)
 * digdag.secret-access-policy-file (filename)
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 
