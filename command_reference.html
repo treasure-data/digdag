@@ -486,6 +486,13 @@
 <li>database.idleTimeout (seconds in integer, default: 600)</li>
 <li>database.validationTimeout (seconds in integer, default: 5)</li>
 <li>database.maximumPoolSize (integer, default: available CPU cores * 32)</li>
+<li>archive.type (type of project archiving, &#8220;db&#8221; or &#8220;s3&#8221;. default: &#8220;db&#8221;)</li>
+<li>archive.s3.endpoint (string. default: &#8220;s3.amazonaws.com&#8221;)</li>
+<li>archive.s3.bucket (string)</li>
+<li>archive.s3.path (string)</li>
+<li>archive.s3.credentials.access-key-id (string. default: instance profile)</li>
+<li>archive.s3.credentials.secret-access-key (string. default: instance profile)</li>
+<li>digdag.secret-access-policy-file (filename)</li>
 <li>digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)</li>
 </ul>
 <div class="section" id="secret-encryption-key">
