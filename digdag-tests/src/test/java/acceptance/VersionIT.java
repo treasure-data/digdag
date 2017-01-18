@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
+import utils.LocalVersion;
 import utils.TemporaryDigdagServer;
 
 import java.nio.file.Files;
@@ -19,13 +20,17 @@ import static org.junit.Assert.assertThat;
 
 public class VersionIT
 {
-    private static final Version REMOTE_VERSION = Version.of("4.5.6");
+    private static final Version REMOTE_VERSION = Version.parse("4.5.6");
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of(REMOTE_VERSION);
+    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+        .version(REMOTE_VERSION)
+        .configuration("server.client-version-check.upgrade-recommended-if-older = 4.5.0")
+        .configuration("server.client-version-check.api-incompatible-if-older = 4.0.0")
+        .build();
 
     private Path config;
 
@@ -41,31 +46,73 @@ public class VersionIT
             throws Exception
     {
         String versionString = "3.14.15";
-        CommandStatus status = main(Version.of(versionString), "-c", config.toString());
+        CommandStatus status = main(LocalVersion.of(Version.parse(versionString)), "-c", config.toString());
         assertThat(status.errUtf8(), containsString("Digdag v" + versionString));
     }
 
     @Test
-    public void testVersion()
+    public void testVersionCheckWithCompatibleVersion()
             throws Exception
     {
-        String localVersion = REMOTE_VERSION + "-NOT";
-        CommandStatus status = main(Version.of(localVersion), "version", "-e", server.endpoint(), "-c", config.toString());
-        assertThat(status.outUtf8(), containsString("Client version: " + localVersion));
-        assertThat(status.outUtf8(), containsString("Server version: " + REMOTE_VERSION));
+        Version localVersion = Version.parse("4.5.0");
+
+        // interactive succeeds
+        CommandStatus interactive = main(LocalVersion.of(localVersion).withBatchModeCheck(false), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(interactive.code(), is(0));  // success
+
+        // batch succeeds
+        CommandStatus batch = main(LocalVersion.of(localVersion).withBatchModeCheck(true), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(batch.code(), is(0));  // success
     }
 
     @Test
-    public void verifyVersionMismatchRejected()
+    public void testVersionCheckWithUpgradeRecommendedVersion()
             throws Exception
     {
-        String localVersionString = REMOTE_VERSION + "-NOT";
-        CommandStatus status = main(Version.of(localVersionString), "workflows", "-e", server.endpoint(), "-c", config.toString());
-        assertThat(status.code(), is(not(0)));
-        assertThat(status.errUtf8(), containsString("Client: " + localVersionString));
-        assertThat(status.errUtf8(), containsString("Server: " + REMOTE_VERSION));
-        assertThat(status.errUtf8(), containsString("digdag selfupdate "  + REMOTE_VERSION));
-        assertThat(status.errUtf8(), containsString(
-                "Please run following command locally to download a compatible version with the server"));
+        Version localVersion = Version.parse("4.4.3");
+
+        // interactive mode aborts
+        CommandStatus interactive = main(LocalVersion.of(localVersion).withBatchModeCheck(false), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(interactive.code(), is(not(0)));  // fail
+        assertThat(interactive.errUtf8(), containsString("client: " + localVersion));
+        assertThat(interactive.errUtf8(), containsString("server: " + REMOTE_VERSION));
+        assertThat(interactive.errUtf8(), containsString(
+                    "This client version is obsoleted. It is recommended to upgrade"));
+        assertThat(interactive.errUtf8(), containsString(
+                    "Please run following command locally to upgrade to the latest version compatible to the server:"));
+        assertThat(interactive.errUtf8(), containsString("digdag selfupdate "  + REMOTE_VERSION));
+
+        // batch mode warns
+        CommandStatus batch = main(LocalVersion.of(localVersion).withBatchModeCheck(true), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(batch.code(), is(0));  // success
+    }
+
+    @Test
+    public void testVersionCheckWithApiIncompatibleVersion()
+            throws Exception
+    {
+        Version localVersion = Version.parse("3.9");
+
+        // interactive mode aborts
+        CommandStatus interactive = main(LocalVersion.of(localVersion).withBatchModeCheck(false), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(interactive.code(), is(not(0)));  // fail
+        assertThat(interactive.errUtf8(), containsString("client: " + localVersion));
+        assertThat(interactive.errUtf8(), containsString("server: " + REMOTE_VERSION));
+        assertThat(interactive.errUtf8(), containsString(
+                    "This client version is not API compatible to the server"));
+        assertThat(interactive.errUtf8(), containsString(
+                    "Please run following command locally to upgrade to a compatible version with the server:"));
+        assertThat(interactive.errUtf8(), containsString("digdag selfupdate "  + REMOTE_VERSION));
+
+        // batch mode aborts
+        CommandStatus batch = main(LocalVersion.of(localVersion).withBatchModeCheck(true), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(batch.code(), is(not(0)));  // fail
+        assertThat(batch.errUtf8(), containsString("client: " + localVersion));
+        assertThat(batch.errUtf8(), containsString("server: " + REMOTE_VERSION));
+        assertThat(batch.errUtf8(), containsString(
+                    "This client version is not API compatible to the server"));
+        assertThat(batch.errUtf8(), containsString(
+                    "Please run following command locally to upgrade to a compatible version with the server:"));
+        assertThat(batch.errUtf8(), containsString("digdag selfupdate "  + REMOTE_VERSION));
     }
 }
