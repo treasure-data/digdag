@@ -24,20 +24,20 @@ public class ClientVersionChecker
         this.apiIncompatibleUntil = apiIncompatibleUntil;
     }
 
-    public boolean isUpgradeRecommended(Version clientVesrion)
+    public boolean isUpgradeRecommended(Version clientVersion)
     {
         if (!upgradeRecommendedUntil.isPresent()) {
             return false;
         }
-        return clientVesrion.isOlder(upgradeRecommendedUntil.get());
+        return clientVersion.isOlder(upgradeRecommendedUntil.get());
     }
 
-    public boolean isApiCompatible(Version clientVesrion)
+    public boolean isApiCompatible(Version clientVersion)
     {
         if (!apiIncompatibleUntil.isPresent()) {
             return true;
         }
-        boolean incompatible = clientVesrion.isOlder(apiIncompatibleUntil.get());
+        boolean incompatible = clientVersion.isOlder(apiIncompatibleUntil.get());
         return !incompatible;
     }
 }

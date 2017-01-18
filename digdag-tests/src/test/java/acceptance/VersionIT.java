@@ -66,7 +66,7 @@ public class VersionIT
     }
 
     @Test
-    public void testVersionCheckWithUpgradeRecommendeVersion()
+    public void testVersionCheckWithUpgradeRecommendedVersion()
             throws Exception
     {
         Version localVersion = Version.parse("4.4.3");
