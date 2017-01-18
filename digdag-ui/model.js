@@ -213,11 +213,11 @@ export class Model {
   }
 
   fetchProjects (): Promise<ProjectCollection> {
-    return this.get(`projects/`)
+    return this.get(`projects`)
   }
 
   fetchWorkflows (): Promise<WorkflowCollection> {
-    return this.get(`workflows/`)
+    return this.get(`workflows`)
   }
 
   fetchProject (projectId: string): Promise<Project> {
