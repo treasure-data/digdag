@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,24 +63,39 @@ public abstract class Command
     protected Properties loadSystemProperties()
         throws IOException
     {
-        Properties props;
+        // Property order of precedence:
+        // 1. Explicit configuration file (if --config was specified)
+        // 2. JVM System properties (-D...)
+        // 3. DIGDAG_CONFIG env var
+        // 4. Default config file (unless --config was specified)
 
-        // Load specific configuration file, if specified.
-        if (configPath != null) {
-            props = PropertyUtils.loadFile(Paths.get(configPath));
-        } else {
+        // This order was chosen as the most "natural" ordering, reflecting the order in which
+        // users may supply configuration properties to digdag. Generally properties specified "later"
+        // should take precedence.
+
+        Properties props = new Properties();
+
+        if (configPath == null) {
             // If no configuration file was specified, load the default configuration, if it exists.
+            Path defaultConfigPath = ConfigUtil.defaultConfigPath(env);
             try {
-                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(env));
+                props.putAll(PropertyUtils.loadFile(defaultConfigPath));
             }
             catch (NoSuchFileException ex) {
-                log.trace("configuration file not found: {}", configPath, ex);
-                props = new Properties();
+                log.trace("configuration file not found: {}", defaultConfigPath, ex);
             }
         }
 
-        // Override properties from config file with system properties
+        // Load properties from DIGDAG_CONFIG env
+        props.load(new StringReader(env.getOrDefault("DIGDAG_CONFIG", "")));
+
+        // Load properties from system properties
         props.putAll(System.getProperties());
+
+        // Load explicit configuration file, if specified.
+        if (configPath != null) {
+            props.putAll(PropertyUtils.loadFile(Paths.get(configPath)));
+        }
 
         return props;
     }
