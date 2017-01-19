@@ -76,10 +76,10 @@ public class S3StorageTest
     public void putGet()
         throws Exception
     {
-        storage.put("key/file/1", 0, contents(""));
+        storage.put("key/file/1", 3, contents("xxx"));
         storage.put("key/file/2", 1, contents("a"));
         storage.put("key/file/3", 4, contents("data"));
-        assertThat(readString(storage.open("key/file/1").getContentInputStream()), is(""));
+        assertThat(readString(storage.open("key/file/1").getContentInputStream()), is("xxx"));
         assertThat(readString(storage.open("key/file/2").getContentInputStream()), is("a"));
         assertThat(readString(storage.open("key/file/3").getContentInputStream()), is("data"));
     }
@@ -88,7 +88,7 @@ public class S3StorageTest
     public void listAll()
         throws Exception
     {
-        storage.put("key/file/1", 0, contents(""));
+        storage.put("key/file/1", 3, contents("xxx"));
         storage.put("key/file/2", 1, contents("1"));
         storage.put("key/file/3", 2, contents("12"));
 
@@ -97,7 +97,7 @@ public class S3StorageTest
 
         assertThat(all.size(), is(3));
         assertThat(all.get(0).getKey(), is("key/file/1"));
-        assertThat(all.get(0).getContentLength(), is(0L));
+        assertThat(all.get(0).getContentLength(), is(3L));
         assertThat(all.get(1).getKey(), is("key/file/2"));
         assertThat(all.get(1).getContentLength(), is(1L));
         assertThat(all.get(2).getKey(), is("key/file/3"));
