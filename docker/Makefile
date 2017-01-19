@@ -14,6 +14,7 @@ IMAGE = $(IMAGE_NAMESPACE)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 build:
 	docker build -t $(IMAGE) .
+	echo Built $(IMAGE)
 
 push:
 	docker push $(IMAGE)
