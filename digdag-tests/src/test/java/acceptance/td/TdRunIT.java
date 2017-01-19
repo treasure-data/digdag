@@ -102,10 +102,9 @@ public class TdRunIT
     public void testRunSavedQueryById()
             throws Exception
     {
-        // TODO: create a query when https://github.com/treasure-data/td-client-java/pull/79 has been deployed
-//        String name = "test_" + UUID.randomUUID().toString().replace('-', '_');
-//        TDSavedQuery query = createQuery(name);
-        testRunSavedQuery("53833");
+        String name = "test_" + UUID.randomUUID().toString().replace('-', '_');
+        TDSavedQuery query = createQuery(name);
+        testRunSavedQuery(query.getId());
     }
 
     private TDSavedQuery createQuery(String name)
