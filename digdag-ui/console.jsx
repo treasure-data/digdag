@@ -775,12 +775,25 @@ class WorkflowView extends React.Component {
     return workflow.trim()
   }
 
+  runWorkflow () {
+    const sessionTime = moment().format()
+    const params = {}
+    model().startAttempt(this.props.workflow.id, sessionTime, params)
+  }
+
   render () {
     const wf = this.props.workflow
     return (
       <div>
         <div className='row'>
-          <h2>Workflow</h2>
+          <h2>Workflow
+          <button
+            className='btn btn-sm btn-success pull-right'
+            onClick={this.runWorkflow.bind(this)}
+          >
+            RUN
+          </button>
+          </h2>
           <table className='table table-condensed'>
             <tbody>
               <tr>
