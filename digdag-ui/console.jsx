@@ -1071,6 +1071,7 @@ const SessionView = withRouter(
                 className='btn btn-success pull-right'
                 disabled={loading}
                 onClick={this.retrySessionWithLatestRevision.bind(this)}
+                style={{marginRight: '0.5em'}}
               >
                 RETRY LATEST
               </button>
