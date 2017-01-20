@@ -58,11 +58,9 @@ public class DatabaseTaskQueueServer
     private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
-    public DatabaseTaskQueueServer(DBI dbi, DatabaseConfig config, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
+    public DatabaseTaskQueueServer(TransactionManager transactionManager, DatabaseConfig config, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
     {
-        super(config.getType(), Dao.class, dbi);
-
-        dbi.registerMapper(new ImmutableTaskQueueLockMapper());
+        super(config.getType(), Dao.class, transactionManager);
 
         this.queueConfig = queueConfig;
         this.taskObjectMapper = taskObjectMapper;
@@ -443,7 +441,8 @@ public class DatabaseTaskQueueServer
         }
     }
 
-    private static class ImmutableTaskQueueLockMapper
+    // TODO
+    public static class ImmutableTaskQueueLockMapper
             implements ResultSetMapper<ImmutableTaskQueueLock>
     {
         @Override

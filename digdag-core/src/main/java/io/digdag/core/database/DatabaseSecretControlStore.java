@@ -16,9 +16,9 @@ class DatabaseSecretControlStore
     private final int siteId;
     private final SecretCrypto crypto;
 
-    DatabaseSecretControlStore(DatabaseConfig config, DBI dbi, int siteId, SecretCrypto crypto)
+    DatabaseSecretControlStore(DatabaseConfig config, TransactionManager transactionManager, int siteId, SecretCrypto crypto)
     {
-        super(config.getType(), dao(config.getType()), dbi);
+        super(config.getType(), dao(config.getType()), transactionManager);
         this.siteId = siteId;
         this.crypto = crypto;
     }

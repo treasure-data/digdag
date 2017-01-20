@@ -27,7 +27,6 @@ import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStatus;
 import io.digdag.spi.ScheduleTime;
 import org.immutables.value.Value;
-import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
@@ -58,18 +57,9 @@ public class DatabaseProjectStoreManager
     private final ConfigMapper cfm;
 
     @Inject
-    public DatabaseProjectStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseProjectStoreManager(TransactionManager transactionManager, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), dao(config.getType()), dbi);
-
-        dbi.registerMapper(new StoredProjectMapper(cfm));
-        dbi.registerMapper(new StoredRevisionMapper(cfm));
-        dbi.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
-        dbi.registerMapper(new StoredWorkflowDefinitionWithProjectMapper(cfm));
-        dbi.registerMapper(new WorkflowConfigMapper());
-        dbi.registerMapper(new IdNameMapper());
-        dbi.registerMapper(new ScheduleStatusMapper());
-        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+        super(config.getType(), dao(config.getType()), transactionManager);
 
         this.cfm = cfm;
     }
@@ -832,7 +822,8 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredProjectMapper
+    // TODO
+    public static class StoredProjectMapper
             implements ResultSetMapper<StoredProject>
     {
         private final ConfigMapper cfm;
@@ -862,7 +853,8 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredRevisionMapper
+    // TODO
+    public static class StoredRevisionMapper
             implements ResultSetMapper<StoredRevision>
     {
         private final ConfigMapper cfm;
@@ -890,7 +882,8 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredWorkflowDefinitionMapper
+    // TODO
+    public static class StoredWorkflowDefinitionMapper
             implements ResultSetMapper<StoredWorkflowDefinition>
     {
         private final ConfigMapper cfm;
@@ -914,7 +907,8 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredWorkflowDefinitionWithProjectMapper
+    // TODO
+    public static class StoredWorkflowDefinitionWithProjectMapper
             implements ResultSetMapper<StoredWorkflowDefinitionWithProject>
     {
         private final ConfigMapper cfm;
@@ -954,7 +948,8 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class WorkflowConfigMapper
+    // TODO
+    public static class WorkflowConfigMapper
             implements ResultSetMapper<WorkflowConfig>
     {
         @Override
@@ -969,7 +964,8 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class IdNameMapper
+    // TODO
+    public static class IdNameMapper
             implements ResultSetMapper<IdName>
     {
         @Override
@@ -989,7 +985,8 @@ public class DatabaseProjectStoreManager
         return map;
     }
 
-    private static class ScheduleStatusMapper
+    // TODO
+    public static class ScheduleStatusMapper
             implements ResultSetMapper<ScheduleStatus>
     {
         @Override

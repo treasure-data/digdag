@@ -31,6 +31,7 @@ import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.NotSupportedException;

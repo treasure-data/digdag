@@ -129,25 +129,9 @@ public class DatabaseSessionStoreManager
     private final TaskAttemptSummaryMapper tasm;
 
     @Inject
-    public DatabaseSessionStoreManager(DBI dbi, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
+    public DatabaseSessionStoreManager(TransactionManager transactionManager, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
-        super(config.getType(), dao(config.getType()), dbi);
-
-        dbi.registerMapper(new StoredTaskMapper(cfm));
-        dbi.registerMapper(new ArchivedTaskMapper(cklm, cfm));
-        dbi.registerMapper(new ResumingTaskMapper(cklm, cfm));
-        dbi.registerMapper(new StoredSessionMapper(cfm));
-        dbi.registerMapper(new StoredSessionWithLastAttemptMapper(cfm));
-        dbi.registerMapper(new StoredSessionAttemptMapper(cfm));
-        dbi.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
-        dbi.registerMapper(new TaskStateSummaryMapper());
-        dbi.registerMapper(new TaskAttemptSummaryMapper());
-        dbi.registerMapper(new SessionAttemptSummaryMapper());
-        dbi.registerMapper(new StoredSessionMonitorMapper(cfm));
-        dbi.registerMapper(new StoredDelayedSessionAttemptMapper());
-        dbi.registerMapper(new TaskRelationMapper());
-        dbi.registerMapper(new InstantMapper());
-        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+        super(config.getType(), dao(config.getType()), transactionManager);
 
         this.mapper = mapper;
         this.cf = cf;
@@ -1911,7 +1895,8 @@ public class DatabaseSessionStoreManager
         void deleteDelayedAttempt(@Bind("attemptId") long attemptId);
     }
 
-    private static class InstantMapper
+    // TODO
+    public static class InstantMapper
             implements ResultSetMapper<Instant>
     {
         @Override
@@ -1928,7 +1913,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionMapper
+    // TODO
+    public static class StoredSessionMapper
             implements ResultSetMapper<StoredSession>
     {
         private final ConfigMapper cfm;
@@ -1953,7 +1939,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionAttemptMapper
+    // TODO
+    public static class StoredSessionAttemptMapper
             implements ResultSetMapper<StoredSessionAttempt>
     {
         private final ConfigMapper cfm;
@@ -1982,7 +1969,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionAttemptWithSessionMapper
+    // TODO
+    public static class StoredSessionAttemptWithSessionMapper
             implements ResultSetMapper<StoredSessionAttemptWithSession>
     {
         private final ConfigMapper cfm;
@@ -2019,7 +2007,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionWithLastAttemptMapper
+    // TODO
+    public static class StoredSessionWithLastAttemptMapper
             implements ResultSetMapper<StoredSessionWithLastAttempt>
     {
         private final ConfigMapper cfm;
@@ -2057,7 +2046,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class SessionAttemptSummaryMapper
+    // TODO
+    public static class SessionAttemptSummaryMapper
             implements ResultSetMapper<SessionAttemptSummary>
     {
         @Override
@@ -2072,7 +2062,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredTaskMapper
+    // TODO
+    public static class StoredTaskMapper
             implements ResultSetMapper<StoredTask>
     {
         private final ConfigMapper cfm;
@@ -2108,7 +2099,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ArchivedTaskMapper
+    // TODO
+    public static class ArchivedTaskMapper
             implements ResultSetMapper<ArchivedTask>
     {
         private final ConfigKeyListMapper cklm;
@@ -2155,7 +2147,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ResumingTaskMapper
+    // TODO
+    public static class ResumingTaskMapper
             implements ResultSetMapper<ResumingTask>
     {
         private final ConfigKeyListMapper cklm;
@@ -2191,7 +2184,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class TaskStateSummaryMapper
+    // TODO
+    public static class TaskStateSummaryMapper
             implements ResultSetMapper<TaskStateSummary>
     {
         @Override
@@ -2207,7 +2201,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class TaskAttemptSummaryMapper
+    // TODO
+    public static class TaskAttemptSummaryMapper
             implements ResultSetMapper<TaskAttemptSummary>
     {
         @Override
@@ -2222,7 +2217,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class TaskRelationMapper
+    // TODO
+    public static class TaskRelationMapper
             implements ResultSetMapper<TaskRelation>
     {
         @Override
@@ -2237,7 +2233,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionMonitorMapper
+    // TODO
+    public static class StoredSessionMonitorMapper
             implements ResultSetMapper<StoredSessionMonitor>
     {
         private final ConfigMapper cfm;
@@ -2263,7 +2260,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredDelayedSessionAttemptMapper
+    // TODO
+    public static class StoredDelayedSessionAttemptMapper
             implements ResultSetMapper<StoredDelayedSessionAttempt>
     {
         @Override
@@ -2293,7 +2291,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class IdConfigMapper
+    // TODO
+    public static class IdConfigMapper
             implements ResultSetMapper<IdConfig>
     {
         private final ConfigKeyListMapper cklm;
@@ -2327,7 +2326,8 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ConfigResultSetMapper
+    // TODO
+    public static class ConfigResultSetMapper
             implements ResultSetMapper<Config>
     {
         private final ConfigMapper cfm;

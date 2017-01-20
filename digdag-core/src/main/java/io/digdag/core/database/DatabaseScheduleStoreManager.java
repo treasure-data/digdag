@@ -19,6 +19,8 @@ import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import javax.sql.DataSource;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -30,12 +32,9 @@ public class DatabaseScheduleStoreManager
         implements ScheduleStoreManager
 {
     @Inject
-    public DatabaseScheduleStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseScheduleStoreManager(TransactionManager transactionManager, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, dbi);
-
-        dbi.registerMapper(new StoredScheduleMapper(cfm));
-        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+        super(config.getType(), Dao.class, transactionManager);
     }
 
     @Override
@@ -303,7 +302,8 @@ public class DatabaseScheduleStoreManager
         int enableSchedule(@Bind("id") int id);
     }
 
-    private static class StoredScheduleMapper
+    // TODO
+    public static class StoredScheduleMapper
             implements ResultSetMapper<StoredSchedule>
     {
         private final ConfigMapper cfm;
