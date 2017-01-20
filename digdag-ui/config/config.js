@@ -1,5 +1,5 @@
 var DIGDAG_CONFIG = {
-  url: 'http://localhost:65432/api/',
+  url: '/api/',
   td: {
     useTD: false,
     apiV4: 'https://api-console.treasuredata.com/v4',
