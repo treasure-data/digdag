@@ -469,15 +469,13 @@ class ScheduleListView extends React.Component {
   };
 
   state: {
-    schedules: [],
-    loading: boolean
+    schedules: []
   };
 
   constructor (props) {
     super(props)
     this.state = {
-      schedules: [],
-      loading: false
+      schedules: []
     }
   }
 
@@ -486,36 +484,29 @@ class ScheduleListView extends React.Component {
   }
 
   fetch () {
-    this.setState({loading: true})
     model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(({ schedules }) => {
-      this.setState({
-        schedules,
-        loading: false
-      })
+      this.setState({ schedules })
     })
   }
 
   disableSchedule () {
     const { schedules } = this.state || {}
-    this.setState({loading: true})
     model()
       .disableSchedule(schedules[0].id)
-      .then(() => this.setState({loading: false}))
       .then(() => this.fetch())
   }
 
   enableSchedule () {
     const schedule = this.state.schedules[0]
-    this.setState({loading: true})
     model()
       .enableSchedule(schedule.id)
-      .then(() => this.setState({loading: false}))
       .then(() => this.fetch())
   }
 
   render () {
-    const { schedules, loading } = this.state || {}
-    const canPause = schedules && schedules.length && !schedules[0].disabledAt
+    const { schedules } = this.state || {}
+    const hasSchedule = schedules && schedules.length
+    const isPaused = hasSchedule && !schedules[0].disabledAt
     const rows = (schedules || []).map(schedule => {
       return (
         <tr key={schedule.id}>
@@ -525,11 +516,10 @@ class ScheduleListView extends React.Component {
           <td><Link to={`/workflows/${schedule.workflow.id}`}>{schedule.workflow.name}</Link></td>
           <td>{schedule.nextRunTime}</td>
           <td>{schedule.nextScheduleTime}</td>
-          <td style={{ width: 60 }}>{statusButton}</td>
         </tr>
       )
     })
-    const statusButton = canPause ? (
+    const statusButton = isPaused ? (
       <button
         className='btn btn-sm btn-secondary pull-right'
         onClick={this.disableSchedule.bind(this)}
@@ -544,12 +534,11 @@ class ScheduleListView extends React.Component {
         RESUME
       </button>
     )
-    const loadingLabel = <button disabled className='btn btn-sm btn-info pull-right'>LOADING ...</button>
     return (
       <div className='row'>
         <h2>
           Scheduling
-          {loading ? loadingLabel : statusButton}
+          {hasSchedule ? statusButton : ''}
         </h2>
         <div className='table-responsive'>
           <table className='table table-striped table-hover table-condensed'>
