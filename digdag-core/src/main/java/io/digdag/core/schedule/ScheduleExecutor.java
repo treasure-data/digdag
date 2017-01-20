@@ -2,12 +2,14 @@ package io.digdag.core.schedule;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
@@ -58,6 +60,7 @@ public class ScheduleExecutor
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
+    private final TransactionManager tm;
     private final SessionStoreManager sessionStoreManager;  // used for validation in backfill method
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor workflowExecutor;
@@ -72,6 +75,7 @@ public class ScheduleExecutor
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
+            TransactionManager tm,
             SessionStoreManager sessionStoreManager,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor workflowExecutor,
@@ -80,6 +84,7 @@ public class ScheduleExecutor
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
+        this.tm = tm;
         this.sessionStoreManager = sessionStoreManager;
         this.attemptBuilder = attemptBuilder;
         this.workflowExecutor = workflowExecutor;
@@ -130,8 +135,11 @@ public class ScheduleExecutor
     void runSchedules(Instant now)
     {
         try {
-            sm.lockReadySchedules(now, (store, storedSchedule) -> {
-                runSchedule(new ScheduleControl(store, storedSchedule));
+            tm.begin(() -> {
+                sm.lockReadySchedules(now, (store, storedSchedule) -> {
+                    runSchedule(new ScheduleControl(store, storedSchedule));
+                });
+                return null;
             });
         }
         catch (Throwable t) {
@@ -149,8 +157,11 @@ public class ScheduleExecutor
     void runDelayedAttempts(Instant now)
     {
         try {
-            sessionStoreManager.lockReadyDelayedAttempts(now, (delayedAttemptControlStore, delayedAttempt) -> {
-                runDelayedAttempt(delayedAttemptControlStore, delayedAttempt);
+            tm.begin(() -> {
+                sessionStoreManager.lockReadyDelayedAttempts(now, (delayedAttemptControlStore, delayedAttempt) -> {
+                    runDelayedAttempt(delayedAttemptControlStore, delayedAttempt);
+                });
+                return null;
             });
         }
         catch (Throwable t) {

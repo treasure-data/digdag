@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import io.digdag.core.database.TransactionManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,10 +57,10 @@ public class ForEachOperatorFactoryTest
 
         try (DigdagEmbed embed = setupEmbed()) {
             assertTrue(
-                    runWorkflow(embed.getLocalSite(), tempPath, "test", subtasks)
-                    .getStateFlags()
-                    .isSuccess()
-                    );
+                    runWorkflow(embed, tempPath, "test", subtasks)
+                            .getStateFlags()
+                            .isSuccess()
+            );
         }
     }
 

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.skife.jdbi.v2.IDBI;
+
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
@@ -27,29 +27,21 @@ public abstract class BasicDatabaseStoreManager <D>
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final RetryExecutor transactionRetryExecutor = RetryExecutor.retryExecutor()
-            .retryIf((exception) -> {
-                return exception instanceof UnableToExecuteStatementException;
-            })
-            .onRetry((exception, retryCount, retryLimit, retryWait) -> {
-                String message = String.format("Database transaction failed. Retrying %d/%d after %d seconds. Message: %s",
-                        retryCount, retryLimit, retryWait/1000, exception.getMessage());
-                if (retryCount % 3 == 0) {
-                    logger.warn(message, exception);
-                } else {
-                    logger.warn(message);
-                }
-            });
-
     protected final String databaseType;
     private final Class<? extends D> daoIface;
-    private final IDBI dbi;
+    private final TransactionManager transactionManager;
+    protected final ConfigMapper configMapper;
 
-    protected BasicDatabaseStoreManager(String databaseType, Class<? extends D> daoIface, IDBI dbi)
+    protected BasicDatabaseStoreManager(
+            String databaseType,
+            Class<? extends D> daoIface,
+            TransactionManager transactionManager,
+            ConfigMapper configMapper)
     {
         this.databaseType = databaseType;
         this.daoIface = daoIface;
-        this.dbi = dbi;
+        this.transactionManager = transactionManager;
+        this.configMapper = configMapper;
     }
 
     public <T> T requiredResource(T resource, String messageFormat, Object... messageParameters)
@@ -167,23 +159,8 @@ public abstract class BasicDatabaseStoreManager <D>
 
     public <T> T transaction(TransactionAction<T, D> action)
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    handle.begin();
-                    T retval = action.call(handle, handle.attach(daoIface));
-                    validateTransactionAndCommit(handle);
-                    return retval;
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
+        Handle handle = transactionManager.getHandle(configMapper);
+        return action.call(handle, handle.attach(daoIface));
     }
 
     public <T, E1 extends Exception> T transaction(
@@ -210,92 +187,14 @@ public abstract class BasicDatabaseStoreManager <D>
             Class<E3> exClass3)
         throws E1, E2, E3
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    handle.begin();
-                    T retval;
-                    try {
-                        retval = action.call(handle, handle.attach(daoIface));
-                    }
-                    catch (Exception ex) {
-                        try {
-                            handle.rollback();
-                        }
-                        catch (Exception rollback) {
-                            ex.addSuppressed(rollback);
-                        }
-                        Throwables.propagateIfInstanceOf(ex, exClass1);
-                        Throwables.propagateIfInstanceOf(ex, exClass2);
-                        Throwables.propagateIfInstanceOf(ex, exClass3);
-                        Throwables.propagateIfPossible(ex);
-                        throw new TransactionFailedException(
-                                "Transaction failed due to exception being thrown " +
-                                "from within the callback. See cause " +
-                                "for the original exception.", ex);
-                    }
-                    validateTransactionAndCommit(handle);
-                    return retval;
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass1);
-            Throwables.propagateIfInstanceOf(innerException, exClass2);
-            Throwables.propagateIfInstanceOf(innerException, exClass3);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
-    }
-
-    private void validateTransactionAndCommit(Handle handle)
-        throws TransactionFailedException
-    {
-        // Validate connection before COMMIT. This is necessary because PostgreSQL actually runs
-        // ROLLBACK silently when COMMIT is issued if a statement failed during the transaction.
-        // It means that BasicDatabaseStoreManager.transaction method doesn't throw exceptions
-        // but the actual transaction is rolled back. Here checks state of the transaction by
-        // calling org.postgresql.jdbc.PgConnection.isValid method.
-        //
-        // Here assumes that HikariDB doesn't override isValid.
-        boolean isValid;
-        try {
-            isValid = handle.getConnection().isValid(30);
-        }
-        catch (SQLException ex) {
-            throw new TransactionFailedException(
-                    "Can't validate a transaction before commit", ex);
-        }
-        if (!isValid) {
-            throw new TransactionFailedException(
-                    "Trying to commit a transaction that is already aborted. "  +
-                    "Because current transaction is aborted, commands including " +
-                    "commit are ignored until end of transaction block.");
-        }
-        else {
-            handle.commit();
-        }
+        Handle handle = transactionManager.getHandle(configMapper);
+        return action.call(handle, handle.attach(daoIface));
     }
 
     public <T> T autoCommit(AutoCommitAction<T, D> action)
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return action.call(handle, handle.attach(daoIface));
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
+        Handle handle = transactionManager.getHandle(configMapper);
+        return action.call(handle, handle.attach(daoIface));
     }
 
     @SuppressWarnings("unchecked")
@@ -325,23 +224,8 @@ public abstract class BasicDatabaseStoreManager <D>
             Class<E3> exClass3)
         throws E1, E2, E3
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return action.call(handle, handle.attach(daoIface));
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass1);
-            Throwables.propagateIfInstanceOf(innerException, exClass2);
-            Throwables.propagateIfInstanceOf(innerException, exClass3);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
+        Handle handle = transactionManager.getHandle(configMapper);
+        return action.call(handle, handle.attach(daoIface));
     }
 
     public static Optional<Integer> getOptionalInt(ResultSet r, String column)

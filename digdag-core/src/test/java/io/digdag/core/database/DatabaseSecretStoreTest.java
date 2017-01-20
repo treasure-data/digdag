@@ -48,7 +48,8 @@ public class DatabaseSecretStoreTest
     public void setUp()
             throws Exception
     {
-        factory = DatabaseTestingUtils.setupDatabase();
+        factory = DatabaseTestingUtils.setupDatabase(true);
+
         ProjectStore projectStore = factory.getProjectStoreManager().getProjectStore(SITE_ID);
         Project project = Project.of("proj1");
         storedProject = projectStore.putAndLockProject(project, (store, stored) -> stored);
@@ -129,6 +130,7 @@ public class DatabaseSecretStoreTest
         }
     }
 
+
     @Test
     public void concurrentPutShouldNotThrowExceptions()
             throws Exception
@@ -140,13 +142,15 @@ public class DatabaseSecretStoreTest
             String value = "thread-" + i;
             futures.add(threads.submit(() -> {
                 try {
-                    for (int j = 0; j < 50; j++) {
-                        secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
-                        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, value);
-                    }
+                    factory.autoCommit(() -> {
+                        for (int j = 0; j < 50; j++) {
+                            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
+                            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, value);
+                        }
+                    });
                 }
-                catch (Exception ex) {
-                    throw Throwables.propagate(ex);
+                catch (Exception e) {
+                    Throwables.propagate(e);
                 }
             }));
         }

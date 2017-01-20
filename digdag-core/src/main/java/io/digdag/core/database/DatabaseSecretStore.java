@@ -20,12 +20,11 @@ class DatabaseSecretStore
 
     private final SecretCrypto crypto;
 
-    DatabaseSecretStore(DatabaseConfig config, DBI dbi, int siteId, SecretCrypto crypto)
+    DatabaseSecretStore(DatabaseConfig config, TransactionManager transactionManager, ConfigMapper cfm, int siteId, SecretCrypto crypto)
     {
-        super(config.getType(), Dao.class, dbi);
+        super(config.getType(), Dao.class, transactionManager, cfm);
         this.siteId = siteId;
         this.crypto = crypto;
-        dbi.registerMapper(new ScopedSecretMapper());
     }
 
     @Override
@@ -66,7 +65,7 @@ class DatabaseSecretStore
         }
     }
 
-    private class ScopedSecretMapper
+    static class ScopedSecretMapper
             implements ResultSetMapper<EncryptedSecret>
     {
         @Override

@@ -19,6 +19,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.google.inject.multibindings.Multibinder;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;
 import io.digdag.core.config.YamlConfigLoader;
@@ -269,6 +270,11 @@ public class DigdagEmbed
     public LocalSite getLocalSite()
     {
         return getInjector().getInstance(LocalSite.class);
+    }
+
+    public TransactionManager getTransactionManager()
+    {
+        return getInjector().getInstance(TransactionManager.class);
     }
 
     @Override

@@ -1,8 +1,10 @@
 package io.digdag.core.agent;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.ErrorReporter;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.spi.TaskRequest;
 import java.time.Duration;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +29,7 @@ public class MultiThreadAgent
     private final AgentId agentId;
     private final TaskServerApi taskServer;
     private final OperatorManager runner;
+    private final TransactionManager transactionManager;
     private final ErrorReporter errorReporter;
 
     private final Object addActiveTaskLock = new Object();
@@ -38,12 +42,13 @@ public class MultiThreadAgent
     public MultiThreadAgent(
             AgentConfig config, AgentId agentId,
             TaskServerApi taskServer, OperatorManager runner,
-            ErrorReporter errorReporter)
+            TransactionManager transactionManager, ErrorReporter errorReporter)
     {
         this.agentId = agentId;
         this.config = config;
         this.taskServer = taskServer;
         this.runner = runner;
+        this.transactionManager = transactionManager;
         this.errorReporter = errorReporter;
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
@@ -114,22 +119,28 @@ public class MultiThreadAgent
                     // Acquire at most guaranteedAvaialbleThreads or 10. This guarantees that all tasks start immediately.
                     int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
                     if (maxAcquire > 0) {
-                        List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
-                        for (TaskRequest req : reqs) {
-                            executor.submit(() -> {
-                                try {
-                                    runner.run(req);
-                                }
-                                catch (Throwable t) {
-                                    logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
-                                    errorReporter.reportUncaughtError(t);
-                                }
-                                finally {
-                                    activeTaskCount.decrementAndGet();
-                                }
-                            });
-                            activeTaskCount.incrementAndGet();
-                        }
+                        transactionManager.begin(() -> {
+                            List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
+                            for (TaskRequest req : reqs) {
+                                executor.submit(() -> {
+                                    try {
+                                        transactionManager.begin(() -> {
+                                            runner.run(req);
+                                            return null;
+                                        });
+                                    }
+                                    catch (Throwable t) {
+                                        logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
+                                        errorReporter.reportUncaughtError(t);
+                                    }
+                                    finally {
+                                        activeTaskCount.decrementAndGet();
+                                    }
+                                });
+                                activeTaskCount.incrementAndGet();
+                            }
+                            return null;
+                        });
                     }
                     else {
                         // no executor thread is available. sleep for a while until a task execution finishes

@@ -11,6 +11,7 @@ import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -51,127 +52,143 @@ public class ScheduleResource
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
+    private final TransactionManager tm;
     private final ScheduleExecutor exec;
 
     @Inject
     public ScheduleResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
+            TransactionManager tm,
             ScheduleExecutor exec)
     {
         this.rm = rm;
         this.sm = sm;
+        this.tm = tm;
         this.exec = exec;
     }
 
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
+            throws Exception
     {
-        List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
-            .getSchedules(100, Optional.fromNullable(lastId));
+        return tm.begin(() -> {
+            List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
+                    .getSchedules(100, Optional.fromNullable(lastId));
 
-        return RestModels.scheduleCollection(rm.getProjectStore(getSiteId()), scheds);
+            return RestModels.scheduleCollection(rm.getProjectStore(getSiteId()), scheds);
+        });
     }
 
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
-        throws ResourceNotFoundException
+            throws Exception
     {
-        StoredSchedule sched = sm.getScheduleStore(getSiteId())
-            .getScheduleById(id);
-        ZoneId timeZone = getTimeZoneOfSchedule(sched);
-        StoredProject proj = rm.getProjectStore(getSiteId())
-            .getProjectById(sched.getProjectId());
-        return RestModels.schedule(sched, proj, timeZone);
+        return tm.begin(() -> {
+            StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id);
+            ZoneId timeZone = getTimeZoneOfSchedule(sched);
+            StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(sched.getProjectId());
+            return RestModels.schedule(sched, proj, timeZone);
+        });
     }
 
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
     public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
-        throws ResourceNotFoundException, ResourceConflictException
+            throws Exception
     {
-        Preconditions.checkArgument(request.getNextTime().isPresent() || (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
+        return tm.begin(() -> {
+            Preconditions.checkArgument(request.getNextTime().isPresent() || (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
 
-        StoredSchedule sched = sm.getScheduleStore(getSiteId())
-            .getScheduleById(id);
-        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+            StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id);
+            ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-        StoredSchedule updated;
-        if (request.getNextTime().isPresent()) {
-            updated = exec.skipScheduleToTime(getSiteId(), id,
-                    request.getNextTime().get().toInstant(timeZone),
-                    request.getNextRunTime(),
-                    request.getDryRun());
-        }
-        else {
-            updated = exec.skipScheduleByCount(getSiteId(), id,
-                    request.getFromTime().get(),
-                    request.getCount().get(),
-                    request.getNextRunTime(),
-                    request.getDryRun());
-        }
+            StoredSchedule updated;
+            if (request.getNextTime().isPresent()) {
+                updated = exec.skipScheduleToTime(getSiteId(), id,
+                        request.getNextTime().get().toInstant(timeZone),
+                        request.getNextRunTime(),
+                        request.getDryRun());
+            }
+            else {
+                updated = exec.skipScheduleByCount(getSiteId(), id,
+                        request.getFromTime().get(),
+                        request.getCount().get(),
+                        request.getNextRunTime(),
+                        request.getDryRun());
+            }
 
-        return RestModels.scheduleSummary(updated, timeZone);
+            return RestModels.scheduleSummary(updated, timeZone);
+        });
     }
 
     private ZoneId getTimeZoneOfSchedule(StoredSchedule sched)
-        throws ResourceNotFoundException
+            throws Exception
     {
         // TODO optimize
         return rm.getProjectStore(getSiteId())
-            .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
-            .getTimeZone();
+                .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
+                .getTimeZone();
     }
 
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
     public RestSessionAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
-        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
+            throws Exception
     {
-        List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
+        return tm.begin(() -> {
+            List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 
-        return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
+            return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
+        });
     }
 
     @POST
     @Path("/api/schedules/{id}/disable")
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
-            throws ResourceNotFoundException, ResourceConflictException
+            throws Exception
     {
-        // TODO: this is racy
-        StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                .getScheduleById(id);
-        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+        return tm.begin(() -> {
+            // TODO: this is racy
+            StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id);
+            ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-        StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
-            ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
-            lockedSched.disableSchedule();
-            return lockedSched.get();
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
+                ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+                lockedSched.disableSchedule();
+                return lockedSched.get();
+            });
+
+            return RestModels.scheduleSummary(updated, timeZone);
         });
-
-        return RestModels.scheduleSummary(updated, timeZone);
     }
 
     @POST
     @Path("/api/schedules/{id}/enable")
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)
-            throws ResourceNotFoundException, ResourceConflictException
+            throws Exception
     {
-        // TODO: this is racy
-        StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                .getScheduleById(id);
-        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+        return tm.begin(() -> {
+            // TODO: this is racy
+            StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id);
+            ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-        StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
-            ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
-            lockedSched.enableSchedule();
-            return lockedSched.get();
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
+                ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+                lockedSched.enableSchedule();
+                return lockedSched.get();
+            });
+
+            return RestModels.scheduleSummary(updated, timeZone);
         });
-
-        return RestModels.scheduleSummary(updated, timeZone);
     }
 }

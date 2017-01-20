@@ -10,6 +10,7 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.queue.TaskQueueServerManager;
 
 public class LocalAgentManager
@@ -27,10 +28,12 @@ public class LocalAgentManager
             AgentConfig config,
             AgentId agentId,
             TaskServerApi taskServer,
-            OperatorManager operatorManager)
+            OperatorManager operatorManager,
+            TransactionManager transactionManager)
     {
         if (config.getEnabled()) {
-            this.agentFactory = () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager, errorReporter);
+            this.agentFactory =
+                    () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager, transactionManager, errorReporter);
         }
         else {
             this.agentFactory = null;

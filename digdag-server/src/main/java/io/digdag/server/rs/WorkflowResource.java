@@ -31,6 +31,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
@@ -59,16 +60,19 @@ public class WorkflowResource
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
+    private final TransactionManager tm;
 
     @Inject
     public WorkflowResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
-            SchedulerManager srm)
+            SchedulerManager srm,
+            TransactionManager tm)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
+        this.tm = tm;
     }
 
     @GET
@@ -77,22 +81,24 @@ public class WorkflowResource
             @QueryParam("project") String projName,
             @QueryParam("revision") String revName,
             @QueryParam("name") String wfName)
-        throws ResourceNotFoundException
+            throws Exception
     {
-        Preconditions.checkArgument(projName != null, "project= is required");
-        Preconditions.checkArgument(wfName != null, "name= is required");
+        return tm.begin(() -> {
+            Preconditions.checkArgument(projName != null, "project= is required");
+            Preconditions.checkArgument(wfName != null, "name= is required");
 
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectByName(projName);
-        StoredRevision rev;
-        if (revName == null) {
-            rev = rs.getLatestRevision(proj.getId());
-        }
-        else {
-            rev = rs.getRevisionByName(proj.getId(), revName);
-        }
-        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
-        return RestModels.workflowDefinition(proj, rev, def);
+            ProjectStore rs = rm.getProjectStore(getSiteId());
+            StoredProject proj = rs.getProjectByName(projName);
+            StoredRevision rev;
+            if (revName == null) {
+                rev = rs.getLatestRevision(proj.getId());
+            }
+            else {
+                rev = rs.getRevisionByName(proj.getId(), revName);
+            }
+            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
+            return RestModels.workflowDefinition(proj, rev, def);
+        });
     }
 
     @GET
@@ -100,23 +106,27 @@ public class WorkflowResource
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
             @QueryParam("last_id") Long lastId,
             @QueryParam("count") Integer count)
-        throws ResourceNotFoundException
+            throws Exception
     {
-        List<StoredWorkflowDefinitionWithProject> defs =
-            rm.getProjectStore(getSiteId())
-            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId));
-        return RestModels.workflowDefinitionCollection(defs);
+        return tm.begin(() -> {
+            List<StoredWorkflowDefinitionWithProject> defs =
+                    rm.getProjectStore(getSiteId())
+                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId));
+            return RestModels.workflowDefinitionCollection(defs);
+        });
     }
 
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
-        throws ResourceNotFoundException
+            throws Exception
     {
-        StoredWorkflowDefinitionWithProject def =
-            rm.getProjectStore(getSiteId())
-            .getWorkflowDefinitionById(id);
-        return RestModels.workflowDefinition(def);
+        return tm.begin(() -> {
+            StoredWorkflowDefinitionWithProject def =
+                    rm.getProjectStore(getSiteId())
+                            .getWorkflowDefinitionById(id);
+            return RestModels.workflowDefinition(def);
+        });
     }
 
     @GET
@@ -125,28 +135,30 @@ public class WorkflowResource
             @PathParam("id") long id,
             @QueryParam("session_time") LocalTimeOrInstant localTime,
             @QueryParam("mode") SessionTimeTruncate mode)
-        throws ResourceNotFoundException
+            throws Exception
     {
-        Preconditions.checkArgument(localTime != null, "session_time= is required");
+        return tm.begin(() -> {
+            Preconditions.checkArgument(localTime != null, "session_time= is required");
 
-        StoredWorkflowDefinitionWithProject def =
-            rm.getProjectStore(getSiteId())
-            .getWorkflowDefinitionById(id);
+            StoredWorkflowDefinitionWithProject def =
+                    rm.getProjectStore(getSiteId())
+                            .getWorkflowDefinitionById(id);
 
-        ZoneId timeZone = def.getTimeZone();
+            ZoneId timeZone = def.getTimeZone();
 
-        Instant truncated;
-        if (mode != null) {
-            truncated = truncateSessionTime(
-                    localTime.toInstant(timeZone),
-                    timeZone, () -> srm.tryGetScheduler(def), mode);
-        }
-        else {
-            truncated = localTime.toInstant(timeZone);
-        }
+            Instant truncated;
+            if (mode != null) {
+                truncated = truncateSessionTime(
+                        localTime.toInstant(timeZone),
+                        timeZone, () -> srm.tryGetScheduler(def), mode);
+            }
+            else {
+                truncated = localTime.toInstant(timeZone);
+            }
 
-        return RestModels.workflowSessionTime(
-                def, truncated, timeZone);
+            return RestModels.workflowSessionTime(
+                    def, truncated, timeZone);
+        });
     }
 
     private Instant truncateSessionTime(

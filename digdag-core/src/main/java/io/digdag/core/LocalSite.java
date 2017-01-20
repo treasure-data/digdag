@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.archive.ArchiveMetadata;
@@ -86,13 +87,13 @@ public class LocalSite
             String projectName, Revision revision,
             WorkflowDefinitionList defs,
             Optional<Instant> currentTimeToSchedule)
-        throws ResourceConflictException, ResourceNotFoundException
+            throws ResourceConflictException
     {
         // validate workflow
         // TODO move this to ProjectControl
         defs.get()
-            .stream()
-            .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
+                .stream()
+                .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
 
         return projectStore.putAndLockProject(
                 Project.of(projectName),
@@ -114,7 +115,7 @@ public class LocalSite
             String projectName,
             String revisionName,
             ArchiveMetadata archive)
-        throws ResourceConflictException, ResourceNotFoundException
+            throws Exception
     {
         return storeLocalWorkflowsImpl(
                 projectName,
@@ -130,7 +131,7 @@ public class LocalSite
             String revisionName,
             ArchiveMetadata archive,
             Instant currentTimeForSchedule)
-        throws ResourceConflictException, ResourceNotFoundException
+            throws Exception
     {
         return storeLocalWorkflowsImpl(
                 projectName,
@@ -144,31 +145,31 @@ public class LocalSite
     public StoredSessionAttemptWithSession submitWorkflow(
             AttemptRequest ar,
             WorkflowDefinition def)
-        throws ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
+            throws ResourceNotFoundException, SessionAttemptConflictException, AttemptLimitExceededException, TaskLimitExceededException
     {
         return exec.submitWorkflow(0, ar, def);
     }
 
     public void run()
-        throws InterruptedException
+            throws InterruptedException
     {
         exec.run();
     }
 
     public StoredSessionAttemptWithSession runUntilDone(long attemptId)
-        throws ResourceNotFoundException, InterruptedException
+            throws ResourceNotFoundException, InterruptedException
     {
         return exec.runUntilDone(attemptId);
     }
 
     public void runUntilAllDone()
-        throws InterruptedException
+            throws InterruptedException
     {
         exec.runUntilAllDone();
     }
 
     public boolean killAttempt(long attemptId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
         return exec.killAttemptById(0, attemptId);
     }

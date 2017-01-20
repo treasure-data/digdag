@@ -21,6 +21,8 @@ import org.junit.Before;
 import org.junit.After;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.ExpectedException;
+
+import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -44,13 +46,14 @@ public class DatabaseQueueTest
     public void setUp()
         throws Exception
     {
-        factory = setupDatabase();
+        factory = setupDatabase(true);
         Config systemConfig = createConfigFactory()
             .create()
             .set("queue.db.max_concurrency", 2);
         taskQueue = new DatabaseTaskQueueServer(
-                factory.get(),
                 factory.getConfig(),
+                factory.get(),
+                createConfigMapper(),
                 new DatabaseTaskQueueConfig(systemConfig),
                 objectMapper());
     }
@@ -76,13 +79,14 @@ public class DatabaseQueueTest
 
         // poll 3 tasks
         List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
-        List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
-        List<TaskQueueLock> poll3 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
-
         assertThat(poll1.size(), is(1));
         assertThat(poll1, is(Arrays.asList(withLockId(req1, poll1.get(0).getLockId()))));
+
+        List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
         assertThat(poll2.size(), is(1));
         assertThat(poll2, is(Arrays.asList(withLockId(req2, poll2.get(0).getLockId()))));
+
+        List<TaskQueueLock> poll3 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
         // max concurrency of this site is 2. 3rd task is not acquired.
         assertThat(poll3, is(Arrays.asList()));
 
@@ -90,7 +94,6 @@ public class DatabaseQueueTest
         taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "agent1");
 
         List<TaskQueueLock> poll4 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
-
         assertThat(poll4.size(), is(1));
         assertThat(poll4, is(Arrays.asList(withLockId(req3, poll4.get(0).getLockId()))));
     }
@@ -110,6 +113,7 @@ public class DatabaseQueueTest
         taskQueue.enqueueDefaultQueueTask(siteId, req4);
 
         List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
+
         assertThat(poll1.size(), is(2));
         assertThat(poll1.get(0).getUniqueName(), is("1"));
         assertThat(poll1.get(1).getUniqueName(), is("2"));
@@ -157,7 +161,6 @@ public class DatabaseQueueTest
         TaskQueueRequest req1 = generateRequest("1");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
-
         List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
         exception.expect(TaskNotFoundException.class);
@@ -178,11 +181,11 @@ public class DatabaseQueueTest
         assertThat(poll1.size(), is(2));
 
         Thread.sleep(2000);
+
         taskQueue.expireLocks();
 
         List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 3, 10);
         assertThat(poll2.size(), is(2));
-
         // TODO this needs API to get retry_count to validate retry_count
     }
 
@@ -200,6 +203,7 @@ public class DatabaseQueueTest
         assertThat(poll1.size(), is(2));
 
         Thread.sleep(2000);
+
         // heartbeat req1
         taskQueue.taskHeartbeat(siteId, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
 
