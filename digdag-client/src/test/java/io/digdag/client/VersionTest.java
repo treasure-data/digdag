@@ -73,18 +73,19 @@ public class VersionTest
     @Test
     public void testOrder()
     {
-        assertOrder("0.1", "0.2");
-        assertOrder("0.1", "0.1.1");
-        assertOrder("0.2", "0.10");
-        assertOrder("0", "0.10");
-        assertOrder("1.0-2016T01", "1.0-2016T02");
-        assertOrder("1.0-2016T01", "1.0-2016T01-02");
+        assertNewer("0.1", "0.2");
+        assertNewer("0.1", "0.1.1");
+        assertNewer("0.2", "0.10");
+        assertNewer("0", "0.10");
+        assertNewer("1.0-rc1", "1.0");
+        assertNewer("1.0-2016T01", "1.0-2016T02");
+        assertNewer("1.0-2016T01", "1.0-2016T01-02");
     }
 
-    public void assertOrder(String a, String b)
+    private void assertNewer(String older, String newer)
     {
-        Version v1 = Version.parse(a);
-        Version v2 = Version.parse(b);
+        Version v1 = Version.parse(older);
+        Version v2 = Version.parse(newer);
 
         assertTrue(v1.isOlder(v2));
         assertFalse(v1.isNewer(v2));
@@ -95,5 +96,27 @@ public class VersionTest
         assertTrue(v2.isNewer(v1));
         assertThat(v2.compareTo(v1), is(1));
         assertFalse(v2.equals(v1));
+    }
+
+    @Test
+    public void testSameOrder()
+    {
+        assertSameOrder("0", "0.0");
+        assertSameOrder("1", "1.0");
+        assertSameOrder("1.0", "1.0.0");
+    }
+
+    private void assertSameOrder(String a, String b)
+    {
+        Version v1 = Version.parse(a);
+        Version v2 = Version.parse(b);
+
+        assertFalse(v1.isOlder(v2));
+        assertFalse(v1.isNewer(v2));
+        assertThat(v1.compareTo(v2), is(0));
+
+        assertFalse(v2.isOlder(v1));
+        assertFalse(v2.isNewer(v1));
+        assertThat(v2.compareTo(v1), is(0));
     }
 }

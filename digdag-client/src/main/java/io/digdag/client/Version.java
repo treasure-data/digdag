@@ -50,6 +50,8 @@ public class Version
     @Override
     public int compareTo(Version another)
     {
+        // 1.0 < 1.1
+        // 1.0 = 1.0.0
         int longer = Math.max(versionNumbers.size(), another.versionNumbers.size());
         for (int i = 0; i < longer; i++) {
             int left = versionNumbers.size() > i ? versionNumbers.get(i) : 0;
@@ -62,11 +64,12 @@ public class Version
             }
         }
 
-        // if one of them has qualifier, it's newer
-        if (!qualifier.isPresent() && another.qualifier.isPresent()) {
+        // 1.0-rc1 < 1.0, 1.0-SNAPSHOT < 1.0
+        // if one of them has qualifier, it's older
+        if (qualifier.isPresent() && !another.qualifier.isPresent()) {
             return -1;
         }
-        else if (qualifier.isPresent() && !another.qualifier.isPresent()) {
+        else if (!qualifier.isPresent() && another.qualifier.isPresent()) {
             return 1;
         }
 
