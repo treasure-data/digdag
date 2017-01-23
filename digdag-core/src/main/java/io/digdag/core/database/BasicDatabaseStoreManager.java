@@ -11,7 +11,6 @@ import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import io.digdag.client.config.Config;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
@@ -45,7 +44,7 @@ public abstract class BasicDatabaseStoreManager <D>
     protected final String databaseType;
     private final Class<? extends D> daoIface;
     private final TransactionManager transactionManager;
-    private final ConfigMapper configMapper;
+    protected final ConfigMapper configMapper;
 
     protected BasicDatabaseStoreManager(
             String databaseType,

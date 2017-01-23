@@ -8,10 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 
-import java.util.function.Supplier;
-
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.sun.tools.javac.util.Assert.checkNull;
 
 public class ThreadLocalTransactionManager
         implements TransactionManager
@@ -19,19 +16,16 @@ public class ThreadLocalTransactionManager
     private static final Logger logger = LoggerFactory.getLogger(TransactionManager.class);
     private static final ThreadLocal<Transaction> threadLocalTransaction = new ThreadLocal<>();
     private final DataSource ds;
-    private final ConfigMapper configMapper;
 
     private static class LazyTransaction
             implements Transaction
     {
         private final DataSource ds;
-        private final ConfigMapper configMapper;
         private Handle handle;
 
-        LazyTransaction(DataSource ds, ConfigMapper configMapper)
+        LazyTransaction(DataSource ds)
         {
             this.ds = checkNotNull(ds);
-            this.configMapper = configMapper;
         }
 
         @Override
@@ -40,6 +34,7 @@ public class ThreadLocalTransactionManager
             if (handle == null) {
                 DBI dbi = new DBI(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
+                // TODO: Refactoring
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredRevisionMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionMapper(configMapper));
@@ -93,10 +88,9 @@ public class ThreadLocalTransactionManager
     }
 
     @Inject
-    public ThreadLocalTransactionManager(DataSource ds, ConfigMapper configMapper)
+    public ThreadLocalTransactionManager(DataSource ds)
     {
         this.ds = checkNotNull(ds);
-        this.configMapper = checkNotNull(configMapper);
     }
 
     @Override
@@ -107,10 +101,14 @@ public class ThreadLocalTransactionManager
     }
 
     @Override
-    public <T> T begin(Supplier<T> func)
+    public <T> T begin(ThrowableSupplier<T> func)
+            throws Exception
     {
-        checkNull(threadLocalTransaction.get());
-        LazyTransaction transaction = new LazyTransaction(ds, configMapper);
+        if (threadLocalTransaction.get() != null) {
+            throw new IllegalStateException("threadLocalTransaction shouldn't have a handle");
+        }
+
+        LazyTransaction transaction = new LazyTransaction(ds);
         threadLocalTransaction.set(transaction);
         boolean committed = false;
         try {
@@ -120,6 +118,7 @@ public class ThreadLocalTransactionManager
             return result;
         }
         finally {
+            threadLocalTransaction.set(null);
             if (!committed) {
                 transaction.abort();
             }

@@ -29,9 +29,9 @@ public class DatabaseQueueSettingStoreManager
         implements QueueSettingStoreManager
 {
     @Inject
-    public DatabaseQueueSettingStoreManager(TransactionManager transactionManager, DatabaseConfig config)
+    public DatabaseQueueSettingStoreManager(TransactionManager transactionManager, DatabaseConfig config, ConfigMapper cfm)
     {
-        super(config.getType(), Dao.class, transactionManager);
+        super(config.getType(), Dao.class, transactionManager, cfm);
     }
 
     @Override

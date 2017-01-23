@@ -34,7 +34,7 @@ public class DatabaseScheduleStoreManager
     @Inject
     public DatabaseScheduleStoreManager(TransactionManager transactionManager, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, transactionManager);
+        super(config.getType(), Dao.class, transactionManager, cfm);
     }
 
     @Override

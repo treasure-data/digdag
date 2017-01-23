@@ -123,7 +123,6 @@ public class DatabaseSessionStoreManager
     private final ObjectMapper mapper;
     private final ConfigFactory cf;
     private final ConfigKeyListMapper cklm = new ConfigKeyListMapper();
-    private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
     private final ArchivedTaskMapper atm;
     private final TaskAttemptSummaryMapper tasm;
@@ -131,11 +130,10 @@ public class DatabaseSessionStoreManager
     @Inject
     public DatabaseSessionStoreManager(TransactionManager transactionManager, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
-        super(config.getType(), dao(config.getType()), transactionManager);
+        super(config.getType(), dao(config.getType()), transactionManager, cfm);
 
         this.mapper = mapper;
         this.cf = cf;
-        this.cfm = cfm;
         this.stm = new StoredTaskMapper(cfm);
         this.atm = new ArchivedTaskMapper(cklm, cfm);
         this.tasm = new TaskAttemptSummaryMapper();
@@ -502,7 +500,7 @@ public class DatabaseSessionStoreManager
                     " join task_state_details ts on ts.id = td.id" +
                     " where td.id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(cklm, null, cfm, "export_config", "export_params"))
+                .map(new IdConfigMapper(cklm, null, configMapper, "export_config", "export_params"))
                 .list()
             );
         return sortConfigListByIdList(idList, list);
@@ -520,7 +518,7 @@ public class DatabaseSessionStoreManager
                     " from task_state_details" +
                     " where id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(cklm, "reset_store_params", cfm, "store_params", null))
+                .map(new IdConfigMapper(cklm, "reset_store_params", configMapper, "store_params", null))
                 .list()
             );
         return sortParameterUpdateListByIdList(idList, list);
@@ -538,7 +536,7 @@ public class DatabaseSessionStoreManager
                     " from task_state_details" +
                     " where id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(cklm, null, cfm, "error", null))
+                .map(new IdConfigMapper(cklm, null, configMapper, "error", null))
                 .list()
             );
         return sortConfigListByIdList(idList, list);
@@ -910,7 +908,7 @@ public class DatabaseSessionStoreManager
                     " and error is not null"
                 )
                 .bind("parentId", taskId)
-                .map(new ConfigResultSetMapper(cfm, "error"))
+                .map(new ConfigResultSetMapper(configMapper, "error"))
                 .list();
         }
 
@@ -1007,7 +1005,7 @@ public class DatabaseSessionStoreManager
                 .bind("id", taskId)
                 .bind("oldState", beforeState.get())
                 .bind("newState", afterState.get())
-                .bind("stateParams", cfm.toBinding(stateParams))
+                .bind("stateParams", configMapper.toBinding(stateParams))
                 .execute();
             if (n > 0) {
                 if (updateError.isPresent()) {

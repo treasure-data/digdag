@@ -35,6 +35,8 @@ import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import javax.activation.DataSource;
+
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -54,14 +56,10 @@ public class DatabaseProjectStoreManager
         extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
         implements ProjectStoreManager
 {
-    private final ConfigMapper cfm;
-
     @Inject
-    public DatabaseProjectStoreManager(TransactionManager transactionManager, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseProjectStoreManager(TransactionManager tm, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), dao(config.getType()), transactionManager);
-
-        this.cfm = cfm;
+        super(config.getType(), dao(config.getType()), tm, cfm);
     }
 
     private static Class<? extends Dao> dao(String type)
@@ -145,7 +143,7 @@ public class DatabaseProjectStoreManager
                         " and id " + inLargeIdListExpression(projIdList)
                     )
                     .bind("siteId", siteId)
-                    .map(new StoredProjectMapper(cfm))
+                    .map(new StoredProjectMapper(configMapper))
                     .list()
                 );
 
@@ -419,7 +417,7 @@ public class DatabaseProjectStoreManager
         public StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition def, ZoneId workflowTimeZone)
             throws ResourceConflictException
         {
-            String configText = cfm.toText(def.getConfig());
+            String configText = configMapper.toText(def.getConfig());
             String zoneId = workflowTimeZone.getId();
             long configDigest = WorkflowConfig.digest(configText, zoneId);
 

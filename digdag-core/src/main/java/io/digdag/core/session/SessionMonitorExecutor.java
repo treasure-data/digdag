@@ -10,6 +10,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.BackgroundExecutor;
@@ -28,6 +29,7 @@ public class SessionMonitorExecutor
     private final ConfigFactory cf;
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
+    private final TransactionManager tm;
     private ScheduledExecutorService executor;
 
     @Inject(optional = true)
@@ -37,10 +39,12 @@ public class SessionMonitorExecutor
     public SessionMonitorExecutor(
             ConfigFactory cf,
             SessionStoreManager sm,
+            TransactionManager tm,
             WorkflowExecutor exec)
     {
         this.cf = cf;
         this.sm = sm;
+        this.tm = tm;
         this.exec = exec;
     }
 
@@ -79,10 +83,14 @@ public class SessionMonitorExecutor
     public void run()
     {
         try {
-            sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
-                // runMonitor needs to return next runtime if this monitor should run again later
-                return runMonitor(storedMonitor);
-            });
+            tm.begin(() -> {
+                        sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
+                            // runMonitor needs to return next runtime if this monitor should run again later
+                            return runMonitor(storedMonitor);
+                        });
+                        return null;
+                    }
+            );
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This session monitor scheduling will be retried.", t);

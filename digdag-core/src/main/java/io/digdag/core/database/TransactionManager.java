@@ -8,5 +8,12 @@ public interface TransactionManager
 {
     Handle getHandle(ConfigMapper configMapper);
 
-    <T> T begin(Supplier<T> func);
+    <T> T begin(ThrowableSupplier<T> func)
+            throws Exception;
+
+    @FunctionalInterface
+    interface ThrowableSupplier<T>
+    {
+        T get() throws Exception;
+    }
 }
