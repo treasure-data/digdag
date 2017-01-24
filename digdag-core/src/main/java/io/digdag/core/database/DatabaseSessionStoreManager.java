@@ -1,6 +1,8 @@
 package io.digdag.core.database;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -120,7 +122,7 @@ public class DatabaseSessionStoreManager
 {
     private static final String DEFAULT_ATTEMPT_NAME = "";
 
-    private final ObjectMapper mapper;
+    private final ObjectMapper taskArchiveMapper;
     private final ConfigFactory cf;
     private final ConfigKeyListMapper cklm = new ConfigKeyListMapper();
     private final ConfigMapper cfm;
@@ -149,7 +151,9 @@ public class DatabaseSessionStoreManager
         dbi.registerMapper(new InstantMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
 
-        this.mapper = mapper;
+        this.taskArchiveMapper = mapper.copy();
+        this.taskArchiveMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         this.cf = cf;
         this.cfm = cfm;
         this.stm = new StoredTaskMapper(cfm);
@@ -597,7 +601,7 @@ public class DatabaseSessionStoreManager
     private String dumpTaskArchive(List<ArchivedTask> tasks)
     {
         try {
-            return mapper.writeValueAsString(tasks);
+            return taskArchiveMapper.writeValueAsString(tasks);
         }
         catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -605,10 +609,11 @@ public class DatabaseSessionStoreManager
     }
 
     @SuppressWarnings("unchecked")
-    private List<ArchivedTask> loadTaskArchive(String data)
+    @VisibleForTesting
+    List<ArchivedTask> loadTaskArchive(String data)
     {
         try {
-            return (List<ArchivedTask>) mapper.readValue(data, mapper.getTypeFactory().constructParametrizedType(List.class, List.class, ArchivedTask.class));
+            return (List<ArchivedTask>) taskArchiveMapper.readValue(data, taskArchiveMapper.getTypeFactory().constructParametrizedType(List.class, List.class, ArchivedTask.class));
         }
         catch (IOException ex) {
             throw new RuntimeException("Failed to load task archive", ex);

@@ -13,8 +13,11 @@ import io.digdag.core.schedule.*;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.TaskReport;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
+import static io.digdag.client.config.ConfigUtils.newConfig;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -29,7 +32,6 @@ public class DatabaseSessionStoreManagerTest
     private SessionStoreManager manager;
     private SessionStore store;
 
-    private ConfigFactory cf = createConfigFactory();
     private WorkflowExecutor exec;
     private AttemptBuilder attemptBuilder;
 
@@ -100,7 +102,7 @@ public class DatabaseSessionStoreManagerTest
         AttemptRequest otherProjAr1 = attemptBuilder.buildFromStoredWorkflow(
                 otherProjRev,
                 otherProjWf1,
-                cf.create(),
+                newConfig(),
                 ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())));
         otherProjAttempt1 = exec.submitWorkflow(0, otherProjAr1, otherSrcWf1);
         otherProjSession1 = store.getSessionById(otherProjAttempt1.getSessionId());
@@ -121,7 +123,7 @@ public class DatabaseSessionStoreManagerTest
         AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
                 rev,
                 wf1,
-                cf.create(),
+                newConfig(),
                 ScheduleTime.runNow(sessionTime1));
 
         exec.submitWorkflow(0, ar1, wf1);
@@ -138,7 +140,7 @@ public class DatabaseSessionStoreManagerTest
             propagateOnly(ResourceConflictException.class, () ->
                 exec.submitWorkflow(0,
                     ImmutableAttemptRequest.builder().from(ar1)
-                    .sessionParams(cf.create().set("a", 1))
+                    .sessionParams(newConfig().set("a", 1))
                     .build(),
                     wf1)
             );
@@ -229,9 +231,9 @@ public class DatabaseSessionStoreManagerTest
 
         WorkflowDefinition def1 = WorkflowDefinition.of(
                 wf1.getName(),
-                cf.create()
-                    .setNested("+step1", cf.create().set("sh>", "echo step1"))
-                    .setNested("+step2", cf.create().set("sh>", "echo step2")),
+                newConfig()
+                    .setNested("+step1", newConfig().set("sh>", "echo step1"))
+                    .setNested("+step2", newConfig().set("sh>", "echo step2")),
                 ZoneId.of("UTC")
                 );
 
@@ -239,7 +241,7 @@ public class DatabaseSessionStoreManagerTest
         AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
                 rev,
                 wf1,
-                cf.create(),
+                newConfig(),
                 ScheduleTime.runNow(sessionTime1));
         StoredSessionAttemptWithSession attempt1 = exec.submitWorkflow(0, ar1, def1);
         StoredSessionWithLastAttempt session1 = store.getSessionById(attempt1.getSessionId());
@@ -256,7 +258,7 @@ public class DatabaseSessionStoreManagerTest
         AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
                 rev,
                 wf1,
-                cf.create(),
+                newConfig(),
                 ScheduleTime.runNow(sessionTime2));
         StoredSessionAttemptWithSession attempt2 = exec.submitWorkflow(0, ar2, def1);
         StoredSessionWithLastAttempt session2 = store.getSessionById(attempt2.getSessionId());
@@ -274,7 +276,7 @@ public class DatabaseSessionStoreManagerTest
         AttemptRequest ar3 = attemptBuilder.buildFromStoredWorkflow(
                 rev,
                 wf1,
-                cf.create(),
+                newConfig(),
                 ScheduleTime.runNow(sessionTime2),
                 Optional.of(retryAttemptName),
                 Optional.absent(),
@@ -437,5 +439,79 @@ public class DatabaseSessionStoreManagerTest
         assertThat(session.getUuid(), is(attempt.getSessionUuid()));
         assertThat(session.getLastAttemptId(), is(attempt.getId()));
         assertThat(session.getLastAttempt(), is(StoredSessionAttempt.copyOf(attempt)));
+    }
+
+    @Test
+    public void verifyStoredArchiveTaskBackwardCompatibility()
+    {
+        Config oldTask = newConfig()
+            // Task
+            .set("parentId", null)
+            .set("fullName", "+test")
+            .set("config", newConfig()
+                    .set("local", newConfig().set("do", "that"))
+                    .set("export", newConfig().set("database", "mydb")))
+            .set("taskType", 0)
+            .set("state", "success")
+            .set("stateFlags", 8)
+            // StoredTask
+            .set("id", 132)
+            .set("attemptId", 793)
+            .set("upstreams", ImmutableList.of(8))
+            .set("updatedAt", "2017-01-24T12:06:01.993761631Z")
+            .set("retryAt", null)
+            .set("stateParams", newConfig())
+            // ArchivedTask
+            .set("subtaskConfig", newConfig()
+                    .set("+sub", newConfig()
+                        .set("echo>", "a")))
+            .set("exportParams", newConfig()
+                    .set("database", "mydb"))
+            .set("storeParams", newConfig()
+                    .set("field.id", 32))
+            .set("report", newConfig()
+                    .set("inputs", ImmutableList.of())
+                    .set("outputs", ImmutableList.of()))
+            .set("error", newConfig())
+            // In case removing columns
+            .set("ThisColumnIsRemovedAndShouldBeIgnored", 10)
+            ;
+
+        String data = "[" + oldTask.toString() + "]";
+
+        List<ArchivedTask> tasks = ((DatabaseSessionStoreManager) manager).loadTaskArchive(data);
+
+        assertThat(tasks.size(), is(1));
+
+        assertThat(tasks.get(0), is(
+                    ImmutableArchivedTask.builder()
+                    .id(132L)
+                    .parentId(Optional.absent())
+                    .attemptId(793L)
+                    .fullName("+test")
+                    .config(TaskConfig.validate(
+                            newConfig()
+                            .set("do", "that")
+                            .set("_export", newConfig()
+                                .set("database", "mydb"))
+                            ))
+                    .taskType(TaskType.of(0))
+                    .state(TaskStateCode.SUCCESS)
+                    .stateFlags(TaskStateFlags.empty().withInitialTask())
+                    .upstreams(ImmutableList.of(8L))
+                    .updatedAt(Instant.parse("2017-01-24T12:06:01.993761631Z"))
+                    .retryAt(Optional.absent())
+                    .startedAt(Optional.absent())  // c4acc4ba added StoredTask.getStartedAt
+                    .stateParams(newConfig())
+                    .retryCount(0)  // 3c1e4e7e added StoredTask.getRetryCount
+                    .subtaskConfig(newConfig().set("+sub", newConfig().set("echo>", "a")))
+                    .resetStoreParams(ImmutableList.of())  // a62a8568 added ArchivedTask.resetStoreParams
+                    .exportParams(newConfig().set("database", "mydb"))
+                    .storeParams(newConfig().set("field.id", 32))
+                    .report(Optional.of(TaskReport.empty()))
+                    .error(newConfig())
+                    .resumingTaskId(Optional.absent())  // d0c5f950 added ArchivedTask.getResumingTaskId
+                    .build()
+                    ));
     }
 }
