@@ -14,6 +14,13 @@ import io.digdag.client.config.Config;
 public abstract class StoredTask
         extends Task
 {
+    // Note that this ArchivedTask (which extends StoredTask) is serialized
+    // and stored in the database (task_archives.tasks column). If you add a
+    // new column, old attempts don't have the column stored. These fields will
+    // be filled with a default value (0, null, or Optional.absent) by using
+    // FAIL_ON_UNKNOWN_PROPERTIES=false option of ObjectMapper. See
+    // DatabaseSessionStoreManager.loadTaskArchive for implementation.
+
     public abstract long getId();
 
     public abstract long getAttemptId();
@@ -28,5 +35,9 @@ public abstract class StoredTask
 
     public abstract Config getStateParams();
 
-    public abstract int getRetryCount();
+    @Value.Default
+    public int getRetryCount()
+    {
+        return 0;
+    }
 }
