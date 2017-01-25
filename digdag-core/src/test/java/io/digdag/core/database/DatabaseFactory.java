@@ -18,23 +18,23 @@ import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
 import static org.mockito.Mockito.mock;
 
 public class DatabaseFactory
-        implements AutoCloseable, Provider<DBI>
+        implements AutoCloseable, Provider<TransactionManager>
 {
-    private final DBI dbi;
+    private final TransactionManager tm;
     private final AutoCloseable closeable;
     private final DatabaseConfig config;
 
-    public DatabaseFactory(DBI dbi, AutoCloseable closeable, DatabaseConfig config)
+    public DatabaseFactory(TransactionManager tm, AutoCloseable closeable, DatabaseConfig config)
     {
-        this.dbi = dbi;
+        this.tm = tm;
         this.closeable = closeable;
         this.config = config;
     }
 
     @Override
-    public DBI get()
+    public TransactionManager get()
     {
-        return dbi;
+        return tm;
     }
 
     public DatabaseConfig getConfig()
@@ -44,17 +44,17 @@ public class DatabaseFactory
 
     public DatabaseProjectStoreManager getProjectStoreManager()
     {
-        return new DatabaseProjectStoreManager(dbi, createConfigMapper(), config);
+        return new DatabaseProjectStoreManager(tm, createConfigMapper(), config);
     }
 
     public DatabaseScheduleStoreManager getScheduleStoreManager()
     {
-        return new DatabaseScheduleStoreManager(dbi, createConfigMapper(), config);
+        return new DatabaseScheduleStoreManager(tm, createConfigMapper(), config);
     }
 
     public DatabaseSessionStoreManager getSessionStoreManager()
     {
-        return new DatabaseSessionStoreManager(dbi, createConfigFactory(), createConfigMapper(), objectMapper(), config);
+        return new DatabaseSessionStoreManager(tm, createConfigFactory(), createConfigMapper(), objectMapper(), config);
     }
 
     public WorkflowExecutor getWorkflowExecutor()
@@ -68,17 +68,18 @@ public class DatabaseFactory
                 configFactory,
                 objectMapper(),
                 configFactory.create(),
+                tm,
                 mock(Notifier.class));
     }
 
     public DatabaseSecretControlStoreManager getSecretControlStoreManager(String secret)
     {
-        return new DatabaseSecretControlStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
+        return new DatabaseSecretControlStoreManager(config, tm, createConfigMapper(), new AESGCMSecretCrypto(secret));
     }
 
     public DatabaseSecretStoreManager getSecretStoreManager(String secret)
     {
-        return new DatabaseSecretStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
+        return new DatabaseSecretStoreManager(config, tm, createConfigMapper(), new AESGCMSecretCrypto(secret));
     }
 
     public static class NullTaskQueueDispatcher

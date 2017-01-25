@@ -21,6 +21,8 @@ import org.junit.Before;
 import org.junit.After;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.ExpectedException;
+
+import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -49,8 +51,9 @@ public class DatabaseQueueTest
             .create()
             .set("queue.db.max_concurrency", 2);
         taskQueue = new DatabaseTaskQueueServer(
-                factory.get(),
                 factory.getConfig(),
+                factory.get(),
+                createConfigMapper(),
                 new DatabaseTaskQueueConfig(systemConfig),
                 objectMapper());
     }

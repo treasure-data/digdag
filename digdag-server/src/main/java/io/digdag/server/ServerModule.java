@@ -61,6 +61,7 @@ public class ServerModule
     {
         ApplicationBindingBuilder builder = bindApplication()
             .matches("/api/*")
+            .addProvider(DatabaseTransactionManager.class)
             .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .addProvider(AuthRequestFilter.class)
             .addProvider(CustomHeaderFilter.class)
@@ -221,6 +222,7 @@ public class ServerModule
         @Inject
         public DatabaseTransactionManager(DataSource ds)
         {
+            LoggerFactory.getLogger(ServerModule.class).debug("DatabaseTransactionManager: init");
             this.transactionManager = new ThreadLocalTransactionManager(ds);
         }
 
