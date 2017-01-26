@@ -23,6 +23,7 @@ public class DatabaseModule
         binder.bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(AutoMigrator.class);
         binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
+        binder.bind(TransactionManager.class).to(ThreadLocalTransactionManager.class).in(Scopes.SINGLETON);
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
         binder.bind(ProjectStoreManager.class).to(DatabaseProjectStoreManager.class).in(Scopes.SINGLETON);
@@ -67,6 +68,7 @@ public class DatabaseModule
             this.ds = ds;
         }
 
+        @Override
         public DBI get()
         {
             return new DBI(ds);

@@ -29,12 +29,9 @@ public class DatabaseQueueSettingStoreManager
         implements QueueSettingStoreManager
 {
     @Inject
-    public DatabaseQueueSettingStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseQueueSettingStoreManager(TransactionManager transactionManager, DatabaseConfig config, ConfigMapper cfm)
     {
-        super(config.getType(), Dao.class, dbi);
-
-        dbi.registerMapper(new StoredQueueSettingMapper(cfm));
-        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+        super(config.getType(), Dao.class, transactionManager, cfm);
     }
 
     @Override
@@ -131,7 +128,7 @@ public class DatabaseQueueSettingStoreManager
         int insertQueue(@Bind("id") int id, @Bind("maxConcurrency") int maxConcurrency);
     }
 
-    private static class StoredQueueSettingMapper
+    static class StoredQueueSettingMapper
             implements ResultSetMapper<StoredQueueSetting>
     {
         private final ConfigMapper cfm;

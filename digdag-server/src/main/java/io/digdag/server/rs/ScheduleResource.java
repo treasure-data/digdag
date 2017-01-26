@@ -11,6 +11,7 @@ import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -51,16 +52,19 @@ public class ScheduleResource
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
+    private final TransactionManager tm;
     private final ScheduleExecutor exec;
 
     @Inject
     public ScheduleResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
+            TransactionManager tm,
             ScheduleExecutor exec)
     {
         this.rm = rm;
         this.sm = sm;
+        this.tm = tm;
         this.exec = exec;
     }
 

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.skife.jdbi.v2.IDBI;
+
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
@@ -43,13 +43,19 @@ public abstract class BasicDatabaseStoreManager <D>
 
     protected final String databaseType;
     private final Class<? extends D> daoIface;
-    private final IDBI dbi;
+    private final TransactionManager transactionManager;
+    protected final ConfigMapper configMapper;
 
-    protected BasicDatabaseStoreManager(String databaseType, Class<? extends D> daoIface, IDBI dbi)
+    protected BasicDatabaseStoreManager(
+            String databaseType,
+            Class<? extends D> daoIface,
+            TransactionManager transactionManager,
+            ConfigMapper configMapper)
     {
         this.databaseType = databaseType;
         this.daoIface = daoIface;
-        this.dbi = dbi;
+        this.transactionManager = transactionManager;
+        this.configMapper = configMapper;
     }
 
     public <T> T requiredResource(T resource, String messageFormat, Object... messageParameters)
@@ -169,12 +175,10 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    handle.begin();
-                    T retval = action.call(handle, handle.attach(daoIface));
-                    validateTransactionAndCommit(handle);
-                    return retval;
-                }
+                Handle handle = transactionManager.getHandle(configMapper);
+                T retval = action.call(handle, handle.attach(daoIface));
+                validateTransactionAndCommit(handle);
+                return retval;
             });
         }
         catch (RetryGiveupException ex) {
@@ -212,31 +216,29 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    handle.begin();
-                    T retval;
-                    try {
-                        retval = action.call(handle, handle.attach(daoIface));
-                    }
-                    catch (Exception ex) {
-                        try {
-                            handle.rollback();
-                        }
-                        catch (Exception rollback) {
-                            ex.addSuppressed(rollback);
-                        }
-                        Throwables.propagateIfInstanceOf(ex, exClass1);
-                        Throwables.propagateIfInstanceOf(ex, exClass2);
-                        Throwables.propagateIfInstanceOf(ex, exClass3);
-                        Throwables.propagateIfPossible(ex);
-                        throw new TransactionFailedException(
-                                "Transaction failed due to exception being thrown " +
-                                "from within the callback. See cause " +
-                                "for the original exception.", ex);
-                    }
-                    validateTransactionAndCommit(handle);
-                    return retval;
+                Handle handle = transactionManager.getHandle(configMapper);
+                T retval;
+                try {
+                    retval = action.call(handle, handle.attach(daoIface));
                 }
+                catch (Exception ex) {
+                    try {
+                        handle.rollback();
+                    }
+                    catch (Exception rollback) {
+                        ex.addSuppressed(rollback);
+                    }
+                    Throwables.propagateIfInstanceOf(ex, exClass1);
+                    Throwables.propagateIfInstanceOf(ex, exClass2);
+                    Throwables.propagateIfInstanceOf(ex, exClass3);
+                    Throwables.propagateIfPossible(ex);
+                    throw new TransactionFailedException(
+                            "Transaction failed due to exception being thrown " +
+                                    "from within the callback. See cause " +
+                                    "for the original exception.", ex);
+                }
+                validateTransactionAndCommit(handle);
+                return retval;
             });
         }
         catch (RetryGiveupException ex) {
@@ -284,9 +286,8 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return action.call(handle, handle.attach(daoIface));
-                }
+                Handle handle = transactionManager.getHandle(configMapper);
+                return action.call(handle, handle.attach(daoIface));
             });
         }
         catch (RetryGiveupException ex) {
@@ -327,9 +328,8 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return action.call(handle, handle.attach(daoIface));
-                }
+                Handle handle = transactionManager.getHandle(configMapper);
+                return action.call(handle, handle.attach(daoIface));
             });
         }
         catch (RetryGiveupException ex) {

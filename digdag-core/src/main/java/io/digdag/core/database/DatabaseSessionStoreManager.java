@@ -125,37 +125,19 @@ public class DatabaseSessionStoreManager
     private final ObjectMapper taskArchiveMapper;
     private final ConfigFactory cf;
     private final ConfigKeyListMapper cklm = new ConfigKeyListMapper();
-    private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
     private final ArchivedTaskMapper atm;
     private final TaskAttemptSummaryMapper tasm;
 
     @Inject
-    public DatabaseSessionStoreManager(DBI dbi, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
+    public DatabaseSessionStoreManager(TransactionManager transactionManager, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
-        super(config.getType(), dao(config.getType()), dbi);
-
-        dbi.registerMapper(new StoredTaskMapper(cfm));
-        dbi.registerMapper(new ArchivedTaskMapper(cklm, cfm));
-        dbi.registerMapper(new ResumingTaskMapper(cklm, cfm));
-        dbi.registerMapper(new StoredSessionMapper(cfm));
-        dbi.registerMapper(new StoredSessionWithLastAttemptMapper(cfm));
-        dbi.registerMapper(new StoredSessionAttemptMapper(cfm));
-        dbi.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
-        dbi.registerMapper(new TaskStateSummaryMapper());
-        dbi.registerMapper(new TaskAttemptSummaryMapper());
-        dbi.registerMapper(new SessionAttemptSummaryMapper());
-        dbi.registerMapper(new StoredSessionMonitorMapper(cfm));
-        dbi.registerMapper(new StoredDelayedSessionAttemptMapper());
-        dbi.registerMapper(new TaskRelationMapper());
-        dbi.registerMapper(new InstantMapper());
-        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+        super(config.getType(), dao(config.getType()), transactionManager, cfm);
 
         this.taskArchiveMapper = mapper.copy();
         this.taskArchiveMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         this.cf = cf;
-        this.cfm = cfm;
         this.stm = new StoredTaskMapper(cfm);
         this.atm = new ArchivedTaskMapper(cklm, cfm);
         this.tasm = new TaskAttemptSummaryMapper();
@@ -522,7 +504,7 @@ public class DatabaseSessionStoreManager
                     " join task_state_details ts on ts.id = td.id" +
                     " where td.id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(cklm, null, cfm, "export_config", "export_params"))
+                .map(new IdConfigMapper(cklm, null, configMapper, "export_config", "export_params"))
                 .list()
             );
         return sortConfigListByIdList(idList, list);
@@ -540,7 +522,7 @@ public class DatabaseSessionStoreManager
                     " from task_state_details" +
                     " where id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(cklm, "reset_store_params", cfm, "store_params", null))
+                .map(new IdConfigMapper(cklm, "reset_store_params", configMapper, "store_params", null))
                 .list()
             );
         return sortParameterUpdateListByIdList(idList, list);
@@ -558,7 +540,7 @@ public class DatabaseSessionStoreManager
                     " from task_state_details" +
                     " where id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(cklm, null, cfm, "error", null))
+                .map(new IdConfigMapper(cklm, null, configMapper, "error", null))
                 .list()
             );
         return sortConfigListByIdList(idList, list);
@@ -931,7 +913,7 @@ public class DatabaseSessionStoreManager
                     " and error is not null"
                 )
                 .bind("parentId", taskId)
-                .map(new ConfigResultSetMapper(cfm, "error"))
+                .map(new ConfigResultSetMapper(configMapper, "error"))
                 .list();
         }
 
@@ -1028,7 +1010,7 @@ public class DatabaseSessionStoreManager
                 .bind("id", taskId)
                 .bind("oldState", beforeState.get())
                 .bind("newState", afterState.get())
-                .bind("stateParams", cfm.toBinding(stateParams))
+                .bind("stateParams", configMapper.toBinding(stateParams))
                 .execute();
             if (n > 0) {
                 if (updateError.isPresent()) {
@@ -1916,7 +1898,7 @@ public class DatabaseSessionStoreManager
         void deleteDelayedAttempt(@Bind("attemptId") long attemptId);
     }
 
-    private static class InstantMapper
+    static class InstantMapper
             implements ResultSetMapper<Instant>
     {
         @Override
@@ -1933,7 +1915,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionMapper
+    static class StoredSessionMapper
             implements ResultSetMapper<StoredSession>
     {
         private final ConfigMapper cfm;
@@ -1958,7 +1940,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionAttemptMapper
+    static class StoredSessionAttemptMapper
             implements ResultSetMapper<StoredSessionAttempt>
     {
         private final ConfigMapper cfm;
@@ -1987,7 +1969,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionAttemptWithSessionMapper
+    static class StoredSessionAttemptWithSessionMapper
             implements ResultSetMapper<StoredSessionAttemptWithSession>
     {
         private final ConfigMapper cfm;
@@ -2024,7 +2006,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionWithLastAttemptMapper
+    static class StoredSessionWithLastAttemptMapper
             implements ResultSetMapper<StoredSessionWithLastAttempt>
     {
         private final ConfigMapper cfm;
@@ -2062,7 +2044,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class SessionAttemptSummaryMapper
+    static class SessionAttemptSummaryMapper
             implements ResultSetMapper<SessionAttemptSummary>
     {
         @Override
@@ -2077,7 +2059,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredTaskMapper
+    static class StoredTaskMapper
             implements ResultSetMapper<StoredTask>
     {
         private final ConfigMapper cfm;
@@ -2113,7 +2095,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ArchivedTaskMapper
+    static class ArchivedTaskMapper
             implements ResultSetMapper<ArchivedTask>
     {
         private final ConfigKeyListMapper cklm;
@@ -2160,7 +2142,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ResumingTaskMapper
+    static class ResumingTaskMapper
             implements ResultSetMapper<ResumingTask>
     {
         private final ConfigKeyListMapper cklm;
@@ -2196,7 +2178,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class TaskStateSummaryMapper
+    static class TaskStateSummaryMapper
             implements ResultSetMapper<TaskStateSummary>
     {
         @Override
@@ -2212,7 +2194,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class TaskAttemptSummaryMapper
+    static class TaskAttemptSummaryMapper
             implements ResultSetMapper<TaskAttemptSummary>
     {
         @Override
@@ -2227,7 +2209,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class TaskRelationMapper
+    static class TaskRelationMapper
             implements ResultSetMapper<TaskRelation>
     {
         @Override
@@ -2242,7 +2224,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredSessionMonitorMapper
+    static class StoredSessionMonitorMapper
             implements ResultSetMapper<StoredSessionMonitor>
     {
         private final ConfigMapper cfm;
@@ -2268,7 +2250,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class StoredDelayedSessionAttemptMapper
+    static class StoredDelayedSessionAttemptMapper
             implements ResultSetMapper<StoredDelayedSessionAttempt>
     {
         @Override
@@ -2298,7 +2280,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class IdConfigMapper
+    static class IdConfigMapper
             implements ResultSetMapper<IdConfig>
     {
         private final ConfigKeyListMapper cklm;
@@ -2332,7 +2314,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ConfigResultSetMapper
+    static class ConfigResultSetMapper
             implements ResultSetMapper<Config>
     {
         private final ConfigMapper cfm;

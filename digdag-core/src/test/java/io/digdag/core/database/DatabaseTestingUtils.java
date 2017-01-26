@@ -69,11 +69,13 @@ public class DatabaseTestingUtils
         DataSourceProvider dsp = new DataSourceProvider(config);
 
         DBI dbi = new DBI(dsp.get());
+        TransactionManager tm = new ThreadLocalTransactionManager(dsp.get());
+        // FIXME
         new DatabaseMigrator(dbi, config).migrate();
 
         cleanDatabase(config.getType(), dbi);
 
-        return new DatabaseFactory(dbi, dsp, config);
+        return new DatabaseFactory(tm, dsp, config);
     }
 
     public static final String[] ALL_TABLES = new String[] {
