@@ -29,6 +29,7 @@ import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -229,12 +230,16 @@ public class Run
                     binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
                 })
                 .initializeWithoutShutdownHook()) {
-            run(systemProps, digdag.getInjector(), workflowNameArg, matchPattern);
+
+            digdag.getTransactionManager().begin(() -> {
+                run(systemProps, digdag.getInjector(), workflowNameArg, matchPattern);
+                return null;
+            });
         }
     }
 
     private void run(Properties systemProps, Injector injector, String workflowNameArg, String matchPattern)
-        throws IOException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException, ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException, SystemExitException, InterruptedException
+            throws Exception
     {
         final LocalSite localSite = injector.getInstance(LocalSite.class);
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);

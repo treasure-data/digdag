@@ -68,7 +68,6 @@ public class DatabaseFactory
                 configFactory,
                 objectMapper(),
                 configFactory.create(),
-                tm,
                 mock(Notifier.class));
     }
 

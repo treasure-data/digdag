@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import io.digdag.core.database.TransactionManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,11 +56,15 @@ public class ForEachOperatorFactoryTest
         assertThat(subtasks, is(loadYamlResource(expectedResource)));
 
         try (DigdagEmbed embed = setupEmbed()) {
-            assertTrue(
-                    runWorkflow(embed.getLocalSite(), tempPath, "test", subtasks)
-                    .getStateFlags()
-                    .isSuccess()
-                    );
+            TransactionManager tm = embed.getInjector().getInstance(TransactionManager.class);
+            tm.begin(() -> {
+                assertTrue(
+                        runWorkflow(embed.getLocalSite(), tempPath, "test", subtasks)
+                                .getStateFlags()
+                                .isSuccess()
+                );
+                return null;
+            });
         }
     }
 

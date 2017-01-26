@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
+
+import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
@@ -37,15 +39,21 @@ class RevisionAutoReloader
     private final LocalSite localSite;
     private final ConfigFactory cf;
     private final ProjectArchiveLoader projectLoader;
+    private final TransactionManager transactionManager;
     private ScheduledExecutorService executor = null;
     private List<ReloadTarget> targets;
 
     @Inject
-    public RevisionAutoReloader(LocalSite localSite, ConfigFactory cf, ProjectArchiveLoader projectLoader)
+    public RevisionAutoReloader(
+            LocalSite localSite,
+            ConfigFactory cf,
+            ProjectArchiveLoader projectLoader,
+            TransactionManager transactionManager)
     {
         this.localSite = localSite;
         this.cf = cf;
         this.projectLoader = projectLoader;
+        this.transactionManager = transactionManager;
         this.targets = new CopyOnWriteArrayList<>();
     }
 
@@ -59,7 +67,7 @@ class RevisionAutoReloader
     }
 
     void watch(ProjectArchive project)
-        throws ResourceConflictException, ResourceNotFoundException
+            throws Exception
     {
         targets.add(new ReloadTarget(project));
         startAutoReload();
@@ -85,7 +93,10 @@ class RevisionAutoReloader
         while (ite.hasNext()) {
             ReloadTarget target = ite.next();
             try {
-                target.tryReload();
+                transactionManager.begin(() -> {
+                    target.tryReload();
+                    return null;
+                });
             }
             catch (Exception ex) {
                 logger.error("Uncaught exception during reloading project at {}. Stopped monitoring this project.", target.getProjectPath(), ex);
@@ -102,7 +113,7 @@ class RevisionAutoReloader
         private int lastRevId;
 
         private ReloadTarget(ProjectArchive project)
-            throws ResourceConflictException, ResourceNotFoundException
+                throws Exception
         {
             this.projectPath = project.getProjectPath();
             this.overrideParams = project.getArchiveMetadata().getDefaultParams();
@@ -115,7 +126,7 @@ class RevisionAutoReloader
         }
 
         private void storeProject(ProjectArchive project, int revId)
-            throws ResourceConflictException, ResourceNotFoundException
+                throws Exception
         {
             localSite.storeLocalWorkflows(
                     "default",
@@ -136,7 +147,7 @@ class RevisionAutoReloader
                     storeProject(project, lastRevId + 1);
                 }
             }
-            catch (RuntimeException | ResourceConflictException | ResourceNotFoundException | IOException ex) {
+            catch (Exception ex) {
                 logger.error("Failed to reload", ex);
             }
         }

@@ -78,7 +78,7 @@ public class WorkflowTestingUtils
     }
 
     public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
-        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
+            throws Exception
     {
         ArchiveMetadata meta = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(ImmutableList.of(
@@ -100,7 +100,7 @@ public class WorkflowTestingUtils
     }
 
     public static StoredSessionAttemptWithSession runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
-        throws InterruptedException
+            throws Exception
     {
         try {
             StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);

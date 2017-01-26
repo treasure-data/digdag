@@ -49,110 +49,128 @@ public class DatabaseSecretStoreTest
             throws Exception
     {
         factory = DatabaseTestingUtils.setupDatabase();
-        ProjectStore projectStore = factory.getProjectStoreManager().getProjectStore(SITE_ID);
-        Project project = Project.of("proj1");
-        storedProject = projectStore.putAndLockProject(project, (store, stored) -> stored);
+        factory.get().begin(() -> {
+            ProjectStore projectStore = factory.getProjectStoreManager().getProjectStore(SITE_ID);
+            Project project = Project.of("proj1");
+            storedProject = projectStore.putAndLockProject(project, (store, stored) -> stored);
 
-        controlStoreManager = factory.getSecretControlStoreManager(SECRET);
-        storeManager = factory.getSecretStoreManager(SECRET);
-        secretControlStore = controlStoreManager.getSecretControlStore(SITE_ID);
-        secretStore = storeManager.getSecretStore(SITE_ID);
-        projectId = storedProject.getId();
+            controlStoreManager = factory.getSecretControlStoreManager(SECRET);
+            storeManager = factory.getSecretStoreManager(SECRET);
+            secretControlStore = controlStoreManager.getSecretControlStore(SITE_ID);
+            secretStore = storeManager.getSecretStore(SITE_ID);
+            projectId = storedProject.getId();
+            return null;
+        });
     }
 
     @Test
     public void noSecret()
             throws Exception
     {
-        assertThat(secretControlStore.listProjectSecrets(projectId, SecretScopes.PROJECT), is(empty()));
-        assertThat(secretStore.getSecret(projectId, KEY1, SecretScopes.PROJECT), is(Optional.absent()));
-        secretControlStore.deleteProjectSecret(projectId, KEY1, SecretScopes.PROJECT);
+        factory.get().begin(() -> {
+            assertThat(secretControlStore.listProjectSecrets(projectId, SecretScopes.PROJECT), is(empty()));
+            assertThat(secretStore.getSecret(projectId, KEY1, SecretScopes.PROJECT), is(Optional.absent()));
+            secretControlStore.deleteProjectSecret(projectId, KEY1, SecretScopes.PROJECT);
+            return null;
+        });
     }
 
     @Test
     public void singleSecret()
             throws Exception
     {
-        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+        factory.get().begin(() -> {
+            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+            return null;
+        });
     }
 
     @Test
     public void multipleSecrets()
             throws Exception
     {
-        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
-        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY2, VALUE2);
-        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2, VALUE3);
+        factory.get().begin(() -> {
+            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
+            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY2, VALUE2);
+            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2, VALUE3);
 
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
 
-        // Delete with different scope should not delete the secret
-        secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY1);
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+            // Delete with different scope should not delete the secret
+            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY1);
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
 
-        secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.absent()));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.absent()));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
 
-        secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY2);
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.absent()));
-        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY2);
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.absent()));
+            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+            return null;
+        });
     }
 
     @Test
     public void getSecretWithScope()
             throws Exception
     {
-        String[] scopes = {
-                SecretScopes.PROJECT,
-                SecretScopes.PROJECT_DEFAULT,
-                "foobar"};
+        factory.get().begin(() -> {
+            String[] scopes = {
+                    SecretScopes.PROJECT,
+                    SecretScopes.PROJECT_DEFAULT,
+                    "foobar"};
 
-        for (String setScope : scopes) {
-            secretControlStore.setProjectSecret(projectId, setScope, KEY1, VALUE1);
-            assertThat(secretStore.getSecret(projectId, setScope, KEY1), is(Optional.of(VALUE1)));
+            for (String setScope : scopes) {
+                secretControlStore.setProjectSecret(projectId, setScope, KEY1, VALUE1);
+                assertThat(secretStore.getSecret(projectId, setScope, KEY1), is(Optional.of(VALUE1)));
 
-            for (String getScope : scopes) {
-                if (getScope.equals(setScope)) {
-                    continue;
+                for (String getScope : scopes) {
+                    if (getScope.equals(setScope)) {
+                        continue;
+                    }
+                    assertThat("set: " + setScope + ", get: " + getScope, secretStore.getSecret(projectId, getScope, KEY1), is(Optional.absent()));
                 }
-                assertThat("set: " + setScope + ", get: " + getScope, secretStore.getSecret(projectId, getScope, KEY1), is(Optional.absent()));
-            }
 
-            secretControlStore.deleteProjectSecret(storedProject.getId(), setScope, KEY1);
-        }
+                secretControlStore.deleteProjectSecret(storedProject.getId(), setScope, KEY1);
+            }
+            return null;
+        });
     }
 
     @Test
     public void concurrentPutShouldNotThrowExceptions()
             throws Exception
     {
-        ExecutorService threads = Executors.newCachedThreadPool();
-        ImmutableList.Builder<Future> futures = ImmutableList.builder();
+        factory.get().begin(() -> {
+            ExecutorService threads = Executors.newCachedThreadPool();
+            ImmutableList.Builder<Future> futures = ImmutableList.builder();
 
-        for (int i = 0; i < 20; i++) {
-            String value = "thread-" + i;
-            futures.add(threads.submit(() -> {
-                try {
-                    for (int j = 0; j < 50; j++) {
-                        secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
-                        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, value);
+            for (int i = 0; i < 20; i++) {
+                String value = "thread-" + i;
+                futures.add(threads.submit(() -> {
+                    try {
+                        for (int j = 0; j < 50; j++) {
+                            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
+                            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, value);
+                        }
                     }
-                }
-                catch (Exception ex) {
-                    throw Throwables.propagate(ex);
-                }
-            }));
-        }
+                    catch (Exception ex) {
+                        throw Throwables.propagate(ex);
+                    }
+                }));
+            }
 
-        for (Future f : futures.build()) {
-            f.get();
-        }
+            for (Future f : futures.build()) {
+                f.get();
+            }
+            return null;
+        });
     }
 }
