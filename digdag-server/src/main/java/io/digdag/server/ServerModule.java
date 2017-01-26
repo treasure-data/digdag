@@ -61,7 +61,6 @@ public class ServerModule
     {
         ApplicationBindingBuilder builder = bindApplication()
             .matches("/api/*")
-            .addProvider(DatabaseTransactionManager.class)
             .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .addProvider(AuthRequestFilter.class)
             .addProvider(CustomHeaderFilter.class)
@@ -210,37 +209,6 @@ public class ServerModule
             if (admin == null || !admin) {
                 throw new ForbiddenException();
             }
-        }
-    }
-
-    @Provider
-    public static class DatabaseTransactionManager
-        implements ReaderInterceptor
-    {
-        private final ThreadLocalTransactionManager transactionManager;
-
-        @Inject
-        public DatabaseTransactionManager(DataSource ds)
-        {
-            LoggerFactory.getLogger(ServerModule.class).debug("DatabaseTransactionManager: init");
-            this.transactionManager = new ThreadLocalTransactionManager(ds);
-        }
-
-        @Override
-        public Object aroundReadFrom(ReaderInterceptorContext context)
-                throws IOException, WebApplicationException
-        {
-            try {
-                LoggerFactory.getLogger(ServerModule.class).debug("DatabaseTransactionManager#aroundReadFrom: start");
-                return transactionManager.begin(context::proceed);
-            }
-            catch (IOException | WebApplicationException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                Throwables.propagate(e);
-            }
-            throw new RuntimeException("Shouldn't reach here");
         }
     }
 }

@@ -2,6 +2,7 @@ package io.digdag.server.rs;
 
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredRevision;
@@ -23,30 +24,35 @@ public class AdminResource
 {
     private final ProjectStoreManager pm;
     private final SessionStoreManager sm;
+    private final TransactionManager tm;
 
     @Inject
     public AdminResource(
             ProjectStoreManager pm,
-            SessionStoreManager sm)
+            SessionStoreManager sm,
+            TransactionManager tm)
     {
         this.pm = pm;
         this.sm = sm;
+        this.tm = tm;
     }
 
     @GET
     @Path("/api/admin/attempts/{id}/userinfo")
     public Config getUserInfo(@PathParam("id") long id)
-            throws ResourceNotFoundException
+            throws Exception
     {
-        StoredSessionAttemptWithSession session = sm.getAttemptWithSessionById(id);
+        return tm.begin(() -> {
+            StoredSessionAttemptWithSession session = sm.getAttemptWithSessionById(id);
 
-        if (!session.getWorkflowDefinitionId().isPresent()) {
-            // TODO: is 404 appropriate in this situation?
-            throw new NotFoundException();
-        }
+            if (!session.getWorkflowDefinitionId().isPresent()) {
+                // TODO: is 404 appropriate in this situation?
+                throw new NotFoundException();
+            }
 
-        StoredRevision revision = pm.getRevisionOfWorkflowDefinition(session.getWorkflowDefinitionId().get());
+            StoredRevision revision = pm.getRevisionOfWorkflowDefinition(session.getWorkflowDefinitionId().get());
 
-        return revision.getUserInfo();
+            return revision.getUserInfo();
+        });
     }
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.time.Duration;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.spi.TaskRequest;
@@ -96,11 +97,20 @@ public class MultiThreadAgent
                             for (TaskRequest req : reqs) {
                                 executor.submit(() -> {
                                     try {
-                                        runner.run(req);
+                                        transactionManager.begin(() -> {
+                                            try {
+                                                runner.run(req);
+                                            }
+                                            catch (Throwable t) {
+                                                logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
+                                                errorReporter.reportUncaughtError(t);
+                                            }
+                                            return null;
+                                        });
                                     }
-                                    catch (Throwable t) {
-                                        logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
-                                        errorReporter.reportUncaughtError(t);
+                                    catch (Exception e) {
+                                        logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", e);
+                                        errorReporter.reportUncaughtError(e);
                                     }
                                 });
                             };
