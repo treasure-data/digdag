@@ -820,8 +820,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    // TODO
-    public static class StoredProjectMapper
+    static class StoredProjectMapper
             implements ResultSetMapper<StoredProject>
     {
         private final ConfigMapper cfm;
@@ -851,8 +850,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    // TODO
-    public static class StoredRevisionMapper
+    static class StoredRevisionMapper
             implements ResultSetMapper<StoredRevision>
     {
         private final ConfigMapper cfm;
@@ -880,8 +878,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    // TODO
-    public static class StoredWorkflowDefinitionMapper
+    static class StoredWorkflowDefinitionMapper
             implements ResultSetMapper<StoredWorkflowDefinition>
     {
         private final ConfigMapper cfm;
@@ -905,8 +902,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    // TODO
-    public static class StoredWorkflowDefinitionWithProjectMapper
+    static class StoredWorkflowDefinitionWithProjectMapper
             implements ResultSetMapper<StoredWorkflowDefinitionWithProject>
     {
         private final ConfigMapper cfm;
@@ -946,8 +942,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    // TODO
-    public static class WorkflowConfigMapper
+    static class WorkflowConfigMapper
             implements ResultSetMapper<WorkflowConfig>
     {
         @Override
@@ -962,8 +957,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    // TODO
-    public static class IdNameMapper
+    static class IdNameMapper
             implements ResultSetMapper<IdName>
     {
         @Override
@@ -983,8 +977,7 @@ public class DatabaseProjectStoreManager
         return map;
     }
 
-    // TODO
-    public static class ScheduleStatusMapper
+    static class ScheduleStatusMapper
             implements ResultSetMapper<ScheduleStatus>
     {
         @Override
@@ -998,5 +991,4 @@ public class DatabaseProjectStoreManager
                     getOptionalLong(r, "last_session_time").transform(it -> Instant.ofEpochSecond(it)));
         }
     }
-
 }

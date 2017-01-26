@@ -302,8 +302,7 @@ public class DatabaseScheduleStoreManager
         int enableSchedule(@Bind("id") int id);
     }
 
-    // TODO
-    public static class StoredScheduleMapper
+    static class StoredScheduleMapper
             implements ResultSetMapper<StoredSchedule>
     {
         private final ConfigMapper cfm;

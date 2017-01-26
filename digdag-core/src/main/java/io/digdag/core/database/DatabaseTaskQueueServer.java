@@ -436,8 +436,7 @@ public class DatabaseTaskQueueServer
         }
     }
 
-    // TODO
-    public static class ImmutableTaskQueueLockMapper
+    static class ImmutableTaskQueueLockMapper
             implements ResultSetMapper<ImmutableTaskQueueLock>
     {
         @Override

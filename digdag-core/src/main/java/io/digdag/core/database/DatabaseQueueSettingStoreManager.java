@@ -128,8 +128,7 @@ public class DatabaseQueueSettingStoreManager
         int insertQueue(@Bind("id") int id, @Bind("maxConcurrency") int maxConcurrency);
     }
 
-    // TODO
-    public static class StoredQueueSettingMapper
+    static class StoredQueueSettingMapper
             implements ResultSetMapper<StoredQueueSetting>
     {
         private final ConfigMapper cfm;

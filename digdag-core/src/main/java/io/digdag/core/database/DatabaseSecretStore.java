@@ -65,8 +65,7 @@ class DatabaseSecretStore
         }
     }
 
-    // TODO
-    public static class ScopedSecretMapper
+    static class ScopedSecretMapper
             implements ResultSetMapper<EncryptedSecret>
     {
         @Override
