@@ -68,179 +68,206 @@ public class DatabaseQueueTest
     public void siteConcurrencyLimit()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
-        TaskQueueRequest req2 = generateRequest("2");
-        TaskQueueRequest req3 = generateRequest("3");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
+            TaskQueueRequest req2 = generateRequest("2");
+            TaskQueueRequest req3 = generateRequest("3");
 
-        // enqueue 3 tasks
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
-        taskQueue.enqueueDefaultQueueTask(siteId, req2);
-        taskQueue.enqueueDefaultQueueTask(siteId, req3);
+            // enqueue 3 tasks
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req2);
+            taskQueue.enqueueDefaultQueueTask(siteId, req3);
 
-        // poll 3 tasks
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
-        List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
-        List<TaskQueueLock> poll3 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            // poll 3 tasks
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll3 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        assertThat(poll1.size(), is(1));
-        assertThat(poll1, is(Arrays.asList(withLockId(req1, poll1.get(0).getLockId()))));
-        assertThat(poll2.size(), is(1));
-        assertThat(poll2, is(Arrays.asList(withLockId(req2, poll2.get(0).getLockId()))));
-        // max concurrency of this site is 2. 3rd task is not acquired.
-        assertThat(poll3, is(Arrays.asList()));
+            assertThat(poll1.size(), is(1));
+            assertThat(poll1, is(Arrays.asList(withLockId(req1, poll1.get(0).getLockId()))));
+            assertThat(poll2.size(), is(1));
+            assertThat(poll2, is(Arrays.asList(withLockId(req2, poll2.get(0).getLockId()))));
+            // max concurrency of this site is 2. 3rd task is not acquired.
+            assertThat(poll3, is(Arrays.asList()));
 
-        // delete 1 task and get next
-        taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "agent1");
+            // delete 1 task and get next
+            taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "agent1");
 
-        List<TaskQueueLock> poll4 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll4 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        assertThat(poll4.size(), is(1));
-        assertThat(poll4, is(Arrays.asList(withLockId(req3, poll4.get(0).getLockId()))));
+            assertThat(poll4.size(), is(1));
+            assertThat(poll4, is(Arrays.asList(withLockId(req3, poll4.get(0).getLockId()))));
+            return null;
+        });
     }
 
     @Test
     public void batchPollOrder()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
-        TaskQueueRequest req2 = generateRequest("2");
-        TaskQueueRequest req3 = generateRequest("3");
-        TaskQueueRequest req4 = generateRequest("4");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
+            TaskQueueRequest req2 = generateRequest("2");
+            TaskQueueRequest req3 = generateRequest("3");
+            TaskQueueRequest req4 = generateRequest("4");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
-        taskQueue.enqueueDefaultQueueTask(siteId, req2);
-        taskQueue.enqueueDefaultQueueTask(siteId, req3);
-        taskQueue.enqueueDefaultQueueTask(siteId, req4);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req2);
+            taskQueue.enqueueDefaultQueueTask(siteId, req3);
+            taskQueue.enqueueDefaultQueueTask(siteId, req4);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
-        assertThat(poll1.size(), is(2));
-        assertThat(poll1.get(0).getUniqueName(), is("1"));
-        assertThat(poll1.get(1).getUniqueName(), is("2"));
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
+            assertThat(poll1.size(), is(2));
+            assertThat(poll1.get(0).getUniqueName(), is("1"));
+            assertThat(poll1.get(1).getUniqueName(), is("2"));
 
-        taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "agent1");
-        taskQueue.deleteTask(siteId, poll1.get(1).getLockId(), "agent1");
+            taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "agent1");
+            taskQueue.deleteTask(siteId, poll1.get(1).getLockId(), "agent1");
 
-        List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
-        assertThat(poll2.size(), is(2));
-        assertThat(poll2.get(0).getUniqueName(), is("3"));
-        assertThat(poll2.get(1).getUniqueName(), is("4"));
+            List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
+            assertThat(poll2.size(), is(2));
+            assertThat(poll2.get(0).getUniqueName(), is("3"));
+            assertThat(poll2.get(1).getUniqueName(), is("4"));
+            return null;
+        });
     }
 
     @Test
     public void enqueueRejectedIfDuplicatedTaskId()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
-        TaskQueueRequest req1Dup = generateRequest("1");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
+            TaskQueueRequest req1Dup = generateRequest("1");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
-        exception.expect(TaskConflictException.class);
-        taskQueue.enqueueDefaultQueueTask(siteId, req1Dup);
+            exception.expect(TaskConflictException.class);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1Dup);
+            return null;
+        });
     }
 
     @Test
     public void deleteRejectedIfAgentIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        exception.expect(TaskConflictException.class);
-        taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "different-agent");
+            exception.expect(TaskConflictException.class);
+            taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "different-agent");
+            return null;
+        });
     }
 
     @Test
     public void deleteRejectedIfSiteIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        exception.expect(TaskNotFoundException.class);
-        taskQueue.deleteTask(19832, poll1.get(0).getLockId(), "agent1");
+            exception.expect(TaskNotFoundException.class);
+            taskQueue.deleteTask(19832, poll1.get(0).getLockId(), "agent1");
+            return null;
+        });
     }
 
     @Test
     public void expireLockAndRetry()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
-        TaskQueueRequest req2 = generateRequest("2");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
+            TaskQueueRequest req2 = generateRequest("2");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
-        taskQueue.enqueueDefaultQueueTask(siteId, req2);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req2);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 0, 10);  // lockSeconds = 0
-        assertThat(poll1.size(), is(2));
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 0, 10);  // lockSeconds = 0
+            assertThat(poll1.size(), is(2));
 
-        Thread.sleep(2000);
-        taskQueue.expireLocks();
+            Thread.sleep(2000);
+            taskQueue.expireLocks();
 
-        List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 3, 10);
-        assertThat(poll2.size(), is(2));
+            List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 3, 10);
+            assertThat(poll2.size(), is(2));
 
-        // TODO this needs API to get retry_count to validate retry_count
+            // TODO this needs API to get retry_count to validate retry_count
+            return null;
+        });
     }
 
     @Test
     public void heartbeatPreventsExpireLock()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
-        TaskQueueRequest req2 = generateRequest("2");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
+            TaskQueueRequest req2 = generateRequest("2");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
-        taskQueue.enqueueDefaultQueueTask(siteId, req2);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req2);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 0, 10);  // lockSeconds = 0
-        assertThat(poll1.size(), is(2));
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 0, 10);  // lockSeconds = 0
+            assertThat(poll1.size(), is(2));
 
-        Thread.sleep(2000);
-        // heartbeat req1
-        taskQueue.taskHeartbeat(siteId, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
+            Thread.sleep(2000);
+            // heartbeat req1
+            taskQueue.taskHeartbeat(siteId, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
 
-        taskQueue.expireLocks();
+            taskQueue.expireLocks();
 
-        List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 3, 10);
+            List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 3, 10);
 
-        // req2 is expired but req1 is not
-        assertThat(poll2.size(), is(1));
-        assertThat(poll2.get(0).getUniqueName(), is("2"));
+            // req2 is expired but req1 is not
+            assertThat(poll2.size(), is(1));
+            assertThat(poll2.get(0).getUniqueName(), is("2"));
+            return null;
+        });
     }
 
     @Test
     public void heartbeatRejectedIfAgentIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        List<String> failedLockIdList = taskQueue.taskHeartbeat(0, Arrays.asList(poll1.get(0).getLockId()), "different-agent", 3);
-        assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
+            List<String> failedLockIdList = taskQueue.taskHeartbeat(0, Arrays.asList(poll1.get(0).getLockId()), "different-agent", 3);
+            assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
+            return null;
+        });
     }
 
     @Test
     public void heartbeatRejectedIfSiteIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest("1");
+        factory.get().begin(() -> {
+            TaskQueueRequest req1 = generateRequest("1");
 
-        taskQueue.enqueueDefaultQueueTask(siteId, req1);
+            taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
-        List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
+            List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        List<String> failedLockIdList = taskQueue.taskHeartbeat(19832, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
-        assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
+            List<String> failedLockIdList = taskQueue.taskHeartbeat(19832, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
+            assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
+            return null;
+        });
     }
 
     private TaskQueueRequest generateRequest(String uniqueName)
