@@ -11,6 +11,9 @@ public interface TransactionManager
     <T> T begin(ThrowableSupplier<T> func)
             throws Exception;
 
+    <T> T autoCommit(ThrowableSupplier<T> func)
+            throws Exception;
+
     @FunctionalInterface
     interface ThrowableSupplier<T>
     {

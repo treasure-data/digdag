@@ -31,12 +31,19 @@ public class ThreadLocalTransactionManager
         }
 
         private final DataSource ds;
+        private final boolean autoCommit;
         private Handle handle;
         private State state = State.ACTIVE;
 
         LazyTransaction(DataSource ds)
         {
+            this(ds, false);
+        }
+
+        LazyTransaction(DataSource ds, boolean autoCommit)
+        {
             this.ds = checkNotNull(ds);
+            this.autoCommit = autoCommit;
         }
 
         @Override
@@ -73,7 +80,10 @@ public class ThreadLocalTransactionManager
 
                 dbi.registerArgumentFactory(configMapper.getArgumentFactory());
                 handle = dbi.open();
-                handle.begin();
+
+                if (!autoCommit) {
+                    handle.begin();
+                }
             }
             return handle;
         }
@@ -134,7 +144,16 @@ public class ThreadLocalTransactionManager
     @Inject
     public ThreadLocalTransactionManager(DataSource ds)
     {
+        this(ds, false);
+    }
+
+    ThreadLocalTransactionManager(DataSource ds, boolean autoAutoCommit)
+    {
         this.ds = checkNotNull(ds);
+        if (autoAutoCommit) {
+            LazyTransaction transaction = new LazyTransaction(ds, true);
+            threadLocalTransaction.set(transaction);
+        }
     }
 
     @Override
@@ -152,7 +171,7 @@ public class ThreadLocalTransactionManager
             throws Exception
     {
         if (threadLocalTransaction.get() != null) {
-            throw new IllegalStateException("threadLocalTransaction shouldn't have a handle");
+            throw new IllegalStateException("Nested transaction is not allowed");
         }
 
         LazyTransaction transaction = new LazyTransaction(ds);
@@ -169,6 +188,24 @@ public class ThreadLocalTransactionManager
             if (!committed) {
                 transaction.abort();
             }
+        }
+    }
+
+    @Override
+    public <T> T autoCommit(ThrowableSupplier<T> func)
+            throws Exception
+    {
+        if (threadLocalTransaction.get() != null) {
+            throw new IllegalStateException("Nested transaction is not allowed");
+        }
+
+        LazyTransaction transaction = new LazyTransaction(ds, true);
+        threadLocalTransaction.set(transaction);
+        try {
+            return func.get();
+        }
+        finally {
+            threadLocalTransaction.set(null);
         }
     }
 }

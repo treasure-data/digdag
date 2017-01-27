@@ -24,6 +24,7 @@ public class DatabaseFactory
     private final TransactionManager tm;
     private final AutoCloseable closeable;
     private final DatabaseConfig config;
+    private boolean autoCommit = false;
 
     public DatabaseFactory(TransactionManager tm, AutoCloseable closeable, DatabaseConfig config)
     {
@@ -47,7 +48,7 @@ public class DatabaseFactory
     public void begin(ThrowableRunnable func)
             throws Exception
     {
-        tm.begin(() -> {
+        begin(() -> {
             func.run();
             return null;
         });
@@ -57,6 +58,21 @@ public class DatabaseFactory
     public interface ThrowableRunnable
     {
         void run() throws Exception;
+    }
+
+    public <T> T autoCommit(ThrowableSupplier<T> func)
+            throws Exception
+    {
+        return tm.autoCommit(func);
+    }
+
+    public void autoCommit(ThrowableRunnable func)
+            throws Exception
+    {
+        autoCommit(() -> {
+            func.run();
+            return null;
+        });
     }
 
     public DatabaseConfig getConfig()
