@@ -299,17 +299,18 @@ const AttemptStatusView = ({attempt}) => {
   }
 }
 
-function attemptCanRetry (attempt) {
+function attemptCanRetryAll (attempt) {
   if (!attempt) {
     return false
   }
-  if (
-    (attempt.done && !attempt.success) ||
-    attempt.cancelRequested
-  ) {
-    return true
+  return attempt.done || attempt.cancelRequested
+}
+
+function attemptCanResume (attempt) {
+  if (!attempt) {
+    return false
   }
-  return false
+  return attempt.done && !attempt.success
 }
 
 const SessionStatusView = ({session}:{session: Session}) => {
@@ -1028,14 +1029,14 @@ class SessionView extends React.Component {
     session: Session;
   };
 
-  retrySession () {
+  retryFailed () {
     const { session } = this.props
     model()
-      .retrySession(session, uuid.v4())
+      .resumeSessionWithLatestRevision(session, uuid.v4(), session.lastAttempt.id)
       .then(() => this.forceUpdate())
   }
 
-  retrySessionWithLatestRevision () {
+  retryAll () {
     const { session } = this.props
     model()
       .retrySessionWithLatestRevision(session, uuid.v4())
@@ -1045,26 +1046,27 @@ class SessionView extends React.Component {
   render () {
     const { session } = this.props
     const { lastAttempt, project, workflow } = session
-    const canRetry = attemptCanRetry(lastAttempt)
+    const canRetryAll = attemptCanRetryAll(lastAttempt)
+    const canResume = attemptCanResume(lastAttempt)
     return (
       <div className='row'>
         <h2>
           Session
-          {canRetry &&
+          {canRetryAll &&
             <button
               className='btn btn-primary pull-right'
-              onClick={this.retrySession.bind(this)}
+              onClick={this.retryAll.bind(this)}
             >
-              RETRY
+              RETRY ALL
             </button>
           }
-          {canRetry &&
+          {canResume &&
             <button
               className='btn btn-success pull-right'
-              onClick={this.retrySessionWithLatestRevision.bind(this)}
+              onClick={this.retryFailed.bind(this)}
               style={{marginRight: '0.5em'}}
             >
-              RETRY LATEST
+              RETRY FAILED
             </button>
           }
         </h2>

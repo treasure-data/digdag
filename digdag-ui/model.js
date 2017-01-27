@@ -339,17 +339,7 @@ export class Model {
     return this.put('attempts', { workflowId, sessionTime, params })
   }
 
-  retrySession (session: Session, sessionUUID: string) {
-    const { lastAttempt } = session
-    return this.put('attempts', {
-      workflowId: session.workflow.id,
-      params: lastAttempt && lastAttempt.params,
-      sessionTime: session.sessionTime,
-      retryAttemptName: sessionUUID
-    })
-  }
-
-  retrySessionWithLatestRevision (session: Session, sessionUUID: string) {
+  retrySessionWithLatestRevision (session: Session, attemptName: string) {
     const { lastAttempt, project, workflow } = session
     const model = this
     return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
@@ -357,7 +347,24 @@ export class Model {
         workflowId: result.id,
         params: lastAttempt && lastAttempt.params,
         sessionTime: session.sessionTime,
-        retryAttemptName: sessionUUID
+        retryAttemptName: attemptName
+      })
+    )
+  }
+
+  resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: number) {
+    const { lastAttempt, project, workflow } = session
+    const model = this
+    return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
+      model.put('attempts', {
+        workflowId: result.id,
+        params: lastAttempt && lastAttempt.params,
+        sessionTime: session.sessionTime,
+        retryAttemptName: attemptName,
+        resume: {
+          mode: "failed",
+          attemptId: attemptId
+        }
       })
     )
   }
