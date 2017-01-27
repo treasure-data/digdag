@@ -25,11 +25,10 @@ public class DatabaseProjectStoreManagerTest
             throws Exception
     {
         factory = setupDatabase();
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             manager = factory.getProjectStoreManager();
             sm = new SchedulerManager(ImmutableSet.of());
             store = manager.getProjectStore(0);
-            return null;
         });
     }
 
@@ -43,7 +42,7 @@ public class DatabaseProjectStoreManagerTest
     public void testConflicts()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             Project srcProj1 = Project.of("proj1");
             Revision srcRev1 = createRevision("rev1");
             WorkflowDefinition srcWf1 = createWorkflow("wf1");
@@ -90,7 +89,6 @@ public class DatabaseProjectStoreManagerTest
                             return lock.insertRevision(srcRev1);
                         });
             });
-            return null;
         });
     }
 
@@ -98,7 +96,7 @@ public class DatabaseProjectStoreManagerTest
     public void testGetAndNotFounds()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             Project srcProj1 = Project.of("proj1");
             Revision srcRev1 = createRevision("rev1");
             WorkflowDefinition srcWf1 = createWorkflow("wf1");
@@ -269,7 +267,6 @@ public class DatabaseProjectStoreManagerTest
             assertEquals(wf3.getTimeZone(), defTimeZones.get(wf3.getId()));
             assertEquals(wf4.getTimeZone(), defTimeZones.get(wf4.getId()));
             assertNotFound(() -> defTimeZones.get(wf2.getId()));
-            return null;
         });
     }
 
@@ -277,7 +274,7 @@ public class DatabaseProjectStoreManagerTest
     public void testRevisionArchiveData()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             byte[] data = "archive data".getBytes(UTF_8);
 
             StoredRevision rev = store.putAndLockProject(
@@ -293,7 +290,6 @@ public class DatabaseProjectStoreManagerTest
 
             assertArrayEquals(data, store.getRevisionArchiveData(rev.getId()));
             assertNotFound(() -> store.getRevisionArchiveData(rev.getId() + 10));
-            return null;
         });
     }
 
@@ -301,7 +297,7 @@ public class DatabaseProjectStoreManagerTest
     public void testDeleteProject()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             WorkflowDefinition srcWf1 = createWorkflow("wf1");
             AtomicReference<StoredWorkflowDefinition> wfRef = new AtomicReference<>();
 
@@ -351,7 +347,6 @@ public class DatabaseProjectStoreManagerTest
                     });
 
             assertNotEquals(sameName.getId(), deletingProject.getId());
-            return null;
         });
     }
 }

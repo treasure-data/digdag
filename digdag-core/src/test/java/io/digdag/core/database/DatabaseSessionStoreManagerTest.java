@@ -50,7 +50,7 @@ public class DatabaseSessionStoreManagerTest
         throws Exception
     {
         factory = setupDatabase();
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             projectStoreManager = factory.getProjectStoreManager();
             projectStore = projectStoreManager.getProjectStore(0);
             manager = factory.getSessionStoreManager();
@@ -119,7 +119,7 @@ public class DatabaseSessionStoreManagerTest
     public void testConflicts()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             Instant sessionTime1 = Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600);
 
             AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
@@ -230,7 +230,7 @@ public class DatabaseSessionStoreManagerTest
     public void testGetAndNotFounds()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             Instant sessionTime1 = Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600);
             Instant sessionTime2 = sessionTime1.plusSeconds(3600);
 

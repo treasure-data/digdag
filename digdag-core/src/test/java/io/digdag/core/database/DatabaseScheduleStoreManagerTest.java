@@ -36,12 +36,11 @@ public class DatabaseScheduleStoreManagerTest
             throws Exception
     {
         factory = setupDatabase();
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             manager = factory.getProjectStoreManager();
             store = manager.getProjectStore(0);
             schedManager = factory.getScheduleStoreManager();
             schedStore = schedManager.getScheduleStore(0);
-            return null;
         });
     }
 
@@ -55,7 +54,7 @@ public class DatabaseScheduleStoreManagerTest
     public void testGetAndNotFounds()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             Project srcProj1 = Project.of("proj1");
             Revision srcRev1 = createRevision("rev1");
             WorkflowDefinition srcWf1Rev1 = createWorkflow("wf1");
@@ -273,7 +272,6 @@ public class DatabaseScheduleStoreManagerTest
             assertEquals(sched1.getId(), updatedSched1.getId());
             assertEquals(runTime4, updatedSched1.getNextRunTime());
             assertEquals(schedTime4, updatedSched1.getNextScheduleTime());
-            return null;
         });
     }
 
@@ -281,7 +279,7 @@ public class DatabaseScheduleStoreManagerTest
     public void testDisableEnable()
         throws Exception
     {
-        factory.get().begin(() -> {
+        factory.begin(() -> {
             Project srcProj1 = Project.of("proj1");
             Revision srcRev1 = createRevision("rev1");
             WorkflowDefinition srcWf1Rev1 = createWorkflow("wf1");
@@ -387,7 +385,6 @@ public class DatabaseScheduleStoreManagerTest
                 schedManager.lockReadySchedules(Instant.now(), (store, schedule) -> ready.add(schedule.getId()));
                 assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
             }
-            return null;
         });
     }
 }
