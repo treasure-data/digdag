@@ -31,7 +31,7 @@ public class ThreadLocalTransactionManager
         }
 
         private final DataSource ds;
-        private final boolean autoCommit;
+        private final boolean autoAutoCommit;
         private Handle handle;
         private State state = State.ACTIVE;
 
@@ -40,10 +40,13 @@ public class ThreadLocalTransactionManager
             this(ds, false);
         }
 
-        LazyTransaction(DataSource ds, boolean autoCommit)
+        //
+        // DO NOT USE autoAutoCommit IN main CODE.
+        //
+        LazyTransaction(DataSource ds, boolean autoAutoCommit)
         {
             this.ds = checkNotNull(ds);
-            this.autoCommit = autoCommit;
+            this.autoAutoCommit = autoAutoCommit;
         }
 
         @Override
@@ -81,7 +84,7 @@ public class ThreadLocalTransactionManager
                 dbi.registerArgumentFactory(configMapper.getArgumentFactory());
                 handle = dbi.open();
 
-                if (!autoCommit) {
+                if (!autoAutoCommit) {
                     handle.begin();
                 }
             }
@@ -153,6 +156,9 @@ public class ThreadLocalTransactionManager
         if (autoAutoCommit) {
             LazyTransaction transaction = new LazyTransaction(ds, true);
             threadLocalTransaction.set(transaction);
+        }
+        else {
+            threadLocalTransaction.set(null);
         }
     }
 
