@@ -3,12 +3,15 @@ package io.digdag.core.database;
 import com.google.inject.Inject;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.exceptions.TransactionFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Locale.ENGLISH;
 
 public class ThreadLocalTransactionManager
         implements TransactionManager
@@ -20,8 +23,16 @@ public class ThreadLocalTransactionManager
     private static class LazyTransaction
             implements Transaction
     {
+        private static enum State
+        {
+            ACTIVE,
+            ABORTED,
+            COMMITTED;
+        }
+
         private final DataSource ds;
         private Handle handle;
+        private State state = State.ACTIVE;
 
         LazyTransaction(DataSource ds)
         {
@@ -62,6 +73,7 @@ public class ThreadLocalTransactionManager
 
                 dbi.registerArgumentFactory(configMapper.getArgumentFactory());
                 handle = dbi.open();
+                handle.begin();
             }
             return handle;
         }
@@ -70,10 +82,38 @@ public class ThreadLocalTransactionManager
         public void commit()
         {
             if (handle == null) {
-                logger.warn("Committing without any database operation");
                 return;
             }
-            handle.commit();
+            if (state != State.ACTIVE) {
+                throw new IllegalStateException("Committing " + state.name().toLowerCase(ENGLISH) + " is not allowed");
+            }
+
+            // Validate connection before COMMIT. This is necessary because PostgreSQL actually runs
+            // ROLLBACK silently when COMMIT is issued if a statement failed during the transaction.
+            // It means that BasicDatabaseStoreManager.transaction method doesn't throw exceptions
+            // but the actual transaction is rolled back. Here checks state of the transaction by
+            // calling org.postgresql.jdbc.PgConnection.isValid method.
+            //
+            // Here assumes that HikariDB doesn't override isValid.
+            boolean isValid;
+            try {
+                isValid = handle.getConnection().isValid(30);
+            }
+            catch (SQLException ex) {
+                throw new TransactionFailedException(
+                        "Can't validate a transaction before commit", ex);
+            }
+            if (!isValid) {
+                throw new TransactionFailedException(
+                        "Trying to commit a transaction that is already aborted. "  +
+                        "Because current transaction is aborted, commands including " +
+                        "commit are ignored until end of transaction block.");
+            }
+            else {
+                handle.commit();
+            }
+
+            state = State.COMMITTED;
         }
 
         @Override
@@ -82,7 +122,11 @@ public class ThreadLocalTransactionManager
             if (handle == null) {
                 return;
             }
+            if (state == State.COMMITTED) {
+                throw new IllegalStateException("Aborting committed transaction is not allowed");
+            }
             handle.rollback();
+            state = State.ABORTED;
             // TODO Should call close()?
         }
     }
@@ -96,7 +140,10 @@ public class ThreadLocalTransactionManager
     @Override
     public Handle getHandle(ConfigMapper configMapper)
     {
-        Transaction transaction = checkNotNull(threadLocalTransaction.get());
+        Transaction transaction = threadLocalTransaction.get();
+        if (transaction == null) {
+            throw new IllegalStateException("Not in transaction");
+        }
         return transaction.getHandle(configMapper);
     }
 

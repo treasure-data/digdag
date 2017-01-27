@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.database.TransactionManager.ThrowableSupplier;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -35,6 +36,27 @@ public class DatabaseFactory
     public TransactionManager get()
     {
         return tm;
+    }
+
+    public <T> T begin(ThrowableSupplier<T> func)
+            throws Exception
+    {
+        return tm.begin(func);
+    }
+
+    public void begin(ThrowableRunnable func)
+            throws Exception
+    {
+        tm.begin(() -> {
+            func.run();
+            return null;
+        });
+    }
+
+    @FunctionalInterface
+    public interface ThrowableRunnable
+    {
+        void run() throws Exception;
     }
 
     public DatabaseConfig getConfig()
