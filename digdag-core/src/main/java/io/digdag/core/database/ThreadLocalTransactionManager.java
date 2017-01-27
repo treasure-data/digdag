@@ -17,7 +17,8 @@ public class ThreadLocalTransactionManager
         implements TransactionManager
 {
     private static final Logger logger = LoggerFactory.getLogger(TransactionManager.class);
-    private static final ThreadLocal<Transaction> threadLocalTransaction = new ThreadLocal<>();
+
+    private final ThreadLocal<Transaction> threadLocalTransaction = new ThreadLocal<>();
     private final DataSource ds;
 
     private static class LazyTransaction
@@ -160,9 +161,6 @@ public class ThreadLocalTransactionManager
         if (autoAutoCommit) {
             LazyTransaction transaction = new LazyTransaction(ds, true);
             threadLocalTransaction.set(transaction);
-        }
-        else {
-            threadLocalTransaction.set(null);
         }
     }
 
