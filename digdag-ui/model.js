@@ -353,7 +353,7 @@ export class Model {
   }
 
   resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: number) {
-    const { lastAttempt } = session
+    const { lastAttempt, project, workflow } = session
     const model = this
     return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
       model.put('attempts', {
