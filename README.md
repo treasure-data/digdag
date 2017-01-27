@@ -69,7 +69,7 @@ If major version is incremented, also update `version =` and `release =` at [dig
 
 ### Develop digdag-ui
 
-Node.JS development server is useful because it reloads changes of digdag-ui source code automatically.
+Node.js development server is useful because it reloads changes of digdag-ui source code automatically.
 
 First, put following lines to ~/.config/digdag/config and start digdag server:
 
@@ -104,5 +104,5 @@ $ ./gradlew site
 
 This might not always update all necessary files (Sphinx doesn't manage update dependencies well). In this case, run `./gradlew clean` first.
 
-It buids index.html at digdag-docs/build/html/index.html.
+It builds index.html at digdag-docs/build/html/index.html.
 
