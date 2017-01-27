@@ -643,7 +643,7 @@ td_load>: Treasure Data bulk loading
 .. code-block:: yaml
 
     +step1:
-      td_load>: config/guessed.dig
+      td_load>: config/guessed.yml
       database: prod
       table: raw
 
