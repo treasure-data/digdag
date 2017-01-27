@@ -10,6 +10,27 @@ Please check [digdag.io](http://digdag.io) for installation & user manual.
 
 ## Development
 
+### Prerequirements
+
+* JDK 8
+* Node.js 7.x
+
+Installing Node.js using nodebrew:
+
+```
+$ curl -L git.io/nodebrew | perl - setup
+$ echo 'export PATH=$HOME/.nodebrew/current/bin:$PATH' >> ~/.bashrc
+$ source ~/.bashrc
+$ nodebrew install-binary v7.x
+$ nodebrew use v7.x
+```
+
+Installing Node.js using Homebrew on Mac OS X:
+
+```
+$ brew install node
+```
+
 ### Running tests
 
 ```
@@ -46,13 +67,26 @@ If major version is incremented, also update `version =` and `release =` at [dig
 ```
 
 
-### Building digdag-ui
+### Develop digdag-ui
+
+Node.JS development server is useful because it reloads changes of digdag-ui source code automatically.
+
+First, put following lines to ~/.config/digdag/config and start digdag server:
+
+```
+server.http.headers.access-control-allow-origin = http://localhost:9000
+server.http.headers.access-control-allow-headers = origin, content-type, accept, authorization, x-td-account-override, x-xsrf-token, cookie
+server.http.headers.access-control-allow-credentials = true
+server.http.headers.access-control-allow-methods = GET, POST, PUT, DELETE, OPTIONS, HEAD
+server.http.headers.access-control-max-age = 1209600
+```
+
+Then, start digdadg-ui development server:
 
 ```
 $ cd digdag-ui/
 $ npm install
 $ npm run dev    # starts dev server on http://localhost:9000/
-$ npm run build  # build files on public/
 ```
 
 
