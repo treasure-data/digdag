@@ -243,8 +243,6 @@ fail>: make the workflow failed
 
 **fail>:** always fails and makes the workflow failed.
 
-(This operator is EXPERIMENTAL. Parameters may change in a future release)
-
 This operator is useful used with **if>** operator to validate resuls of a previous task with ``_check`` directive so that a workflow fails when the validation doesn't pass.
 
 .. code-block:: yaml
