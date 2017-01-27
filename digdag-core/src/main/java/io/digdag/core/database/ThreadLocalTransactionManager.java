@@ -34,13 +34,13 @@ public class ThreadLocalTransactionManager
             if (handle == null) {
                 DBI dbi = new DBI(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
-                // TODO: Refactoring
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredRevisionMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionWithProjectMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.WorkflowConfigMapper());
                 dbi.registerMapper(new DatabaseProjectStoreManager.IdNameMapper());
+                dbi.registerMapper(new DatabaseProjectStoreManager.ScheduleStatusMapper());
                 dbi.registerMapper(new DatabaseQueueSettingStoreManager.StoredQueueSettingMapper(configMapper));
                 dbi.registerMapper(new DatabaseScheduleStoreManager.StoredScheduleMapper(configMapper));
                 dbi.registerMapper(new DatabaseSessionStoreManager.StoredTaskMapper(configMapper));

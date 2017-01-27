@@ -91,9 +91,12 @@ public class DatabaseTaskQueueServer
 
     @PostConstruct
     public void start()
+            throws Exception
     {
-        expireExecutor.scheduleWithFixedDelay(() -> expireLocks(),
-                expireLockInterval, expireLockInterval, TimeUnit.SECONDS);
+        transactionManager.begin(() ->
+            expireExecutor.scheduleWithFixedDelay(() -> expireLocks(),
+                    expireLockInterval, expireLockInterval, TimeUnit.SECONDS)
+        );
     }
 
     @PreDestroy
@@ -402,34 +405,31 @@ public class DatabaseTaskQueueServer
     void expireLocks()
     {
         try {
-            transactionManager.begin(() -> {
-                int c = autoCommit((handle, dao) -> {
-                    if (isEmbededDatabase()) {
-                        return handle.createStatement(
-                                "update queued_task_locks" +
-                                        " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
-                                        " where lock_expire_time is not null" +
-                                        " and lock_expire_time < :expireTime"
-                        )
-                                .bind("expireTime", Instant.now().getEpochSecond())
-                                .execute();
-                    }
-                    else {
-                        return handle.createStatement(
-                                "update queued_task_locks" +
-                                        " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
-                                        " where lock_expire_time is not null" +
-                                        " and lock_expire_time < " + statementUnixTimestampSql()
-                        )
-                                .execute();
-                    }
-                });
-                if (c > 0) {
-                    logger.warn("{} task locks are expired. Tasks will be retried.", c);
+            int c = autoCommit((handle, dao) -> {
+                if (isEmbededDatabase()) {
+                    return handle.createStatement(
+                            "update queued_task_locks" +
+                                    " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
+                                    " where lock_expire_time is not null" +
+                                    " and lock_expire_time < :expireTime"
+                    )
+                            .bind("expireTime", Instant.now().getEpochSecond())
+                            .execute();
                 }
-                return null;
+                else {
+                    return handle.createStatement(
+                            "update queued_task_locks" +
+                                    " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
+                                    " where lock_expire_time is not null" +
+                                    " and lock_expire_time < " + statementUnixTimestampSql()
+                    )
+                            .execute();
+                }
             });
-        }
+            if (c > 0) {
+                logger.warn("{} task locks are expired. Tasks will be retried.", c);
+            }
+    }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
             errorReporter.reportUncaughtError(t);
