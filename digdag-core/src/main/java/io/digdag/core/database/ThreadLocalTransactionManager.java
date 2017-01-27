@@ -52,6 +52,10 @@ public class ThreadLocalTransactionManager
         @Override
         public Handle getHandle(ConfigMapper configMapper)
         {
+            if (state != State.ACTIVE) {
+                throw new IllegalStateException("Transaction is already " + state.name().toLowerCase(ENGLISH));
+            }
+
             if (handle == null) {
                 DBI dbi = new DBI(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
