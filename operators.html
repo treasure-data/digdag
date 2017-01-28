@@ -631,7 +631,6 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 <div class="section" id="fail-make-the-workflow-failed">
 <h2><a class="toc-backref" href="#id65">fail&gt;: make the workflow failed</a><a class="headerlink" href="#fail-make-the-workflow-failed" title="Permalink to this headline">¶</a></h2>
 <p><strong>fail&gt;:</strong> always fails and makes the workflow failed.</p>
-<p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
 <p>This operator is useful used with <strong>if&gt;</strong> operator to validate resuls of a previous task with <code class="docutils literal"><span class="pre">_check</span></code> directive so that a workflow fails when the validation doesn&#8217;t pass.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+fail_if_too_few</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">if&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${count &lt; 10}</span>
