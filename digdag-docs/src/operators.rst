@@ -276,6 +276,11 @@ td>: Treasure Data queries
       td>: queries/step2.sql
       insert_into: mytable
 
+Examples
+~~~~~~~~
+
+  * `Examples <https://github.com/treasure-data/workflow-examples/tree/master/td>`_
+
 Secrets
 ~~~~~~~
 
@@ -371,10 +376,15 @@ td_run>: Treasure Data saved queries
         database: www_access
 
     +step1:
-      td_run>: myquery1
+      td_run>: 12345
     +step2:
       td_run>: myquery2
       session_time: 2016-01-01T01:01:01+0000
+
+Examples
+~~~~~~~~
+
+  * `Examples <https://github.com/treasure-data/workflow-examples/tree/master/td_run>`_
 
 Secrets
 ~~~~~~~
@@ -385,9 +395,10 @@ Secrets
 Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:command:`td_run>: NAME`
-  Name of a saved query.
+:command:`td_run>: SAVED_QUERY_ID or SAVED_QUERY_NAME`
+  Runs saved query. If number was specified, it's considered as an ID of saved query. Otherwise it's considered as a name of a saved query.
 
+  * :command:`td_run>: 12345`
   * :command:`td_run>: my_query`
 
 :command:`download_file: NAME`
@@ -646,6 +657,11 @@ td_load>: Treasure Data bulk loading
       td_load>: config/guessed.yml
       database: prod
       table: raw
+
+Examples
+~~~~~~~~
+
+  * `Examples <https://github.com/treasure-data/workflow-examples/tree/master/td_load>`_
 
 Secrets
 ~~~~~~~
