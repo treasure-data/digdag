@@ -163,6 +163,7 @@ public class WorkflowExecutor
 
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
+    private final TransactionManager tm;
     private final WorkflowCompiler compiler;
     private final TaskQueueDispatcher dispatcher;
     private final ConfigFactory cf;
@@ -178,6 +179,7 @@ public class WorkflowExecutor
     public WorkflowExecutor(
             ProjectStoreManager rm,
             SessionStoreManager sm,
+            TransactionManager tm,
             TaskQueueDispatcher dispatcher,
             WorkflowCompiler compiler,
             ConfigFactory cf,
@@ -187,6 +189,7 @@ public class WorkflowExecutor
     {
         this.rm = rm;
         this.sm = sm;
+        this.tm = tm;
         this.compiler = compiler;
         this.dispatcher = dispatcher;
         this.cf = cf;
@@ -313,6 +316,7 @@ public class WorkflowExecutor
             throw ex.getCause();
         }
         catch (ResourceConflictException sessionAlreadyExists) {
+            tm.reset();
             StoredSessionAttemptWithSession conflicted;
             if (ar.getRetryAttemptName().isPresent()) {
                 conflicted = sm.getSessionStore(siteId)

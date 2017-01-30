@@ -147,6 +147,13 @@ public class ThreadLocalTransactionManager
             state = State.ABORTED;
             // TODO Should call close()?
         }
+
+        @Override
+        public void reset()
+        {
+            abort();
+            state = State.ACTIVE;
+        }
     }
 
     @Inject
@@ -197,6 +204,16 @@ public class ThreadLocalTransactionManager
                 transaction.abort();
             }
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        Transaction transaction = threadLocalTransaction.get();
+        if (transaction == null) {
+            throw new IllegalStateException("Not in transaction");
+        }
+        transaction.reset();
     }
 
     @Override
