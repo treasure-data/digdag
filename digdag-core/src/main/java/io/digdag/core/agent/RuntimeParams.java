@@ -22,6 +22,7 @@ public class RuntimeParams
         // session_*
         params.set("session_uuid", request.getSessionUuid().toString());
         params.set("session_time", formatSessionTime(request.getSessionTime(), timeZone));
+        params.set("session_id", request.getSessionId());
         setTimeParameters(params, "session_", timeZone, request.getSessionTime());
 
         // last_session_*
