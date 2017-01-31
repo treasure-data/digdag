@@ -24,6 +24,7 @@ import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.ProjectResource;
 import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.SessionResource;
+import io.digdag.server.rs.TaskResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
@@ -81,6 +82,7 @@ public class ServerModule
                 ScheduleResource.class,
                 SessionResource.class,
                 AttemptResource.class,
+                TaskResource.class,
                 LogResource.class,
                 AgentResource.class,
                 VersionResource.class,

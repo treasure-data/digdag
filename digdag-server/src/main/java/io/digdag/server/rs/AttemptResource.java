@@ -18,7 +18,6 @@ import javax.ws.rs.core.Response;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import io.digdag.client.config.Config;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
@@ -28,7 +27,6 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
 import io.digdag.spi.ScheduleTime;
 
@@ -52,7 +50,6 @@ public class AttemptResource
     private final SchedulerManager srm;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor executor;
-    private final ConfigFactory cf;
 
     @Inject
     public AttemptResource(
@@ -60,15 +57,13 @@ public class AttemptResource
             SessionStoreManager sm,
             SchedulerManager srm,
             AttemptBuilder attemptBuilder,
-            WorkflowExecutor executor,
-            ConfigFactory cf)
+            WorkflowExecutor executor)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.attemptBuilder = attemptBuilder;
         this.executor = executor;
-        this.cf = cf;
     }
 
     @GET

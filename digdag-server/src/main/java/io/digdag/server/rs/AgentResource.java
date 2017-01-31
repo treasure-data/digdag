@@ -41,8 +41,7 @@ public class AgentResource
 
     @Inject
     public AgentResource(
-            Provider<AgentLauncherConfig> launcherConfigProvider
-            )
+            Provider<AgentLauncherConfig> launcherConfigProvider)
     {
         this.launcherConfigProvider = launcherConfigProvider;
     }
