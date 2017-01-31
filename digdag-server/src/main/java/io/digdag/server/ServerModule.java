@@ -18,6 +18,7 @@ import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.guice.rs.server.undertow.UndertowServerInfo;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
+import io.digdag.server.rs.AgentResource;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.ProjectResource;
@@ -81,6 +82,7 @@ public class ServerModule
                 SessionResource.class,
                 AttemptResource.class,
                 LogResource.class,
+                AgentResource.class,
                 VersionResource.class,
                 AdminResource.class
             );

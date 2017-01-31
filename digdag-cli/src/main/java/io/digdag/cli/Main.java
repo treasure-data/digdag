@@ -12,6 +12,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import io.digdag.cli.client.Agent;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Delete;
@@ -127,6 +128,8 @@ public class Main
         jc.addCommand("scheduler", injector.getInstance(Sched.class), "sched");
 
         jc.addCommand("server", injector.getInstance(Server.class));
+
+        jc.addCommand("agent", injector.getInstance(Agent.class));
 
         jc.addCommand("push", injector.getInstance(Push.class));
         jc.addCommand("archive", injector.getInstance(Archive.class));
@@ -330,6 +333,9 @@ public class Main
         err.println("    delete <project-name>              delete a project");
         err.println("    secrets --project <project-name>   manage secrets");
         err.println("    version                            show client and server version");
+        err.println("");
+        err.println("  Agent-mode commands:");
+        err.println("    agent                              start agent");
         err.println("");
         err.println("  Options:");
         showCommonOptions(env, err);

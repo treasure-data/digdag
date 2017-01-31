@@ -33,7 +33,6 @@ import com.google.common.base.Supplier;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
-import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -140,7 +139,7 @@ public class ProjectResource
     // GET  /api/projects/{id}/schedules?                # list schedules of the latest revision of a project
     // GET  /api/projects/{id}/schedules?workflow={name} # get the schedule of the latest revision of a workflow in a project
     // GET  /api/projects/{id}/sessions                  # list sessions for a project
-    // GET  /api/projects/{id}/sessions?workflow<name>   # list sessions for a workflow in the project
+    // GET  /api/projects/{id}/sessions?workflow=<name>  # list sessions for a workflow in the project
     // GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
     // GET  /api/projects/{id}/archive?revision=<name>   # download archive file of a former revision of a project
     // PUT  /api/projects?project=<name>&revision=<name> # create a new revision (also create a project if it doesn't exist)

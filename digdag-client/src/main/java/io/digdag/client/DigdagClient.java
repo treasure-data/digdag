@@ -1,7 +1,7 @@
 package io.digdag.client;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,22 +18,24 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
+import io.digdag.client.api.RestAgentLauncherHandle;
+import io.digdag.client.api.RestDirectDownloadHandle;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestLogFileHandleCollection;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
-import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSession;
-import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestTaskCollection;
 import io.digdag.client.api.RestVersionCheckResult;
@@ -459,7 +461,6 @@ public class DigdagClient implements AutoCloseable
         throw firstRedirectException;
     }
 
-    // TODO getArchive with streaming
     public InputStream getProjectArchive(Id projId, String revision)
     {
         WebTarget webTarget = target("/api/projects/{id}/archive")
@@ -859,6 +860,40 @@ public class DigdagClient implements AutoCloseable
                 .headers(headers.get())
                 .get(RestSecretList.class);
     }
+
+    public RestAgentLauncherHandle getAgentLauncherHandle()
+    {
+        return target("/api/agent/launcher_handle")
+                .request("application/json")
+                .headers(headers.get())
+                .get(RestAgentLauncherHandle.class);
+    }
+
+    public InputStream getAgentJar(Optional<RestDirectDownloadHandle> direct)
+    {
+        WebTarget webTarget;
+
+        if (direct.isPresent()) {
+            webTarget = client.target(UriBuilder.fromUri(direct.get().getUrl()));
+        }
+        else {
+            webTarget = target("/api/agent/jar");
+        }
+
+        return withFollowingRedirect(webTarget,
+                (wt, lastResponse) -> {
+                    Invocation.Builder request = wt.request();
+                    if (!lastResponse.isPresent() && !direct.isPresent()) {
+                        // Headers shouldn't be appended when redirecting.
+                        // With headers S3 can return "Bad Request"
+                        request.headers(headers.get());
+                    }
+                    return invokeWithRetry(request.buildGet())
+                            .readEntity(InputStream.class);
+                }
+        );
+    }
+
 
     public Config adminGetAttemptUserInfo(Id attemptId) {
         return doGet(Config.class,

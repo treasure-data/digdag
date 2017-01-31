@@ -90,7 +90,4 @@ public interface ServerConfig
                 );
         return convertFrom(configElement.toConfig(cf));
     }
-
-    Set<Integer> getAdminSites();
-
 }
