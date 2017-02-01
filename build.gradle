@@ -256,7 +256,7 @@ subprojects {
 
     publishing {
         publications {
-            if (![project(":digdag-ui"), project(":digdag-docs"), project(":digdag-tests")].contains(project)) {
+            if (![project(":digdag-ui"), project(":digdag-docs")].contains(project)) {
                 mavenJava(MavenPublication) {
                     from components.java
                     artifact testsJar
