@@ -8,7 +8,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;
@@ -56,6 +56,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static io.digdag.client.DigdagVersion.buildVersion;
+import static io.digdag.client.DigdagVersion.VERSION_PROPERTY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -296,7 +298,7 @@ public class TemporaryDigdagServer
             executor.execute(() -> {
                 OutputStream out = fanout(this.out, System.out);
                 OutputStream err = fanout(this.err, System.err);
-                main(environment, version.or(Version.buildVersion()), args, out, err, in);
+                main(environment, LocalVersion.of(version.or(buildVersion())), args, out, err, in);
             });
         }
         else {
@@ -311,7 +313,7 @@ public class TemporaryDigdagServer
                     "-cp", classPath,
                     "-Xms128m", "-Xmx128m"));
             if (version.isPresent()) {
-                processArgs.add("-D" + Version.VERSION_PROPERTY + "=" + version.get());
+                processArgs.add("-D" + VERSION_PROPERTY + "=" + version.get());
             }
             for (String key : properties.stringPropertyNames()) {
                 processArgs.add("-D" + key + "=" + properties.getProperty(key));
@@ -676,11 +678,6 @@ public class TemporaryDigdagServer
     public static TemporaryDigdagServer of()
     {
         return builder().build();
-    }
-
-    public static TemporaryDigdagServer of(Version version)
-    {
-        return builder().version(version).build();
     }
 
     public static class Builder

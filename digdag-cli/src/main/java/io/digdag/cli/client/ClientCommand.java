@@ -13,6 +13,7 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
@@ -108,20 +109,59 @@ public abstract class ClientCommand
         DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
-            Map<String, Object> remoteVersions = client.getVersion();
-            String remoteVersion = String.valueOf(remoteVersions.getOrDefault("version", ""));
+            RestVersionCheckResult serverResponse = client.checkClientVersion(version.toString());
 
-            if (!version.version().equals(remoteVersion)) {
+            // If apiCompatible is false, abort the command.
+            if (!serverResponse.getApiCompatible()) {
                 throw systemExit(String.format(""
-                                + "Client and server version mismatch: Client: %s, Server: %s.%n"
-                                + "Please run following command locally to download a compatible version with the server:%n"
+                                + "This client version is not API compatible to the server (client: %s, server: %s).%n"
+                                + "Please run following command locally to upgrade to a compatible version with the server:%n"
                                 + "%n"
                                 + "    " + programName + " selfupdate %s%n",
-                        version, remoteVersion, remoteVersion));
+                        version, serverResponse.getServerVersion(), serverResponse.getServerVersion()));
+            }
+
+            // if upgradeRecommended is true, use different behavior depending on STDOUT is TTY or not
+            if (serverResponse.getUpgradeRecommended()) {
+                if (isBatchModeForVersionCheck()) {
+                    // Use batch-mode if STDOUT is not TTY. In this mode, show a warning message.
+                    logger.warn("This client version is obsoleted. This client is subject to be incompatible and stop working in near future (client: %s, server: %s).", version, serverResponse.getServerVersion());
+                    logger.warn("Please run following command locally to upgrade to the latest version compatible to the server:");
+                    logger.warn("    {} selfupdate %s", serverResponse.getServerVersion());
+                }
+                else {
+                    // Use interactive-mode if STDOUT is TTY. In this mode, abort the command.
+                    // This is useful when the system administrator of the server wants to force all users
+                    // upgrade to the latest version and make technical support easy.
+                    throw systemExit(String.format(""
+                                    + "This client version is obsoleted. It is recommended to upgrade (client: %s, server: %s).%n"
+                                    + "Please run following command locally to upgrade to the latest version compatible to the server:%n"
+                                    + "%n"
+                                    + "    " + programName + " selfupdate %s%n",
+                            version, serverResponse.getServerVersion(), serverResponse.getServerVersion()));
+                }
             }
         }
 
         return client;
+    }
+
+    private boolean isBatchModeForVersionCheck()
+    {
+        String mode = System.getProperty("io.digdag.cli.versionCheckMode");
+        if (mode != null && !mode.isEmpty()) {
+            switch (mode) {
+            case "batch":
+                return true;
+            case "interactive":
+                return false;
+            default:
+                throw new IllegalArgumentException("io.digdag.cli.versionCheckMode must be batch or interactive");
+            }
+        }
+        else {
+            return System.console() == null;
+        }
     }
 
     @VisibleForTesting

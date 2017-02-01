@@ -1,7 +1,7 @@
 package acceptance;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
@@ -31,6 +31,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -382,9 +384,11 @@ public class ServerScheduleIT
     {
         File outfile = folder.newFile();
         Files.createDirectories(projectDir);
-        addWorkflow(projectDir, "acceptance/schedule/skip_on_overtime.dig", "schedule.dig");
-        pushProject(server.endpoint(), projectDir, "schedule", ImmutableMap.of(
-                "outfile", outfile.toPath().toAbsolutePath().toString()));
+
+        Files.write(projectDir.resolve("schedule.dig"), asList(Resources.toString(
+                Resources.getResource("acceptance/schedule/skip_on_overtime.dig"), UTF_8)
+                .replace("${outfile}", outfile.toString())));
+        pushProject(server.endpoint(), projectDir, "schedule");
 
         TestUtils.expect(Duration.ofMinutes(1),
                 () -> Files.readAllLines(outfile.toPath()).size() >= 6);

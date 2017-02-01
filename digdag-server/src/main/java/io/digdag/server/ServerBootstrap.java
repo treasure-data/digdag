@@ -1,10 +1,13 @@
 package io.digdag.server;
 
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
-import io.digdag.core.Version;
+import io.digdag.client.Version;
+import io.digdag.client.config.Config;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.guice.rs.GuiceRsServerControl;
@@ -56,6 +59,7 @@ public class ServerBootstrap
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
                 binder.bind(WorkflowExecutorLoop.class).asEagerSingleton();
                 binder.bind(WorkflowExecutionTimeoutEnforcer.class).asEagerSingleton();
+                binder.bind(ClientVersionChecker.class).toProvider(ClientVersionCheckerProvider.class);
 
                 binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
@@ -75,5 +79,23 @@ public class ServerBootstrap
         }, "shutdown"));
 
         return control;
+    }
+
+    private static class ClientVersionCheckerProvider
+            implements Provider<ClientVersionChecker>
+    {
+        private final Config systemConfig;
+
+        @Inject
+        public ClientVersionCheckerProvider(Config systemConfig)
+        {
+            this.systemConfig = systemConfig;
+        }
+
+        @Override
+        public ClientVersionChecker get()
+        {
+            return ClientVersionChecker.fromSystemConfig(systemConfig);
+        }
     }
 }

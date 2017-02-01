@@ -3,7 +3,6 @@ package acceptance.td;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ObjectArrays;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
@@ -49,22 +48,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static acceptance.td.Secrets.ENCRYPTION_KEY;
 import static acceptance.td.Secrets.TD_API_KEY;
-import static com.google.common.collect.Iterables.concat;
+import static acceptance.td.Secrets.TD_SECRETS_ENABLED_PROP_KEY;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -237,18 +231,25 @@ public class TdIT
         // Remove apikey from digdag conf
         Files.write(config, emptyList());
 
-        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
-        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
-        String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
-        env.put("http_proxy", proxyUrl);
-        env.put("TD_CONFIG_PATH", tdConf.toString());
-        assertWorkflowRunsSuccessfully();
-        List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(toList());
-        assertThat(issueRequests.size(), is(greaterThan(0)));
-        for (FullHttpRequest request : issueRequests) {
-            assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
+        System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "true");
+
+        try {
+            copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+            copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+            String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
+            env.put("http_proxy", proxyUrl);
+            env.put("TD_CONFIG_PATH", tdConf.toString());
+            assertWorkflowRunsSuccessfully();
+            List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(toList());
+            assertThat(issueRequests.size(), is(greaterThan(0)));
+            for (FullHttpRequest request : issueRequests) {
+                assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
+            }
+            assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
         }
-        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+        finally {
+            System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "false");
+        }
     }
 
     @Test

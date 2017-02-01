@@ -213,11 +213,11 @@ export class Model {
   }
 
   fetchProjects (): Promise<ProjectCollection> {
-    return this.get(`projects/`)
+    return this.get(`projects`)
   }
 
   fetchWorkflows (): Promise<WorkflowCollection> {
-    return this.get(`workflows/`)
+    return this.get(`workflows`)
   }
 
   fetchProject (projectId: string): Promise<Project> {
@@ -313,7 +313,7 @@ export class Model {
       }
       return response.arrayBuffer().then(data => {
         return untar(pako.inflate(data)).then(files => {
-          return new ProjectArchive((files: Array<TarEntry>))
+          return new ProjectArchive((files))
         })
       })
     })
@@ -349,7 +349,11 @@ export class Model {
     })
   }
 
-  retrySessionWithLatestRevision (session: Session, sessionUUID: string) {
+  startAttempt (workflowId: string, sessionTime: string, params: Object) {
+    return this.put('attempts', { workflowId, sessionTime, params })
+  }
+
+  retrySessionWithLatestRevision (session: Session, attemptName: string) {
     const { lastAttempt, project, workflow } = session
     const model = this
     return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
@@ -357,7 +361,24 @@ export class Model {
         workflowId: result.id,
         params: lastAttempt && lastAttempt.params,
         sessionTime: session.sessionTime,
-        retryAttemptName: sessionUUID
+        retryAttemptName: attemptName
+      })
+    )
+  }
+
+  resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: number) {
+    const { lastAttempt, project, workflow } = session
+    const model = this
+    return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
+      model.put('attempts', {
+        workflowId: result.id,
+        params: lastAttempt && lastAttempt.params,
+        sessionTime: session.sessionTime,
+        retryAttemptName: attemptName,
+        resume: {
+          mode: "failed",
+          attemptId: attemptId
+        }
       })
     )
   }

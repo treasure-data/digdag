@@ -1,6 +1,5 @@
 package io.digdag.standards.operator.td;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDExportFileFormatType;
 import com.treasuredata.client.model.TDExportJobRequest;
@@ -11,21 +10,15 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.TaskRequest;
-import io.digdag.util.ConfigSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
-import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static java.util.Locale.ENGLISH;
 
 public class TdTableExportOperatorFactory
@@ -45,18 +38,6 @@ public class TdTableExportOperatorFactory
     public String getType()
     {
         return "td_table_export";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return configSelectorBuilder()
-            .build()
-            .withExtraSecretAccessList(
-                    ConfigSelector.builderOfScope("aws")
-                    .addSecretOnlyAccess("access_key_id", "secret_access_key", "s3.access_key_id", "s3.secret_access_key")
-                    .build()
-            );
     }
 
     @Override

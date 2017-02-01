@@ -25,18 +25,13 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
-import io.digdag.util.ConfigSelector;
-import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -72,17 +67,6 @@ public class S3WaitOperatorFactory
     public String getType()
     {
         return "s3_wait";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("aws")
-            .addSecretAccess("region")
-            .addSecretAccess("s3.region", "s3.endpoint")
-            .addSecretOnlyAccess("access_key_id", "secret_access_key")
-            .addSecretOnlyAccess("s3.access_key_id", "s3.secret_access_key", "s3.sse_c_key", "s3.sse_c_key_algorithm", "s3.sse_c_key_md5")
-            .build();
     }
 
     @Override

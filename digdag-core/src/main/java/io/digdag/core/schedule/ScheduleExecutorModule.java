@@ -10,7 +10,6 @@ public class ScheduleExecutorModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(ScheduleHandler.class).in(Scopes.SINGLETON);
         binder.bind(ScheduleExecutor.class).asEagerSingleton();
     }
 }

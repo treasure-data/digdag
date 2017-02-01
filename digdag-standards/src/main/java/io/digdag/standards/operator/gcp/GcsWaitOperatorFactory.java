@@ -3,7 +3,6 @@ package io.digdag.standards.operator.gcp;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Optional;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -12,10 +11,8 @@ import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.state.TaskState;
-import io.digdag.util.ConfigSelector;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,15 +38,6 @@ class GcsWaitOperatorFactory
     public String getType()
     {
         return "gcs_wait";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("gcp")
-            .addSecretAccess("project")
-            .addSecretOnlyAccess("credential")
-            .build();
     }
 
     @Override

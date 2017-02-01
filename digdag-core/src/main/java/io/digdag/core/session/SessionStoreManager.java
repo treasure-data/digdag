@@ -90,4 +90,11 @@ public interface SessionStoreManager
     List<ParameterUpdate> getStoreParams(List<Long> idList);
 
     List<Config> getErrors(List<Long> idList);
+
+    interface DelayedAttemptAction
+    {
+        void submit(DelayedAttemptControlStore lockedAttempt, StoredDelayedSessionAttempt locked);
+    }
+
+    void lockReadyDelayedAttempts(Instant currentTime, DelayedAttemptAction func);
 }

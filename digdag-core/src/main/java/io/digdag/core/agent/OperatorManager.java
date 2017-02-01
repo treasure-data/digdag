@@ -1,7 +1,6 @@
 package io.digdag.core.agent;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,9 +17,6 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretAccessContext;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.spi.SecretAccessPolicy;
-import io.digdag.spi.SecretSelector;
 import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.TaskExecutionException;
@@ -44,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -63,7 +58,6 @@ public class OperatorManager
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
     private final SecretStoreManager secretStoreManager;
-    private final SecretAccessPolicy secretAccessPolicy;
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
@@ -76,7 +70,7 @@ public class OperatorManager
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
-            SecretStoreManager secretStoreManager, SecretAccessPolicy secretAccessPolicy)
+            SecretStoreManager secretStoreManager)
     {
         this.agentConfig = agentConfig;
         this.agentId = agentId;
@@ -88,7 +82,6 @@ public class OperatorManager
 
         this.registry = registry;
         this.secretStoreManager = secretStoreManager;
-        this.secretAccessPolicy = secretAccessPolicy;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -302,57 +295,23 @@ public class OperatorManager
                 .operatorType(type)
                 .build();
 
-        // Users can grant access to secrets explicitly
-        Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
-
-        // Operator can drop access to access to unnecessary secrets
-        AgentOperatorSecretFilter operatorSecretFilter = new AgentOperatorSecretFilter(factory);
+        // Users can mount secrets
+        Config secretMounts = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
+        mergedRequest.getConfig().remove("_secrets");
 
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
-                secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
+                secretContext, secretMounts, secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
-                GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
+                GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretStore));
 
         OperatorContext context = new DefaultOperatorContext(
                 projectPath, mergedRequest, secretProvider, privilegedVariables);
 
         Operator operator = factory.newOperator(context);
-        operatorSecretFilter.allowUserSecretAccess(operator);
 
         return operator.run();
-    }
-
-    private static class AgentOperatorSecretFilter
-            implements DefaultSecretProvider.OperatorSecretFilter
-    {
-        private final Set<String> predeclaredSecretKeys;
-        private boolean userSecretAccess = false;
-        private Predicate<String> dynamicFilter = (key) -> true;
-
-        AgentOperatorSecretFilter(OperatorFactory factory)
-        {
-            this.predeclaredSecretKeys = ImmutableSet.copyOf(
-                    factory.getSecretAccessList().getSecretKeys());
-        }
-
-        void allowUserSecretAccess(Operator operator)
-        {
-            this.userSecretAccess = true;
-            this.dynamicFilter = (key) -> operator.testUserSecretAccess(key);
-        }
-
-        @Override
-        public boolean test(String key, boolean userGranted)
-        {
-            if (userGranted) {
-                return userSecretAccess && dynamicFilter.test(key);
-            }
-            else {
-                return predeclaredSecretKeys.contains(key) && dynamicFilter.test(key);
-            }
-        }
     }
 
     private void heartbeat()

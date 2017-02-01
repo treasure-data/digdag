@@ -5,7 +5,6 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.jdbc.AbstractJdbcConnectionConfig;
-import io.digdag.util.ConfigSelector;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 
@@ -17,14 +16,6 @@ public abstract class PgConnectionConfig
     extends AbstractJdbcConnectionConfig
 {
     public abstract Optional<String> schema();
-
-    static ConfigSelector getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("pg")
-            .addSecretAccess("user", "host", "port", "database", "ssl", "connect_timeout", "socket_timeout", "schema")
-            .addSecretOnlyAccess("password")
-            .build();
-    }
 
     @VisibleForTesting
     public static PgConnectionConfig configure(SecretProvider secrets, Config params)

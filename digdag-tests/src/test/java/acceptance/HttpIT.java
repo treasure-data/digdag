@@ -3,7 +3,7 @@ package acceptance;
 import com.amazonaws.util.Base64;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
+import com.google.api.client.repackaged.com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -14,6 +14,8 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.http.HttpMethod;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -151,7 +153,7 @@ public class HttpIT
     {
         RecordedRequest recordedRequest = testRequest("http_content_scalar.dig");
         assertThat(recordedRequest.getHeader("content-type"), is("plain/text"));
-        assertThat(recordedRequest.getBody().readUtf8(), is("hello world"));
+        assertThat(recordedRequest.getBody().readUtf8(), is("hello foo_secret_content_value_1_bar"));
     }
 
     private void verifyFormContent(String expectedContent, RecordedRequest request)
@@ -176,7 +178,10 @@ public class HttpIT
             throws IOException, InterruptedException
     {
         String uri = "http://localhost:" + httpMockWebServer.getPort() + "/";
-        runWorkflow(folder, "acceptance/http/" + workflow, ImmutableMap.of("test_uri", uri));
+        runWorkflow(folder, "acceptance/http/" + workflow, ImmutableMap.of("test_uri", uri), ImmutableMap.of(
+                "secrets.content_value_1", "secret_content_value_1",
+                "secrets.content_name_2", "secret_content_name_2",
+                "secrets.content_value_2", "secret_content_value_2"));
         assertThat(httpMockWebServer.getRequestCount(), is(1));
         return httpMockWebServer.takeRequest();
     }
@@ -417,6 +422,11 @@ public class HttpIT
         runWorkflow(folder, "acceptance/http/http_headers.dig",
                 ImmutableMap.of(
                         "test_uri", uri
+                ),
+                ImmutableMap.of(
+                        "secrets.header_value_1", "secret_header_value_1",
+                        "secrets.header_name_2", "secret_header_name_2",
+                        "secrets.header_value_2", "secret_header_value_2"
                 ));
         assertThat(httpMockWebServer.getRequestCount(), is(1));
         RecordedRequest request = httpMockWebServer.takeRequest();
@@ -438,6 +448,42 @@ public class HttpIT
 
         assertThat(h.name(i + 2), is("foo"));
         assertThat(h.value(i + 2), is("foo-value-2"));
+
+        assertThat(h.name(i + 3), is("plain_header_name_1"));
+        assertThat(h.value(i + 3), is("secret_header_value_1"));
+
+        assertThat(h.name(i + 4), is("secret_header_name_2"));
+        assertThat(h.value(i + 4), is("secret_header_value_2"));
+    }
+
+    @Test
+    public void testQuery()
+            throws Exception
+    {
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http/http_query.dig",
+                ImmutableMap.of(
+                        "test_uri", uri
+                ),
+                ImmutableMap.of(
+                        "secrets.arg_value_1", "secret_arg_value_1",
+                        "secrets.arg_name_2", "secret_arg_name_2",
+                        "secrets.arg_value_2", "secret_arg_value_2"
+                ));
+        assertThat(httpMockWebServer.getRequestCount(), is(3));
+
+        for (int i = 0; i < 3; i++) {
+            RecordedRequest request = httpMockWebServer.takeRequest();
+            String query = Splitter.on('?').splitToList(request.getPath()).get(1);
+            List<NameValuePair> queryArgs = URLEncodedUtils.parse(query, UTF_8);
+            assertThat(queryArgs.get(0).getName(), is("foo"));
+            assertThat(queryArgs.get(0).getValue(), is("bar"));
+            assertThat(queryArgs.get(1).getName(), is("plain_arg_name_1"));
+            assertThat(queryArgs.get(1).getValue(), is("secret_arg_value_1"));
+            assertThat(queryArgs.get(2).getName(), is("secret_arg_name_2"));
+            assertThat(queryArgs.get(2).getValue(), is("secret_arg_value_2"));
+            System.out.println(queryArgs);
+        }
     }
 
     @Test

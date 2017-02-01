@@ -1,7 +1,6 @@
 package io.digdag.core.agent;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
@@ -9,8 +8,6 @@ import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretAccessContext;
-import io.digdag.spi.SecretAccessPolicy;
-import io.digdag.spi.SecretNotFoundException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
@@ -18,18 +15,13 @@ import io.digdag.util.UserSecretTemplate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class GrantedPrivilegedVariables
     implements PrivilegedVariables
 {
-    static SecretProvider privilegedSecretProvider(SecretAccessContext context, SecretAccessPolicy accessPolicy, SecretStore store)
+    static SecretProvider privilegedSecretProvider(SecretAccessContext context, SecretStore store)
     {
         return (key) -> {
-            if (!accessPolicy.isSecretAccessible(context, key)) {
-                return Optional.absent();
-            }
-
             Optional<String> projectSecret = store.getSecret(context.projectId(), SecretScopes.PROJECT, key);
 
             if (projectSecret.isPresent()) {

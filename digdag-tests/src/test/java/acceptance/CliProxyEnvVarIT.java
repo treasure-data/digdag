@@ -1,7 +1,6 @@
 package acceptance;
 
 import com.google.common.collect.ImmutableMap;
-import io.digdag.core.Version;
 import io.netty.handler.codec.http.HttpRequest;
 import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;
@@ -22,6 +21,7 @@ import utils.CommandStatus;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.digdag.client.DigdagVersion.buildVersion;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -32,7 +32,7 @@ public class CliProxyEnvVarIT
     private static final Logger logger = LoggerFactory.getLogger(CliProxyEnvVarIT.class);
 
     private static final MockResponse VERSION_RESPONSE = new MockResponse()
-            .setBody("{\"version\":\"" + Version.buildVersion() + "\"}")
+            .setBody("{\"version\":\"" + buildVersion() + "\"}")
             .setHeader(CONTENT_TYPE, "application/json");
 
     private HttpProxyServer httpProxy;
@@ -133,7 +133,7 @@ public class CliProxyEnvVarIT
         assertThat(versionStatus.errUtf8(), versionStatus.code(), is(0));
         assertThat(server.getRequestCount(), is(1));
         assertThat(proxyRequestTracker.clientRequestsReceived.get(), is(1));
-        assertThat(versionStatus.outUtf8(), Matchers.containsString("Server version: " + Version.buildVersion()));
+        assertThat(versionStatus.outUtf8(), Matchers.containsString("Server version: " + buildVersion()));
     }
 
     private class HttpProxyRequestTracker

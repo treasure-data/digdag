@@ -31,12 +31,6 @@ public class Archive
     @Parameter(names = {"--project"})
     String projectDirName = null;
 
-    @DynamicParameter(names = {"-p", "--param"})
-    Map<String, String> params = new HashMap<>();
-
-    @Parameter(names = {"-P", "--params-file"})
-    String paramsFile = null;
-
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
@@ -56,7 +50,6 @@ public class Archive
         err.println("Usage: " + programName + " archive [options...]");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions(env, err);
         return systemExit(error);
@@ -83,17 +76,11 @@ public class Archive
     private void archive(Injector injector)
             throws IOException
     {
-        ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
-
-        // read parameters
-        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
-
         // load project
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), overrideParams);
+        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output));
 
         out.println("Created " + output + ".");
         out.println("Use `" + programName + " upload <path.tar.gz> <project> <revision>` to upload it a server.");

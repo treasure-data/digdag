@@ -1,2 +1,11 @@
-+foo:
-  sh>: "echo ${mysql.password} > foo.out"
++param1:
+  sh>: "echo ${param1} > param1.out"
+
++param2:
+  sh>: "echo ${param2} > param2.out"
+
++param3:
+  sh>: "echo ${param3} > param3.out"
+
++param4:
+  sh>: "echo ${param4} > param4.out"

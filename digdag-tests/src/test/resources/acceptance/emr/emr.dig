@@ -1,9 +1,4 @@
 +emr_job:
-  _secrets:
-    td:
-      apikey: true
-    foo:
-      bar: true
   emr>:
   cluster: ${test_cluster}
   staging: ${test_s3_folder}/staging/
@@ -62,7 +57,7 @@
       jars:
         - s3://td-spark/td-spark-assembly-0.1.jar
       conf:
-        spark.td.apikey: {secret: td.apikey}
+        spark.td.apikey: ${secret:td.apikey}
 
 +post:
   sh>: touch ${outfile}

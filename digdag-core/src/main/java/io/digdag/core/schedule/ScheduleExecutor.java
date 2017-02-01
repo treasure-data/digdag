@@ -13,15 +13,27 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.workflow.AttemptBuilder;
+import io.digdag.core.workflow.AttemptLimitExceededException;
+import io.digdag.core.workflow.AttemptRequest;
+import io.digdag.core.workflow.SessionAttemptConflictException;
+import io.digdag.core.workflow.TaskLimitExceededException;
+import io.digdag.core.workflow.WorkflowExecutor;
+import io.digdag.core.session.DelayedAttemptControlStore;
+import io.digdag.core.session.Session;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredDelayedSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
+import io.digdag.core.session.ImmutableStoredSessionAttempt;
+import io.digdag.client.config.ConfigFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +58,10 @@ public class ScheduleExecutor
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
-    private final ScheduleHandler handler;
     private final SessionStoreManager sessionStoreManager;  // used for validation in backfill method
+    private final AttemptBuilder attemptBuilder;
+    private final WorkflowExecutor workflowExecutor;
+    private final ConfigFactory cf;
     private ScheduledExecutorService executor;
 
     @Inject(optional = true)
@@ -58,21 +72,25 @@ public class ScheduleExecutor
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            ScheduleHandler handler,
-            SessionStoreManager sessionStoreManager)
+            SessionStoreManager sessionStoreManager,
+            AttemptBuilder attemptBuilder,
+            WorkflowExecutor workflowExecutor,
+            ConfigFactory cf)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
-        this.handler = handler;
         this.sessionStoreManager = sessionStoreManager;
+        this.attemptBuilder = attemptBuilder;
+        this.workflowExecutor = workflowExecutor;
+        this.cf = cf;
     }
 
     @PostConstruct
     public synchronized void start()
     {
         if (executor == null) {
-            executor = Executors.newSingleThreadScheduledExecutor(
+            executor = Executors.newScheduledThreadPool(1,
                     new ThreadFactoryBuilder()
                     .setDaemon(true)
                     .setNameFormat("scheduler-%d")
@@ -80,7 +98,10 @@ public class ScheduleExecutor
                     );
         }
         // TODO make interval configurable?
-        executor.scheduleWithFixedDelay(() -> run(),
+        executor.scheduleWithFixedDelay(() -> runSchedules(),
+                1, 1, TimeUnit.SECONDS);
+        // TODO make interval configurable?
+        executor.scheduleWithFixedDelay(() -> runDelayedAttempts(),
                 1, 1, TimeUnit.SECONDS);
     }
 
@@ -100,13 +121,13 @@ public class ScheduleExecutor
         shutdown();
     }
 
-    public void run()
+    private void runSchedules()
     {
-        run(Instant.now());
+        runSchedules(Instant.now());
     }
 
     @VisibleForTesting
-    void run(Instant now)
+    void runSchedules(Instant now)
     {
         try {
             sm.lockReadySchedules(now, (store, storedSchedule) -> {
@@ -115,6 +136,25 @@ public class ScheduleExecutor
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. Scheduling will be retried.", t);
+            errorReporter.reportUncaughtError(t);
+        }
+    }
+
+    private void runDelayedAttempts()
+    {
+        runDelayedAttempts(Instant.now());
+    }
+
+    @VisibleForTesting
+    void runDelayedAttempts(Instant now)
+    {
+        try {
+            sessionStoreManager.lockReadyDelayedAttempts(now, (delayedAttemptControlStore, delayedAttempt) -> {
+                runDelayedAttempt(delayedAttemptControlStore, delayedAttempt);
+            });
+        }
+        catch (Throwable t) {
+            logger.error("An uncaught exception is ignored. Submitting delayed attempts will be retried.", t);
             errorReporter.reportUncaughtError(t);
         }
     }
@@ -189,18 +229,20 @@ public class ScheduleExecutor
         }
     }
 
-    private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
+    @VisibleForTesting
+    ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
             StoredWorkflowDefinitionWithProject def)
         throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         Instant scheduleTime = sched.getNextScheduleTime();
         Instant runTime = sched.getNextRunTime();
 
+        AttemptRequest ar = newAttemptRequest(
+                def, ScheduleTime.of(scheduleTime, runTime),
+                Optional.absent(), sched.getLastSessionTime());
         try {
-            handler.start(def,
-                    ScheduleTime.of(scheduleTime, runTime),
-                    Optional.absent(),
-                    sched.getLastSessionTime());
+            workflowExecutor.submitWorkflow(def.getProject().getSiteId(),
+                    ar, def);
         }
         catch (SessionAttemptConflictException ex) {
             logger.debug("Scheduled attempt {} is already executed. Skipping", ex.getConflictedSession());
@@ -294,8 +336,6 @@ public class ScheduleExecutor
         SessionStore ss = sessionStoreManager.getSessionStore(siteId);
 
         return sm.getScheduleStore(siteId).lockScheduleById(schedId, (store, sched) -> {
-            ScheduleControl lockedSched = new ScheduleControl(store, sched);
-
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
             Scheduler sr = srm.getScheduler(def);
 
@@ -335,41 +375,97 @@ public class ScheduleExecutor
             }
 
             // run sessions
-            ImmutableList.Builder<StoredSessionAttemptWithSession> attempts = ImmutableList.builder();
-            for (Instant instant : instants) {
-                if (dryRun) {
-                    attempts.add(
-                            StoredSessionAttemptWithSession.dryRunDummy(siteId,
-                                Session.of(def.getProject().getId(), def.getName(), instant),
-                                ImmutableStoredSessionAttempt.builder()
-                                    .retryAttemptName(Optional.of(attemptName))
-                                    .workflowDefinitionId(Optional.of(def.getId()))
-                                    .timeZone(def.getTimeZone())
-                                    .id(0L)
-                                    .params(def.getConfig().getFactory().create())
-                                    .stateFlags(AttemptStateFlags.empty())
-                                    .sessionId(0L)
-                                    .createdAt(Instant.now())
-                                    .finishedAt(Optional.absent())
-                                    .build()
-                            )
-                        );
-                }
-                else {
-                    try {
-                        StoredSessionAttemptWithSession attempt = handler.start(def,
-                                ScheduleTime.of(instant, sched.getNextScheduleTime()),
-                                Optional.of(attemptName), sched.getLastSessionTime());
+            return workflowExecutor.submitTransaction(siteId, (submitter) -> {
+                ImmutableList.Builder<StoredSessionAttemptWithSession> attempts = ImmutableList.builder();
+
+                Optional<StoredSessionAttemptWithSession> lastAttempt = Optional.absent();
+
+                for (Instant instant : instants) {
+                    if (dryRun) {
+                        attempts.add(
+                                StoredSessionAttemptWithSession.dryRunDummy(siteId,
+                                    Session.of(def.getProject().getId(), def.getName(), instant),
+                                    ImmutableStoredSessionAttempt.builder()
+                                        .retryAttemptName(Optional.of(attemptName))
+                                        .workflowDefinitionId(Optional.of(def.getId()))
+                                        .timeZone(def.getTimeZone())
+                                        .id(0L)
+                                        .params(def.getConfig().getFactory().create())
+                                        .stateFlags(AttemptStateFlags.empty())
+                                        .sessionId(0L)
+                                        .createdAt(Instant.now())
+                                        .finishedAt(Optional.absent())
+                                        .build()
+                                )
+                            );
+                    }
+                    else {
+                        Optional<Instant> lastExecutedSessionTime =
+                            lastAttempt
+                            .transform(a -> a.getSession().getSessionTime());
+                        if (!lastExecutedSessionTime.isPresent()) {
+                            lastExecutedSessionTime = submitter.getLastExecutedSessionTime(
+                                    sched.getProjectId(), sched.getWorkflowName(), instant);
+                        }
+                        AttemptRequest ar = newAttemptRequest(
+                                def, ScheduleTime.of(instant, sched.getNextScheduleTime()),
+                                Optional.of(attemptName), lastExecutedSessionTime);
+                        StoredSessionAttemptWithSession attempt =
+                            submitter.submitDelayedAttempt(ar, lastAttempt.transform(a -> a.getSessionId()));
+                        lastAttempt = Optional.of(attempt);
                         attempts.add(attempt);
-                        // TODO this may throw ResourceLimitExceededException. But some sessions are already committed. To be able to rollback everything, inserting all sessions needs to be in a single transaction.
-                    }
-                    catch (SessionAttemptConflictException ex) {
-                        // ignore because above start already committed other attempts. here can't rollback.
-                        logger.warn("Session attempt conflicted after validation", ex);
                     }
                 }
-            }
-            return attempts.build();
+
+                return attempts.build();
+            });
         });
+    }
+
+    public void runDelayedAttempt(DelayedAttemptControlStore control, StoredDelayedSessionAttempt delayedAttempt)
+    {
+        try {
+            control.lockSessionOfAttempt(delayedAttempt.getAttemptId(), (sessionControlStore, storedAttemptWithSession) -> {
+                if (!storedAttemptWithSession.getWorkflowDefinitionId().isPresent()) {
+                    throw new ResourceNotFoundException("Delayed attempt must have a stored workflow");
+                }
+                WorkflowDefinition def = rm.getProjectStore(storedAttemptWithSession.getSiteId())
+                            .getWorkflowDefinitionById(storedAttemptWithSession.getWorkflowDefinitionId().get());
+                workflowExecutor.storeTasks(
+                        sessionControlStore,
+                        storedAttemptWithSession,
+                        def,
+                        ImmutableList.of(),
+                        ImmutableList.of());
+                return true;
+            });
+        }
+        catch (ResourceConflictException ex) {
+            logger.warn("Delayed attempt conflicted: {}", delayedAttempt, ex);
+        }
+        catch (ResourceNotFoundException ex) {
+            logger.warn("Invalid delayed attempt: {}", delayedAttempt, ex);
+        }
+        catch (ResourceLimitExceededException ex) {
+            logger.warn("Failed to start delayed attempt Due to too many active tasks. Will be retried after 5 minutes.", ex);
+            control.delayDelayedAttempt(delayedAttempt.getAttemptId(), Instant.now().plusSeconds(5 * 60));
+            return;
+        }
+        control.completeDelayedAttempt(delayedAttempt.getAttemptId());
+    }
+
+    private AttemptRequest newAttemptRequest(
+            StoredWorkflowDefinitionWithProject def,
+            ScheduleTime time, Optional<String> retryAttemptName,
+            Optional<Instant> lastExecutedSessionTime)
+    {
+        return attemptBuilder.buildFromStoredWorkflow(
+                def,
+                cf.create(),
+                time,
+                retryAttemptName,
+                Optional.absent(),
+                ImmutableList.of(),
+                lastExecutedSessionTime);
     }
 }

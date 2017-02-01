@@ -26,7 +26,6 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
-import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -71,7 +70,6 @@ public class ServerModule
         binder().bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
         binder().bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
         binder().bind(SecretControlStoreManager.class).to(DatabaseSecretControlStoreManager.class);
-        binder().bind(SecretAccessPolicy.class).to(DefaultSecretAccessPolicy.class);
     }
 
     protected void bindResources(ApplicationBindingBuilder builder)

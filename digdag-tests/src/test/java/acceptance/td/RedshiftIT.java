@@ -56,7 +56,6 @@ import static utils.TestUtils.*;
 public class RedshiftIT
 {
     private static final String REDSHIFT_CONFIG = System.getenv("REDSHIFT_IT_CONFIG");
-    private static final String RESTRICTED_USER = "not_admin";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
     private static final String DATA_SECHEMA = "data_schema";
@@ -80,6 +79,7 @@ public class RedshiftIT
     private String s3ParentKey;
     private String dynamoTableName;
     private String database;
+    private String restrictedUser;
     private String restrictedUserPassword;
     private String dataSchemaName;
     private Path configFile;
@@ -130,6 +130,7 @@ public class RedshiftIT
         dynamoClient = new AmazonDynamoDBClient(credentials);
 
         database = "redshiftoptest_" + UUID.randomUUID().toString().replace('-', '_');
+        restrictedUser = "user_" + UUID.randomUUID().toString().replace('-', '_');
         restrictedUserPassword = UUID.randomUUID() + "0aZ";
 
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
@@ -300,7 +301,7 @@ public class RedshiftIT
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
                 "-p", "redshift_database=" + database,
                 "-p", "redshift_host=" + redshiftHost,
-                "-p", "redshift_user=" + RESTRICTED_USER,
+                "-p", "redshift_user=" + restrictedUser,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
                 "-c", configFileWithRestrictedUser.toString(),
@@ -326,9 +327,9 @@ public class RedshiftIT
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate(String.format("CREATE SCHEMA %s", schemaName));
-            conn.executeUpdate(String.format("GRANT USAGE ON SCHEMA %s TO %s", schemaName, RESTRICTED_USER));
+            conn.executeUpdate(String.format("GRANT USAGE ON SCHEMA %s TO %s", schemaName, restrictedUser));
             if (withCreatePrivilegeToRestrictedUser) {
-                conn.executeUpdate(String.format("GRANT CREATE ON SCHEMA %s TO %s", schemaName, RESTRICTED_USER));
+                conn.executeUpdate(String.format("GRANT CREATE ON SCHEMA %s TO %s", schemaName, restrictedUser));
             }
         }
     }
@@ -339,8 +340,8 @@ public class RedshiftIT
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             switchSearchPath(conn);
-            conn.executeUpdate(String.format("GRANT SELECT ON %s TO %s", SRC_TABLE, RESTRICTED_USER));
-            conn.executeUpdate(String.format("GRANT INSERT ON %s TO %s", DEST_TABLE, RESTRICTED_USER));
+            conn.executeUpdate(String.format("GRANT SELECT ON %s TO %s", SRC_TABLE, restrictedUser));
+            conn.executeUpdate(String.format("GRANT INSERT ON %s TO %s", DEST_TABLE, restrictedUser));
         }
     }
 
@@ -362,7 +363,7 @@ public class RedshiftIT
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (1, 'bar', 1.23)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (2, 'baz', 5.00)");
 
-            conn.executeUpdate("GRANT SELECT ON " + SRC_TABLE +  " TO " + RESTRICTED_USER);
+            conn.executeUpdate("GRANT SELECT ON " + SRC_TABLE +  " TO " + restrictedUser);
         }
     }
 
@@ -372,7 +373,7 @@ public class RedshiftIT
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             try {
-                conn.executeUpdate("CREATE USER " + RESTRICTED_USER + " WITH PASSWORD '" + restrictedUserPassword + "'");
+                conn.executeUpdate("CREATE USER " + restrictedUser + " WITH PASSWORD '" + restrictedUserPassword + "'");
             }
             catch (DatabaseException e) {
                 // 42710: duplicate_object
@@ -393,7 +394,7 @@ public class RedshiftIT
             conn.executeUpdate("DELETE FROM " + DEST_TABLE + " WHERE id = 9");
             conn.executeUpdate("INSERT INTO " + DEST_TABLE + " (id, name, score) VALUES (9, 'zzz', 9.99)");
 
-            conn.executeUpdate("GRANT INSERT ON " + DEST_TABLE +  " TO " + RESTRICTED_USER);
+            conn.executeUpdate("GRANT INSERT ON " + DEST_TABLE +  " TO " + restrictedUser);
         }
     }
 
@@ -475,7 +476,7 @@ public class RedshiftIT
         SecretProvider secrets = getAdminDatabaseSecrets();
 
         try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
-            conn.executeUpdate("DROP USER IF EXISTS " + RESTRICTED_USER);
+            conn.executeUpdate("DROP USER IF EXISTS " + restrictedUser);
         }
     }
 
@@ -779,7 +780,7 @@ public class RedshiftIT
                 ),
                 configFileWithRestrictedUser,
                 "acceptance/redshift/load_from_s3_fixedwidth_with_schema.dig",
-                RESTRICTED_USER,
+                restrictedUser,
                 Arrays.asList(
                         ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
                         ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),

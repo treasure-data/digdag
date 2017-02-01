@@ -1,1 +1,1 @@
-a=foo&b%26foo=4711&c%3Fbar=qu%3Dux
+a=foo&b%26foo=4711&c%3Fbar=qu%3Dux&plain_content_name_1=secret_content_value_1&secret_content_name_2=secret_content_value_2&foo_secret_content_name_2_bar=foo_secret_content_value_2_bar

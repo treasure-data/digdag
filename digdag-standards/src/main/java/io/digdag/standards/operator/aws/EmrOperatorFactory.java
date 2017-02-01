@@ -68,7 +68,6 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
@@ -77,7 +76,6 @@ import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
@@ -86,8 +84,8 @@ import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
-import io.digdag.util.ConfigSelector;
 import io.digdag.util.RetryExecutor;
+import io.digdag.util.UserSecretTemplate;
 import io.digdag.util.Workspace;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -150,17 +148,6 @@ public class EmrOperatorFactory
         this.objectMapper = objectMapper;
         this.cf = cf;
         this.environment = environment;
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("aws")
-                .addSecretOnlyAccess("emr.endpoint", "s3.endpoint", "kms.endpoint")
-                .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn", "role_session_name")
-                .addSecretOnlyAccess("emr.access_key_id", "emr.secret_access_key", "emr.role_arn", "emr.role_session_name")
-                .addSecretOnlyAccess("emr.kms_key_id")
-                .build();
     }
 
     @Override
@@ -291,7 +278,7 @@ public class EmrOperatorFactory
         private TaskResult run(String tag, AmazonElasticMapReduce emr, AWSKMSClient kms, Filer filer)
                 throws IOException
         {
-            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, context, cf);
+            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, context);
 
             // Set up step compiler
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
@@ -745,7 +732,7 @@ public class EmrOperatorFactory
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .workingDirectory(bootstrapWorkingDirectory(index))
-                    .env(parameterCompiler.parameters(config.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .env(parameterCompiler.parameters(config.getNestedOrGetEmpty("env"), (key, value) -> value))
                     .addDownload(DownloadConfig.of(file, 0777))
                     .addAllDownload(config.getListOrEmpty("files", String.class).stream()
                             .map(r -> fileReference("file", r))
@@ -1104,7 +1091,7 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<Parameter> confArgs = pc.parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
+            List<Parameter> confArgs = pc.parameters("--conf", conf, (key, value) -> key + "=" + value);
 
             List<String> classArgs = step.getOptional("class", String.class)
                     .transform(s -> ImmutableList.of("--class", s))
@@ -1198,7 +1185,7 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<Parameter> confArgs = pc.parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
+            List<Parameter> confArgs = pc.parameters("--conf", conf, (key, value) -> key + "=" + value);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .workingDirectory(localWorkingDirectory())
@@ -1231,7 +1218,7 @@ public class EmrOperatorFactory
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .workingDirectory(localWorkingDirectory())
-                    .env(pc.parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .env(pc.parameters(step.getNestedOrGetEmpty("env"), (key, value) -> value))
                     .addDownload(DownloadConfig.of(scriptFile, 0777))
                     .addAllDownload(filesFiles)
                     .addAllCommand(scriptFile.localPath())
@@ -1271,8 +1258,8 @@ public class EmrOperatorFactory
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .workingDirectory(localWorkingDirectory())
                     .addAllCommand("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
-                    .addAllCommand(pc.parameters("-d", step.getNestedOrGetEmpty("vars"), "vars", (key, value) -> key + "=" + value))
-                    .addAllCommand(pc.parameters("-hiveconf", step.getNestedOrGetEmpty("hiveconf"), "hiveconf", (key, value) -> key + "=" + value))
+                    .addAllCommand(pc.parameters("-d", step.getNestedOrGetEmpty("vars"), (key, value) -> key + "=" + value))
+                    .addAllCommand(pc.parameters("-hiveconf", step.getNestedOrGetEmpty("hiveconf"), (key, value) -> key + "=" + value))
                     .build();
 
             addStep("Hive Script", configuration);
@@ -1283,7 +1270,7 @@ public class EmrOperatorFactory
         {
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .workingDirectory(localWorkingDirectory())
-                    .env(pc.parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .env(pc.parameters(step.getNestedOrGetEmpty("env"), (key, value) -> value))
                     .addAllDownload(step.getListOrEmpty("files", String.class).stream()
                             .map(r -> fileReference("file", r))
                             .map(r -> prepareRemoteFile(r, false, localWorkingDirectory()))
@@ -1331,56 +1318,44 @@ public class EmrOperatorFactory
     {
         private final AWSKMSClient kms;
         private final OperatorContext context;
-        private final ConfigFactory cf;
 
-        ParameterCompiler(AWSKMSClient kms, OperatorContext context, ConfigFactory cf)
+        ParameterCompiler(AWSKMSClient kms, OperatorContext context)
         {
             this.kms = Preconditions.checkNotNull(kms, "kms");
             this.context = Preconditions.checkNotNull(context, "context");
-            this.cf = Preconditions.checkNotNull(cf, "cf");
         }
 
-        private List<Parameter> parameters(String flag, Config config, String name, BiFunction<String, String, String> f)
+        private List<Parameter> parameters(String flag, Config config, BiFunction<String, String, String> f)
         {
-            return parameters(config, name, f).values().stream()
+            return parameters(config, f).values().stream()
                     .flatMap(p -> Stream.of(Parameter.ofPlain(flag), p))
                     .collect(toList());
         }
 
         private List<Parameter> parameters(Config config, String key)
         {
-            return config.getListOrEmpty(key, JsonNode.class).stream()
-                    .map(node -> parameter(key, node, Function.identity()))
+            return config.parseListOrGetEmpty(key, String.class).stream()
+                    .map(value -> parameter(value, Function.identity()))
                     .collect(toList());
         }
 
-        private Map<String, Parameter> parameters(Config config, String name, BiFunction<String, String, String> f)
+        private Map<String, Parameter> parameters(Config config, BiFunction<String, String, String> f)
         {
             return config.getKeys().stream()
                     .collect(toMap(
                             Function.identity(),
-                            key -> parameter(name, config, key, f)));
+                            key -> parameter(config.get(key, String.class), value -> f.apply(key, value))));
         }
 
-        private Parameter parameter(String name, Config config, String key, BiFunction<String, String, String> f)
+        private Parameter parameter(String value, Function<String, String> f)
         {
-            JsonNode node = config.get(key, JsonNode.class);
-            return parameter(name, node, value -> f.apply(key, value));
-        }
-
-        private Parameter parameter(String name, JsonNode value, Function<String, String> f)
-        {
-
-            if (value.isObject()) {
-                String secretKey = cf.create(value).get("secret", String.class);
-                String secretValue = context.getSecrets().getSecret(secretKey);
+            UserSecretTemplate secretTemplate = UserSecretTemplate.of(value);
+            if (secretTemplate.containsSecrets()) {
+                String secretValue = secretTemplate.format(context.getSecrets());
                 return Parameter.ofKmsEncrypted(kmsEncrypt(f.apply(secretValue)));
             }
-            else if (value.isArray()) {
-                throw new ConfigException("Invalid '" + name + "' value: '" + value + "'");
-            }
             else {
-                return Parameter.ofPlain(f.apply(value.asText()));
+                return Parameter.ofPlain(f.apply(value));
             }
         }
 

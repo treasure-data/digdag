@@ -72,6 +72,7 @@ import static utils.TestUtils.createProject;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.pushProject;
+import static utils.TestUtils.s3DeleteRecursively;
 
 public class EmrIT
 {
@@ -229,26 +230,8 @@ public class EmrIT
     public void cleanUpS3()
             throws Exception
     {
-        if (tmpS3FolderKey == null) {
-            return;
-        }
-
-        ListObjectsRequest request = new ListObjectsRequest()
-                .withBucketName(S3_TEMP_BUCKET)
-                .withPrefix(tmpS3FolderKey);
-
-        while (true) {
-            ObjectListing listing = s3.listObjects(request);
-            String[] keys = listing.getObjectSummaries().stream().map(S3ObjectSummary::getKey).toArray(String[]::new);
-            for (String key : keys) {
-                logger.info("delete s3://{}/{}", S3_TEMP_BUCKET, key);
-            }
-            retryExecutor()
-                    .retryIf(e -> e instanceof AmazonServiceException)
-                    .run(() -> s3.deleteObjects(new DeleteObjectsRequest(S3_TEMP_BUCKET).withKeys(keys)));
-            if (listing.getNextMarker() == null) {
-                break;
-            }
+        if (s3 != null && S3_TEMP_BUCKET != null && tmpS3FolderKey != null) {
+            s3DeleteRecursively(s3, S3_TEMP_BUCKET, tmpS3FolderKey);
         }
     }
 

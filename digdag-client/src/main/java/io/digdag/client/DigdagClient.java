@@ -22,7 +22,6 @@ import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestLogFileHandleCollection;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
-import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
@@ -36,8 +35,8 @@ import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestSetSecretRequest;
-import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestTaskCollection;
+import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowDefinitionCollection;
 import io.digdag.client.api.RestWorkflowSessionTime;
@@ -50,6 +49,8 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -70,12 +71,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.exponentialWait;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.not;
+import static io.digdag.client.DigdagVersion.buildVersion;
 import static java.util.Locale.ENGLISH;
+import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.jboss.resteasy.client.jaxrs.internal.ClientInvocation.handleErrorStatus;
 
@@ -83,6 +86,7 @@ public class DigdagClient implements AutoCloseable
 {
     private static final int TOO_MANY_REQUESTS_429 = 429;
     private static final int REQUEST_TIMEOUT_408 = 408;
+    private static final int MAX_REDIRECT = 10;
 
     public static class Builder
     {
@@ -226,6 +230,7 @@ public class DigdagClient implements AutoCloseable
         ObjectMapper mapper = objectMapper();
 
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
+                .register(new UserAgentFilter("DigdagClient/" + buildVersion()))
                 .register(new JacksonJsonProvider(mapper));
 
         // TODO: support proxy user/pass
@@ -421,17 +426,58 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
+    @FunctionalInterface
+    interface RequestWithFollowingRedirect<T>
+    {
+        T invoke(WebTarget webTarget, Optional<Response> lastResponse);
+    }
+
+    private <T> T withFollowingRedirect(WebTarget initialWebTarget, RequestWithFollowingRedirect<T> request)
+    {
+        WebApplicationException firstRedirectException = null;
+        WebTarget webTarget = initialWebTarget;
+        Optional<Response> lastResponse = Optional.absent();
+
+        for (int i = 0; i < MAX_REDIRECT; i++) {
+            try {
+                return request.invoke(webTarget, lastResponse);
+            }
+            catch (WebApplicationException e) {
+                if (firstRedirectException == null) {
+                    firstRedirectException = e;
+                }
+                Response response = checkNotNull(e.getResponse());
+                int status = response.getStatus();
+                if (status % 100 == 3 && response.getLocation() != null) {
+                    lastResponse = Optional.of(response);
+                    webTarget = client.target(UriBuilder.fromUri(response.getLocation()));
+                    continue;
+                }
+                throw e;
+            }
+        }
+        throw firstRedirectException;
+    }
+
     // TODO getArchive with streaming
     public InputStream getProjectArchive(Id projId, String revision)
     {
-        Invocation request = target("/api/projects/{id}/archive")
-            .resolveTemplate("id", projId)
-            .queryParam("revision", revision)
-            .request()
-            .headers(headers.get())
-            .buildGet();
-        return invokeWithRetry(request)
-            .readEntity(InputStream.class);
+        WebTarget webTarget = target("/api/projects/{id}/archive")
+                .resolveTemplate("id", projId)
+                .queryParam("revision", revision);
+
+        return withFollowingRedirect(webTarget,
+                (wt, lastResponse) -> {
+                    Invocation.Builder request = wt.request();
+                    if (!lastResponse.isPresent()) {
+                        // Headers shouldn't be appended when redirecting.
+                        // With headers S3 can return "Bad Request"
+                        request.headers(headers.get());
+                    }
+                    return invokeWithRetry(request.buildGet())
+                            .readEntity(InputStream.class);
+                }
+        );
     }
 
     public RestScheduleCollection getSchedules()
@@ -646,7 +692,8 @@ public class DigdagClient implements AutoCloseable
 
     private static boolean isDeterministicError(int status)
     {
-        if (status >= 400 && status < 500) {
+        // Retrying against 3xx doesn't make sense
+        if (status >= 300 && status < 500) {
             switch (status) {
                 case TOO_MANY_REQUESTS_429:
                 case REQUEST_TIMEOUT_408:
@@ -762,6 +809,13 @@ public class DigdagClient implements AutoCloseable
         return doGet(Version.class, target("/api/version")).get();
     }
 
+    public RestVersionCheckResult checkClientVersion(String clientVersion)
+    {
+        return doGet(RestVersionCheckResult.class,
+                target("/api/version/check")
+                .queryParam("client", clientVersion));
+    }
+
     public void setProjectSecret(Id projectId, String key, String value)
     {
         if (!SecretValidation.isValidSecret(key, value)) {
@@ -864,5 +918,23 @@ public class DigdagClient implements AutoCloseable
         return target.request("application/json")
             .headers(headers.get())
             .delete(type);
+    }
+
+    private static class UserAgentFilter
+            implements ClientRequestFilter
+    {
+        private final String userAgent;
+
+        UserAgentFilter(String userAgent)
+        {
+            this.userAgent = userAgent;
+        }
+
+        @Override
+        public void filter(ClientRequestContext requestContext)
+                throws IOException
+        {
+            requestContext.getHeaders().putSingle(USER_AGENT, userAgent);
+        }
     }
 }

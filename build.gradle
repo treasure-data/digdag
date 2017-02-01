@@ -10,7 +10,7 @@ apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.9.3-SNAPSHOT'
+    version = '0.9.4-SNAPSHOT'
 
     ext {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
@@ -104,6 +104,7 @@ subprojects {
 
     ext {
         jacksonVersion = "2.6.7"
+        awsJavaSdkVersion = "1.11.63"
     }
 
     tasks.withType(JavaCompile) {
@@ -325,7 +326,8 @@ project(':digdag-ui') {
 project(':digdag-cli') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
-    // include digdag-ui in the shadow jar
+    // Include digdag-ui in the shadow jar which are not in the dependencies
+    // of digdag-cli but should be included.
     configurations {
         shadow {
             extendsFrom runtime
@@ -334,6 +336,7 @@ project(':digdag-cli') {
     dependencies {
         shadow project(':digdag-ui')
     }
+    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     shadowJar {
         configurations = [project.configurations.shadow]
@@ -365,8 +368,6 @@ project(':digdag-cli') {
         exclude 'org/weakref/jmx/internal/guava/**/*'
         relocate 'org.weakref.jmx.internal.guava', 'com.google.common'
     }
-
-    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     task classpath(type: Copy, dependsOn: ['jar']) {
         File dest = file("${rootProject.projectDir}/classpath")
@@ -413,7 +414,7 @@ task setVersion << {
     gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
 
     List<String> files = [
-        'digdag-core/src/main/resources/io/digdag/core/version.txt',
+        'digdag-client/src/main/resources/io/digdag/client/version.txt',
         'digdag-cli/src/main/java/io/digdag/cli/Main.java',
         'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
     ]
@@ -447,8 +448,8 @@ task releaseCheck << {
         println "Releasing a SNAPSHOT version."
     }
     else {
-        if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
-            throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
+        if (!file("digdag-client/src/main/resources/io/digdag/client/version.txt").getText().contains("${project.version}")) {
+            throw new GradleException("digdag-client/src/main/resources/io/digdag/client/version.txt doesn't include ${project.version}")
         }
         if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
             throw new GradleException("Release note for ${project.version} doesn't exist")

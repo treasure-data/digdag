@@ -8,38 +8,34 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretAccessContext;
-import io.digdag.spi.SecretAccessDeniedException;
-import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
-
-import static java.util.Locale.ENGLISH;
 
 class DefaultSecretProvider
         implements SecretProvider
 {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultSecretProvider.class);
+
     interface OperatorSecretFilter
     {
         boolean test(String key, boolean userGranted);
     }
 
     private final SecretAccessContext context;
-    private final SecretAccessPolicy secretAccessPolicy;
-    private final Config grants;
-    private final OperatorSecretFilter operatorSecretFilter;
+    private final Config mounts;
     private final SecretStore secretStore;
 
-    DefaultSecretProvider(
-            SecretAccessContext context, SecretAccessPolicy secretAccessPolicy, Config grants, OperatorSecretFilter operatorSecretFilter, SecretStore secretStore)
+    DefaultSecretProvider(SecretAccessContext context, Config mounts, SecretStore secretStore)
     {
         this.context = context;
-        this.secretAccessPolicy = secretAccessPolicy;
-        this.grants = grants;
-        this.operatorSecretFilter = operatorSecretFilter;
+        this.mounts = mounts;
         this.secretStore = secretStore;
     }
 
@@ -51,39 +47,32 @@ class DefaultSecretProvider
         Preconditions.checkArgument(!Strings.isNullOrEmpty(key), errorMessage);
         Preconditions.checkArgument(key.indexOf('*') == -1, errorMessage);
 
-        //// Secret access control:
-        // 1. If users explicitly grant access using _secret directive in workflow definition (Config grants):
-        //    1-a. Allow if the operator wants to use it (operatorSecretFilter.test(key, true)).
-        //         This lets operators access to the secrets not declared in OperatorFactory.getSecretAccessList.
-        //    1-b. Reject.
-        // 2. If the system access policy file (SecretAccessPolicy) allows:
-        //    2-a. Allow if the operator wants to use it (operatorSecretFilter.test(key, false)).
-        //         Operators must declare the name of the key in OperatorFactory.getSecretAccessList in advance.
-        //    2-b. Reject.
-        // 3. Otherwise, reject.
+        String remountedKey = remount(key);
 
+        return fetchSecret(remountedKey);
+    }
+
+    private String remount(String key)
+    {
         List<String> segments = Splitter.on('.').splitToList(key);
         segments.forEach(segment -> Preconditions.checkArgument(!Strings.isNullOrEmpty(segment)));
+        JsonNode scope = mounts.getInternalObjectNode();
 
-        //// Case 1.
-        // If the key falls under the scope of a grant explicitly written by users,
-        // then fetch the secret identified by remounting the key path into the grant path.
-        JsonNode scope = grants.getInternalObjectNode();
         int i = 0;
 
         while (true) {
             String segment = segments.get(i);
             JsonNode node = scope.get(segment);
             if (node == null) {
-                // Key falls outside the override scope. No override.
-                break;
+                // Key falls outside the override scope. No remount.
+                return key;
             }
             if (node.isObject()) {
                 // Dig deeper
                 i++;
                 if (i >= segments.size()) {
                     // Key ended before we reached a leaf. No override.
-                    break;
+                    return key;
                 }
                 scope = node;
             }
@@ -95,36 +84,17 @@ class DefaultSecretProvider
                         .from(base)
                         .append(remainder)
                         .join(Joiner.on('.'));
-                if (!operatorSecretFilter.test(key, true)) {
-                    throw new SecretAccessFilteredException(key, String.format(ENGLISH,
-                            "Unexpected access to a secret key '%s' aliased from '%s'", key, remounted));
-                }
-                return fetchSecret(remounted);
+                return remounted;
             }
             else if (node.isBoolean() && node.asBoolean()) {
                 // Reached a grant leaf.
-                if (!operatorSecretFilter.test(key, true)) {
-                    throw new SecretAccessFilteredException(key, String.format(ENGLISH,
-                            "Unexpected access to a secret key '%s'", key));
-                }
-                return fetchSecret(key);
+                logger.warn("Granting access to secrets in '_secrets' is deprecated. All secrets are accessible by default.");
+                return key;
             }
             else {
-                throw new AssertionError();
+                throw new ConfigException("Illegal value in _secrets: " + node);
             }
         }
-
-        //// Case 2.
-        // No explicit grant by users. Check key against system acl to see if access is granted by default.
-        if (secretAccessPolicy.isSecretAccessible(context, key)) {
-            if (!operatorSecretFilter.test(key, false)) {
-                throw new SecretAccessFilteredException(key, String.format(ENGLISH,
-                            "Undeclared access to a secret key '%s'. OperatorFactory must declare this key in getSecretAccessList method.", key));
-            }
-            return fetchSecret(key);
-        }
-
-        throw new SecretAccessDeniedException(key, "Access not granted for secret key: '" + key + "'");
     }
 
     private Optional<String> fetchSecret(String key)

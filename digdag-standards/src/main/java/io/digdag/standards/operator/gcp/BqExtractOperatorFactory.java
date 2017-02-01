@@ -9,10 +9,6 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.SecretAccessList;
-import io.digdag.util.ConfigSelector;
-
-import java.nio.file.Path;
 
 import static io.digdag.standards.operator.gcp.Bq.tableReference;
 
@@ -34,15 +30,6 @@ class BqExtractOperatorFactory
     public String getType()
     {
         return "bq_extract";
-    }
-
-    @Override
-    public SecretAccessList getSecretAccessList()
-    {
-        return ConfigSelector.builderOfScope("gcp")
-            .addSecretAccess("project")
-            .addSecretOnlyAccess("credential")
-            .build();
     }
 
     @Override

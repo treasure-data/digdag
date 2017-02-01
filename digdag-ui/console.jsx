@@ -327,17 +327,18 @@ const AttemptStatusView = ({attempt}) => {
   }
 }
 
-function attemptCanRetry (attempt) {
+function attemptCanRetryAll (attempt) {
   if (!attempt) {
     return false
   }
-  if (
-    (attempt.done && !attempt.success) ||
-    attempt.cancelRequested
-  ) {
-    return true
+  return attempt.done || attempt.cancelRequested
+}
+
+function attemptCanResume (attempt) {
+  if (!attempt) {
+    return false
   }
-  return false
+  return attempt.done && !attempt.success
 }
 
 const SessionStatusView = ({session}:{session: Session}) => {
@@ -497,15 +498,13 @@ class ScheduleListView extends React.Component {
   };
 
   state: {
-    schedules: [],
-    loading: boolean
+    schedules: []
   };
 
   constructor (props) {
     super(props)
     this.state = {
-      schedules: [],
-      loading: false
+      schedules: []
     }
   }
 
@@ -514,36 +513,29 @@ class ScheduleListView extends React.Component {
   }
 
   fetch () {
-    this.setState({loading: true})
     model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(({ schedules }) => {
-      this.setState({
-        schedules,
-        loading: false
-      })
+      this.setState({ schedules })
     })
   }
 
   disableSchedule () {
     const { schedules } = this.state || {}
-    this.setState({loading: true})
     model()
       .disableSchedule(schedules[0].id)
-      .then(() => this.setState({loading: false}))
       .then(() => this.fetch())
   }
 
   enableSchedule () {
     const schedule = this.state.schedules[0]
-    this.setState({loading: true})
     model()
       .enableSchedule(schedule.id)
-      .then(() => this.setState({loading: false}))
       .then(() => this.fetch())
   }
 
   render () {
-    const { schedules, loading } = this.state || {}
-    const canPause = schedules && schedules.length && !schedules[0].disabledAt
+    const { schedules } = this.state || {}
+    const hasSchedule = schedules && schedules.length
+    const isPaused = hasSchedule && !schedules[0].disabledAt
     const rows = (schedules || []).map(schedule => {
       return (
         <tr key={schedule.id}>
@@ -553,11 +545,10 @@ class ScheduleListView extends React.Component {
           <td><Link to={`/workflows/${schedule.workflow.id}`}>{schedule.workflow.name}</Link></td>
           <td>{schedule.nextRunTime}</td>
           <td>{schedule.nextScheduleTime}</td>
-          <td style={{ width: 60 }}>{statusButton}</td>
         </tr>
       )
     })
-    const statusButton = canPause ? (
+    const statusButton = isPaused ? (
       <button
         className='btn btn-sm btn-secondary pull-right'
         onClick={this.disableSchedule.bind(this)}
@@ -572,12 +563,11 @@ class ScheduleListView extends React.Component {
         RESUME
       </button>
     )
-    const loadingLabel = <button disabled className='btn btn-sm btn-info pull-right'>LOADING ...</button>
     return (
       <div className='row'>
         <h2>
           Scheduling
-          {loading ? loadingLabel : statusButton}
+          {hasSchedule ? statusButton : ''}
         </h2>
         <div className='table-responsive'>
           <table className='table table-striped table-hover table-condensed'>
@@ -803,12 +793,25 @@ class WorkflowView extends React.Component {
     return workflow.trim()
   }
 
+  runWorkflow () {
+    const sessionTime = moment().format()
+    const params = {}
+    model().startAttempt(this.props.workflow.id, sessionTime, params)
+  }
+
   render () {
     const wf = this.props.workflow
     return (
       <div>
         <div className='row'>
-          <h2>Workflow</h2>
+          <h2>Workflow
+          <button
+            className='btn btn-sm btn-success pull-right'
+            onClick={this.runWorkflow.bind(this)}
+          >
+            RUN
+          </button>
+          </h2>
           <table className='table table-condensed'>
             <tbody>
               <tr>
@@ -1049,107 +1052,98 @@ class AttemptView extends React.Component {
   }
 }
 
-const SessionView = withRouter(
-  class PlainSessionView extends React.Component {
+class SessionView extends React.Component {
 
-    props:{
-      router: any;
-      session: Session;
-    };
+  props:{
+    session: Session;
+  };
 
-    state = {
-      loading: false
-    };
-
-    retrySession () {
-      const { session, router } = this.props
-      this.setState({ loading: true })
-      model()
-        .retrySession(session, uuid.v4())
-        .then(() => router.push('/sessions'))
-    }
-
-    retrySessionWithLatestRevision () {
-      const { session, router } = this.props
-      this.setState({ loading: true })
-      model()
-        .retrySessionWithLatestRevision(session, uuid.v4())
-        .then(() => router.push('/sessions'))
-    }
-
-    render () {
-      const { loading } = this.state
-      const { session } = this.props
-      const { lastAttempt, project, workflow } = session
-      const canRetry = attemptCanRetry(lastAttempt)
-      return (
-        <div className='row'>
-          <h2>
-            Session
-            {canRetry &&
-              <button
-                className='btn btn-primary pull-right'
-                disabled={loading}
-                onClick={this.retrySession.bind(this)}
-              >
-                RETRY
-              </button>
-            }
-            {canRetry &&
-              <button
-                className='btn btn-success pull-right'
-                disabled={loading}
-                onClick={this.retrySessionWithLatestRevision.bind(this)}
-              >
-                RETRY LATEST
-              </button>
-            }
-          </h2>
-          <table className='table table-condensed'>
-            <tbody>
-              <tr>
-                <td>ID</td>
-                <td>{session.id}</td>
-              </tr>
-              <tr>
-                <td>Project</td>
-                <td><Link to={`/projects/${project.id}`}>{project.name}</Link></td>
-              </tr>
-              <tr>
-                <td>Workflow</td>
-                <td><MaybeWorkflowLink workflow={workflow} /></td>
-              </tr>
-              <tr>
-                <td>Revision</td>
-                <td><SessionRevisionView session={session} /></td>
-              </tr>
-              <tr>
-                <td>Session UUID</td>
-                <td>{session.sessionUuid}</td>
-              </tr>
-              <tr>
-                <td>Session Time</td>
-                <td><SessionTime t={session.sessionTime} /></td>
-              </tr>
-              <tr>
-                <td>Status</td>
-                <td><SessionStatusView session={session} /></td>
-              </tr>
-              <tr>
-                <td>Last Attempt</td>
-                <td><FullTimestamp showAgo={Boolean(true)} t={lastAttempt && lastAttempt.createdAt} /></td>
-              </tr>
-              <tr>
-                <td>Last Attempt Duration:</td>
-                <td><DurationView start={lastAttempt && lastAttempt.createdAt} end={lastAttempt && lastAttempt.finishedAt} /></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )
-    }
+  retryFailed () {
+    const { session } = this.props
+    model()
+      .resumeSessionWithLatestRevision(session, uuid.v4(), session.lastAttempt.id)
+      .then(() => this.forceUpdate())
   }
-)
+
+  retryAll () {
+    const { session } = this.props
+    model()
+      .retrySessionWithLatestRevision(session, uuid.v4())
+      .then(() => this.forceUpdate())
+  }
+
+  render () {
+    const { session } = this.props
+    const { lastAttempt, project, workflow } = session
+    const canRetryAll = attemptCanRetryAll(lastAttempt)
+    const canResume = attemptCanResume(lastAttempt)
+    return (
+      <div className='row'>
+        <h2>
+          Session
+          {canRetryAll &&
+            <button
+              className='btn btn-primary pull-right'
+              onClick={this.retryAll.bind(this)}
+            >
+              RETRY ALL
+            </button>
+          }
+          {canResume &&
+            <button
+              className='btn btn-success pull-right'
+              onClick={this.retryFailed.bind(this)}
+              style={{marginRight: '0.5em'}}
+            >
+              RETRY FAILED
+            </button>
+          }
+        </h2>
+        <table className='table table-condensed'>
+          <tbody>
+            <tr>
+              <td>ID</td>
+              <td>{session.id}</td>
+            </tr>
+            <tr>
+              <td>Project</td>
+              <td><Link to={`/projects/${project.id}`}>{project.name}</Link></td>
+            </tr>
+            <tr>
+              <td>Workflow</td>
+              <td><MaybeWorkflowLink workflow={workflow} /></td>
+            </tr>
+            <tr>
+              <td>Revision</td>
+              <td><SessionRevisionView session={session} /></td>
+            </tr>
+            <tr>
+              <td>Session UUID</td>
+              <td>{session.sessionUuid}</td>
+            </tr>
+            <tr>
+              <td>Session Time</td>
+              <td><SessionTime t={session.sessionTime} /></td>
+            </tr>
+            <tr>
+              <td>Status</td>
+              <td><SessionStatusView session={session} /></td>
+            </tr>
+            <tr>
+              <td>Last Attempt</td>
+              <td><FullTimestamp showAgo={Boolean(true)} t={lastAttempt && lastAttempt.createdAt} /></td>
+            </tr>
+            <tr>
+              <td>Last Attempt Duration:</td>
+              <td><DurationView start={lastAttempt && lastAttempt.createdAt} end={lastAttempt && lastAttempt.finishedAt} /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+}
+
 
 const SessionTime = ({t}:{t:?string}) =>
   t ? <span>{t}</span> : null

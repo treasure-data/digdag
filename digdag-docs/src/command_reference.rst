@@ -225,7 +225,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.2
+    $ digdag selfupdate 0.9.3
 
 Server-mode commands
 ----------------------------------
@@ -325,61 +325,14 @@ In the config file, following parameters are available
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
+* archive.type (type of project archiving, "db" or "s3". default: "db")
+* archive.s3.endpoint (string. default: "s3.amazonaws.com")
+* archive.s3.bucket (string)
+* archive.s3.path (string)
+* archive.s3.credentials.access-key-id (string. default: instance profile)
+* archive.s3.credentials.secret-access-key (string. default: instance profile)
 * digdag.secret-access-policy-file (filename)
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
-
-Secret Access Policy File
-*************************
-
-The secret access policy specifies which secrets operators can access by default, without needing to explicitly grant secret access in the workflow definition file.
-
-Example:
-
-.. code-block:: none
-
-  digdag.secret-access-policy-file = secret-access-policy.yaml
-
-.. code-block:: yaml
-
-  # secret-access-policy.yaml
-  operators:
-    mail:
-      secrets:
-        - mail.*
-    pg:
-      secrets:
-        - pg.*
-    s3_wait:
-      secrets:
-        - aws.*
-    td:
-      secrets:
-        - td.*
-    td_load:
-      secrets:
-        - td.*
-    td_for_each:
-      secrets:
-        - td.*
-    td_run:
-      secrets:
-        - td.*
-    td_ddl:
-      secrets:
-        - td.*
-    td_partial_delete:
-      secrets:
-        - td.*
-    td_table_export:
-      secrets:
-        - td.*
-        - aws.*
-    td_wait:
-      secrets:
-        - td.*
-    td_wait_table:
-      secrets:
-        - td.*
 
 
 Secret Encryption Key
@@ -745,9 +698,7 @@ secrets
 
 Digdag provides basic secret management that can be used to securely provide e.g. passwords and api keys etc to operators.
 
-Secrets are handled separately from normal workflow parameters and are stored encrypted by the server. Workflow operators
-can only access secrets that they are permitted access to by server policy or explicitly granted access to by the workflow
-author using the `_secrets` directive.
+Secrets are handled separately from normal workflow parameters and are stored encrypted by the server. Local secrets are stored in the user home directory.
 
 .. code-block:: console
 
@@ -806,6 +757,26 @@ To delete secrets, use the `--delete` command.
 .. code-block:: console
 
     $ digdag secrets --project <project> --delete foo bar
+
+Secrets can also be used in local mode. Local secrets are used when running workflows in local mode using `digdag run`.
+
+.. code-block:: console
+
+    $ digdag secrets --local
+
+The above command lists all local secrets.
+
+.. code-block:: console
+
+    $ digdag secrets --local --set foo
+
+The above command sets the local secret `foo`.
+
+.. code-block:: console
+
+    $ digdag secrets --local --delete foo bar
+
+The above command deletes the local secrets `foo` and `bar`.
 
 Common options
 ----------------------------------

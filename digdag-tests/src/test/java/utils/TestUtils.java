@@ -1,5 +1,12 @@
 package utils;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,11 +21,11 @@ import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.Version;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -53,6 +60,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,8 +70,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,7 +84,7 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
-import static io.digdag.core.Version.buildVersion;
+import static io.digdag.util.RetryExecutor.retryExecutor;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -107,12 +117,12 @@ public class TestUtils
 
     public static CommandStatus main(String... args)
     {
-        return main(buildVersion(), args);
+        return main(LocalVersion.of(), args);
     }
 
     public static CommandStatus main(InputStream in, String... args)
     {
-        return main(buildVersion(), in, asList(args));
+        return main(LocalVersion.of(), in, asList(args));
     }
 
     public static CommandStatus main(Map<String, String> env, String... args)
@@ -125,27 +135,27 @@ public class TestUtils
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         InputStream in = new ByteArrayInputStream(new byte[0]);
-        int code = main(env, buildVersion(), args, out, err, in);
+        int code = main(env, LocalVersion.of(), args, out, err, in);
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
     public static CommandStatus main(Collection<String> args)
     {
-        return main(buildVersion(), args);
+        return main(LocalVersion.of(), args);
     }
 
-    public static CommandStatus main(Version localVersion, String... args)
+    public static CommandStatus main(LocalVersion localVersion, String... args)
     {
         return main(localVersion, asList(args));
     }
 
-    public static CommandStatus main(Version localVersion, Collection<String> args)
+    public static CommandStatus main(LocalVersion localVersion, Collection<String> args)
     {
         InputStream in = new ByteArrayInputStream(new byte[0]);
         return main(localVersion, in, args);
     }
 
-    public static CommandStatus main(Version localVersion, InputStream in, Collection<String> args)
+    public static CommandStatus main(LocalVersion localVersion, InputStream in, Collection<String> args)
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -153,13 +163,14 @@ public class TestUtils
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
-    public static int main(Map<String, String> env, Version localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
+    public static int main(Map<String, String> env, LocalVersion localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
     {
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            Main main = new Main(localVersion, env, outp, errp, in);
+            Main main = new Main(localVersion.getVersion(), env, outp, errp, in);
+            System.setProperty("io.digdag.cli.versionCheckMode", localVersion.isBatchModeCheck() ? "batch" : "interactive");
             return main.cli(args.stream().toArray(String[]::new));
         }
         catch (RuntimeException | UnsupportedEncodingException e) {
@@ -186,13 +197,41 @@ public class TestUtils
     public static void fakeHome(String home, Action a)
             throws Exception
     {
-        String orig = System.setProperty("user.home", home);
+        withSystemProperty("user.home", home, a);
+    }
+
+    public static void withSystemProperty(String key, String value, Action a)
+            throws Exception
+    {
+        withSystemProperties(ImmutableMap.of(key, value), a);
+    }
+
+    private static final Object NOT_PRESENT = new Object();
+
+    public static void withSystemProperties(Map<String, String> props, Action a)
+            throws Exception
+    {
+        Properties systemProperties = System.getProperties();
+        Map<String, Object> prev = new HashMap<>();
+        for (String key : props.keySet()) {
+            if (systemProperties.contains(key)) {
+                prev.put(key, systemProperties.getProperty(key));
+            } else {
+                prev.put(key, NOT_PRESENT);
+            }
+        }
         try {
-            Files.createDirectories(Paths.get(home).resolve(".config").resolve("digdag"));
+            systemProperties.putAll(props);
             a.run();
         }
         finally {
-            System.setProperty("user.home", orig);
+            for (Map.Entry<String, Object> e : prev.entrySet()) {
+                if (e.getValue() == NOT_PRESENT) {
+                    systemProperties.remove(e.getKey());
+                } else {
+                    systemProperties.put(e.getKey(), e.getValue());
+                }
+            }
         }
     }
 
@@ -397,11 +436,7 @@ public class TestUtils
         return pushProject(endpoint, project, projectName);
     }
 
-    public static Id pushProject(String endpoint, Path project, String projectName) {
-        return pushProject(endpoint, project, projectName, ImmutableMap.of());
-    }
-
-    public static Id pushProject(String endpoint, Path project, String projectName, Map<String, String> params)
+    public static Id pushProject(String endpoint, Path project, String projectName)
     {
         List<String> command = new ArrayList<>();
         command.addAll(asList(
@@ -410,7 +445,6 @@ public class TestUtils
                 projectName,
                 "-c", "/dev/null",
                 "-e", endpoint));
-        params.forEach((k, v) -> command.addAll(asList("-p", k + "=" + v)));
         CommandStatus pushStatus = main(command);
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
@@ -694,5 +728,38 @@ public class TestUtils
                         };
                     }
                 }).start();
+    }
+
+    public static void s3Put(AmazonS3 s3, String bucket, String key, String resource)
+            throws IOException
+    {
+        logger.info("put {} -> s3://{}/{}", resource, bucket, key);
+        URL resourceUrl = Resources.getResource(resource);
+        byte[] bytes = Resources.toByteArray(resourceUrl);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(bytes.length);
+        s3.putObject(bucket, key, new ByteArrayInputStream(bytes), metadata);
+    }
+
+    public static void s3DeleteRecursively(AmazonS3 s3, String bucket, String prefix)
+            throws Exception
+    {
+        ListObjectsRequest request = new ListObjectsRequest()
+                .withBucketName(bucket)
+                .withPrefix(prefix);
+
+        while (true) {
+            ObjectListing listing = s3.listObjects(request);
+            String[] keys = listing.getObjectSummaries().stream().map(S3ObjectSummary::getKey).toArray(String[]::new);
+            for (String key : keys) {
+                logger.info("delete s3://{}/{}", bucket, key);
+            }
+            retryExecutor()
+                    .retryIf(e -> e instanceof AmazonServiceException)
+                    .run(() -> s3.deleteObjects(new DeleteObjectsRequest(bucket).withKeys(keys)));
+            if (listing.getNextMarker() == null) {
+                break;
+            }
+        }
     }
 }

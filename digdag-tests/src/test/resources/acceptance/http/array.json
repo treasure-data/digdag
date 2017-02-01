@@ -1,1 +1,1 @@
-[1, 2, "hello", true]
+[1, 2, "hello", true, "secret_content_value_1", "foo_secret_content_value_2_bar"]

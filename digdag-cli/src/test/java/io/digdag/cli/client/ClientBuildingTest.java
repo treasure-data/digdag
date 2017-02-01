@@ -1,21 +1,14 @@
 package io.digdag.cli.client;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Binder;
-import com.google.inject.Guice;
-import com.google.inject.Module;
-import io.digdag.cli.SystemExitException;
-import io.digdag.core.Environment;
 import org.junit.Test;
 
 import io.digdag.client.DigdagClient;
 
-import static io.digdag.core.Version.buildVersion;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
