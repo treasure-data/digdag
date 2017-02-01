@@ -38,6 +38,11 @@ public class InProcessTaskServerApi
         }
     }
 
+    public TaskQueueClient getQueueClient()
+    {
+        return directQueueClient;
+    }
+
     @Override
     public void interruptLocalWait()
     {

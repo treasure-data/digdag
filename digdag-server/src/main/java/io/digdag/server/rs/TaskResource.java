@@ -4,13 +4,14 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.agent.InProcessTaskCallbackApi;
+import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.client.api.RestTaskFailedCallback;
-import io.digdag.client.api.RestTaskHeartbeatCallback;
 import io.digdag.client.api.RestTaskRetriedCallback;
 import io.digdag.client.api.RestTaskSucceededCallback;
 import io.digdag.core.agent.AgentId;
@@ -22,60 +23,50 @@ import io.digdag.core.session.SessionStoreManager;
 public class TaskResource
     extends AuthenticatedResource
 {
-    // POST /api/agent/heartbeat                             # extend lock expire timeout of tasks
-    // POST /api/tasks/{id}/success                          # set success state to a task
-    // POST /api/tasks/{id}/fail                             # set error state to a task
-    // POST /api/tasks/{id}/retry                            # retry a task
+    // POST /api/tasks/{id}/succeeded                        # set success state to a task
+    // POST /api/tasks/{id}/failed                           # set error state to a task
+    // POST /api/tasks/{id}/retried                          # retry a task
     // POST /api/tasks/{id}/secrets/{key}                    # get a secret
 
-    private final SessionStoreManager sm;
-    private final InProcessTaskCallbackApi api;
+    private final WorkflowExecutor exec;
 
     @Inject
     public TaskResource(
-            SessionStoreManager sm,
-            InProcessTaskCallbackApi api)
+            WorkflowExecutor exec)
     {
-        this.sm = sm;
-        this.api = api;
+        this.exec = exec;
     }
 
-    @Path("/api/agent/heartbeat")
+    @Path("/api/tasks/{id}/succeeded")
     @POST
-    public void heartbeat(RestTaskHeartbeatCallback callback)
-    {
-        // TODO exception handling if necessary
-        api.taskHeartbeat(getSiteId(),
-                callback.getLockIds(), AgentId.of(callback.getAgentId()), callback.getLockSeconds());
-    }
-
-    @Path("/api/tasks/{id}/success")
-    @POST
-    public void success(@PathParam("id") long taskId,
+    public void succeeded(@PathParam("id") long taskId,
             RestTaskSucceededCallback callback)
     {
+        // TODO verify ResourceNotFoundException if site id is wrong
         TaskResult taskResult = callback.getTaskResult().convert(TaskResult.class);
-        api.taskSucceeded(getSiteId(),
+        exec.taskSucceeded(getAgentSiteId(),
                 taskId, callback.getLockId(), AgentId.of(callback.getAgentId()),
                 taskResult);
     }
 
-    @Path("/api/tasks/{id}/fail")
+    @Path("/api/tasks/{id}/failed")
     @POST
-    public void fail(@PathParam("id") long taskId,
+    public void failed(@PathParam("id") long taskId,
             RestTaskFailedCallback callback)
     {
-        api.taskFailed(getSiteId(),
+        // TODO verify ResourceNotFoundException if site id is wrong
+        exec.taskFailed(getAgentSiteId(),
                 taskId, callback.getLockId(), AgentId.of(callback.getAgentId()),
                 callback.getError());
     }
 
-    @Path("/api/tasks/{id}/retry")
+    @Path("/api/tasks/{id}/retried")
     @POST
-    public void retry(@PathParam("id") long taskId,
+    public void retried(@PathParam("id") long taskId,
             RestTaskRetriedCallback callback)
     {
-        api.retryTask(getSiteId(),
+        // TODO verify ResourceNotFoundException if site id is wrong
+        exec.retryTask(getAgentSiteId(),
                 taskId, callback.getLockId(), AgentId.of(callback.getAgentId()),
                 callback.getRetryInterval(), callback.getRetryStateParams(),
                 callback.getError());

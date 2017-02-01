@@ -49,6 +49,7 @@ public class AuthRequestFilter
             requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create()));
             requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
             requestContext.setProperty("admin", result.isAdmin());
+            requestContext.setProperty("superAgent", result.isSuperAgent());
         }
         else {
             requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));

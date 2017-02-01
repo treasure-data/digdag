@@ -14,4 +14,9 @@ public interface RestTaskFailedCallback
     String getAgentId();
 
     Config getError();
+
+    static ImmutableRestTaskFailedCallback.Builder builder()
+    {
+        return ImmutableRestTaskFailedCallback.builder();
+    }
 }

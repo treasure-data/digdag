@@ -19,4 +19,9 @@ public interface RestTaskRetriedCallback
     Config getRetryStateParams();
 
     Optional<Config> getError();
+
+    static ImmutableRestTaskRetriedCallback.Builder builder()
+    {
+        return ImmutableRestTaskRetriedCallback.builder();
+    }
 }

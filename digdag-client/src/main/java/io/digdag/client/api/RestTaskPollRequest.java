@@ -7,17 +7,21 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(as = ImmutableRestTaskHeartbeatCallback.class)
-public interface RestTaskHeartbeatCallback
+@JsonDeserialize(as = ImmutableRestTaskPollRequest.class)
+public interface RestTaskPollRequest
 {
-    List<String> getLockIds();
+    Optional<String> getQueueName();
 
     String getAgentId();
 
+    int getCount();
+
+    int getMaxSleepMillis();
+
     int getLockSeconds();
 
-    static ImmutableRestTaskHeartbeatCallback.Builder builder()
+    static ImmutableRestTaskPollRequest.Builder builder()
     {
-        return ImmutableRestTaskHeartbeatCallback.builder();
+        return ImmutableRestTaskPollRequest.builder();
     }
 }

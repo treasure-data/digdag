@@ -57,7 +57,14 @@ public interface Authenticator
         int getSiteId();
 
         @Value.Default
-        default boolean isAdmin() {
+        default boolean isAdmin()
+        {
+            return false;
+        }
+
+        @Value.Default
+        default boolean isSuperAgent()
+        {
             return false;
         }
 
@@ -68,15 +75,18 @@ public interface Authenticator
 
         Optional<Supplier<Map<String, String>>> getSecrets();
 
-        static Builder builder() {
+        static Builder builder()
+        {
             return ImmutableResult.builder();
         }
 
-        interface Builder {
+        interface Builder
+        {
             Builder siteId(int siteId);
             Builder userInfo(Config userInfo);
             Builder secrets(Supplier<Map<String, String>> secrets);
             Builder isAdmin(boolean admin);
+            Builder isSuperAgent(boolean superAgent);
             Builder errorMessage(String errorMessage);
             Result build();
         }

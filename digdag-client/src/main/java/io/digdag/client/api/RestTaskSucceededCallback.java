@@ -14,4 +14,9 @@ public interface RestTaskSucceededCallback
     String getAgentId();
 
     Config getTaskResult();
+
+    static ImmutableRestTaskSucceededCallback.Builder builder()
+    {
+        return ImmutableRestTaskSucceededCallback.builder();
+    }
 }
