@@ -27,4 +27,16 @@ public interface Id
             throw new JsonMappingException("Invalid ID. Expected string but got " + node);
         }
     }
+
+    default int asInt()
+        throws NumberFormatException
+    {
+        return Integer.parseInt(get());
+    }
+
+    default long asLong()
+        throws NumberFormatException
+    {
+        return Long.parseLong(get());
+    }
 }
