@@ -21,7 +21,7 @@ import Duration from 'duration'
 import uuid from 'node-uuid'
 import jQuery from 'jquery'
 import ReactInterval from 'react-interval'
-import {Buffer} from 'buffer'
+import { Buffer } from 'buffer/'
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -208,6 +208,8 @@ class CodeViewer extends React.Component {
 }
 
 class CodeEditor extends React.Component {
+  _editor: any;
+
   render () {
     const editorOptions = {
       enableLinking: false,
@@ -217,12 +219,12 @@ class CodeEditor extends React.Component {
       showLineNumbers: true
     }
     return (
-      <CodeViewer editorOptions={editorOptions} ref={"viewer"} {...this.props} />
+      <CodeViewer editorOptions={editorOptions} ref={(value) => { this._editor = value }} {...this.props} />
     )
   }
 
   getValue () {
-    return this.refs["viewer"] ? this.refs["viewer"].getValue() : null
+    return this._editor && this._editor.getValue()
   }
 }
 
@@ -1067,9 +1069,12 @@ class SessionView extends React.Component {
 
   retryFailed () {
     const { session } = this.props
-    model()
-      .resumeSessionWithLatestRevision(session, uuid.v4(), session.lastAttempt.id)
-      .then(() => this.forceUpdate())
+    const { lastAttempt } = session
+    if (lastAttempt) {
+      model()
+        .resumeSessionWithLatestRevision(session, uuid.v4(), lastAttempt.id)
+        .then(() => this.forceUpdate())
+    }
   }
 
   retryAll () {
@@ -1957,6 +1962,7 @@ class FileEditor extends React.Component {
   props:{
     file: ?TarEntry;
     projectArchive: ?ProjectArchive;
+    onDelete: Function;
   }
 
   state:{
@@ -2020,6 +2026,8 @@ class FileEditor extends React.Component {
 }
 
 class ProjectArchiveEditor extends React.Component {
+  _editors: Object;
+
   props:{
     projectArchive: ?ProjectArchive;
   }
@@ -2033,6 +2041,7 @@ class ProjectArchiveEditor extends React.Component {
     this.state = {
       entries: []
     }
+    this._editors = {}
   }
 
   handleDelete (key) {
@@ -2078,7 +2087,7 @@ class ProjectArchiveEditor extends React.Component {
         <FileEditor
           newFile={entry.newFile}
           key={entry.key}
-          ref={entry.key}
+          ref={(value) => { this._editors[entry.key] = value }}
           file={entry.file}
           projectArchive={entry.projectArchive}
           onDelete={this.handleDelete.bind(this, entry.key)}
@@ -2096,7 +2105,7 @@ class ProjectArchiveEditor extends React.Component {
 
   getFiles(): Array<TarEntry> {
     return this.state.entries.map(entry => {
-      const editor = this.refs[entry.key]
+      const editor = this._editors[entry.key]
       return ({name: editor.getName(), buffer: editor.getFileContents()})
     })
   }
@@ -2134,8 +2143,9 @@ class ProjectEditor extends React.Component {
   }
 
   fetch () {
-    if (this.props.projectId) {
-      model().fetchProject(this.props.projectId).then(project => {
+    const projectId = this.props.projectId
+    if (projectId) {
+      model().fetchProject(projectId).then(project => {
         if (!this.ignoreLastFetch) {
           this.setState({project: project, projectName: project.name})
         }
@@ -2151,6 +2161,8 @@ class ProjectEditor extends React.Component {
       })
     }
   }
+
+  _editor: any
 
   render () {
     const project = this.state.project
@@ -2207,7 +2219,7 @@ class ProjectEditor extends React.Component {
         {header}
         <button className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
         <span style={{paddingLeft: "0.5em"}}>{this.state.saveMessage}</span>
-        <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref="editor" />
+        <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref={(value) => { this._editor = value }} />
       </div>
     )
   }
@@ -2221,7 +2233,7 @@ class ProjectEditor extends React.Component {
   }
 
   save () {
-    const files = this.refs.editor.getFiles()
+    const files = this._editor.getFiles()
     const archive = new Tar()
     var out = ''
     for (let file of files) {

@@ -366,7 +366,7 @@ export class Model {
     )
   }
 
-  resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: number) {
+  resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: string) {
     const { lastAttempt, project, workflow } = session
     const model = this
     return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
@@ -464,10 +464,10 @@ export class Model {
       credentials: 'include',
       headers: Object.assign({}, this.headers(), {
         'Content-Type': contentType,
-        'Content-Length': body.size,
+        'Content-Length': body.byteLength.toString(),
       }),
       method: 'PUT',
-      body: body
+      body: new Blob([body], {type: contentType})
     }).then(response => {
       if (!response.ok) {
         return response.text().then(text => {
