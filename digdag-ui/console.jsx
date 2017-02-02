@@ -21,7 +21,7 @@ import Duration from 'duration'
 import uuid from 'node-uuid'
 import jQuery from 'jquery'
 import ReactInterval from 'react-interval'
-import {Buffer} from 'buffer/'
+import {Buffer} from 'buffer'
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -106,6 +106,20 @@ class CodeViewer extends React.Component {
     className: ?string;
     language: string;
     value: string;
+    editorOptions: Object;
+  }
+
+  static defaultProps = {
+    editorOptions: {
+      enableLinking: true,
+      highlightActiveLine: false,
+      readOnly: true,
+      showLineNumbers: false,
+      showGutter: false,
+      showPrintMargin: false,
+      tabSize: 2,
+      useSoftTabs: true
+    }
   }
 
   /* eslint-disable */
@@ -139,16 +153,7 @@ class CodeViewer extends React.Component {
     const Ace = require('brace')
     require('./ace-digdag')
     this._editor = Ace.edit(this.editor)
-    this._editor.setOptions({
-      enableLinking: true,
-      highlightActiveLine: false,
-      readOnly: true,
-      showLineNumbers: false,
-      showGutter: false,
-      showPrintMargin: false,
-      tabSize: 2,
-      useSoftTabs: true
-    })
+    this._editor.setOptions(this.props.editorOptions)
     this._editor.on('click', this.editorClick.bind(this))
     this._updateEditor(this.props)
   }
@@ -202,21 +207,15 @@ class CodeViewer extends React.Component {
   }
 }
 
-class CodeEditor extends CodeViewer {
-  constructor (props) {
-    super(props)
+const CodeEditor = (props) => {
+  const editorOptions = {
+    enableLinking: false,
+    highlightActiveLine: true,
+    readOnly: false,
+    showGutter: true,
+    showLineNumbers: true
   }
-
-  componentDidMount () {
-    super.componentDidMount();
-    this._editor.setOptions({
-      enableLinking: false,
-      highlightActiveLine: true,
-      readOnly: false,
-      showGutter: true,
-      showLineNumbers: true,
-    })
-  }
+  return <CodeViewer editorOptions={editorOptions} {...this.props} />
 }
 
 class CacheLoader extends React.Component {
@@ -1978,9 +1977,7 @@ class FileEditor extends React.Component {
     const buffer = new Buffer(text)
     const ab = new ArrayBuffer(buffer.length);
     const view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
-      view[i] = buffer[i];
-    }
+    view.set(buffer);
     return ab;
   }
 
@@ -1999,7 +1996,7 @@ class FileEditor extends React.Component {
                   language='yaml'  // TODO how to let ace guess language?
                   value={file ? fileString(file.name, this.props.projectArchive) : ''}
                   style={{ width }}
-                  ref={(vlaue) => { this.editor = vlaue }}
+                  ref={(value) => { this.editor = value }}
                 />
             }
           </Measure>
@@ -2038,7 +2035,7 @@ class ProjectArchiveEditor extends React.Component {
   handleAddFile () {
     const key = uuid.v4()
     this.state.entries.unshift({
-      newFile: Boolean(true),
+      newFile: true,
       key: key,
       file: null,
       projectArchive: null,
@@ -2049,7 +2046,7 @@ class ProjectArchiveEditor extends React.Component {
   setInitialEntries() {
     const projectFiles = this.props.projectArchive ? this.props.projectArchive.files : []
     const entries = projectFiles.map(file => ({
-      newFile: Boolean(false),
+      newFile: false,
       key: file.name,
       file: file,
       projectArchive: this.props.projectArchive,
@@ -2112,10 +2109,6 @@ class ProjectEditor extends React.Component {
     projectArchive: null,
     saveMessage: "",
   };
-
-  constructor (props) {
-    super(props)
-  }
 
   componentDidMount () {
     this.fetch()
