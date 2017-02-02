@@ -207,15 +207,23 @@ class CodeViewer extends React.Component {
   }
 }
 
-const CodeEditor = (props) => {
-  const editorOptions = {
-    enableLinking: false,
-    highlightActiveLine: true,
-    readOnly: false,
-    showGutter: true,
-    showLineNumbers: true
+class CodeEditor extends React.Component {
+  render () {
+    const editorOptions = {
+      enableLinking: false,
+      highlightActiveLine: true,
+      readOnly: false,
+      showGutter: true,
+      showLineNumbers: true
+    }
+    return (
+      <CodeViewer editorOptions={editorOptions} ref={"viewer"} {...this.props} />
+    )
   }
-  return <CodeViewer editorOptions={editorOptions} {...this.props} />
+
+  getValue () {
+    return this.refs["viewer"] ? this.refs["viewer"].getValue() : null
+  }
 }
 
 class CacheLoader extends React.Component {
@@ -2036,7 +2044,7 @@ class ProjectArchiveEditor extends React.Component {
     const key = uuid.v4()
     this.state.entries.unshift({
       newFile: true,
-      key: key,
+      key,
       file: null,
       projectArchive: null,
     })
@@ -2198,7 +2206,7 @@ class ProjectEditor extends React.Component {
         <h2>{title}</h2>
         {header}
         <button className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
-        <span>{this.state.saveMessage}</span>
+        <span style={{paddingLeft: "0.5em"}}>{this.state.saveMessage}</span>
         <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref="editor" />
       </div>
     )
@@ -2229,7 +2237,7 @@ class ProjectEditor extends React.Component {
       })
     }).catch((error) => {
       console.log(`Saving project failed`, error)
-      this.setState({saveMessage: "Error occured."})
+      this.setState({saveMessage: `Failed to store: ${error.message}`})
     })
   }
 }
