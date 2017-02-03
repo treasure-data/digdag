@@ -101,6 +101,7 @@ public class DatabaseFactory
         return new WorkflowExecutor(
                 getProjectStoreManager(),
                 getSessionStoreManager(),
+                tm,
                 new NullTaskQueueDispatcher(),
                 new WorkflowCompiler(),
                 configFactory,
