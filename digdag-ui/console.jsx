@@ -11,6 +11,7 @@ import _ from 'lodash'
 import React from 'react'
 import { Router, Link, Route, browserHistory, withRouter } from 'react-router'
 import Measure from 'react-measure'
+import Tar from 'tar-js'
 import moment from 'moment'
 import 'moment-duration-format'
 import pako from 'pako'
@@ -20,6 +21,7 @@ import Duration from 'duration'
 import uuid from 'node-uuid'
 import jQuery from 'jquery'
 import ReactInterval from 'react-interval'
+import { Buffer } from 'buffer/'
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -35,6 +37,7 @@ import type {
   Project,
   ProjectArchive,
   Session,
+  TarEntry,
   Task,
   Workflow
 } from './model'
@@ -103,6 +106,20 @@ class CodeViewer extends React.Component {
     className: ?string;
     language: string;
     value: string;
+    editorOptions: Object;
+  }
+
+  static defaultProps = {
+    editorOptions: {
+      enableLinking: true,
+      highlightActiveLine: false,
+      readOnly: true,
+      showLineNumbers: false,
+      showGutter: false,
+      showPrintMargin: false,
+      tabSize: 2,
+      useSoftTabs: true
+    }
   }
 
   /* eslint-disable */
@@ -124,20 +141,19 @@ class CodeViewer extends React.Component {
     Ace.acequire('ace/ext/linking')
   }
 
+  getValue () {
+    if (this._editor) {
+      return this._editor.getValue()
+    } else {
+      return this.props.value
+    }
+  }
+
   componentDidMount () {
     const Ace = require('brace')
     require('./ace-digdag')
     this._editor = Ace.edit(this.editor)
-    this._editor.setOptions({
-      enableLinking: true,
-      highlightActiveLine: false,
-      readOnly: true,
-      showLineNumbers: false,
-      showGutter: false,
-      showPrintMargin: false,
-      tabSize: 2,
-      useSoftTabs: true
-    })
+    this._editor.setOptions(this.props.editorOptions)
     this._editor.on('click', this.editorClick.bind(this))
     this._updateEditor(this.props)
   }
@@ -188,6 +204,27 @@ class CodeViewer extends React.Component {
         ref={(value) => { this.editor = value }}
       />
     )
+  }
+}
+
+class CodeEditor extends React.Component {
+  _editor: any;
+
+  render () {
+    const editorOptions = {
+      enableLinking: false,
+      highlightActiveLine: true,
+      readOnly: false,
+      showGutter: true,
+      showLineNumbers: true
+    }
+    return (
+      <CodeViewer editorOptions={editorOptions} ref={(value) => { this._editor = value }} {...this.props} />
+    )
+  }
+
+  getValue () {
+    return this._editor && this._editor.getValue()
   }
 }
 
@@ -629,7 +666,6 @@ class ProjectView extends React.Component {
     project: {},
     workflows: [],
     sessions: [],
-    archive: null
   };
 
   componentDidMount () {
@@ -703,6 +739,7 @@ class ProjectView extends React.Component {
         <div className='row'>
           <h2>Workflows</h2>
           <WorkflowListView workflows={this.state.workflows} />
+          <div><Link to={`/projects/${project.id}/edit`}>Edit workflows</Link></div>
         </div>
         <div className='row'>
           <h2>Sessions</h2>
@@ -821,6 +858,7 @@ class WorkflowView extends React.Component {
             </Measure>
           </pre>
         </div>
+        <div><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></div>
         <div className='row'>
           <h2>Sessions</h2>
           <SessionListView sessions={this.state.sessions} />
@@ -1031,9 +1069,12 @@ class SessionView extends React.Component {
 
   retryFailed () {
     const { session } = this.props
-    model()
-      .resumeSessionWithLatestRevision(session, uuid.v4(), session.lastAttempt.id)
-      .then(() => this.forceUpdate())
+    const { lastAttempt } = session
+    if (lastAttempt) {
+      model()
+        .resumeSessionWithLatestRevision(session, uuid.v4(), lastAttempt.id)
+        .then(() => this.forceUpdate())
+    }
   }
 
   retryAll () {
@@ -1792,6 +1833,7 @@ const ProjectsPage = (props:{}) =>
 const WorkflowsPage = () =>
   <div className='container-fluid'>
     <WorkflowsView />
+    <div><Link to={`/projects/new`}>New project</Link></div>
     <SessionsView />
   </div>
 
@@ -1913,6 +1955,314 @@ class WorkflowRevisionPage extends React.Component {
     )
   }
 }
+
+class FileEditor extends React.Component {
+  editor: ?CodeEditor
+
+  props:{
+    file: ?TarEntry;
+    projectArchive: ?ProjectArchive;
+    onDelete: Function;
+  }
+
+  state:{
+    name: string;
+  }
+
+  constructor (props) {
+    super(props)
+    this.state = {
+      name: props.file ? props.file.name : 'new.dig'
+    }
+  }
+
+  getName () {
+    return this.state.name
+  }
+
+  getFileContents () {
+    var text
+    if (this.editor) {
+      text = this.editor.getValue()
+    } else {
+      text = this.props.file ? fileString(this.props.file.name, this.props.projectArchive) : ''
+    }
+
+    const buffer = new Buffer(text)
+    const ab = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(ab);
+    view.set(buffer);
+    return ab;
+  }
+
+  render () {
+    const file = this.props.file
+    return (
+      <div>
+        <h3>
+          <input type="text" className="form-control" value={this.state.name} onChange={this.handleNameChange.bind(this)} />
+        </h3>
+        <pre>
+          <Measure>
+            { ({ width }) =>
+                <CodeEditor
+                  className='editor'
+                  language='yaml'  // TODO how to let ace guess language?
+                  value={file ? fileString(file.name, this.props.projectArchive) : ''}
+                  style={{ width }}
+                  ref={(value) => { this.editor = value }}
+                />
+            }
+          </Measure>
+        </pre>
+        <button className='btn btn-sm btn-error' onClick={this.props.onDelete}>Delete</button>
+      </div>
+    )
+  }
+
+  handleNameChange (event) {
+    this.setState({name: event.target.value});
+  }
+}
+
+class ProjectArchiveEditor extends React.Component {
+  _editors: Object;
+
+  props:{
+    projectArchive: ?ProjectArchive;
+  }
+
+  state:{
+    entries: [];
+  }
+
+  constructor (props) {
+    super(props)
+    this.state = {
+      entries: []
+    }
+    this._editors = {}
+  }
+
+  handleDelete (key) {
+    _.remove(this.state.entries, (file) => file.key === key)
+    this.setState({entries: this.state.entries})
+  }
+
+  handleAddFile () {
+    const key = uuid.v4()
+    this.state.entries.unshift({
+      newFile: true,
+      key,
+      file: null,
+      projectArchive: null,
+    })
+    this.setState({entries: this.state.entries})
+  }
+
+  setInitialEntries() {
+    const projectFiles = this.props.projectArchive ? this.props.projectArchive.files : []
+    const entries = projectFiles.map(file => ({
+      newFile: false,
+      key: file.name,
+      file: file,
+      projectArchive: this.props.projectArchive,
+    }))
+    this.setState({entries})
+  }
+
+  componentDidMount () {
+    this.setInitialEntries()
+  }
+
+  componentDidUpdate (prevProps) {
+    if (_.isEqual(prevProps, this.props)) {
+      return
+    }
+    this.setInitialEntries()
+  }
+
+  render () {
+    const editors = this.state.entries.map(entry =>
+        <FileEditor
+          newFile={entry.newFile}
+          key={entry.key}
+          ref={(value) => { this._editors[entry.key] = value }}
+          file={entry.file}
+          projectArchive={entry.projectArchive}
+          onDelete={this.handleDelete.bind(this, entry.key)}
+        />
+      )
+    return (
+      <div>
+        <div>
+          <button className='btn btn-sm' onClick={this.handleAddFile.bind(this)}>Add file</button>
+        </div>
+        {editors}
+      </div>
+    )
+  }
+
+  getFiles(): Array<TarEntry> {
+    return this.state.entries.map(entry => {
+      const editor = this._editors[entry.key]
+      return ({name: editor.getName(), buffer: editor.getFileContents()})
+    })
+  }
+}
+
+class ProjectEditor extends React.Component {
+  ignoreLastFetch:boolean;
+
+  props:{
+    projectId: ?string;
+  };
+
+  state = {
+    projectId: null,
+    project: null,
+    projectName: "new-project",
+    revisionName: uuid.v4(),
+    projectArchive: null,
+    saveMessage: "",
+  };
+
+  componentDidMount () {
+    this.fetch()
+  }
+
+  componentWillUnmount () {
+    this.ignoreLastFetch = true
+  }
+
+  componentDidUpdate (prevProps) {
+    if (_.isEqual(prevProps, this.props)) {
+      return
+    }
+    this.fetch()
+  }
+
+  fetch () {
+    const projectId = this.props.projectId
+    if (projectId) {
+      model().fetchProject(projectId).then(project => {
+        if (!this.ignoreLastFetch) {
+          this.setState({project: project, projectName: project.name})
+        }
+        return project
+      }).then(project => {
+        if (!this.ignoreLastFetch) {
+          model().fetchProjectArchiveWithRevision(project.id, project.revision).then(projectArchive => {
+            if (!this.ignoreLastFetch) {
+              this.setState({projectArchive})
+            }
+          })
+        }
+      })
+    }
+  }
+
+  _editor: any
+
+  render () {
+    const project = this.state.project
+    var title
+    var header
+    if (project) {
+      title = "Edit Workflows"
+      header = (
+        <table className='table table-condensed'>
+          <tbody>
+            <tr>
+              <td>ID</td>
+              <td>{project.id}</td>
+            </tr>
+            <tr>
+              <td>Name</td>
+              <td>{project.name}</td>
+            </tr>
+            <tr>
+              <td>Current revision</td>
+              <td>{project.revision}</td>
+            </tr>
+            <tr>
+              <td>Created</td>
+              <td><FullTimestamp showAgo={Boolean(true)} t={project.createdAt} /></td>
+            </tr>
+            <tr>
+              <td>Updated</td>
+              <td><FullTimestamp showAgo={Boolean(true)} t={project.updatedAt} /></td>
+            </tr>
+          </tbody>
+        </table>
+      )
+    } else {
+      title = "New Project"
+      header = (
+        <table className='table table-condensed'>
+          <tbody>
+            <tr>
+              <td>Name</td>
+              <input type="text" className="form-control" value={this.state.projectName} onChange={this.handleNameChange.bind(this)} />
+            </tr>
+            <tr>
+              <td>Revision</td>
+              <input type="text" className="form-control" value={this.state.revisionName} onChange={this.handleRevisionChange.bind(this)} />
+            </tr>
+          </tbody>
+        </table>
+      )
+    }
+    return (
+      <div className='row'>
+        <h2>{title}</h2>
+        {header}
+        <button className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
+        <span style={{paddingLeft: "0.5em"}}>{this.state.saveMessage}</span>
+        <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref={(value) => { this._editor = value }} />
+      </div>
+    )
+  }
+
+  handleNameChange(event) {
+    this.setState({projectName: event.target.value});
+  }
+
+  handleRevisionChange(event) {
+    this.setState({revisionName: event.target.value});
+  }
+
+  save () {
+    const files = this._editor.getFiles()
+    const archive = new Tar()
+    var out = ''
+    for (let file of files) {
+      out = archive.append(file.name, new Uint8Array(file.buffer))
+    }
+    const targz = pako.gzip(out)
+    model().putProject(this.state.projectName, this.state.revisionName, targz).then(project => {
+      this.setState({
+        projectId: project.id,
+        project: project,
+        revisionName: uuid.v4(),  // generate new revision name
+        saveMessage: `Revision ${this.state.revisionName} is saved.`,
+      })
+    }).catch((error) => {
+      console.log(`Saving project failed`, error)
+      this.setState({saveMessage: `Failed to store: ${error.message}`})
+    })
+  }
+}
+
+const NewProjectPage = (props:{}) =>
+  <div className='container-fluid'>
+    <ProjectEditor projectId={null} />
+  </div>
+
+const EditProjectPage = (props:{params: {projectId: string}}) =>
+  <div className='container-fluid'>
+    <ProjectEditor projectId={props.params.projectId} />
+  </div>
 
 const AttemptPage = ({params}:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
@@ -2232,7 +2582,9 @@ class ConsolePage extends React.Component {
             <Route component={AppWrapper}>
               <Route path='/' component={WorkflowsPage} />
               <Route path='/projects' component={ProjectsPage} />
+              <Route path='/projects/new' component={NewProjectPage} />
               <Route path='/projects/:projectId' component={ProjectPage} />
+              <Route path='/projects/:projectId/edit' component={EditProjectPage} />
               <Route path='/projects/:projectId/workflows/:workflowName' component={WorkflowPage} />
               <Route path='/workflows/:workflowId' component={WorkflowRevisionPage} />
               <Route path='/sessions/:sessionId' component={SessionPage} />

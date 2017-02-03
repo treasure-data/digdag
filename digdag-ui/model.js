@@ -313,7 +313,7 @@ export class Model {
       }
       return response.arrayBuffer().then(data => {
         return untar(pako.inflate(data)).then(files => {
-          return new ProjectArchive((files: Array<TarEntry>))
+          return new ProjectArchive((files))
         })
       })
     })
@@ -335,7 +335,21 @@ export class Model {
     })
   }
 
-  startAttempt (workflowId: string, sessionTime: string, params: object) {
+  putProject(projectName: string, revision: string, targz: ArrayBuffer): Promise<Project> {
+    return this.putBinary(`projects?project=${projectName}&revision=${revision}`, 'application/gzip', targz)
+  }
+
+  retrySession (session: Session, sessionUUID: string) {
+    const { lastAttempt } = session
+    return this.put('attempts', {
+      workflowId: session.workflow.id,
+      params: lastAttempt && lastAttempt.params,
+      sessionTime: session.sessionTime,
+      retryAttemptName: sessionUUID
+    })
+  }
+
+  startAttempt (workflowId: string, sessionTime: string, params: Object) {
     return this.put('attempts', { workflowId, sessionTime, params })
   }
 
@@ -352,7 +366,7 @@ export class Model {
     )
   }
 
-  resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: number) {
+  resumeSessionWithLatestRevision (session: Session, attemptName: string, attemptId: string) {
     const { lastAttempt, project, workflow } = session
     const model = this
     return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
@@ -440,6 +454,25 @@ export class Model {
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
+      }
+      return response.json()
+    })
+  }
+
+  putBinary (url: string, contentType: string, body: ArrayBuffer): Promise<*> {
+    return fetch(this.config.url + url, {
+      credentials: 'include',
+      headers: Object.assign({}, this.headers(), {
+        'Content-Type': contentType,
+        'Content-Length': body.byteLength.toString(),
+      }),
+      method: 'PUT',
+      body: new Blob([body], {type: contentType})
+    }).then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          throw new Error(`${text} (${response.statusText})`)
+        })
       }
       return response.json()
     })
