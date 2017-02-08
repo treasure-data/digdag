@@ -9,8 +9,8 @@ _export:
     #   b) Enable access for less secure apps at
     #      https://www.google.com/settings/security/lesssecureapps
     #      This works even if 2-Step Verification is not enabled.
-    # And then, set password on ~/.config/digdag/config
-    #      secrets.mail.password = "...password..."
+    # And then, execute to set password:
+    #      digdag secret --local --set mail.password=...password...
     host: smtp.gmail.com
     port: 587
     from: "you@gmail.com"
