@@ -64,6 +64,11 @@ public class CallIT
         Files.createDirectories(projectDir.resolve("sub").resolve("subsub"));
         Files.write(projectDir.resolve("sub").resolve("child.dig"), childWf.getBytes(UTF_8));
         Files.write(projectDir.resolve("sub").resolve("subsub").resolve("child.dig"), childWf.getBytes(UTF_8));
+
+        Files.createDirectories(projectDir.resolve("nested2").resolve("nested3"));
+        copyResource("acceptance/call/nested1.dig", projectDir.resolve("nested1.dig"));
+        copyResource("acceptance/call/nested2.dig", projectDir.resolve("nested2").resolve("nested2.dig"));
+        copyResource("acceptance/call/nested3.dig", projectDir.resolve("nested2").resolve("nested3").resolve("nested3.dig"));
     }
 
     @Test
@@ -135,5 +140,32 @@ public class CallIT
         assertThat(subPath.getFileName(), is(Paths.get("sub")));
         assertThat(subsubPath.getFileName(), is(Paths.get("subsub")));
         assertThat(subsubPath.getParent().getFileName(), is(Paths.get("sub")));
+    }
+
+    @Test
+    public void nestedWorkdir()
+            throws Exception
+    {
+        initCallProject();
+
+        CommandStatus status = main("run",
+                "-c", config.toString(),
+                "--project", projectDir.toString(),
+                "nested1.dig",
+                "-p", "outdir=" + root());
+        assertThat(status.errUtf8(), status.code(), is(0));
+
+        assertThat(Files.exists(root().resolve("nested1.out")), is(true));
+        assertThat(Files.exists(root().resolve("nested2.out")), is(true));
+        assertThat(Files.exists(root().resolve("nested3.out")), is(true));
+        assertThat(
+                new String(Files.readAllBytes(root().resolve("nested1.out")), UTF_8).trim(),
+                is("undefined"));
+        assertThat(
+                new String(Files.readAllBytes(root().resolve("nested2.out")), UTF_8).trim(),
+                is("nested2"));
+        assertThat(
+                new String(Files.readAllBytes(root().resolve("nested3.out")), UTF_8).trim(),
+                is("nested2/nested3"));
     }
 }

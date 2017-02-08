@@ -1,0 +1,5 @@
++nested2_out:
+  sh>: echo "${_workdir}" > ${outdir}/nested2.out
+
++nested2:
+  call>: nested3/nested3.dig
