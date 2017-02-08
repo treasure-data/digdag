@@ -82,8 +82,7 @@ public class ProjectArchiveLoader
         int posSlash = workflowName.lastIndexOf('/');
         if (posSlash >= 0) {
             // workflow is in a subdirectory. set _workdir accordingly.
-            String workdir = overrideParams.getOptional("_workdir", String.class)  // overrideParams has higher priority
-                .or(workflowName.substring(0, posSlash));
+            String workdir = workflowName.substring(0, posSlash);
             workflowFile.setBaseWorkdir(workdir);
         }
 
