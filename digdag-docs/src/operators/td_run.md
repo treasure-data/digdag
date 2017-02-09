@@ -1,0 +1,74 @@
+# td_run>: Treasure Data saved queries
+
+**td_run>** operator runs a query saved on Treasure Data.
+
+    _export:
+      td:
+        database: www_access
+
+    +step1:
+      td_run>: 12345
+    +step2:
+      td_run>: myquery2
+      session_time: 2016-01-01T01:01:01+0000
+
+## Examples
+
+  * [Examples](https://github.com/treasure-data/workflow-examples/tree/master/td_run).
+
+## Secrets
+
+* `td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
+
+## Options
+
+* `td_run>: SAVED_QUERY_ID or SAVED_QUERY_NAME`
+
+  Runs saved query. If number was specified, it's considered as an ID of saved query. Otherwise it's considered as a name of a saved query.
+
+  * Example: `td_run>: 12345`
+  * Example: `td_run>: my_query`
+
+* `download_file: NAME`
+
+  Saves query result as a local CSV file.
+
+  * Example: `download_file: output.csv`
+
+* `store_last_results: BOOLEAN`
+
+  Stores the first 1 row of the query results to `${td.last_results}` variable (default: false).
+  td.last_results is a map of column name and a value. To access to a single value, you can use `${td.last_results.my_count}` syntax.
+
+  * Example: `store_last_results: true`
+
+* `preview: BOOLEAN`
+
+  Tries to show some query results to confirm the results of a query.
+
+  * Example: `preview: true`
+
+* `endpoint: ADDRESS`
+
+  API endpoint (default: api.treasuredata.com).
+
+* `use_ssl: BOOLEAN`
+
+  Enable SSL (https) to access to the endpoint (default: true).
+
+
+## Output parameters
+
+* `td.last_job_id`
+
+  The job id this task executed.
+
+  * Example: `52036074`
+
+* `td.last_results`
+
+  The first 1 row of the query results as a map. This is available only when `store_last_results: true` is set.
+
+  * Example: `{"path":"/index.html","count":1}`
+
