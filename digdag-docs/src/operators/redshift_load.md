@@ -64,11 +64,11 @@
 
 ## Secrets
 
-* `aws.redshift.password: NAME`
+* **aws.redshift.password**: NAME
 
   Optional user password to use when connecting to the Redshift database.
 
-* `aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+* **aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
 
   The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
 
@@ -84,287 +84,481 @@
 
 ## Options
 
-* `database: NAME`
+* `database**: NAME
 
   Database name.
 
-  * Example: `database: my_db`
+  Examples:
 
-* `host: NAME`
+  ```
+  database: my_db
+  ```
+
+* **host**: NAME
 
   Hostname or IP address of the database.
 
-  * Example: `host: db.foobar.com`
+  Examples:
 
-* `port: NUMBER`
+  ```
+  host: db.foobar.com
+  ```
+
+* **port**: NUMBER
 
   Port number to connect to the database. *Default*: `5439`.
 
-  * Example: `port: 2345`
+  Examples:
 
-* `user: NAME`
+  ```
+  port: 2345
+  ```
+
+* **user**: NAME
 
   User to connect to the database
 
-  * Example: `user: app_user`
+  Examples:
 
-* `ssl: BOOLEAN`
+  ```
+  user: app_user
+  ```
+
+* **ssl**: BOOLEAN
 
   Enable SSL to connect to the database. *Default*: `false`.
 
-  * Example: `ssl: true`
+  Examples:
 
-* `schema: NAME`
+  ```
+  ssl: true
+  ```
+
+* **schema**: NAME
 
   Default schema name. *Default*: `public`.
 
-  * Example: `schema: my_schema`
+  Examples:
 
-* `strict_transaction: BOOLEAN`
+  ```
+  schema: my_schema
+  ```
+
+* **strict_transaction**: BOOLEAN
 
   Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: `true`.
   This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
 
-  * Example: `strict_transaction: false`
+  Examples:
 
-* `status_table_schema: NAME`
+  ```
+  strict_transaction: false
+  ```
+
+* **status_table_schema**: NAME
 
   Schema name of status table. *Default*: same as the value of `schema` option.
 
-  * Example: `status_table_schema: writable_schema`
+  Examples:
 
-* `status_table: NAME`
+  ```
+  status_table_schema: writable_schema
+  ```
+
+* **status_table**: NAME
 
   Table name prefix of status table. *Default*: `__digdag_status`.
 
-  * Example: `status_table: customized_status_table`
+  Examples:
 
-* `table: NAME`
+  ```
+  status_table: customized_status_table
+  ```
+
+* **table**: NAME
 
   Table name in Redshift database to be loaded data
 
-  * Example: `table: access_logs`
+  Examples:
 
-* `from: URI`
+  ```
+  table: access_logs
+  ```
+
+* **from**: URI
 
   Parameter mapped to `FROM` parameter of Redshift`s `COPY` statement
 
-  * Example: `from: s3://my-app-bucket/access_logs/today`
+  Examples:
 
-* `column_list: CSV`
+  ```
+  from: s3://my-app-bucket/access_logs/today
+  ```
+
+* **column_list**: CSV
 
   Parameter mapped to `COLUMN_LIST` parameter of Redshift`s `COPY` statement
 
-  * Example: `column_list: host, path, referer, code, agent, size, method`
+  Examples:
 
-* `manifest: BOOLEAN`
+  ```
+  column_list: host, path, referer, code, agent, size, method
+  ```
+
+* **manifest**: BOOLEAN
 
   Parameter mapped to `MANIFEST` parameter of Redshift`s `COPY` statement
 
-  * Example: `manifest: true`
+  Examples:
 
-* `encrypted: BOOLEAN`
+  ```
+  manifest: true
+  ```
+
+* **encrypted**: BOOLEAN
 
   Parameter mapped to `ENCRYPTED` parameter of Redshift`s `COPY` statement
 
-  * Example: `encrypted: true`
+  Examples:
 
-* `readratio: NUMBER`
+  ```
+  encrypted: true
+  ```
+
+* **readratio**: NUMBER
 
   Parameter mapped to `READRATIO` parameter of Redshift`s `COPY` statement
 
-  * Example: `readratio: 150`
+  Examples:
 
-* `region: NAME`
+  ```
+  readratio: 150
+  ```
+
+* **region**: NAME
 
   Parameter mapped to `REGION` parameter of Redshift`s `COPY` statement
 
-  * Example: `region: us-east-1`
+  Examples:
 
-* `csv: CHARACTER`
+  ```
+  region: us-east-1
+  ```
+
+* **csv**: CHARACTER
 
   Parameter mapped to `CSV` parameter of Redshift`s `COPY` statement.
   If you want to just use default quote charactor of `CSV` parameter, set empty string like `csv: ''`
 
-  * Example: `csv: "'"`
+  Examples:
 
-* `delimiter: CHARACTER`
+  ```
+  csv: "'"
+  ```
+
+* **delimiter**: CHARACTER
 
   Parameter mapped to `DELIMITER` parameter of Redshift`s `COPY` statement
 
-  * Example: `delimiter: "$"`
+  Examples:
 
-* `json: URI`
+  ```
+  delimiter: "$"
+  ```
+
+* **json**: URI
 
   Parameter mapped to `JSON` parameter of Redshift`s `COPY` statement
 
-  * Example: `json: auto`
-  * Example: `json: s3://my-app-bucket/access_logs/jsonpathfile`
+  Examples:
 
-* `avro: URI`
+  ```
+  json: auto
+  ```
+
+  Examples:
+
+  ```
+  json: s3://my-app-bucket/access_logs/jsonpathfile
+  ```
+
+* **avro**: URI
 
   Parameter mapped to `AVRO` parameter of Redshift`s `COPY` statement
 
-  * Example: `avro: auto`
-  * Example: `avro: s3://my-app-bucket/access_logs/jsonpathfile`
+  Examples:
 
-* `fixedwidth: CSV`
+  ```
+  avro: auto
+  ```
+
+  Examples:
+
+  ```
+  avro: s3://my-app-bucket/access_logs/jsonpathfile
+  ```
+
+* **fixedwidth**: CSV
 
   Parameter mapped to `FIXEDWIDTH` parameter of Redshift`s `COPY` statement
 
-  * Example: `fixedwidth: host:15,code:3,method:15`
+  Examples:
 
-* `gzip: BOOLEAN`
+  ```
+  fixedwidth: host:15,code:3,method:15
+  ```
+
+* **gzip**: BOOLEAN
 
   Parameter mapped to `GZIP` parameter of Redshift`s `COPY` statement
 
-  * Example: `gzip: true`
+  Examples:
 
-* `bzip2: BOOLEAN`
+  ```
+  gzip: true
+  ```
+
+* **bzip2**: BOOLEAN
 
   Parameter mapped to `BZIP2` parameter of Redshift`s `COPY` statement
 
-  * Example: `bzip2: true`
+  Examples:
 
-* `lzop: BOOLEAN`
+  ```
+  bzip2: true
+  ```
+
+* **lzop**: BOOLEAN
 
   Parameter mapped to `LZOP` parameter of Redshift`s `COPY` statement
 
-  * Example: `lzop: true`
+  Examples:
 
-* `acceptanydate: BOOLEAN`
+  ```
+  lzop: true
+  ```
+
+* **acceptanydate**: BOOLEAN
 
   Parameter mapped to `ACCEPTANYDATE` parameter of Redshift`s `COPY` statement
 
-  * Example: `acceptanydate: true`
+  Examples:
 
-* `acceptinvchars: CHARACTER`
+  ```
+  acceptanydate: true
+  ```
+
+* **acceptinvchars**: CHARACTER
 
   Parameter mapped to `ACCEPTINVCHARS` parameter of Redshift`s `COPY` statement
 
-  * Example: `acceptinvchars: "&"`
+  Examples:
 
-* `blanksasnull: BOOLEAN`
+  ```
+  acceptinvchars: "&"
+  ```
+
+* **blanksasnull**: BOOLEAN
 
   Parameter mapped to `BLANKSASNULL` parameter of Redshift`s `COPY` statement
 
-  * Example: `blanksasnull: true`
+  Examples:
 
-* `dateformat: STRING`
+  ```
+  blanksasnull: true
+  ```
+
+* **dateformat**: STRING
 
   Parameter mapped to `DATEFORMAT` parameter of Redshift`s `COPY` statement
 
-  * Example: `dateformat: yyyy-MM-dd`
+  Examples:
 
-* `emptyasnull: BOOLEAN`
+  ```
+  dateformat: yyyy-MM-dd
+  ```
+
+* **emptyasnull**: BOOLEAN
 
   Parameter mapped to `EMPTYASNULL` parameter of Redshift`s `COPY` statement
 
-  * Example: `emptyasnull: true`
+  Examples:
 
-* `encoding: TYPE`
+  ```
+  emptyasnull: true
+  ```
+
+* **encoding**: TYPE
 
   Parameter mapped to `ENCODING` parameter of Redshift`s `COPY` statement
 
-  * Example: `encoding: UTF8`
+  Examples:
 
-* `escape: BOOLEAN`
+  ```
+  encoding: UTF8
+  ```
+
+* **escape**: BOOLEAN
 
   Parameter mapped to `ESCAPE` parameter of Redshift`s `COPY` statement
 
-  * Example: `escape: false`
+  Examples:
 
-* `explicit_ids: BOOLEAN`
+  ```
+  escape: false
+  ```
+
+* **explicit_ids**: BOOLEAN
 
   Parameter mapped to `EXPLICIT_IDS` parameter of Redshift`s `COPY` statement
 
-  * Example: `explicit_ids: true`
+  Examples:
 
-* `fillrecord: BOOLEAN`
+  ```
+  explicit_ids: true
+  ```
+
+* **fillrecord**: BOOLEAN
 
   Parameter mapped to `FILLRECORD` parameter of Redshift`s `COPY` statement
 
-  * Example: `fillrecord: true`
+  Examples:
 
-* `ignoreblanklines: BOOLEAN`
+  ```
+  fillrecord: true
+  ```
+
+* **ignoreblanklines**: BOOLEAN
 
   Parameter mapped to `IGNOREBLANKLINES` parameter of Redshift`s `COPY` statement
 
-  * Example: `ignoreblanklines: true`
+  Examples:
 
-* `ignoreheader: NUMBER`
+  ```
+  ignoreblanklines: true
+  ```
+
+* **ignoreheader**: NUMBER
 
   Parameter mapped to `IGNOREHEADER` parameter of Redshift`s `COPY` statement
 
-  * Example: `ignoreheader: 2`
+  Examples:
 
-* `null_as: STRING`
+  ```
+  ignoreheader: 2
+  ```
+
+* **null_as**: STRING
 
   Parameter mapped to `NULL AS` parameter of Redshift`s `COPY` statement
 
-  * Example: `null_as: nULl`
+  Examples:
 
-* `removequotes: BOOLEAN`
+  ```
+  null_as: nULl
+  ```
+
+* **removequotes**: BOOLEAN
 
   Parameter mapped to `REMOVEQUOTES` parameter of Redshift`s `COPY` statement
 
-  * Example: `removequotes: false`
+  Examples:
 
-* `roundec: BOOLEAN`
+  ```
+  removequotes: false
+  ```
+
+* **roundec**: BOOLEAN
 
   Parameter mapped to `ROUNDEC` parameter of Redshift`s `COPY` statement
 
-  * Example: `roundec: true`
+  Examples:
 
-* `timeformat: STRING`
+  ```
+  roundec: true
+  ```
+
+* **timeformat**: STRING
 
   Parameter mapped to `TIMEFORMAT` parameter of Redshift`s `COPY` statement
 
-  * Example: `timeformat: YYYY-MM-DD HH:MI:SS`
+  Examples:
 
-* `trimblanks: BOOLEAN`
+  ```
+  timeformat: YYYY-MM-DD HH:MI:SS
+  ```
+
+* **trimblanks**: BOOLEAN
 
   Parameter mapped to `TRIMBLANKS` parameter of Redshift`s `COPY` statement
 
-  * Example: `trimblanks: true`
+  Examples:
 
-* `truncatecolumns: BOOLEAN`
+  ```
+  trimblanks: true
+  ```
+
+* **truncatecolumns**: BOOLEAN
 
   Parameter mapped to `TRUNCATECOLUMNS` parameter of Redshift`s `COPY` statement
 
-  * Example: `truncatecolumns: true`
+  Examples:
 
-* `comprows: NUMBER`
+  ```
+  truncatecolumns: true
+  ```
+
+* **comprows**: NUMBER
 
   Parameter mapped to `COMPROWS` parameter of Redshift`s `COPY` statement
 
-  * Example: `comprows: 12`
+  Examples:
 
-* `compupdate: TYPE`
+  ```
+  comprows: 12
+  ```
+
+* **compupdate**: TYPE
 
   Parameter mapped to `COMPUPDATE` parameter of Redshift`s `COPY` statement
 
-  * Example: `compupdate: ON`
+  Examples:
 
-* `maxerror: NUMBER`
+  ```
+  compupdate: ON
+  ```
+
+* **maxerror**: NUMBER
 
   Parameter mapped to `MAXERROR` parameter of Redshift`s `COPY` statement
 
-  * Example: `maxerror: 34`
+  Examples:
 
-* `noload: BOOLEAN`
+  ```
+  maxerror: 34
+  ```
+
+* **noload**: BOOLEAN
 
   Parameter mapped to `NOLOAD` parameter of Redshift`s `COPY` statement
 
-  * Example: `noload: true`
+  Examples:
 
-* `statupdate: TYPE`
+  ```
+  noload: true
+  ```
+
+* **statupdate**: TYPE
 
   Parameter mapped to `STATUPDATE` parameter of Redshift`s `COPY` statement
 
-  * Example: `statupdate: off`
+  Examples:
 
-* `temp_credentials: BOOLEAN`
+  ```
+  statupdate: off
+  ```
+
+* **temp_credentials**: BOOLEAN
 
   Whether this operator uses temporary security credentials. *Default*: `true`.
   This operator tries to use temporary security credentials as follows:
@@ -376,11 +570,19 @@
   So either of `AssumeRole` or `GetFederationToken` action is called to use temporary security credentials by default for secure operation.
   But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.
 
-  * Example: `temp_credentials: false`
+  Examples:
 
-* `session_duration INTEGER`
+  ```
+  temp_credentials: false
+  ```
+
+* **session_duration INTEGER**
 
   Session duration of temporary security credentials. *Default*: `3 hour`.
   This option isn't used when disabling `temp_credentials`
 
-  * Example: `session_duration: 1800`
+  Examples:
+
+  ```
+  session_duration: 1800
+  ```

@@ -17,9 +17,13 @@
 
 ## Options
 
-* `require>: NAME`
+* **require>**: NAME
 
   Name of a workflow.
 
-  Example: another_workflow
+  Examples:
+
+  ```
+  require>: another_workflow
+  ```
 

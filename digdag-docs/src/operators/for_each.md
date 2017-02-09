@@ -22,20 +22,33 @@
 
 ## Options
 
-* `for_each>: VARIABLES`
+* **for_each>**: VARIABLES
 
   Variables used for the loop in ``key: [value, value, ...]`` syntax. Variables can be an object or JSON string.
 
-  * Example: `for_each>: {i: [1, 2, 3]}`
+  Examples:
 
-  * Example:`for_each>: {i: '[1, 2, 3]'}`
+  ```
+  for_each>: {i: [1, 2, 3]}
+  ```
 
-* `_parallel: BOOLEAN`
+  Examples:
+
+  ```
+  for_each>: {i: '[1, 2, 3]'}
+  ```
+
+* **\_parallel**: BOOLEAN
+
   Runs the repeating tasks in parallel.
 
-  * Example: `_parallel: true`
+  Examples:
 
-* `_do: TASKS`
+  ```
+  _parallel: true
+  ```
+
+* **\_do**: TASKS
 
   Tasks to run.
 

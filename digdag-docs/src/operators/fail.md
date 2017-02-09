@@ -11,6 +11,6 @@ This operator is useful used with [if> operator](../if.html) to validate resuls 
 
 ## Options
 
-* `fail>: STRING`
+* **fail>**: STRING
 
   Message so that `_error` task can refer the message using `${error.message}` syntax.

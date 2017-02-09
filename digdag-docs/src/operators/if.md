@@ -11,11 +11,11 @@
 
 ## Options
 
-* `if>: BOOLEAN`
+* **if>**: BOOLEAN
 
   `true` or `false`.
 
-* `_do: TASKS`
+* **\_do**: TASKS
 
   Tasks to run if `true` is given.
 

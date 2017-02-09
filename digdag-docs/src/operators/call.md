@@ -20,10 +20,13 @@ This operator embeds another workflow as a subtask. This operator waits until al
 
 ## Options
 
-* `call>: FILE`
+* **call>**: FILE
 
   Path to a workflow definition file. File name must end with ``.dig``.
   If called workflow is in a subdirectory, the workflow uses the subdirectory as the working directory. For example, a task has ``call>: common/called_workflow.dig``, using ``queries/data.sql`` file in the called workflow should be ``../queries/data.sql``.
 
-  * Example: another_workflow.dig
+  Examples:
 
+  ```
+  call>: another_workflow.dig
+  ```

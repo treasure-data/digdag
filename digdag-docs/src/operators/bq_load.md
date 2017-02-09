@@ -16,14 +16,14 @@
 
 ## Secrets
 
-* `gcp.credential: CREDENTIAL`
+* **gcp.credential**: CREDENTIAL
 
   See [gcp.credential](../bq.html#secrets).
 
 
 ## Options
 
-* `bq_load>: URI | LIST`
+* **bq_load>**: URI | LIST
 
   A URI or list of URIs identifying files in GCS to import.
 
@@ -40,42 +40,87 @@ bq_load>:
 
 ```
 
-* `dataset: NAME`
+* **dataset**: NAME
 
   The dataset that the destination table is located in or should be created in. Can also be specified directly in the table reference.
 
-  * Example: `dataset: my_dataset`
+  Examples:
 
-  * Example: `dataset: my_project:my_dataset`
+  ```
+  dataset: my_dataset
+  ```
 
-* `destination_table: NAME`
+  Examples:
+
+  ```
+  dataset: my_project:my_dataset
+  ```
+
+* **destination_table**: NAME
 
   The table to store the imported data in.
 
-  * Example: `destination_table: my_result_table`
-  * Example: `destination_table: some_dataset.some_table`
-  * Example: `destination_table: some_project:some_dataset.some_table`
+  Examples:
 
-* `project: NAME`
+  ```
+  destination_table: my_result_table
+  ```
+
+  Examples:
+
+  ```
+  destination_table: some_dataset.some_table
+  ```
+
+  Examples:
+
+  ```
+  destination_table: some_project:some_dataset.some_table
+  ```
+
+* **project**: NAME
 
   The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
 
-* `source_format: CSV | NEWLINE_DELIMITED_JSON | AVRO | DATASTORE_BACKUP`
+* **source_format**: CSV | NEWLINE_DELIMITED_JSON | AVRO | DATASTORE_BACKUP
 
   The format of the files to be imported. *Default*: `CSV`.
 
-  * Example: `source_format: CSV`
-  * Example: `source_format: NEWLINE_DELIMITED_JSON`
-  * Example: `source_format: AVRO`
-  * Example: `source_format: DATASTORE_BACKUP`
+  Examples:
 
-* `field_delimiter: CHARACTER`
+  ```
+  source_format: CSV
+  ```
+
+  Examples:
+
+  ```
+  source_format: NEWLINE_DELIMITED_JSON
+  ```
+
+  Examples:
+
+  ```
+  source_format: AVRO
+  ```
+
+  Examples:
+
+  ```
+  source_format: DATASTORE_BACKUP
+  ```
+
+* **field_delimiter**: CHARACTER
 
   The separator used between fields in CSV files to be imported. *Default*: `,`.
 
-  * Example: `field_delimiter: '\\t'`
+  Examples:
 
-* `create_disposition: CREATE_IF_NEEDED | CREATE_NEVER`
+  ```
+  field_delimiter: '\\t'
+  ```
+
+* **create_disposition**: CREATE_IF_NEEDED | CREATE_NEVER
 
   Specifies whether the destination table should be automatically created when performing the import.
 
@@ -84,10 +129,19 @@ bq_load>:
 
   Examples:
 
-  * Example: `create_disposition: CREATE_IF_NEEDED`
-  * Example: `create_disposition: CREATE_NEVER`
+  Examples:
 
-* `write_disposition: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY`
+  ```
+  create_disposition: CREATE_IF_NEEDED
+  ```
+
+  Examples:
+
+  ```
+  create_disposition: CREATE_NEVER
+  ```
+
+* **write_disposition**: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY
 
   Specifies whether to permit importing data to an already existing destination table.
 
@@ -97,55 +151,90 @@ bq_load>:
 
   Examples:
 
-  * Example: `write_disposition: WRITE_TRUNCATE`
-  * Example: `write_disposition: WRITE_APPEND`
-  * Example: `write_disposition: WRITE_EMPTY`
+  Examples:
 
-* `skip_leading_rows: INTEGER`
+  ```
+  write_disposition: WRITE_TRUNCATE
+  ```
+
+  Examples:
+
+  ```
+  write_disposition: WRITE_APPEND
+  ```
+
+  Examples:
+
+  ```
+  write_disposition: WRITE_EMPTY
+  ```
+
+* **skip_leading_rows**: INTEGER
 
   The number of leading rows to skip in CSV files to import. *Default*: `0`.
 
-  * Example: `skip_leading_rows: 1`
+  Examples:
 
-* `encoding: UTF-8 | ISO-8859-1`
+  ```
+  skip_leading_rows: 1
+  ```
+
+* **encoding**: UTF-8 | ISO-8859-1
   The character encoding of the data in the files to import. *Default*: `UTF-8`.
 
-  * Example: `encoding: ISO-8859-1`
+  Examples:
 
-* `quote: CHARACTER`
+  ```
+  encoding: ISO-8859-1
+  ```
+
+* **quote**: CHARACTER
 
   The character quote of the data in the files to import. *Default*: `'"'`.
 
-  * Example: `quote: ''`
-  * Example: `quote: "'"`
+  Examples:
 
-* `max_bad_records: INTEGER`
+  ```
+  quote: ''
+  ```
+
+  Examples:
+
+  ```
+  quote: "'"
+  ```
+
+* **max_bad_records**: INTEGER
 
   The maximum number of bad records to ignore before failing the import. *Default*: `0`.
 
-  * Example: `max_bad_records: 100`
+  Examples:
 
-* `allow_quoted_newlines: BOOLEAN`
+  ```
+  max_bad_records: 100
+  ```
+
+* **allow_quoted_newlines**: BOOLEAN
 
   Whether to allow quoted data sections that contain newline characters in a CSV file. *Default*: `false`.
 
-* `allow_jagged_rows: BOOLEAN`
+* **allow_jagged_rows**: BOOLEAN
 
   Whether to accept rows that are missing trailing optional columns in CSV files. *Default*: `false`.
 
-* `ignore_unknown_values: BOOLEAN`
+* **ignore_unknown_values**: BOOLEAN
 
   Whether to ignore extra values in data that are not represented in the table schema. *Default*: `false`.
 
-* `projection_fields: LIST`
+* **projection_fields**: LIST
 
   A list of names of Cloud Datastore entity properties to load. Requires `source_format: DATASTORE_BACKUP`.
 
-* `autodetect: BOOLEAN`
+* **autodetect**: BOOLEAN
 
   Whether to automatically infer options and schema for CSV and JSON sources. *Default*: `false`.
 
-* `schema_update_options: LIST`
+* **schema_update_options**: LIST
 
   A list of destination table schema updates that may be automatically performed when performing the import.
 
@@ -155,6 +244,6 @@ bq_load>:
 
 ## Output parameters
 
-* `bq.last_job_id`
+* **bq.last_job_id**
 
   The id of the BigQuery job that performed this import.

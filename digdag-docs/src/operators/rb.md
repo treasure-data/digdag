@@ -15,15 +15,22 @@ See [Ruby API documents](../../ruby_api.html) for details including best practic
 
 ## Options
 
-* `rb>: [MODULE::CLASS.]METHOD`
+* **rb>**: [MODULE::CLASS.]METHOD
 
   Name of a method to run.
 
-  * Example: `rb>: Task::MyWorkflow.my_task`
+  Examples:
 
-* `require: FILE`
+  ```
+  rb>: Task::MyWorkflow.my_task
+  ```
+
+* **require**: FILE
 
   Name of a file to require.
 
-  * Example: `require: task/my_workflow`
+  Examples:
 
+  ```
+  require: task/my_workflow
+  ```

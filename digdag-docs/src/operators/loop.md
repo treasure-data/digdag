@@ -14,17 +14,25 @@ This operator exports `${i}` variable for the subtasks. Its value begins from 0.
 
 ## Options
 
-* `loop>: COUNT`
+* **loop>:** COUNT
   Number of times to run the tasks.
 
-  * Example: `loop>: 7`
+  Examples:
 
-* `_parallel: BOOLEAN`
+  ```
+  loop>: 7
+  ```
+
+* **\_parallel**: BOOLEAN
   Runs the repeating tasks in parallel.
 
-  * Example: `_parallel: true`
+  Examples:
 
-* `_do: TASKS`
+  ```
+  _parallel: true
+  ```
+
+* **\_do**: TASKS
 
   Tasks to run.
 

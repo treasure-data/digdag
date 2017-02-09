@@ -10,32 +10,40 @@
 
 ## Secrets
 
-* `gcp.credential: CREDENTIAL`
+* **gcp.credential**: CREDENTIAL
 
   See [gcp.credential](../bq.html#secrets).
 
 ## Options
 
-* `gcs_wait>: URI | BUCKET/OBJECT`
+* **gcs_wait>**: URI | BUCKET/OBJECT
 
   Google Cloud Storage URI or path of the file to wait for.
 
-  * Example: `gcs_wait>: my-bucket/my-directory/my-data.gz`
+  Examples:
 
-  * Example: `gcs_wait>: gs://my-bucket/my-directory/my-data.gz`
+  ```
+  gcs_wait>: my-bucket/my-directory/my-data.gz
+  ```
 
-* `bucket: NAME`
+  Examples:
+
+  ```
+  gcs_wait>: gs://my-bucket/my-directory/my-data.gz
+  ```
+
+* **bucket**: NAME
 
   The GCS bucket where the file is located. Can be used together with the `object` parameter instead of putting the path on the operator command line.
 
-* `object: PATH`
+* **object**: PATH
 
   The GCS path of the file. Can be used together with the `bucket` parameter instead of putting the path on the operator command line.
 
 
 ## Output parameters
 
-* `gcs_wait.last_object`
+* **gcs_wait.last_object**
 
   Information about the detected file.
 

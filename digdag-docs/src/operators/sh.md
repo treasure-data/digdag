@@ -14,7 +14,7 @@ Running a shell script:
     +step2:
       sh>: tasks/step2.sh
 
-* `sh>: COMMAND [ARGS...]`
+* **sh>**: COMMAND [ARGS...]
 
   Name of the command to run.
 

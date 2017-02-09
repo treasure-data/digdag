@@ -18,6 +18,10 @@
 }
 */
 
+p.first {
+  margin-top: 1em;
+}
+
 .rst-content .highlighted {
   padding: 0;  /* don't add confusing spaces around highlights */
 }

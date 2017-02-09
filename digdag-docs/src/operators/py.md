@@ -11,9 +11,12 @@ See [Python API documents](../../python_api.html) for details including variable
 
 ## Options
 
-* `py>: [PACKAGE.CLASS.]METHOD`
+* **py>**: [PACKAGE.CLASS.]METHOD
 
   Name of a method to run.
 
-  * Example: `py>: tasks.MyWorkflow.my_task`
+  Examples:
 
+  ```
+  py>: tasks.MyWorkflow.my_task
+  ```

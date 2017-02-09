@@ -21,94 +21,142 @@
 
 ## Secrets
 
-* `td.apikey: API_KEY`
+* **td.apikey**: API_KEY
 
   The Treasure Data API key to use when running Treasure Data queries.
 
 ## Options
 
-* `td>: FILE.sql`
+* **td>**: FILE.sql
 
   Path to a query template file. This file can contain `${...}` syntax to embed variables.
 
-  * Example: `td>: queries/step1.sql`
+  Examples:
 
-* `create_table: NAME`
+  ```
+  td>: queries/step1.sql
+  ```
+
+* **create_table**: NAME
 
   Name of a table to create from the results. This option deletes the table if it already exists.
 
   This option adds DROP TABLE IF EXISTS; CREATE TABLE AS (Presto) or INSERT OVERWRITE (Hive) commands before the SELECT statement. If the query includes a `-- DIGDAG_INSERT_LINE` line, the commands are inserted there.
 
-  * Example: `create_table: my_table`
+  Examples:
 
-* `insert_into: NAME`
+  ```
+  create_table: my_table
+  ```
+
+* **insert_into**: NAME
 
   Name of a table to append results into. The table is created if it does not already exist.
 
   This option adds INSERT INTO (Presto) or INSERT INTO TABLE (Hive) command at the beginning of SELECT statement. If the query includes `-- DIGDAG_INSERT_LINE` line, the command is inserted to the line.
 
-  * Example: `insert_into: my_table`
+  Examples:
 
-* `download_file: NAME`
+  ```
+  insert_into: my_table
+  ```
+
+* **download_file**: NAME
 
   Saves query result as a local CSV file.
 
-  * Example: `download_file: output.csv`
+  Examples:
 
-* `store_last_results: BOOLEAN`
+  ```
+  download_file: output.csv
+  ```
+
+* **store_last_results**: BOOLEAN
 
   Stores the first 1 row of the query results to `${td.last_results}` variable (default: false).
   td.last_results is a map of column name and a value. To access to a single value, you can use `${td.last_results.my_count}` syntax.
 
-  * Example: `store_last_results: true`
+  Examples:
 
-* `preview: BOOLEAN`
+  ```
+  store_last_results: true
+  ```
+
+* **preview**: BOOLEAN
 
   Tries to show some query results to confirm the results of a query.
 
-  * Example: `preview: true`
+  Examples:
 
-* `result_url: NAME`
+  ```
+  preview: true
+  ```
+
+* **result_url**: NAME
   Output the query results to the URL:
 
-  * Example: `result_url: tableau://username:password@my.tableauserver.com/?mode=replace`
+  Examples:
 
-* `database: NAME`
+  ```
+  result_url: tableau://username:password@my.tableauserver.com/?mode=replace
+  ```
+
+* **database**: NAME
 
   Name of a database.
 
-  * Example: `database: my_db`
+  Examples:
 
-* `endpoint: ADDRESS`
+  ```
+  database: my_db
+  ```
+
+* **endpoint**: ADDRESS
 
   API endpoint (default: api.treasuredata.com).
 
-* `use_ssl: BOOLEAN`
+* **use_ssl**: BOOLEAN
 
   Enable SSL (https) to access to the endpoint (default: true).
 
-* `engine: presto`
+* **engine**: presto
 
   Query engine (`presto` or `hive`).
 
-  * Example: `engine: hive`
-  * Example: `engine: presto`
+  Examples:
 
-* `priority: 0`
+  ```
+  engine: hive
+  ```
+
+  Examples:
+
+  ```
+  engine: presto
+  ```
+
+* **priority**: 0
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
 
 ## Output parameters
 
-* `td.last_job_id`
+* **td.last_job_id**
 
   The job id this task executed.
 
-  * Example: `52036074`
+  Examples:
 
-* `td.last_results`
+  ```
+  52036074
+  ```
+
+* **td.last_results**
 
   The first 1 row of the query results as a map. This is available only when `store_last_results: true` is set.
 
-  * Example: `{"path":"/index.html","count":1}`
+  Examples:
 
+  ```
+  {"path":"/index.html","count":1}
+  ```

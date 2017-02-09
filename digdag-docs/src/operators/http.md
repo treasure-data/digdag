@@ -25,41 +25,57 @@
 
 ## Secrets
 
-* `http.authorization: STRING`
+* **http.authorization**: STRING
 
   A string that should be included in the HTTP request as the value of the `Authorization` header. This can be used to authenticate using e.g. Oauth bearer tokens.
 
-* `http.user: STRING`
+* **http.user**: STRING
 
   A user that should be used to authenticate using *Basic Authentication*.
 
-* `http.password: STRING`
+* **http.password**: STRING
 
   A password that should be used to authenticate using *Basic Authentication*.
 
-* `http.uri: URI`
+* **http.uri**: URI
 
   The URI of the HTTP request. This can be used instead of putting the URI on the operator command line in case the URI contains sensitive information.
 
 ## Parameters
 
-* `http>: URI`
+* **http>**: URI
 
   The URI of the HTTP request.
 
-  * Example: `http>: https://api.example.com/foobar`
+  Examples:
 
-  * Example: `http>: https://api.example.com/data/sessions/{$session_uuid}`
+  ```
+  http>: https://api.example.com/foobar
+  ```
 
-* `method: STRING`
+  Examples:
+
+  ```
+  http>: https://api.example.com/data/sessions/{$session_uuid}
+  ```
+
+* **method**: STRING
 
   The method of the HTTP request. *Default:* `GET`.
 
-  * Example: `method: POST`
+  Examples:
 
-  * Example: `method: DELETE`
+  ```
+  method: POST
+  ```
 
-* `content: STRING | INTEGER | BOOLEAN | OBJECT | ARRAY`
+  Examples:
+
+  ```
+  method: DELETE
+  ```
+
+* **content**: STRING | INTEGER | BOOLEAN | OBJECT | ARRAY
   The content of the HTTP request. *Default:* No content.
 
   Scalars (i.e. strings, integers, booleans, etc) will by default be sent as plain text. Objects and arrays will by default be JSON serialized. The `content_format` parameter can be used to control the content serialization format.
@@ -78,7 +94,7 @@ content:
   time: ${session_time}
 ```
 
-* `content_format: text | json | form`
+* **content_format**: text | json | form
 
   The serialization format of the content of the HTTP request. *Default:* Inferred from the `content` parameter value type. Objects and arrays use `json` by default. Other value types default to `text`.
 
@@ -107,7 +123,7 @@ content:
 content_format: form
 ```
 
-* `content_type: STRING`
+* **content_type**: STRING
 
   Override the inferred `Content-Type` header.
 
@@ -122,11 +138,11 @@ content_format: text
 content_type: application/xml
 ```
 
-* `store_content: BOOLEAN`
+* **store_content**: BOOLEAN
 
   Whether to store the content of the response. *Default:* `false`.
 
-* `headers: LIST OF KEY-VALUE PAIRS`
+* **headers**: LIST OF KEY-VALUE PAIRS
 
   Additional custom headers to send with the HTTP request.
 
@@ -135,7 +151,7 @@ content_type: application/xml
       - X-Foo: bar
       - Baz: quux
 
-* `retry: BOOLEAN`
+* **retry**: BOOLEAN
 
   Whether to retry ephemeral errors. *Default:* `true` if the request method is `GET`, `HEAD`, `OPTIONS` or `TRACE`. Otherwise `false`.
 

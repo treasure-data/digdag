@@ -24,13 +24,13 @@
 
 ## Secrets
 
-* `gcp.credential: CREDENTIAL`
+* **gcp.credential**: CREDENTIAL
 
   See [gcp.credential](../bq.html#secrets).
 
 ## Options
 
-* `create_datasets: LIST`
+* **create_datasets**: LIST
 
   Create new datasets.
 
@@ -65,7 +65,7 @@ create_datasets:
         role: OWNER
 ```
 
-* `empty_datasets: LIST`
+* **empty_datasets**: LIST
 
   Create new datasets, deleting them first if they already exist. Any tables in the datasets will also be deleted.
 
@@ -100,7 +100,7 @@ empty_datasets:
         role: OWNER
 ```
 
-* `delete_datasets: LIST`
+* **delete_datasets**: LIST
 
   Delete datasets, if they exist.
 
@@ -118,7 +118,7 @@ delete_datasets:
   - other_project:bar_dataset_${last_session_date_compact}
 ```
 
-* `create_tables: LIST`
+* **create_tables**: LIST
 
   Create new tables.
 
@@ -158,7 +158,7 @@ create_tables:
         role: OWNER
 ```
 
-* `empty_tables: LIST`
+* **empty_tables**: LIST
   Create new tables, deleting them first if they already exist.
 
   For detailed information about table configuration parameters, see the `Google BigQuery Tables Documentation <https://cloud.google.com/bigquery/docs/reference/v2/tables#resource>`_.
@@ -197,7 +197,7 @@ empty_tables:
         role: OWNER
 ```
 
-* `delete_tables: LIST`
+* **delete_tables**: LIST
   Delete tables, if they exist.
 
   Examples:

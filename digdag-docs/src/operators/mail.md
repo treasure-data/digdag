@@ -32,112 +32,180 @@ To use Gmail SMTP server, you need to do either of:
 
 ## Secrets
 
-* `mail.host: HOST`
+* **mail.host**: HOST
 
   SMTP host name.
 
-  * Example: `mail.host: smtp.gmail.com`
+  Examples:
 
-* `mail.port: PORT`
+  ```
+  mail.host: smtp.gmail.com
+  ```
+
+* **mail.port**: PORT
 
   SMTP port number.
 
-  * Example: `mail.port: 587`
+  Examples:
 
-* `mail.username: NAME`
+  ```
+  mail.port: 587
+  ```
+
+* **mail.username**: NAME
 
   SMTP login username.
 
-  * Example: `mail.username: me`
+  Examples:
 
-* `mail.password: PASSWORD`
+  ```
+  mail.username: me
+  ```
+
+* **mail.password**: PASSWORD
 
   SMTP login password.
 
-  * Example: `mail.password: MyPaSsWoRd`
+  Examples:
 
-* `mail.tls: BOOLEAN`
+  ```
+  mail.password: MyPaSsWoRd
+  ```
+
+* **mail.tls**: BOOLEAN
   Enables TLS handshake.
 
-  * Example: `mail.tls: true`
+  Examples:
 
-* `mail.ssl: BOOLEAN`
+  ```
+  mail.tls: true
+  ```
+
+* **mail.ssl**: BOOLEAN
 
   Enables legacy SSL encryption.
 
-  * Example: `mail.ssl: false`
+  Examples:
+
+  ```
+  mail.ssl: false
+  ```
 
 ## Options
 
-* `mail>: FILE`
+* **mail>**: FILE
 
   Path to a mail body template file. This file can contain `${...}` syntax to embed variables.
   Alternatively, you can set `{data: TEXT}` to embed body text in the .dig file.
 
-  * Example: `mail>: mail_body.txt`
+  Examples:
+
+  ```
+  mail>: mail_body.txt
+  ```
 
   * or :command:`mail>: {body: Hello, this is from Digdag}`
 
-* `subject: SUBJECT`
+* **subject**: SUBJECT
 
   Subject of the email.
 
-  * Example: `subject: Mail From Digdag`
+  Examples:
 
-* `to: [ADDR1, ADDR2, ...]`
+  ```
+  subject: Mail From Digdag
+  ```
+
+* **to**: [ADDR1, ADDR2, ...]
 
   To addresses.
 
-  * Example: `to: [analyst@examile.com]`
+  Examples:
 
-* `from: ADDR`
+  ```
+  to: [analyst@examile.com]
+  ```
+
+* **from**: ADDR
   From address.
 
-  * Example: `from: admin@example.com`
+  Examples:
 
-* `host: NAME`
+  ```
+  from: admin@example.com
+  ```
+
+* **host**: NAME
 
   SMTP host name.
 
-  * Example: `host: smtp.gmail.com`
+  Examples:
 
-* `port: NAME`
+  ```
+  host: smtp.gmail.com
+  ```
+
+* **port**: NAME
 
   SMTP port number.
 
-  * Example: `port: 587`
+  Examples:
 
-* `username: NAME`
+  ```
+  port: 587
+  ```
+
+* **username**: NAME
 
   SMTP login username.
 
-  * Example: `username: me`
+  Examples:
 
-* `tls: BOOLEAN`
+  ```
+  username: me
+  ```
+
+* **tls**: BOOLEAN
 
   Enables TLS handshake.
 
-  * Example: `tls: true`
+  Examples:
 
-* `ssl: BOOLEAN`
+  ```
+  tls: true
+  ```
+
+* **ssl**: BOOLEAN
 
   Enables legacy SSL encryption.
 
-  * Example: `ssl: false`
+  Examples:
 
-* `html: BOOLEAN`
+  ```
+  ssl: false
+  ```
+
+* **html**: BOOLEAN
 
   Uses HTML mail (default: false).
 
-  * Example: `html: true`
+  Examples:
 
-* `debug: BOOLEAN`
+  ```
+  html: true
+  ```
+
+* **debug**: BOOLEAN
 
   Shows debug logs (default: false).
 
-  * Example: `debug: false`
+  Examples:
 
-* `attach_files: ARRAY`
+  ```
+  debug: false
+  ```
+
+* **attach_files**: ARRAY
 
   Attach files. Each element is an object of:
 

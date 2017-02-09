@@ -19,46 +19,66 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
 
 ## Secrets
 
-* `td.apikey: API_KEY`
+* **td.apikey**: API_KEY
   The Treasure Data API key to use when running Treasure Data queries.
 
 ## Parameters
 
-* `database: NAME`
+* **database**: NAME
 
   Name of the database.
 
-  * Example: `database: my_database`
+  Examples:
 
-* `table: NAME`
+  ```
+  database: my_database
+  ```
+
+* **table**: NAME
 
   Name of the table to export.
 
-  * Example: `table: my_table`
+  Examples:
 
-* `from: yyyy-MM-dd HH:mm:ss[ Z]`
+  ```
+  table: my_table
+  ```
+
+* **from**: yyyy-MM-dd HH:mm:ss[ Z]
 
   Delete records from this time (inclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
 
-  * Example: `from: 2016-01-01 00:00:00 +0800`
+  Examples:
 
-* `to: yyyy-MM-dd HH:mm:ss[ Z]`
+  ```
+  from: 2016-01-01 00:00:00 +0800
+  ```
+
+* **to**: yyyy-MM-dd HH:mm:ss[ Z]
 
   Delete records to this time (exclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
 
-  * Example: `to: 2016-02-01 00:00:00 +0800`
+  Examples:
 
-* `apikey: APIKEY`
+  ```
+  to: 2016-02-01 00:00:00 +0800
+  ```
+
+* **apikey**: APIKEY
 
   API key. This must be set as a secret parameter.
 
-  * Example: `apikey: 992314/abcdef0123456789abcdef0123456789`
+  Examples:
 
-* `endpoint: ADDRESS`
+  ```
+  apikey: 992314/abcdef0123456789abcdef0123456789
+  ```
+
+* **endpoint**: ADDRESS
 
   API endpoint (default: api.treasuredata.com).
 
-* `use_ssl: BOOLEAN`
+* **use_ssl**: BOOLEAN
 
   Enable SSL (https) to access to the endpoint (default: true).
 

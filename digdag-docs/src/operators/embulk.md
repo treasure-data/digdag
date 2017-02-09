@@ -7,9 +7,11 @@
 
 ## Options
 
-* `embulk>: FILE.yml`
+* **embulk>**: FILE.yml
   Path to a configuration template file.
 
-  * Example: `embulk>: embulk/mysql_to_csv.yml`
+  Examples:
 
-
+  ```
+  embulk>: embulk/mysql_to_csv.yml
+  ```

@@ -20,7 +20,7 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
 ## Secrets
 
-* `gcp.credential: CREDENTIAL`
+* **gcp.credential**: CREDENTIAL
 
   The [Google Cloud Platform account](https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>) credential private key to use, in JSON format.
 
@@ -32,28 +32,55 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
 ## Options
 
-* `bq>: query.sql`
+* **bq>**: query.sql
 
   Path to a query template file. This file can contain `${...}` syntax to embed variables.
 
-  * Example: `bq>: queries/step1.sql`
+  Examples:
 
-* `dataset: NAME`
+  ```
+  bq>: queries/step1.sql
+  ```
+
+* **dataset**: NAME
 
   Specifies the default dataset to use in the query and in the `destination_table` parameter.
 
-  * Example: `dataset: my_dataset`
-  * Example: `dataset: other_project:other_dataset`
+  Examples:
 
-* `destination_table: NAME`
+  ```
+  dataset: my_dataset
+  ```
+
+  Examples:
+
+  ```
+  dataset: other_project:other_dataset
+  ```
+
+* **destination_table**: NAME
 
   Specifies a table to store the query results in.
 
-  * Example: `destination_table: my_result_table`
-  * Example: `destination_table: some_dataset.some_table`
-  * Example: `destination_table: some_project:some_dataset.some_table`
+  Examples:
 
-* `create_disposition: CREATE_IF_NEEDED | CREATE_NEVER`
+  ```
+  destination_table: my_result_table
+  ```
+
+  Examples:
+
+  ```
+  destination_table: some_dataset.some_table
+  ```
+
+  Examples:
+
+  ```
+  destination_table: some_project:some_dataset.some_table
+  ```
+
+* **create_disposition**: CREATE_IF_NEEDED | CREATE_NEVER
 
   Specifies whether the destination table should be automatically created when executing the query.
 
@@ -62,10 +89,19 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
   Examples:
 
-  * Example: `create_disposition: CREATE_IF_NEEDED`
-  * Example: `create_disposition: CREATE_NEVER`
+  Examples:
 
-* `write_disposition: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY`
+  ```
+  create_disposition: CREATE_IF_NEEDED
+  ```
+
+  Examples:
+
+  ```
+  create_disposition: CREATE_NEVER
+  ```
+
+* **write_disposition**: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY
 
   Specifies whether to permit writing of data to an already existing destination table.
 
@@ -75,46 +111,60 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
   Examples:
 
-  * Example: `write_disposition: WRITE_TRUNCATE`
-  * Example: `write_disposition: WRITE_APPEND`
-  * Example: `write_disposition: WRITE_EMPTY`
+  Examples:
 
-* `priority: INTERACTIVE | BATCH`
+  ```
+  write_disposition: WRITE_TRUNCATE
+  ```
+
+  Examples:
+
+  ```
+  write_disposition: WRITE_APPEND
+  ```
+
+  Examples:
+
+  ```
+  write_disposition: WRITE_EMPTY
+  ```
+
+* **priority**: INTERACTIVE | BATCH
 
   Specifies the priority to use for this query. *Default*: `INTERACTIVE`.
 
-* `use_query_cache: BOOLEAN`
+* **use_query_cache**: BOOLEAN
 
   Whether to use BigQuery query result caching. *Default*: `true`.
 
-* `allow_large_results: BOOLEAN`
+* **allow_large_results**: BOOLEAN
 
   Whether to allow arbitrarily large result tables. Requires `destination_table` to be set and `use_legacy_sql` to be true.
 
-* `flatten_results: BOOLEAN`
+* **flatten_results**: BOOLEAN
 
   Whether to flatten nested and repeated fields in the query results. *Default*: `true`. Requires `use_legacy_sql` to be true.
 
-* `use_legacy_sql: BOOLEAN`
+* **use_legacy_sql**: BOOLEAN
 
   Whether to use legacy BigQuery SQL. *Default*: `false`.
 
-* `maximum_billing_tier: INTEGER`
+* **maximum_billing_tier**: INTEGER
 
   Limit the billing tier for this query. *Default*: The project default.
 
-* `table_definitions: OBJECT`
+* **table_definitions**: OBJECT
 
   Describes external data sources that are accessed in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.tableDefinitions>`_.
 
-* `user_defined_function_resources: LIST`
+* **user_defined_function_resources**: LIST
 
   Describes user-defined function resources used in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.userDefinedFunctionResources>`_.
 
 
 ## Output parameters
 
-* `bq.last_job_id`
+* **bq.last_job_id**
 
   The id of the BigQuery job that executed this query.
 

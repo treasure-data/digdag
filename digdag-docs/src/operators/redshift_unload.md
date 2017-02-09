@@ -29,11 +29,11 @@
 
 ## Secrets
 
-* `aws.redshift.password: NAME`
+* **aws.redshift.password**: NAME
 
   Optional user password to use when connecting to the Redshift database.
 
-* `aws.redshift_unload.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+* **aws.redshift_unload.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
 
   The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
 
@@ -49,140 +49,228 @@
 
 ## Options
 
-* `database: NAME`
+* `database**: NAME
 
   Database name.
 
-  * Example: `database: my_db`
+  Examples:
 
-* `host: NAME`
+  ```
+  database: my_db
+  ```
+
+* **host**: NAME
 
   Hostname or IP address of the database.
 
-  * Example: `host: db.foobar.com`
+  Examples:
 
-* `port: NUMBER`
+  ```
+  host: db.foobar.com
+  ```
+
+* **port**: NUMBER
 
   Port number to connect to the database. *Default*: `5439`.
 
-  * Example: `port: 2345`
+  Examples:
 
-* `user: NAME`
+  ```
+  port: 2345
+  ```
+
+* **user**: NAME
 
   User to connect to the database
 
-  * Example: `user: app_user`
+  Examples:
 
-* `ssl: BOOLEAN`
+  ```
+  user: app_user
+  ```
+
+* **ssl**: BOOLEAN
 
   Enable SSL to connect to the database. *Default*: `false`.
 
-  * Example: `ssl: true`
+  Examples:
 
-* `schema: NAME`
+  ```
+  ssl: true
+  ```
+
+* **schema**: NAME
 
   Default schema name. *Default*: `public`.
 
-  * Example: `schema: my_schema`
+  Examples:
 
-* `strict_transaction: BOOLEAN`
+  ```
+  schema: my_schema
+  ```
+
+* **strict_transaction**: BOOLEAN
 
   Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: `true`.
   This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
 
-  * Example: `strict_transaction: false`
+  Examples:
 
-* `status_table_schema: NAME`
+  ```
+  strict_transaction: false
+  ```
+
+* **status_table_schema**: NAME
 
   Schema name of status table. *Default*: same as the value of `schema` option.
 
-  * Example: `status_table_schema: writable_schema`
+  Examples:
 
-* `status_table: NAME`
+  ```
+  status_table_schema: writable_schema
+  ```
+
+* **status_table**: NAME
 
   Table name prefix of status table. *Default*: `__digdag_status`.
 
-  * Example: `status_table: customized_status_table`
+  Examples:
 
-* `query: STRING`
+  ```
+  status_table: customized_status_table
+  ```
+
+* **query**: STRING
 
   SELECT query. The results of the query are unloaded.
 
-  * Example: `query: select * from access_logs`
+  Examples:
 
-* `to: URI`
+  ```
+  query: select * from access_logs
+  ```
+
+* **to**: URI
 
   Parameter mapped to `TO` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `to: s3://my-app-bucket/access_logs/today`
+  Examples:
 
-* `manifest: BOOLEAN`
+  ```
+  to: s3://my-app-bucket/access_logs/today
+  ```
+
+* **manifest**: BOOLEAN
 
   Parameter mapped to `MANIFEST` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `manifest: true`
+  Examples:
 
-* `encrypted: BOOLEAN`
+  ```
+  manifest: true
+  ```
+
+* **encrypted**: BOOLEAN
 
   Parameter mapped to `ENCRYPTED` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `encrypted: true`
+  Examples:
 
-* `allowoverwrite: BOOLEAN`
+  ```
+  encrypted: true
+  ```
+
+* **allowoverwrite**: BOOLEAN
 
   Parameter mapped to `ALLOWOVERWRITE` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `allowoverwrite: true`
+  Examples:
 
-* `delimiter: CHARACTER`
+  ```
+  allowoverwrite: true
+  ```
+
+* **delimiter**: CHARACTER
 
   Parameter mapped to `DELIMITER` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `delimiter: "$"`
+  Examples:
 
-* `fixedwidth: BOOLEAN`
+  ```
+  delimiter: "$"
+  ```
+
+* **fixedwidth**: BOOLEAN
 
   Parameter mapped to `FIXEDWIDTH` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `fixedwidth: host:15,code:3,method:15`
+  Examples:
 
-* `gzip: BOOLEAN`
+  ```
+  fixedwidth: host:15,code:3,method:15
+  ```
+
+* **gzip**: BOOLEAN
 
   Parameter mapped to `GZIP` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `gzip: true`
+  Examples:
 
-* `bzip2: BOOLEAN`
+  ```
+  gzip: true
+  ```
+
+* **bzip2**: BOOLEAN
 
   Parameter mapped to `BZIP2` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `bzip2: true`
+  Examples:
 
-* `null_as: BOOLEAN`
+  ```
+  bzip2: true
+  ```
+
+* **null_as**: BOOLEAN
 
   Parameter mapped to `NULL_AS` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `null_as: nuLL`
+  Examples:
 
-* `escape: BOOLEAN`
+  ```
+  null_as: nuLL
+  ```
+
+* **escape**: BOOLEAN
 
   Parameter mapped to `ESCAPE` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `escape: true`
+  Examples:
 
-* `addquotes: BOOLEAN`
+  ```
+  escape: true
+  ```
+
+* **addquotes**: BOOLEAN
 
   Parameter mapped to `ADDQUOTES` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `addquotes: true`
+  Examples:
 
-* `parallel: TYPE`
+  ```
+  addquotes: true
+  ```
+
+* **parallel**: TYPE
 
   Parameter mapped to `PARALLEL` parameter of Redshift`s `UNLOAD` statement
 
-  * Example: `parallel: ON`
+  Examples:
 
-* `temp_credentials: BOOLEAN`
+  ```
+  parallel: ON
+  ```
+
+* **temp_credentials**: BOOLEAN
 
   Whether this operator uses temporary security credentials. *Default*: `true`.
   This operator tries to use temporary security credentials as follows:
@@ -194,12 +282,19 @@
   So either of `AssumeRole` or `GetFederationToken` action is called to use temporary security credentials by default for secure operation.
   But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.
 
-  * Example: `temp_credentials: false`
+  Examples:
 
-* `session_duration INTEGER`
+  ```
+  temp_credentials: false
+  ```
+
+* **session_duration INTEGER**
 
   Session duration of temporary security credentials. *Default*: `3 hour`.
   This option isn't used when disabling `temp_credentials`
 
-  * Example: `session_duration: 1800`
+  Examples:
 
+  ```
+  session_duration: 1800
+  ```

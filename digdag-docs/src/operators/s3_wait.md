@@ -7,7 +7,7 @@
 
 ## Secrets
 
-* `aws.s3.access_key_id, aws.access_key_id`
+* **aws.s3.access_key_id, aws.access_key_id`
 
   The AWS Access Key ID to use when accessing S3.
 
@@ -31,7 +31,7 @@
 
   An optional Customer-Provided Server-Side Encryption (SSE-C) key algorithm to use when accessing S3.
 
-* `aws.s3.sse_c_key_md5`
+* `aws.s3.sse_c_key_md5**
 
   An optional MD5 digest of the Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
 
@@ -39,43 +39,51 @@ For more information about SSE-C, See the `AWS S3 Documentation <http://docs.aws
 
 ## Options
 
-* `s3_wait>: BUCKET/KEY`
+* **s3_wait>**: BUCKET/KEY
 
   Path to the file in Amazon S3 to wait for.
 
-  * Example: `s3_wait>: my-bucket/my-data.gz`
+  Examples:
 
-  * Example: `s3_wait>: my-bucket/file/in/a/directory`
+  ```
+  s3_wait>: my-bucket/my-data.gz
+  ```
 
-* `region: REGION`
+  Examples:
+
+  ```
+  s3_wait>: my-bucket/file/in/a/directory
+  ```
+
+* **region**: REGION
 
   An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.s3.region` secret.
 
-* `endpoint: ENDPOINT`
+* **endpoint**: ENDPOINT
 
   An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.s3.endpoint` secret.
   *Note:* This will override the `region` parameter.
 
-* `bucket: BUCKET`
+* **bucket**: BUCKET
 
   The S3 bucket where the file is located. Can be used together with the `key` parameter instead of putting the path on the operator line.
 
-* `key: KEY`
+* **key**: KEY
 
   The S3 key of the file. Can be used together with the `bucket` parameter instead of putting the path on the operator line.
 
-* `version_id: VERSION_ID`
+* **version_id**: VERSION_ID
 
   An optional object version to check for.
 
-* `path_style_access: true/false`
+* **path_style_access**: true/false
 
   An optional flag to control whether to use path-style or virtual hosted-style access when accessing S3.
   *Note:* Enabling `path_style_access` also requires specifying a `region`.
 
 ## Output Parameters
 
-* `s3.last_object`
+* **s3.last_object**
 
   Information about the detected file.
 

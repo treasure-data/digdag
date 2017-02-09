@@ -15,53 +15,77 @@
 
 ## Secrets
 
-* `td.apikey: API_KEY`
+* **td.apikey**: API_KEY
 
   The Treasure Data API key to use when running Treasure Data queries.
 
 ## Options
 
-* `td_wait_table>: FILE.sql`
+* **td_wait_table>**: FILE.sql
 
   Name of a table.
 
-  * Example: `td_wait_table>: target_table`
+  Examples:
 
-* `rows: N`
+  ```
+  td_wait_table>: target_table
+  ```
+
+* **rows**: N
 
   Number of rows to wait (default: 0).
 
-  * Example: `rows: 10`
+  Examples:
 
-* `database: NAME`
+  ```
+  rows: 10
+  ```
+
+* **database**: NAME
 
   Name of a database.
 
-  * Example: `database: my_db`
+  Examples:
 
-* `apikey: APIKEY`
+  ```
+  database: my_db
+  ```
+
+* **apikey**: APIKEY
 
   API key. This must be set as a secret parameter.
 
-  * Example: `apikey: 992314/abcdef0123456789abcdef0123456789`
+  Examples:
 
-* `endpoint: ADDRESS`
+  ```
+  apikey: 992314/abcdef0123456789abcdef0123456789
+  ```
+
+* **endpoint**: ADDRESS
 
   API endpoint (default: api.treasuredata.com).
 
-* `use_ssl: BOOLEAN`
+* **use_ssl**: BOOLEAN
 
   Enable SSL (https) to access to the endpoint (default: true).
 
-* `engine: presto`
+* **engine**: presto
 
   Query engine (`presto` or `hive`).
 
-  * Example: `engine: hive`
+  Examples:
 
-  * Example: `engine: presto`
+  ```
+  engine: hive
+  ```
 
-* `priority: 0`
+  Examples:
+
+  ```
+  engine: presto
+  ```
+
+* **priority**: 0
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 

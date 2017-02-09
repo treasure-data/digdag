@@ -29,7 +29,7 @@ For detailed information about EMR, see the [Amazon Elastic MapReduce Documentat
 
 ## Secrets
 
-* `aws.emr.access_key_id, aws.access_key_id`
+* **aws.emr.access_key_id, aws.access_key_id`
 
   The AWS Access Key ID to use when submitting EMR jobs.
 
@@ -43,7 +43,7 @@ For detailed information about EMR, see the [Amazon Elastic MapReduce Documentat
 
 ## Options
 
-* `cluster: STRING | OBJECT`
+* `cluster**: STRING | OBJECT
 
   Specifies either the ID of an existing cluster to submit steps to or the configuration of a new cluster to create.
 
@@ -103,13 +103,17 @@ cluster:
       args: [baz, quux]
 ```
 
-* `staging: S3_URI`
+* **staging**: S3_URI
 
   A S3 folder to use for staging local files for execution on the EMR cluster. *Note:* the configured AWS credentials must have permission to put and get objects in this folder.
 
-  * Example: `staging: s3://my-bucket/staging/`
+  Examples:
 
-* `steps: LIST`
+  ```
+  staging: s3://my-bucket/staging/
+  ```
+
+* **steps**: LIST
 
   A list of steps to submit to the EMR cluster.
 
@@ -159,12 +163,12 @@ cluster:
         command: echo
         args: [hello, world]
 
-* `action_on_failure: TERMINATE_JOB_FLOW | TERMINATE_CLUSTER | CANCEL_AND_WAIT | CONTINUE`
+* **action_on_failure**: TERMINATE_JOB_FLOW | TERMINATE_CLUSTER | CANCEL_AND_WAIT | CONTINUE
 
   The action EMR should take in response to a job step failing.
 
 ## Output parameters
 
-* `emr.last_cluster_id`
+* **emr.last_cluster_id**
 
   The ID of the cluster created. If a pre-existing cluster was used, this parameter will not be set.

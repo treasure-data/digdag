@@ -8,7 +8,7 @@
 
 ## Options
 
-* `echo>: STRING`
+* **echo>**: STRING
 
   The message to show.
 
