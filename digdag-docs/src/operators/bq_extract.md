@@ -32,13 +32,9 @@
   bq_extract>: my_table
   ```
 
-  Examples:
-
   ```
   bq_extract>: my_dataset.my_table
   ```
-
-  Examples:
 
   ```
   bq_extract>: my_project:my_dataset.my_table
@@ -49,15 +45,15 @@
 
   Examples:
 
-```
-destination: gs://my_bucket/my_export.csv
-```
+  ```
+  destination: gs://my_bucket/my_export.csv
+  ```
 
-```
-destination:
-  - gs://my_bucket/my_export_1.csv
-  - gs://my_bucket/my_export_2.csv
-```
+  ```
+  destination:
+    - gs://my_bucket/my_export_1.csv
+    - gs://my_bucket/my_export_2.csv
+  ```
 
 * **print_header**: BOOLEAN
   Whether to print out a header row in the results. *Default*: `true`.
@@ -80,13 +76,9 @@ destination:
   destination_format: CSV
   ```
 
-  Examples:
-
   ```
   destination_format: NEWLINE_DELIMITED_JSON
   ```
-
-  Examples:
 
   ```
   destination_format: AVRO
@@ -100,8 +92,6 @@ destination:
   ```
   compression: NONE
   ```
-
-  Examples:
 
   ```
   compression: GZIP

@@ -4,9 +4,9 @@
 
 To use Gmail SMTP server, you need to do either of:
 
-* a) Generate a new app password at `App passwords <https://security.google.com/settings/security/apppasswords>`_. This needs to enable 2-Step Verification first.
+* a) Generate a new app password at [App passwords](https://security.google.com/settings/security/apppasswords). This needs to enable 2-Step Verification first.
 
-* b) Enable access for less secure apps at `Less secure apps <https://www.google.com/settings/security/lesssecureapps>`_. This works even if 2-Step Verification is not enabled.
+* b) Enable access for less secure apps at [Less secure apps](https://www.google.com/settings/security/lesssecureapps). This works even if 2-Step Verification is not enabled.
 
     _export:
       mail:

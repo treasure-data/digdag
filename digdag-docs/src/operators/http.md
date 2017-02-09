@@ -100,7 +100,7 @@ content:
 
   * `text`: Send raw content as `Content-Type: text/plain`. *Note:* This requires that the `content` parameter is _not_ array or an object.
 
-  * `json`: Serialize the content as `JSON <http://json.org/>`_ and send it as `Content-Type: application/json`. This format can handle any `content` parameter value type.
+  * `json`: Serialize the content as [JSON](http://json.org/) and send it as `Content-Type: application/json`. This format can handle any `content` parameter value type.
 
   * `form`: Encode content as an HTML form and send it as `Content-Type: application/x-www-form-urlencoded`. *Note:* This requires the `content` parameter value to be an object.
 

@@ -6,10 +6,6 @@ Please be aware that records imported using streaming import can't be deleted fo
 
 Time range needs to be hourly. Setting non-zero values to minutes or seconds will be rejected.
 
-    _export:
-      td:
-        apikey: YOUR/API_KEY
-
     +step1:
       td_partial_delete>:
       database: mydb
@@ -62,16 +58,6 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
 
   ```
   to: 2016-02-01 00:00:00 +0800
-  ```
-
-* **apikey**: APIKEY
-
-  API key. This must be set as a secret parameter.
-
-  Examples:
-
-  ```
-  apikey: 992314/abcdef0123456789abcdef0123456789
   ```
 
 * **endpoint**: ADDRESS

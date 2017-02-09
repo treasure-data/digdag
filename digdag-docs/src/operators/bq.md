@@ -16,15 +16,15 @@
       destination_table: other_project:other_dataset.other_table
 
 
-Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery/sql-reference/index>`_ by default, whereas the default in the BigQuery console is `legacy SQL <https://cloud.google.com/bigquery/query-reference>`_. To run *legacy* SQL queries, please set `use_legacy_sql: true`. For more information about *standard* SQL on BigQuery, see `Migrating from legacy SQL <https://cloud.google.com/bigquery/sql-reference/migrating-from-legacy-sql>`_.
+Note: The **bq>** operator uses [standard SQL](https://cloud.google.com/bigquery/sql-reference/index) by default, whereas the default in the BigQuery console is [legacy SQL](https://cloud.google.com/bigquery/query-reference). To run *legacy* SQL queries, please set `use_legacy_sql: true`. For more information about *standard* SQL on BigQuery, see [Migrating from legacy SQL](https://cloud.google.com/bigquery/sql-reference/migrating-from-legacy-sql).
 
 ## Secrets
 
 * **gcp.credential**: CREDENTIAL
 
-  The [Google Cloud Platform account](https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>) credential private key to use, in JSON format.
+  The [Google Cloud Platform account](https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts) credential private key to use, in JSON format.
 
-  For information on how to generate a service account key, see the `Google Cloud Platform Documentation <https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_.
+  For information on how to generate a service account key, see the [Google Cloud Platform Documentation](https://cloud.google.com/storage/docs/authentication#generating-a-private-key).
 
   Upload the private key JSON file to the digdag server using the `secrets` client command:
 
@@ -52,8 +52,6 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
   dataset: my_dataset
   ```
 
-  Examples:
-
   ```
   dataset: other_project:other_dataset
   ```
@@ -68,13 +66,9 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
   destination_table: my_result_table
   ```
 
-  Examples:
-
   ```
   destination_table: some_dataset.some_table
   ```
-
-  Examples:
 
   ```
   destination_table: some_project:some_dataset.some_table
@@ -89,13 +83,9 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
   Examples:
 
-  Examples:
-
   ```
   create_disposition: CREATE_IF_NEEDED
   ```
-
-  Examples:
 
   ```
   create_disposition: CREATE_NEVER
@@ -111,19 +101,13 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
   Examples:
 
-  Examples:
-
   ```
   write_disposition: WRITE_TRUNCATE
   ```
 
-  Examples:
-
   ```
   write_disposition: WRITE_APPEND
   ```
-
-  Examples:
 
   ```
   write_disposition: WRITE_EMPTY
@@ -155,11 +139,11 @@ Note: The **bq>** operator uses `standard SQL <https://cloud.google.com/bigquery
 
 * **table_definitions**: OBJECT
 
-  Describes external data sources that are accessed in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.tableDefinitions>`_.
+  Describes external data sources that are accessed in the query. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.tableDefinitions).
 
 * **user_defined_function_resources**: LIST
 
-  Describes user-defined function resources used in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.userDefinedFunctionResources>`_.
+  Describes user-defined function resources used in the query. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.userDefinedFunctionResources).
 
 
 ## Output parameters

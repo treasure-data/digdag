@@ -4,7 +4,6 @@
 
     _export:
       td:
-        apikey: YOUR/API_KEY
         database: www_access
 
     +wait:
@@ -45,16 +44,6 @@ Example queries:
 
   ```
   database: my_db
-  ```
-
-* **apikey**: APIKEY
-
-  API key. This must be set as a secret parameter.
-
-  Examples:
-
-  ```
-  apikey: 992314/abcdef0123456789abcdef0123456789
   ```
 
 * **endpoint**: ADDRESS

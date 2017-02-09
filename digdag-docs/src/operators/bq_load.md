@@ -29,16 +29,15 @@
 
   Examples:
 
-```
-bq_load>: gs://my_bucket/data.csv
-```
+  ```
+  bq_load>: gs://my_bucket/data.csv
+  ```
 
-```
-bq_load>:
-  - gs://my_bucket/data1.csv.gz
-  - gs://my_bucket/data2_*.csv.gz
-
-```
+  ```
+  bq_load>:
+    - gs://my_bucket/data1.csv.gz
+    - gs://my_bucket/data2_*.csv.gz
+  ```
 
 * **dataset**: NAME
 
@@ -49,8 +48,6 @@ bq_load>:
   ```
   dataset: my_dataset
   ```
-
-  Examples:
 
   ```
   dataset: my_project:my_dataset
@@ -66,13 +63,9 @@ bq_load>:
   destination_table: my_result_table
   ```
 
-  Examples:
-
   ```
   destination_table: some_dataset.some_table
   ```
-
-  Examples:
 
   ```
   destination_table: some_project:some_dataset.some_table
@@ -92,19 +85,13 @@ bq_load>:
   source_format: CSV
   ```
 
-  Examples:
-
   ```
   source_format: NEWLINE_DELIMITED_JSON
   ```
 
-  Examples:
-
   ```
   source_format: AVRO
   ```
-
-  Examples:
 
   ```
   source_format: DATASTORE_BACKUP
@@ -129,13 +116,9 @@ bq_load>:
 
   Examples:
 
-  Examples:
-
   ```
   create_disposition: CREATE_IF_NEEDED
   ```
-
-  Examples:
 
   ```
   create_disposition: CREATE_NEVER
@@ -151,19 +134,13 @@ bq_load>:
 
   Examples:
 
-  Examples:
-
   ```
   write_disposition: WRITE_TRUNCATE
   ```
 
-  Examples:
-
   ```
   write_disposition: WRITE_APPEND
   ```
-
-  Examples:
 
   ```
   write_disposition: WRITE_EMPTY
@@ -197,8 +174,6 @@ bq_load>:
   ```
   quote: ''
   ```
-
-  Examples:
 
   ```
   quote: "'"

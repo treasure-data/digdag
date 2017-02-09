@@ -2,7 +2,7 @@
 
 **sh>** operator runs a shell script.
 
-Running a shell command (note: you can use [echo> operator](../echo.html) to show a message):
+Running a shell command (Note: you can use [echo> operator](../echo.html) to show a message):
 
     +step1:
       sh>: echo "hello world"
@@ -14,11 +14,15 @@ Running a shell script:
     +step2:
       sh>: tasks/step2.sh
 
+## Options
+
 * **sh>**: COMMAND [ARGS...]
 
   Name of the command to run.
 
-  * * `sh>: tasks/workflow.sh --task1`
+  Examples:
+
+      sh>: tasks/workflow.sh --task1
 
 The shell defaults to `/bin/sh`. If an alternate shell such as `zsh` is desired, use the `shell` option in the `_export` section.
 

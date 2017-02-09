@@ -129,8 +129,6 @@
   engine: hive
   ```
 
-  Examples:
-
   ```
   engine: presto
   ```

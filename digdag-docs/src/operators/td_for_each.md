@@ -8,7 +8,6 @@ For example, if you run a query `select email, name from users` and the query re
 
     _export:
       td:
-        apikey: YOUR/API_KEY
         database: www_access
 
     +for_each_users:
@@ -45,16 +44,6 @@ For example, if you run a query `select email, name from users` and the query re
   database: my_db
   ```
 
-* **apikey**: APIKEY
-
-  API key. This must be set as a secret parameter.
-
-  Examples:
-
-  ```
-  apikey: 992314/abcdef0123456789abcdef0123456789
-  ```
-
 * **endpoint**: ADDRESS
 
   API endpoint (default: api.treasuredata.com).
@@ -72,8 +61,6 @@ For example, if you run a query `select email, name from users` and the query re
   ```
   engine: hive
   ```
-
-  Examples:
 
   ```
   engine: presto

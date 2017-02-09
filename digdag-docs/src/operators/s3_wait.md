@@ -35,7 +35,7 @@
 
   An optional MD5 digest of the Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
 
-For more information about SSE-C, See the `AWS S3 Documentation <http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html>`_.
+For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
 
 ## Options
 
