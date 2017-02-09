@@ -59,6 +59,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -471,7 +472,13 @@ public class WorkflowExecutor
             Throwables.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
             throw ex;
         }
-        return sm.getAttemptWithSessionById(attemptId);
+        try {
+            return tm.begin(() -> sm.getAttemptWithSessionById(attemptId));
+        }
+        catch (Exception ex) {
+            // TODO: Revisit here
+            throw Throwables.propagate(ex);
+        }
     }
 
     public void runUntilAllDone()
@@ -487,52 +494,74 @@ public class WorkflowExecutor
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
-            Instant date = sm.getStoreTime();
-            propagateBlockedChildrenToReady();
-            retryRetryWaitingTasks();
-            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
-            propagateAllPlannedToDone();
-            propagateSessionArchive();
+            try {
+                tm.begin(() -> {
+                    Instant date = sm.getStoreTime();
+                    propagateBlockedChildrenToReady();
+                    retryRetryWaitingTasks();
+                    enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+                    propagateAllPlannedToDone();
+                    propagateSessionArchive();
+                    return null;
+                });
+            }
+            catch (Exception e) {
+                // TODO: Revisit here
+                Throwables.propagate(e);
+            }
 
             //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
-            int waitMsec = INITIAL_INTERVAL;
-            while (cond.getAsBoolean()) {
-                //boolean inced = prop.run();
-                //boolean retried = retryRetryWaitingTasks();
-                //if (inced || retried) {
-                //    enqueueReadyTasks(queuer);
-                //    propagatorNotice = true;
-                //}
+            final AtomicInteger waitMsec = new AtomicInteger(INITIAL_INTERVAL);
+            while (true) {
+                try {
+                    if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
+                        break;
+                    }
 
-                propagateBlockedChildrenToReady();
-                retryRetryWaitingTasks();
-                enqueueReadyTasks(queuer);
-                boolean someDone = propagateAllPlannedToDone();
+                    tm.begin(() -> {
+                        //boolean inced = prop.run();
+                        //boolean retried = retryRetryWaitingTasks();
+                        //if (inced || retried) {
+                        //    enqueueReadyTasks(queuer);
+                        //    propagatorNotice = true;
+                        //}
 
-                if (someDone) {
-                    propagateSessionArchive();
-                }
-                else {
-                    propagatorLock.lock();
-                    try {
-                        if (propagatorNotice) {
-                            propagatorNotice = false;
-                            waitMsec = INITIAL_INTERVAL;
+                        propagateBlockedChildrenToReady();
+                        retryRetryWaitingTasks();
+                        enqueueReadyTasks(queuer);
+                        boolean someDone = propagateAllPlannedToDone();
+
+                        if (someDone) {
+                            propagateSessionArchive();
                         }
                         else {
-                            boolean noticed = propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
-                            if (noticed && propagatorNotice) {
-                                propagatorNotice = false;
-                                waitMsec = INITIAL_INTERVAL;
+                            propagatorLock.lock();
+                            try {
+                                if (propagatorNotice) {
+                                    propagatorNotice = false;
+                                    waitMsec.set(INITIAL_INTERVAL);
+                                }
+                                else {
+                                    boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
+                                    if (noticed && propagatorNotice) {
+                                        propagatorNotice = false;
+                                        waitMsec.set(INITIAL_INTERVAL);
+                                    }
+                                    else {
+                                        waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
+                                    }
+                                }
                             }
-                            else {
-                                waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
+                            finally {
+                                propagatorLock.unlock();
                             }
                         }
-                    }
-                    finally {
-                        propagatorLock.unlock();
-                    }
+                        return null;
+                    });
+                }
+                catch (Exception e) {
+                    // TODO: Revisit here
+                    Throwables.propagate(e);
                 }
             }
         }

@@ -119,24 +119,25 @@ public class DatabaseSessionStoreManagerTest
     public void testConflicts()
         throws Exception
     {
-        factory.begin(() -> {
-            Instant sessionTime1 = Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600);
+        Instant sessionTime1 = Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600);
 
-            AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
-                    rev,
-                    wf1,
-                    cf.create(),
-                    ScheduleTime.runNow(sessionTime1));
+        AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
+                rev,
+                wf1,
+                cf.create(),
+                ScheduleTime.runNow(sessionTime1));
 
-            exec.submitWorkflow(0, ar1, wf1);
+        factory.begin(() -> exec.submitWorkflow(0, ar1, wf1));
 
+        factory.begin(() ->
             // same session conflicts
             assertConflict(() -> {
                 propagateOnly(ResourceConflictException.class, () ->
                         exec.submitWorkflow(0, ar1, wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // different session params conflicts
             assertConflict(() -> {
                 propagateOnly(ResourceConflictException.class, () ->
@@ -146,8 +147,9 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // different timezone conflicts
             assertConflict(() -> {
                 propagateOnly(ResourceConflictException.class, () ->
@@ -157,8 +159,9 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // different retry attempt name doesn't conflict
             assertNotConflict(() -> {
                 propagateOnly(ResourceConflictException.class, () ->
@@ -168,8 +171,9 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // different session time doesn't conflict
             assertNotConflict(() -> {
                 propagateOnly(ResourceConflictException.class, () ->
@@ -179,8 +183,9 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // different workflow name doesn't conflict
             assertNotConflict(() -> {
                 propagateOnly(ResourceConflictException.class, () ->
@@ -190,15 +195,17 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // wrong siteId causes NotFound
             assertNotFound(() -> {
                 propagateOnly(ResourceNotFoundException.class, () ->
                         exec.submitWorkflow(1, ar1, wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // wrong project id causes NotFound
             assertNotFound(() -> {
                 propagateOnly(ResourceNotFoundException.class, () ->
@@ -209,8 +216,9 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
+            }));
 
+        factory.begin(() ->
             // wrong workflow id causes NotFound
             assertNotFound(() -> {
                 propagateOnly(ResourceNotFoundException.class, () ->
@@ -221,9 +229,7 @@ public class DatabaseSessionStoreManagerTest
                                         .build(),
                                 wf1)
                 );
-            });
-            return null;
-        });
+            }));
     }
 
     @Test

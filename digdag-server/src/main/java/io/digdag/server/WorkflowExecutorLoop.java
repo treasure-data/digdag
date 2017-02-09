@@ -55,10 +55,7 @@ public class WorkflowExecutorLoop
     {
         while (!stop) {
             try {
-                transactionManager.begin(() -> {
-                    workflowExecutor.runWhile(() -> !stop);
-                    return null;
-                });
+                workflowExecutor.runWhile(() -> !stop);
             }
             catch (Throwable t) {
                 logger.error("Uncaught error during executing workflow state machine. Ignoring. Loop will be retried.", t);
