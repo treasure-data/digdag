@@ -18,10 +18,6 @@
 }
 */
 
-p.first {
-  margin-top: 1em;
-}
-
 .rst-content .highlighted {
   padding: 0;  /* don't add confusing spaces around highlights */
 }
@@ -103,3 +99,16 @@ a.icon {
   display: none;
 }
 
+p.first {
+  margin-top: 1em;
+}
+
+.rst-content .section ul.simple {
+  margin-bottom: 0.8em;
+}
+
+.rst-content code {
+  border: none;
+  margin: 0;
+  padding: 0 2px;
+}

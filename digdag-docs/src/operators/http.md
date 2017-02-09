@@ -53,8 +53,6 @@
   http>: https://api.example.com/foobar
   ```
 
-  Examples:
-
   ```
   http>: https://api.example.com/data/sessions/{$session_uuid}
   ```
@@ -69,8 +67,6 @@
   method: POST
   ```
 
-  Examples:
-
   ```
   method: DELETE
   ```
@@ -80,63 +76,63 @@
 
   Scalars (i.e. strings, integers, booleans, etc) will by default be sent as plain text. Objects and arrays will by default be JSON serialized. The `content_format` parameter can be used to control the content serialization format.
 
-```
-content: 'hello world'
-```
+  ```
+  content: 'hello world'
+  ```
 
-```
-content: '${session_time}'
-```
+  ```
+  content: '${session_time}'
+  ```
 
-```
-content:
-  status: RUNNING
-  time: ${session_time}
-```
+  ```
+  content:
+    status: RUNNING
+    time: ${session_time}
+  ```
 
 * **content_format**: text | json | form
 
   The serialization format of the content of the HTTP request. *Default:* Inferred from the `content` parameter value type. Objects and arrays use `json` by default. Other value types default to `text`.
 
-  * `text`: Send raw content as `Content-Type: text/plain`. *Note:* This requires that the `content` parameter is _not_ array or an object.
+  * **text**: Send raw content as `Content-Type: text/plain`. *Note:* This requires that the `content` parameter is _not_ array or an object.
 
-  * `json`: Serialize the content as [JSON](http://json.org/) and send it as `Content-Type: application/json`. This format can handle any `content` parameter value type.
+  * **json**: Serialize the content as [JSON](http://json.org/) and send it as `Content-Type: application/json`. This format can handle any `content` parameter value type.
 
-  * `form`: Encode content as an HTML form and send it as `Content-Type: application/x-www-form-urlencoded`. *Note:* This requires the `content` parameter value to be an object.
+  * **form**: Encode content as an HTML form and send it as `Content-Type: application/x-www-form-urlencoded`. *Note:* This requires the `content` parameter value to be an object.
 
-```
-content: 'hello world @ ${session_time}'
-content_format: text
-```
+  ```
+  content: 'hello world @ ${session_time}'
+  content_format: text
+  ```
 
-```
-content:
-  status: RUNNING
-  time: ${session_time}
-content_format: json
-```
+  ```
+  content:
+    status: RUNNING
+    time: ${session_time}
+  content_format: json
+  ```
 
-```
-content:
-  status: RUNNING
-  time: ${session_time}
-content_format: form
-```
+  ```
+  content:
+    status: RUNNING
+    time: ${session_time}
+  content_format: form
+  ```
 
 * **content_type**: STRING
 
   Override the inferred `Content-Type` header.
 
-```
-content: |
-  <?xml version="1.0" encoding="UTF-8"?>
-  <notification>
-    <status>RUNNING</status>
-    <time>${session_time}</time>
-  </notification>
-content_format: text
-content_type: application/xml
-```
+  ```
+  content: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <notification>
+      <status>RUNNING</status>
+      <time>${session_time}</time>
+    </notification>
+  content_format: text
+  content_type: application/xml
+  ```
 
 * **store_content**: BOOLEAN
 
@@ -158,3 +154,4 @@ content_type: application/xml
   Client `4xx` errors (except for `408 Request Timeout` and `429 Too Many Requests`) will not be retried even if `retry` is set to `true`.
 
   *Note:* Enabling retries might cause the target endpoint to receive multiple duplicate HTTP requests. Thus retries should only be enabled if duplicated requests are tolerable. E.g. when the outcome of the HTTP request is *idempotent*.
+

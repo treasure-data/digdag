@@ -68,15 +68,15 @@
 
   Optional user password to use when connecting to the Redshift database.
 
-* **aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+* **aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id**
 
   The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
 
-* `aws.redshift_load.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
+* **aws.redshift_load.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key**
 
   The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
 
-* `aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn`
+* **aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn**
 
   Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires `temp_credentials` to be true.
   If this option isn't specified, this operator tries to use a federated user
@@ -84,7 +84,7 @@
 
 ## Options
 
-* `database**: NAME
+* **database**: NAME
 
   Database name.
 
@@ -187,7 +187,7 @@
 
 * **from**: URI
 
-  Parameter mapped to `FROM` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `FROM` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -197,7 +197,7 @@
 
 * **column_list**: CSV
 
-  Parameter mapped to `COLUMN_LIST` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `COLUMN_LIST` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -207,7 +207,7 @@
 
 * **manifest**: BOOLEAN
 
-  Parameter mapped to `MANIFEST` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `MANIFEST` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -217,7 +217,7 @@
 
 * **encrypted**: BOOLEAN
 
-  Parameter mapped to `ENCRYPTED` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `ENCRYPTED` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -227,7 +227,7 @@
 
 * **readratio**: NUMBER
 
-  Parameter mapped to `READRATIO` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `READRATIO` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -237,7 +237,7 @@
 
 * **region**: NAME
 
-  Parameter mapped to `REGION` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `REGION` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -247,7 +247,7 @@
 
 * **csv**: CHARACTER
 
-  Parameter mapped to `CSV` parameter of Redshift`s `COPY` statement.
+  Parameter mapped to `CSV` parameter of Redshift's `COPY` statement.
   If you want to just use default quote charactor of `CSV` parameter, set empty string like `csv: ''`
 
   Examples:
@@ -258,7 +258,7 @@
 
 * **delimiter**: CHARACTER
 
-  Parameter mapped to `DELIMITER` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `DELIMITER` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -268,7 +268,7 @@
 
 * **json**: URI
 
-  Parameter mapped to `JSON` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `JSON` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -284,7 +284,7 @@
 
 * **avro**: URI
 
-  Parameter mapped to `AVRO` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `AVRO` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -292,15 +292,13 @@
   avro: auto
   ```
 
-  Examples:
-
   ```
   avro: s3://my-app-bucket/access_logs/jsonpathfile
   ```
 
 * **fixedwidth**: CSV
 
-  Parameter mapped to `FIXEDWIDTH` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `FIXEDWIDTH` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -310,7 +308,7 @@
 
 * **gzip**: BOOLEAN
 
-  Parameter mapped to `GZIP` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `GZIP` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -320,7 +318,7 @@
 
 * **bzip2**: BOOLEAN
 
-  Parameter mapped to `BZIP2` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `BZIP2` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -330,7 +328,7 @@
 
 * **lzop**: BOOLEAN
 
-  Parameter mapped to `LZOP` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `LZOP` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -340,7 +338,7 @@
 
 * **acceptanydate**: BOOLEAN
 
-  Parameter mapped to `ACCEPTANYDATE` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `ACCEPTANYDATE` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -350,7 +348,7 @@
 
 * **acceptinvchars**: CHARACTER
 
-  Parameter mapped to `ACCEPTINVCHARS` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `ACCEPTINVCHARS` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -360,7 +358,7 @@
 
 * **blanksasnull**: BOOLEAN
 
-  Parameter mapped to `BLANKSASNULL` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `BLANKSASNULL` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -370,7 +368,7 @@
 
 * **dateformat**: STRING
 
-  Parameter mapped to `DATEFORMAT` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `DATEFORMAT` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -380,7 +378,7 @@
 
 * **emptyasnull**: BOOLEAN
 
-  Parameter mapped to `EMPTYASNULL` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `EMPTYASNULL` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -390,7 +388,7 @@
 
 * **encoding**: TYPE
 
-  Parameter mapped to `ENCODING` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `ENCODING` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -400,7 +398,7 @@
 
 * **escape**: BOOLEAN
 
-  Parameter mapped to `ESCAPE` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `ESCAPE` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -410,7 +408,7 @@
 
 * **explicit_ids**: BOOLEAN
 
-  Parameter mapped to `EXPLICIT_IDS` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `EXPLICIT_IDS` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -420,7 +418,7 @@
 
 * **fillrecord**: BOOLEAN
 
-  Parameter mapped to `FILLRECORD` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `FILLRECORD` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -430,7 +428,7 @@
 
 * **ignoreblanklines**: BOOLEAN
 
-  Parameter mapped to `IGNOREBLANKLINES` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `IGNOREBLANKLINES` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -440,7 +438,7 @@
 
 * **ignoreheader**: NUMBER
 
-  Parameter mapped to `IGNOREHEADER` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `IGNOREHEADER` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -450,7 +448,7 @@
 
 * **null_as**: STRING
 
-  Parameter mapped to `NULL AS` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `NULL AS` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -460,7 +458,7 @@
 
 * **removequotes**: BOOLEAN
 
-  Parameter mapped to `REMOVEQUOTES` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `REMOVEQUOTES` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -470,7 +468,7 @@
 
 * **roundec**: BOOLEAN
 
-  Parameter mapped to `ROUNDEC` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `ROUNDEC` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -480,7 +478,7 @@
 
 * **timeformat**: STRING
 
-  Parameter mapped to `TIMEFORMAT` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `TIMEFORMAT` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -490,7 +488,7 @@
 
 * **trimblanks**: BOOLEAN
 
-  Parameter mapped to `TRIMBLANKS` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `TRIMBLANKS` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -500,7 +498,7 @@
 
 * **truncatecolumns**: BOOLEAN
 
-  Parameter mapped to `TRUNCATECOLUMNS` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `TRUNCATECOLUMNS` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -510,7 +508,7 @@
 
 * **comprows**: NUMBER
 
-  Parameter mapped to `COMPROWS` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `COMPROWS` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -520,7 +518,7 @@
 
 * **compupdate**: TYPE
 
-  Parameter mapped to `COMPUPDATE` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `COMPUPDATE` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -530,7 +528,7 @@
 
 * **maxerror**: NUMBER
 
-  Parameter mapped to `MAXERROR` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `MAXERROR` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -540,7 +538,7 @@
 
 * **noload**: BOOLEAN
 
-  Parameter mapped to `NOLOAD` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `NOLOAD` parameter of Redshift's `COPY` statement
 
   Examples:
 
@@ -550,7 +548,7 @@
 
 * **statupdate**: TYPE
 
-  Parameter mapped to `STATUPDATE` parameter of Redshift`s `COPY` statement
+  Parameter mapped to `STATUPDATE` parameter of Redshift's `COPY` statement
 
   Examples:
 

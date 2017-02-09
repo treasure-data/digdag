@@ -8,27 +8,27 @@ To use Gmail SMTP server, you need to do either of:
 
 * b) Enable access for less secure apps at [Less secure apps](https://www.google.com/settings/security/lesssecureapps). This works even if 2-Step Verification is not enabled.
 
-    _export:
-      mail:
-        from: "you@gmail.com"
+      _export:
+        mail:
+          from: "you@gmail.com"
 
-    +step1:
-      mail>: body.txt
-      subject: workflow started
-      to: [me@example.com]
-
-    +step2:
-      mail>:
-        data: this is email body embedded in a .dig file
-      subject: workflow started
-      to: [me@example.com]
-
-    +step3:
-      sh>: this_task_might_fail.sh
-      _error:
+      +step1:
         mail>: body.txt
-        subject: this workflow failed
+        subject: workflow started
         to: [me@example.com]
+
+      +step2:
+        mail>:
+          data: this is email body embedded in a .dig file
+        subject: workflow started
+        to: [me@example.com]
+
+      +step3:
+        sh>: this_task_might_fail.sh
+        _error:
+          mail>: body.txt
+          subject: this workflow failed
+          to: [me@example.com]
 
 ## Secrets
 
@@ -209,11 +209,11 @@ To use Gmail SMTP server, you need to do either of:
 
   Attach files. Each element is an object of:
 
-  * Example: `path: FILE`: Path to a file to attach.
+  * **path: FILE**: Path to a file to attach.
 
-  * Example: `content_type`: Content-Type of this file. Default is application/octet-stream.
+  * **content_type: STRING**: Content-Type of this file. Default is application/octet-stream.
 
-  * Example: `filename`: Name of this file. Default is base name of the path.
+  * **filename: NAME**: Name of this file. Default is base name of the path.
 
   Example:
 

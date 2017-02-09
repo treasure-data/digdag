@@ -27,6 +27,7 @@
 ## Secrets
 
 * **aws.redshift.password**: NAME
+
   Optional user password to use when connecting to the Redshift database.
 
 ## Options

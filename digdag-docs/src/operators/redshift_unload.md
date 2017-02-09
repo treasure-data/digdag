@@ -33,15 +33,15 @@
 
   Optional user password to use when connecting to the Redshift database.
 
-* **aws.redshift_unload.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+* **aws.redshift_unload.access_key_id, aws.redshift.access_key_id, aws.access_key_id**
 
   The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
 
-* `aws.redshift_unload.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
+* **aws.redshift_unload.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key**
 
   The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See `temp_credentials` option for details.
 
-* `aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn`
+* **aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn**
 
   Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs `AssumeRole` role to use this option. Requires `temp_credentials` to be true.
   If this option isn't specified, this operator tries to use a federated user
@@ -49,7 +49,7 @@
 
 ## Options
 
-* `database**: NAME
+* **database**: NAME
 
   Database name.
 
@@ -152,7 +152,7 @@
 
 * **to**: URI
 
-  Parameter mapped to `TO` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `TO` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -162,7 +162,7 @@
 
 * **manifest**: BOOLEAN
 
-  Parameter mapped to `MANIFEST` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `MANIFEST` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -172,7 +172,7 @@
 
 * **encrypted**: BOOLEAN
 
-  Parameter mapped to `ENCRYPTED` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `ENCRYPTED` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -182,7 +182,7 @@
 
 * **allowoverwrite**: BOOLEAN
 
-  Parameter mapped to `ALLOWOVERWRITE` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `ALLOWOVERWRITE` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -192,7 +192,7 @@
 
 * **delimiter**: CHARACTER
 
-  Parameter mapped to `DELIMITER` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `DELIMITER` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -202,7 +202,7 @@
 
 * **fixedwidth**: BOOLEAN
 
-  Parameter mapped to `FIXEDWIDTH` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `FIXEDWIDTH` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -212,7 +212,7 @@
 
 * **gzip**: BOOLEAN
 
-  Parameter mapped to `GZIP` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `GZIP` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -222,7 +222,7 @@
 
 * **bzip2**: BOOLEAN
 
-  Parameter mapped to `BZIP2` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `BZIP2` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -232,7 +232,7 @@
 
 * **null_as**: BOOLEAN
 
-  Parameter mapped to `NULL_AS` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `NULL_AS` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -242,7 +242,7 @@
 
 * **escape**: BOOLEAN
 
-  Parameter mapped to `ESCAPE` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `ESCAPE` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -252,7 +252,7 @@
 
 * **addquotes**: BOOLEAN
 
-  Parameter mapped to `ADDQUOTES` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `ADDQUOTES` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
@@ -262,7 +262,7 @@
 
 * **parallel**: TYPE
 
-  Parameter mapped to `PARALLEL` parameter of Redshift`s `UNLOAD` statement
+  Parameter mapped to `PARALLEL` parameter of Redshift's `UNLOAD` statement
 
   Examples:
 
