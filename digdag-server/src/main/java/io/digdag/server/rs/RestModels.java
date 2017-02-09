@@ -116,6 +116,7 @@ public final class RestModels
             .name(def.getName())
             .project(IdAndName.of(id(proj.getId()), proj.getName()))
             .revision(revName)
+            .timeZone(def.getTimeZone())
             .config(def.getConfig())
             .build();
     }
