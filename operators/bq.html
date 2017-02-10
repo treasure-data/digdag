@@ -1,0 +1,374 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bq&gt;: Running Google BigQuery queries &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Google Cloud Platform operators" href="gcp.html"/>
+        <link rel="next" title="bq_ddl&gt;: Managing Google BigQuery Datasets and Tables" href="bq_ddl.html"/>
+        <link rel="prev" title="gcs_wait&gt;: Wait for a file in Google Cloud Storage" href="gcs_wait.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../operators.html">Operators</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow_control.html">Workflow control operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="treasure_data.html">Treasure Data operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="network.html">Network operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aws.html">Amazon Web Services operators</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gcp.html">Google Cloud Platform operators</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gcs_wait.html">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">bq&gt;: Running Google BigQuery queries</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#secrets">Secrets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output-parameters">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="bq_ddl.html">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bq_extract.html">bq_extract&gt;: Exporting Data from Google BigQuery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bq_load.html">bq_load&gt;: Importing Data into Google BigQuery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html">Scripting operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../operators.html">Operators</a> &raquo;</li>
+      
+          <li><a href="gcp.html">Google Cloud Platform operators</a> &raquo;</li>
+      
+    <li>bq&gt;: Running Google BigQuery queries</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/operators/bq.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="bq-running-google-bigquery-queries">
+<span id="bq-running-google-bigquery-queries"></span><h1>bq&gt;: Running Google BigQuery queries<a class="headerlink" href="#bq-running-google-bigquery-queries" title="Permalink to this headline">¶</a></h1>
+<p><strong>bq&gt;</strong> operator runs a query on Google BigQuery.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+  <span class="n">bq</span><span class="p">:</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
+
+<span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+  <span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
+<span class="o">+</span><span class="n">step2</span><span class="p">:</span>
+  <span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step2</span><span class="o">.</span><span class="n">sql</span>
+  <span class="n">destination_table</span><span class="p">:</span> <span class="n">result_table</span>
+<span class="o">+</span><span class="n">step3</span><span class="p">:</span>
+  <span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step3</span><span class="o">.</span><span class="n">sql</span>
+  <span class="n">destination_table</span><span class="p">:</span> <span class="n">other_project</span><span class="p">:</span><span class="n">other_dataset</span><span class="o">.</span><span class="n">other_table</span>
+</pre></div>
+</div>
+<p>Note: The <strong>bq&gt;</strong> operator uses <a class="reference external" href="https://cloud.google.com/bigquery/sql-reference/index">standard SQL</a> by default, whereas the default in the BigQuery console is <a class="reference external" href="https://cloud.google.com/bigquery/query-reference">legacy SQL</a>. To run <em>legacy</em> SQL queries, please set <code class="docutils literal"><span class="pre">use_legacy_sql:</span> <span class="pre">true</span></code>. For more information about <em>standard</em> SQL on BigQuery, see <a class="reference external" href="https://cloud.google.com/bigquery/sql-reference/migrating-from-legacy-sql">Migrating from legacy SQL</a>.</p>
+<div class="section" id="secrets">
+<span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>gcp.credential</strong>: CREDENTIAL</p>
+<p>The <a class="reference external" href="https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts">Google Cloud Platform account</a> credential private key to use, in JSON format.</p>
+<p>For information on how to generate a service account key, see the <a class="reference external" href="https://cloud.google.com/storage/docs/authentication#generating-a-private-key">Google Cloud Platform Documentation</a>.</p>
+<p>Upload the private key JSON file to the digdag server using the <code class="docutils literal"><span class="pre">secrets</span></code> client command:</p>
+<p>digdag secrets &#8211;project my_project &#8211;set gcp.credential=&#64;my-svc-account-b4df00d.json</p>
+</li>
+</ul>
+</div>
+<div class="section" id="options">
+<span id="options"></span><h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>bq&gt;</strong>: query.sql</p>
+<p>Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>dataset</strong>: NAME</p>
+<p>Specifies the default dataset to use in the query and in the <code class="docutils literal"><span class="pre">destination_table</span></code> parameter.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset</span><span class="p">:</span> <span class="n">other_project</span><span class="p">:</span><span class="n">other_dataset</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>destination_table</strong>: NAME</p>
+<p>Specifies a table to store the query results in.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">my_result_table</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_project</span><span class="p">:</span><span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>create_disposition</strong>: CREATE_IF_NEEDED | CREATE_NEVER</p>
+<p>Specifies whether the destination table should be automatically created when executing the query.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">CREATE_IF_NEEDED</span></code>: <em>(default)</em> The destination table is created if it does not already exist.</li>
+<li><code class="docutils literal"><span class="pre">CREATE_NEVER</span></code>: The destination table must already exist, otherwise the query will fail.</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_IF_NEEDED</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_NEVER</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>write_disposition</strong>: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY</p>
+<p>Specifies whether to permit writing of data to an already existing destination table.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">WRITE_TRUNCATE</span></code>: If the destination table already exists, any data in it will be overwritten.</li>
+<li><code class="docutils literal"><span class="pre">WRITE_APPEND</span></code>: If the destination table already exists, any data in it will be appended to.</li>
+<li><code class="docutils literal"><span class="pre">WRITE_EMPTY</span></code>: <em>(default)</em> The query fails if the destination table already exists and is not empty.</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_TRUNCATE</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_APPEND</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_EMPTY</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>priority</strong>: INTERACTIVE | BATCH</p>
+<p>Specifies the priority to use for this query. <em>Default</em>: <code class="docutils literal"><span class="pre">INTERACTIVE</span></code>.</p>
+</li>
+<li><p class="first"><strong>use_query_cache</strong>: BOOLEAN</p>
+<p>Whether to use BigQuery query result caching. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>.</p>
+</li>
+<li><p class="first"><strong>allow_large_results</strong>: BOOLEAN</p>
+<p>Whether to allow arbitrarily large result tables. Requires <code class="docutils literal"><span class="pre">destination_table</span></code> to be set and <code class="docutils literal"><span class="pre">use_legacy_sql</span></code> to be true.</p>
+</li>
+<li><p class="first"><strong>flatten_results</strong>: BOOLEAN</p>
+<p>Whether to flatten nested and repeated fields in the query results. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>. Requires <code class="docutils literal"><span class="pre">use_legacy_sql</span></code> to be true.</p>
+</li>
+<li><p class="first"><strong>use_legacy_sql</strong>: BOOLEAN</p>
+<p>Whether to use legacy BigQuery SQL. <em>Default</em>: <code class="docutils literal"><span class="pre">false</span></code>.</p>
+</li>
+<li><p class="first"><strong>maximum_billing_tier</strong>: INTEGER</p>
+<p>Limit the billing tier for this query. <em>Default</em>: The project default.</p>
+</li>
+<li><p class="first"><strong>table_definitions</strong>: OBJECT</p>
+<p>Describes external data sources that are accessed in the query. For more information see <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.tableDefinitions">BigQuery documentation</a>.</p>
+</li>
+<li><p class="first"><strong>user_defined_function_resources</strong>: LIST</p>
+<p>Describes user-defined function resources used in the query. For more information see <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.userDefinedFunctionResources">BigQuery documentation</a>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="output-parameters">
+<span id="output-parameters"></span><h2>Output parameters<a class="headerlink" href="#output-parameters" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>bq.last_job_id</strong></p>
+<p>The id of the BigQuery job that executed this query.</p>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="bq_ddl.html" class="btn btn-neutral float-right" title="bq_ddl&gt;: Managing Google BigQuery Datasets and Tables" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="gcs_wait.html" class="btn btn-neutral" title="gcs_wait&gt;: Wait for a file in Google Cloud Storage" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a>.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

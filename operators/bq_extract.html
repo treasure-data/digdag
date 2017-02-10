@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bq_extract&gt;: Exporting Data from Google BigQuery &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Google Cloud Platform operators" href="gcp.html"/>
+        <link rel="next" title="bq_load&gt;: Importing Data into Google BigQuery" href="bq_load.html"/>
+        <link rel="prev" title="bq_ddl&gt;: Managing Google BigQuery Datasets and Tables" href="bq_ddl.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../operators.html">Operators</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow_control.html">Workflow control operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="treasure_data.html">Treasure Data operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="network.html">Network operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aws.html">Amazon Web Services operators</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gcp.html">Google Cloud Platform operators</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gcs_wait.html">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bq.html">bq&gt;: Running Google BigQuery queries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bq_ddl.html">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">bq_extract&gt;: Exporting Data from Google BigQuery</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#secrets">Secrets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output-parameters">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="bq_load.html">bq_load&gt;: Importing Data into Google BigQuery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html">Scripting operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../operators.html">Operators</a> &raquo;</li>
+      
+          <li><a href="gcp.html">Google Cloud Platform operators</a> &raquo;</li>
+      
+    <li>bq_extract&gt;: Exporting Data from Google BigQuery</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/operators/bq_extract.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="bq-extract-exporting-data-from-google-bigquery">
+<span id="bq-extract-exporting-data-from-google-bigquery"></span><h1>bq_extract&gt;: Exporting Data from Google BigQuery<a class="headerlink" href="#bq-extract-exporting-data-from-google-bigquery" title="Permalink to this headline">¶</a></h1>
+<p><strong>bq_extract&gt;</strong> operator can be used to export data from Google BigQuery tables.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+  <span class="n">bq</span><span class="p">:</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
+
+<span class="o">+</span><span class="n">process</span><span class="p">:</span>
+  <span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">analyze</span><span class="o">.</span><span class="n">sql</span>
+  <span class="n">destination_table</span><span class="p">:</span> <span class="n">result</span>
+
+<span class="o">+</span><span class="n">export</span><span class="p">:</span>
+  <span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">result</span>
+  <span class="n">destination</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">result</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">gz</span>
+  <span class="n">compression</span><span class="p">:</span> <span class="n">GZIP</span>
+</pre></div>
+</div>
+<div class="section" id="secrets">
+<span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>gcp.credential</strong>: CREDENTIAL</p>
+<p>See <a class="reference external" href="bq.html#secrets">gcp.credential</a>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="options">
+<span id="options"></span><h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>bq_extract&gt;</strong>: TABLE
+A reference to the table that should be exported.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_table</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_dataset</span><span class="o">.</span><span class="n">my_table</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_project</span><span class="p">:</span><span class="n">my_dataset</span><span class="o">.</span><span class="n">my_table</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>destination</strong>: URI | LIST
+A URI or list of URIs with the location of the destination export files. These must be Google Cloud Storage URIs.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export_1</span><span class="o">.</span><span class="n">csv</span>
+  <span class="o">-</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export_2</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>print_header</strong>: BOOLEAN
+Whether to print out a header row in the results. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>.</p>
+</li>
+<li><p class="first"><strong>field_delimiter</strong>: CHARACTER
+A delimiter to use between fields in the output. <em>Default</em>: <code class="docutils literal"><span class="pre">,</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">field_delimiter</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">t&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>destination_format</strong>: CSV | NEWLINE_DELIMITED_JSON | AVRO
+The format of the destination export file. <em>Default</em>: <code class="docutils literal"><span class="pre">CSV</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_format</span><span class="p">:</span> <span class="n">CSV</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_format</span><span class="p">:</span> <span class="n">NEWLINE_DELIMITED_JSON</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_format</span><span class="p">:</span> <span class="n">AVRO</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>compression</strong>: GZIP | NONE
+The compression to use for the export file. <em>Default</em>: <code class="docutils literal"><span class="pre">NONE</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">compression</span><span class="p">:</span> <span class="n">NONE</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">compression</span><span class="p">:</span> <span class="n">GZIP</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="output-parameters">
+<span id="output-parameters"></span><h2>Output parameters<a class="headerlink" href="#output-parameters" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>bq.last_job_id</strong></p>
+<p>The id of the BigQuery job that performed this export.</p>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="bq_load.html" class="btn btn-neutral float-right" title="bq_load&gt;: Importing Data into Google BigQuery" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="bq_ddl.html" class="btn btn-neutral" title="bq_ddl&gt;: Managing Google BigQuery Datasets and Tables" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a>.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

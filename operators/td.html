@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>td&gt;: Treasure Data queries &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Treasure Data operators" href="treasure_data.html"/>
+        <link rel="next" title="td_run&gt;: Treasure Data saved queries" href="td_run.html"/>
+        <link rel="prev" title="Treasure Data operators" href="treasure_data.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../operators.html">Operators</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow_control.html">Workflow control operators</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="treasure_data.html">Treasure Data operators</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">td&gt;: Treasure Data queries</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#secrets">Secrets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output-parameters">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="td_run.html">td_run&gt;: Treasure Data saved queries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_ddl.html">td_ddl&gt;: Treasure Data operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_load.html">td_load&gt;: Treasure Data bulk loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_for_each.html">td_for_each&gt;: Repeat using Treasure Data queries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_wait.html">td_wait&gt;: Waits for data arriving at Treasure Data table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_wait_table.html">td_wait_table&gt;: Waits for data arriving at Treasure Data table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_partial_delete.html">td_partial_delete&gt;: Delete range of Treasure Data table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="td_table_export.html">td_table_export&gt;: Treasure Data table export to S3</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="network.html">Network operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aws.html">Amazon Web Services operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp.html">Google Cloud Platform operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html">Scripting operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../operators.html">Operators</a> &raquo;</li>
+      
+          <li><a href="treasure_data.html">Treasure Data operators</a> &raquo;</li>
+      
+    <li>td&gt;: Treasure Data queries</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/operators/td.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="td-treasure-data-queries">
+<span id="td-treasure-data-queries"></span><h1>td&gt;: Treasure Data queries<a class="headerlink" href="#td-treasure-data-queries" title="Permalink to this headline">¶</a></h1>
+<p><strong>td&gt;</strong> operator runs a Hive or Presto query on Treasure Data.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>_export:
+  td:
+    database: www_access
+
++step1:
+  td&gt;: queries/step1.sql
++step2:
+  td&gt;: queries/step2.sql
+  create_table: mytable_${session_date_compact}
++step3:
+  td&gt;: queries/step2.sql
+  insert_into: mytable
+</pre></div>
+</div>
+<div class="section" id="examples">
+<span id="examples"></span><h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/treasure-data/workflow-examples/tree/master/td">Examples</a></li>
+</ul>
+</div>
+<div class="section" id="secrets">
+<span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>td.apikey</strong>: API_KEY</p>
+<p>The Treasure Data API key to use when running Treasure Data queries.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="options">
+<span id="options"></span><h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>td&gt;</strong>: FILE.sql</p>
+<p>Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>create_table</strong>: NAME</p>
+<p>Name of a table to create from the results. This option deletes the table if it already exists.</p>
+<p>This option adds DROP TABLE IF EXISTS; CREATE TABLE AS (Presto) or INSERT OVERWRITE (Hive) commands before the SELECT statement. If the query includes a <code class="docutils literal"><span class="pre">--</span> <span class="pre">DIGDAG_INSERT_LINE</span></code> line, the commands are inserted there.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_table</span><span class="p">:</span> <span class="n">my_table</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>insert_into</strong>: NAME</p>
+<p>Name of a table to append results into. The table is created if it does not already exist.</p>
+<p>This option adds INSERT INTO (Presto) or INSERT INTO TABLE (Hive) command at the beginning of SELECT statement. If the query includes <code class="docutils literal"><span class="pre">--</span> <span class="pre">DIGDAG_INSERT_LINE</span></code> line, the command is inserted to the line.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">insert_into</span><span class="p">:</span> <span class="n">my_table</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>download_file</strong>: NAME</p>
+<p>Saves query result as a local CSV file.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">download_file</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>store_last_results</strong>: BOOLEAN</p>
+<p>Stores the first 1 row of the query results to <code class="docutils literal"><span class="pre">${td.last_results}</span></code> variable (default: false).
+td.last_results is a map of column name and a value. To access to a single value, you can use <code class="docutils literal"><span class="pre">${td.last_results.my_count}</span></code> syntax.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">store_last_results</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>preview</strong>: BOOLEAN</p>
+<p>Tries to show some query results to confirm the results of a query.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">preview</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>result_url</strong>: NAME
+Output the query results to the URL:</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>result_url: tableau://username:password@my.tableauserver.com/?mode=replace
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>database</strong>: NAME</p>
+<p>Name of a database.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>endpoint</strong>: ADDRESS</p>
+<p>API endpoint (default: api.treasuredata.com).</p>
+</li>
+<li><p class="first"><strong>use_ssl</strong>: BOOLEAN</p>
+<p>Enable SSL (https) to access to the endpoint (default: true).</p>
+</li>
+<li><p class="first"><strong>engine</strong>: presto</p>
+<p>Query engine (<code class="docutils literal"><span class="pre">presto</span></code> or <code class="docutils literal"><span class="pre">hive</span></code>).</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>priority</strong>: 0
+Set Priority (From <code class="docutils literal"><span class="pre">-2</span></code> (VERY LOW) to <code class="docutils literal"><span class="pre">2</span></code> (VERY HIGH) , default: 0 (NORMAL)).</p>
+</li>
+</ul>
+</div>
+<div class="section" id="output-parameters">
+<span id="output-parameters"></span><h2>Output parameters<a class="headerlink" href="#output-parameters" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>td.last_job_id</strong></p>
+<p>The job id this task executed.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">52036074</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>td.last_results</strong></p>
+<p>The first 1 row of the query results as a map. This is available only when <code class="docutils literal"><span class="pre">store_last_results:</span> <span class="pre">true</span></code> is set.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span><span class="s2">&quot;/index.html&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="td_run.html" class="btn btn-neutral float-right" title="td_run&gt;: Treasure Data saved queries" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="treasure_data.html" class="btn btn-neutral" title="Treasure Data operators" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a>.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

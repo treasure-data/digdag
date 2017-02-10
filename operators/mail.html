@@ -1,0 +1,425 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mail&gt;: Sending email &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Network operators" href="network.html"/>
+        <link rel="next" title="http&gt;: Making HTTP requests" href="http.html"/>
+        <link rel="prev" title="Network operators" href="network.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../operators.html">Operators</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow_control.html">Workflow control operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="treasure_data.html">Treasure Data operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database operators</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="network.html">Network operators</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">mail&gt;: Sending email</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#secrets">Secrets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http.html">http&gt;: Making HTTP requests</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="aws.html">Amazon Web Services operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp.html">Google Cloud Platform operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html">Scripting operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../operators.html">Operators</a> &raquo;</li>
+      
+          <li><a href="network.html">Network operators</a> &raquo;</li>
+      
+    <li>mail&gt;: Sending email</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/operators/mail.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="mail-sending-email">
+<span id="mail-sending-email"></span><h1>mail&gt;: Sending email<a class="headerlink" href="#mail-sending-email" title="Permalink to this headline">¶</a></h1>
+<p><strong>mail&gt;</strong> operator sends an email.</p>
+<p>To use Gmail SMTP server, you need to do either of:</p>
+<ul>
+<li><p class="first">a) Generate a new app password at <a class="reference external" href="https://security.google.com/settings/security/apppasswords">App passwords</a>. This needs to enable 2-Step Verification first.</p>
+</li>
+<li><p class="first">b) Enable access for less secure apps at <a class="reference external" href="https://www.google.com/settings/security/lesssecureapps">Less secure apps</a>. This works even if 2-Step Verification is not enabled.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+  <span class="n">mail</span><span class="p">:</span>
+    <span class="n">from</span><span class="p">:</span> <span class="s2">&quot;you@gmail.com&quot;</span>
+
+<span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+  <span class="n">mail</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">body</span><span class="o">.</span><span class="n">txt</span>
+  <span class="n">subject</span><span class="p">:</span> <span class="n">workflow</span> <span class="n">started</span>
+  <span class="n">to</span><span class="p">:</span> <span class="p">[</span><span class="n">me</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span><span class="p">]</span>
+
+<span class="o">+</span><span class="n">step2</span><span class="p">:</span>
+  <span class="n">mail</span><span class="o">&gt;</span><span class="p">:</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">this</span> <span class="ow">is</span> <span class="n">email</span> <span class="n">body</span> <span class="n">embedded</span> <span class="ow">in</span> <span class="n">a</span> <span class="o">.</span><span class="n">dig</span> <span class="n">file</span>
+  <span class="n">subject</span><span class="p">:</span> <span class="n">workflow</span> <span class="n">started</span>
+  <span class="n">to</span><span class="p">:</span> <span class="p">[</span><span class="n">me</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span><span class="p">]</span>
+
+<span class="o">+</span><span class="n">step3</span><span class="p">:</span>
+  <span class="n">sh</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">this_task_might_fail</span><span class="o">.</span><span class="n">sh</span>
+  <span class="n">_error</span><span class="p">:</span>
+    <span class="n">mail</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">body</span><span class="o">.</span><span class="n">txt</span>
+    <span class="n">subject</span><span class="p">:</span> <span class="n">this</span> <span class="n">workflow</span> <span class="n">failed</span>
+    <span class="n">to</span><span class="p">:</span> <span class="p">[</span><span class="n">me</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<div class="section" id="secrets">
+<span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>mail.host</strong>: HOST</p>
+<p>SMTP host name.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">host</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">gmail</span><span class="o">.</span><span class="n">com</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>mail.port</strong>: PORT</p>
+<p>SMTP port number.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">port</span><span class="p">:</span> <span class="mi">587</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>mail.username</strong>: NAME</p>
+<p>SMTP login username.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">username</span><span class="p">:</span> <span class="n">me</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>mail.password</strong>: PASSWORD</p>
+<p>SMTP login password.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="p">:</span> <span class="n">MyPaSsWoRd</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>mail.tls</strong>: BOOLEAN
+Enables TLS handshake.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">tls</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>mail.ssl</strong>: BOOLEAN</p>
+<p>Enables legacy SSL encryption.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">ssl</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="options">
+<span id="options"></span><h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>mail&gt;</strong>: FILE</p>
+<p>Path to a mail body template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.
+Alternatively, you can set <code class="docutils literal"><span class="pre">{data:</span> <span class="pre">TEXT}</span></code> to embed body text in the .dig file.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">mail_body</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>or :command:<code class="docutils literal"><span class="pre">mail&gt;:</span> <span class="pre">{body:</span> <span class="pre">Hello,</span> <span class="pre">this</span> <span class="pre">is</span> <span class="pre">from</span> <span class="pre">Digdag}</span></code></li>
+</ul>
+</li>
+<li><p class="first"><strong>subject</strong>: SUBJECT</p>
+<p>Subject of the email.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">subject</span><span class="p">:</span> <span class="n">Mail</span> <span class="n">From</span> <span class="n">Digdag</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>to</strong>: [ADDR1, ADDR2, ...]</p>
+<p>To addresses.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">to</span><span class="p">:</span> <span class="p">[</span><span class="n">analyst</span><span class="nd">@examile</span><span class="o">.</span><span class="n">com</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>from</strong>: ADDR
+From address.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">:</span> <span class="n">admin</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>host</strong>: NAME</p>
+<p>SMTP host name.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">host</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">gmail</span><span class="o">.</span><span class="n">com</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>port</strong>: NAME</p>
+<p>SMTP port number.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">port</span><span class="p">:</span> <span class="mi">587</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>username</strong>: NAME</p>
+<p>SMTP login username.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">username</span><span class="p">:</span> <span class="n">me</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>tls</strong>: BOOLEAN</p>
+<p>Enables TLS handshake.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tls</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>ssl</strong>: BOOLEAN</p>
+<p>Enables legacy SSL encryption.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ssl</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>html</strong>: BOOLEAN</p>
+<p>Uses HTML mail (default: false).</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">html</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>debug</strong>: BOOLEAN</p>
+<p>Shows debug logs (default: false).</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">debug</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>attach_files</strong>: ARRAY</p>
+<p>Attach files. Each element is an object of:</p>
+<ul class="simple">
+<li><strong>path: FILE</strong>: Path to a file to attach.</li>
+<li><strong>content_type: STRING</strong>: Content-Type of this file. Default is application/octet-stream.</li>
+<li><strong>filename: NAME</strong>: Name of this file. Default is base name of the path.</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">attach_files</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">path</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">csv</span>
+  <span class="o">-</span> <span class="n">path</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">dat</span>
+    <span class="n">filename</span><span class="p">:</span> <span class="n">workflow_result_data</span><span class="o">.</span><span class="n">csv</span>
+  <span class="o">-</span> <span class="n">path</span><span class="p">:</span> <span class="n">images</span><span class="o">/</span><span class="n">image1</span><span class="o">.</span><span class="n">png</span>
+    <span class="n">content_type</span><span class="p">:</span> <span class="n">image</span><span class="o">/</span><span class="n">png</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="http.html" class="btn btn-neutral float-right" title="http&gt;: Making HTTP requests" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="network.html" class="btn btn-neutral" title="Network operators" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a>.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bq_ddl&gt;: Managing Google BigQuery Datasets and Tables &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Google Cloud Platform operators" href="gcp.html"/>
+        <link rel="next" title="bq_extract&gt;: Exporting Data from Google BigQuery" href="bq_extract.html"/>
+        <link rel="prev" title="bq&gt;: Running Google BigQuery queries" href="bq.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../operators.html">Operators</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow_control.html">Workflow control operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="treasure_data.html">Treasure Data operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="network.html">Network operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aws.html">Amazon Web Services operators</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gcp.html">Google Cloud Platform operators</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gcs_wait.html">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bq.html">bq&gt;: Running Google BigQuery queries</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#secrets">Secrets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="bq_extract.html">bq_extract&gt;: Exporting Data from Google BigQuery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bq_load.html">bq_load&gt;: Importing Data into Google BigQuery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html">Scripting operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../operators.html">Operators</a> &raquo;</li>
+      
+          <li><a href="gcp.html">Google Cloud Platform operators</a> &raquo;</li>
+      
+    <li>bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/operators/bq_ddl.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="bq-ddl-managing-google-bigquery-datasets-and-tables">
+<span id="bq-ddl-managing-google-bigquery-datasets-and-tables"></span><h1>bq_ddl&gt;: Managing Google BigQuery Datasets and Tables<a class="headerlink" href="#bq-ddl-managing-google-bigquery-datasets-and-tables" title="Permalink to this headline">¶</a></h1>
+<p><strong>bq_ddl&gt;</strong> operator can be used to create, delete and clear Google BigQuery Datasets and Tables.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>_export:
+  bq:
+    dataset: my_dataset
+
++prepare:
+  bq_ddl&gt;:
+    create_datasets:
+      - my_dataset_${session_date_compact}
+    empty_datasets:
+      - my_dataset_${session_date_compact}
+    delete_datasets:
+      - my_dataset_${last_session_date_compact}
+    create_tables:
+      - my_table_${session_date_compact}
+    empty_tables:
+      - my_table_${session_date_compact}
+    delete_tables:
+      - my_table_${last_session_date_compact}
+</pre></div>
+</div>
+<div class="section" id="secrets">
+<span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>gcp.credential</strong>: CREDENTIAL</p>
+<p>See <a class="reference external" href="bq.html#secrets">gcp.credential</a>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="options">
+<span id="options"></span><h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>create_datasets</strong>: LIST</p>
+<p>Create new datasets.</p>
+<p>For detailed information about dataset configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/datasets#resource">Google BigQuery Datasets Documentation</a>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_datasets</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">foo</span>
+  <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">bar</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>create_datasets:
+  - foo_dataset_${session_date_compact}
+  - id: bar_dataset_${session_date_compact}
+    project: other_project
+    friendly_name: Bar dataset ${session_date_compact}
+    description: Bar dataset for ${session_date}
+    default_table_expiration: 7d
+    location: EU
+    labels:
+      foo: bar
+      quux: 17
+    access:
+      - domain: example.com
+        role: READER
+      - userByEmail: ingest@example.com
+        role: WRITER
+      - groupByEmail: administrators@example.com
+        role: OWNER
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>empty_datasets</strong>: LIST</p>
+<p>Create new datasets, deleting them first if they already exist. Any tables in the datasets will also be deleted.</p>
+<p>For detailed information about dataset configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/datasets#resource">Google BigQuery Datasets Documentation</a>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">empty_datasets</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">foo</span>
+  <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">bar</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>empty_datasets:
+  - foo_dataset_${session_date_compact}
+  - id: bar_dataset_${session_date_compact}
+    project: other_project
+    friendly_name: Bar dataset ${session_date_compact}
+    description: Bar dataset for ${session_date}
+    default_table_expiration: 7d
+    location: EU
+    labels:
+      foo: bar
+      quux: 17
+    access:
+      - domain: example.com
+        role: READER
+      - userByEmail: ingest@example.com
+        role: WRITER
+      - groupByEmail: administrators@example.com
+        role: OWNER
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>delete_datasets</strong>: LIST</p>
+<p>Delete datasets, if they exist.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">delete_datasets</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">foo</span>
+  <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">bar</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>delete_datasets:
+  - foo_dataset_${last_session_date_compact}
+  - other_project:bar_dataset_${last_session_date_compact}
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>create_tables</strong>: LIST</p>
+<p>Create new tables.</p>
+<p>For detailed information about table configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/tables#resource">Google BigQuery Tables Documentation</a>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_tables</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">foo</span>
+  <span class="o">-</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">bar</span>
+  <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">yet_another_dataset</span><span class="o">.</span><span class="n">baz</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>create_tables:
+  - foo_dataset_${session_date_compact}
+  - id: bar_dataset_${session_date_compact}
+    project: other_project
+    dataset: other_dataset
+    friendly_name: Bar dataset ${session_date_compact}
+    description: Bar dataset for ${session_date}
+    expiration_time: 2016-11-01-T01:02:03Z
+    schema:
+      fields:
+        - {name: foo, type: STRING}
+        - {name: bar, type: INTEGER}
+    labels:
+      foo: bar
+      quux: 17
+    access:
+      - domain: example.com
+        role: READER
+      - userByEmail: ingest@example.com
+        role: WRITER
+      - groupByEmail: administrators@example.com
+        role: OWNER
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>empty_tables</strong>: LIST
+Create new tables, deleting them first if they already exist.</p>
+<p>For detailed information about table configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/tables#resource">Google BigQuery Tables Documentation</a>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">empty_tables</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">foo</span>
+  <span class="o">-</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">bar</span>
+  <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">yet_another_dataset</span><span class="o">.</span><span class="n">baz</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>empty_tables:
+  - foo_table_${session_date_compact}
+  - id: bar_table_${session_date_compact}
+    project: other_project
+    dataset: other_dataset
+    friendly_name: Bar dataset ${session_date_compact}
+    description: Bar dataset for ${session_date}
+    expiration_time: 2016-11-01-T01:02:03Z
+    schema:
+      fields:
+        - {name: foo, type: STRING}
+        - {name: bar, type: INTEGER}
+    labels:
+      foo: bar
+      quux: 17
+    access:
+      - domain: example.com
+        role: READER
+      - userByEmail: ingest@example.com
+        role: WRITER
+      - groupByEmail: administrators@example.com
+        role: OWNER
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>delete_tables</strong>: LIST
+Delete tables, if they exist.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">delete_tables</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">foo</span>
+  <span class="o">-</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">bar</span>
+  <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">yet_another_dataset</span><span class="o">.</span><span class="n">baz</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>delete_tables:
+  - foo_table_${last_session_date_compact}
+  - bar_table_${last_session_date_compact}
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="bq_extract.html" class="btn btn-neutral float-right" title="bq_extract&gt;: Exporting Data from Google BigQuery" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="bq.html" class="btn btn-neutral" title="bq&gt;: Running Google BigQuery queries" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a>.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

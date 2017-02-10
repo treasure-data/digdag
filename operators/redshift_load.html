@@ -1,0 +1,685 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>redshift_load&gt;: Redshift load operations &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Amazon Web Services operators" href="aws.html"/>
+        <link rel="next" title="redshift_unload&gt;: Redshift unload operations" href="redshift_unload.html"/>
+        <link rel="prev" title="redshift&gt;: Redshift operations" href="redshift.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../operators.html">Operators</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow_control.html">Workflow control operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="treasure_data.html">Treasure Data operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="network.html">Network operators</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="aws.html">Amazon Web Services operators</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="s3_wait.html">s3_wait&gt;: Wait for a file in Amazon S3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="redshift.html">redshift&gt;: Redshift operations</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">redshift_load&gt;: Redshift load operations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#secrets">Secrets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redshift_unload.html">redshift_unload&gt;: Redshift unload operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="emr.html">emr&gt;: Amazon Elastic Map Reduce</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gcp.html">Google Cloud Platform operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html">Scripting operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../operators.html">Operators</a> &raquo;</li>
+      
+          <li><a href="aws.html">Amazon Web Services operators</a> &raquo;</li>
+      
+    <li>redshift_load&gt;: Redshift load operations</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/operators/redshift_load.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="redshift-load-redshift-load-operations">
+<span id="redshift-load-redshift-load-operations"></span><h1>redshift_load&gt;: Redshift load operations<a class="headerlink" href="#redshift-load-redshift-load-operations" title="Permalink to this headline">¶</a></h1>
+<p><strong>redshift_load&gt;</strong> operator runs COPY statement to load data from external storage on Redshift.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+  <span class="n">redshift</span><span class="p">:</span>
+    <span class="n">host</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">redshift</span><span class="o">.</span><span class="mi">1234</span><span class="n">abcd</span><span class="o">.</span><span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="o">-</span><span class="mf">1.</span><span class="n">redshift</span><span class="o">.</span><span class="n">amazonaws</span><span class="o">.</span><span class="n">com</span>
+    <span class="c1"># port: 5439</span>
+    <span class="n">database</span><span class="p">:</span> <span class="n">production_db</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">app_user</span>
+    <span class="n">ssl</span><span class="p">:</span> <span class="n">true</span>
+    <span class="c1"># strict_transaction: false</span>
+
+<span class="o">+</span><span class="n">load_from_dynamodb_simple</span><span class="p">:</span>
+    <span class="n">redshift_load</span><span class="o">&gt;</span><span class="p">:</span>
+    <span class="n">schema</span><span class="p">:</span> <span class="n">myschema</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">transactions</span>
+    <span class="n">from</span><span class="p">:</span> <span class="n">dynamodb</span><span class="p">:</span><span class="o">//</span><span class="n">transaction</span><span class="o">-</span><span class="n">table</span>
+    <span class="n">readratio</span><span class="p">:</span> <span class="mi">123</span>
+
+<span class="o">+</span><span class="n">load_from_s3_with_many_options</span><span class="p">:</span>
+    <span class="n">redshift_load</span><span class="o">&gt;</span><span class="p">:</span>
+    <span class="n">schema</span><span class="p">:</span> <span class="n">myschema</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">access_logs</span>
+    <span class="n">from</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">today</span>
+    <span class="n">column_list</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">referer</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">method</span>
+    <span class="n">manifest</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">encrypted</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">region</span><span class="p">:</span> <span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">csv</span><span class="p">:</span> <span class="s2">&quot;&#39;&quot;</span>
+    <span class="n">delimiter</span><span class="p">:</span> <span class="s2">&quot;$&quot;</span>
+    <span class="c1"># json: s3://my-app-bucket/access_logs/jsonpathfile</span>
+    <span class="c1"># avro: auto</span>
+    <span class="c1"># fixedwidth: host:15,code:3,method:15</span>
+    <span class="n">gzip</span><span class="p">:</span> <span class="n">true</span>
+    <span class="c1"># bzip2: true</span>
+    <span class="c1"># lzop: true</span>
+    <span class="n">acceptanydate</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">acceptinvchars</span><span class="p">:</span> <span class="s2">&quot;&amp;&quot;</span>
+    <span class="n">blanksasnull</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">dateformat</span><span class="p">:</span> <span class="n">yyyy</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">dd</span>
+    <span class="n">emptyasnull</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="n">UTF8</span>
+    <span class="n">escape</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">explicit_ids</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">fillrecord</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">ignoreblanklines</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">ignoreheader</span><span class="p">:</span> <span class="mi">2</span>
+    <span class="n">null_as</span><span class="p">:</span> <span class="n">nULl</span>
+    <span class="n">removequotes</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">roundec</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">timeformat</span><span class="p">:</span> <span class="n">YYYY</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">DD</span> <span class="n">HH</span><span class="p">:</span><span class="n">MI</span><span class="p">:</span><span class="n">SS</span>
+    <span class="n">trimblanks</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">truncatecolumns</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">comprows</span><span class="p">:</span> <span class="mi">12</span>
+    <span class="n">compupdate</span><span class="p">:</span> <span class="n">ON</span>
+    <span class="n">maxerror</span><span class="p">:</span> <span class="mi">34</span>
+    <span class="c1"># noload: true</span>
+    <span class="n">statupdate</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">role_session_name</span><span class="p">:</span> <span class="n">federated_user</span>
+    <span class="n">session_duration</span><span class="p">:</span> <span class="mi">1800</span>
+    <span class="c1"># temp_credentials: false</span>
+</pre></div>
+</div>
+<div class="section" id="secrets">
+<span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>aws.redshift.password</strong>: NAME</p>
+<p>Optional user password to use when connecting to the Redshift database.</p>
+</li>
+<li><p class="first"><strong>aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id</strong></p>
+<p>The AWS Access Key ID to use when accessing data source. This value is used to get temporary security credentials by default. See <code class="docutils literal"><span class="pre">temp_credentials</span></code> option for details.</p>
+</li>
+<li><p class="first"><strong>aws.redshift_load.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key</strong></p>
+<p>The AWS Secret Access Key to use when accessing data source. This value is used to get temporary security credentials by default. See <code class="docutils literal"><span class="pre">temp_credentials</span></code> option for details.</p>
+</li>
+<li><p class="first"><strong>aws.redshift_load.role_arn, aws.redshift.role_arn, aws.role_arn</strong></p>
+<p>Optional Amazon resource names (ARNs) used to copy data to the Redshift. The role needs <code class="docutils literal"><span class="pre">AssumeRole</span></code> role to use this option. Requires <code class="docutils literal"><span class="pre">temp_credentials</span></code> to be true.
+If this option isn&#8217;t specified, this operator tries to use a federated user</p>
+</li>
+</ul>
+</div>
+<div class="section" id="options">
+<span id="options"></span><h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><strong>database</strong>: NAME</p>
+<p>Database name.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>host</strong>: NAME</p>
+<p>Hostname or IP address of the database.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">host</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">foobar</span><span class="o">.</span><span class="n">com</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>port</strong>: NUMBER</p>
+<p>Port number to connect to the database. <em>Default</em>: <code class="docutils literal"><span class="pre">5439</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">port</span><span class="p">:</span> <span class="mi">2345</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>user</strong>: NAME</p>
+<p>User to connect to the database</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">user</span><span class="p">:</span> <span class="n">app_user</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>ssl</strong>: BOOLEAN</p>
+<p>Enable SSL to connect to the database. <em>Default</em>: <code class="docutils literal"><span class="pre">false</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ssl</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>schema</strong>: NAME</p>
+<p>Default schema name. <em>Default</em>: <code class="docutils literal"><span class="pre">public</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">schema</span><span class="p">:</span> <span class="n">my_schema</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>strict_transaction</strong>: BOOLEAN</p>
+<p>Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>.
+This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn&#8217;t allowed, this option should be false.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">strict_transaction</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>status_table_schema</strong>: NAME</p>
+<p>Schema name of status table. <em>Default</em>: same as the value of <code class="docutils literal"><span class="pre">schema</span></code> option.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">status_table_schema</span><span class="p">:</span> <span class="n">writable_schema</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>status_table</strong>: NAME</p>
+<p>Table name prefix of status table. <em>Default</em>: <code class="docutils literal"><span class="pre">__digdag_status</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">status_table</span><span class="p">:</span> <span class="n">customized_status_table</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>table</strong>: NAME</p>
+<p>Table name in Redshift database to be loaded data</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">table</span><span class="p">:</span> <span class="n">access_logs</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>from</strong>: URI</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">FROM</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">today</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>column_list</strong>: CSV</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">COLUMN_LIST</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">column_list</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">referer</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">method</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>manifest</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">MANIFEST</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">manifest</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>encrypted</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">ENCRYPTED</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">encrypted</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>readratio</strong>: NUMBER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">READRATIO</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">readratio</span><span class="p">:</span> <span class="mi">150</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>region</strong>: NAME</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">REGION</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">region</span><span class="p">:</span> <span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="o">-</span><span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>csv</strong>: CHARACTER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">CSV</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement.
+If you want to just use default quote charactor of <code class="docutils literal"><span class="pre">CSV</span></code> parameter, set empty string like <code class="docutils literal"><span class="pre">csv:</span> <span class="pre">''</span></code></p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">csv</span><span class="p">:</span> <span class="s2">&quot;&#39;&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>delimiter</strong>: CHARACTER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">DELIMITER</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">delimiter</span><span class="p">:</span> <span class="s2">&quot;$&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>json</strong>: URI</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">JSON</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">json</span><span class="p">:</span> <span class="n">auto</span>
+</pre></div>
+</div>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">json</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">jsonpathfile</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>avro</strong>: URI</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">AVRO</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">avro</span><span class="p">:</span> <span class="n">auto</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">avro</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">jsonpathfile</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>fixedwidth</strong>: CSV</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">FIXEDWIDTH</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fixedwidth</span><span class="p">:</span> <span class="n">host</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span><span class="n">code</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="n">method</span><span class="p">:</span><span class="mi">15</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>gzip</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">GZIP</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gzip</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>bzip2</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">BZIP2</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bzip2</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>lzop</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">LZOP</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">lzop</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>acceptanydate</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">ACCEPTANYDATE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">acceptanydate</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>acceptinvchars</strong>: CHARACTER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">ACCEPTINVCHARS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">acceptinvchars</span><span class="p">:</span> <span class="s2">&quot;&amp;&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>blanksasnull</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">BLANKSASNULL</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">blanksasnull</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>dateformat</strong>: STRING</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">DATEFORMAT</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dateformat</span><span class="p">:</span> <span class="n">yyyy</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">dd</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>emptyasnull</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">EMPTYASNULL</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">emptyasnull</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>encoding</strong>: TYPE</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">ENCODING</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">encoding</span><span class="p">:</span> <span class="n">UTF8</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>escape</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">ESCAPE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">escape</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>explicit_ids</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">EXPLICIT_IDS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">explicit_ids</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>fillrecord</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">FILLRECORD</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fillrecord</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>ignoreblanklines</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">IGNOREBLANKLINES</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ignoreblanklines</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>ignoreheader</strong>: NUMBER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">IGNOREHEADER</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ignoreheader</span><span class="p">:</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>null_as</strong>: STRING</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">NULL</span> <span class="pre">AS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">null_as</span><span class="p">:</span> <span class="n">nULl</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>removequotes</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">REMOVEQUOTES</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">removequotes</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>roundec</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">ROUNDEC</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">roundec</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>timeformat</strong>: STRING</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">TIMEFORMAT</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">timeformat</span><span class="p">:</span> <span class="n">YYYY</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">DD</span> <span class="n">HH</span><span class="p">:</span><span class="n">MI</span><span class="p">:</span><span class="n">SS</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>trimblanks</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">TRIMBLANKS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">trimblanks</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>truncatecolumns</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">TRUNCATECOLUMNS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">truncatecolumns</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>comprows</strong>: NUMBER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">COMPROWS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">comprows</span><span class="p">:</span> <span class="mi">12</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>compupdate</strong>: TYPE</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">COMPUPDATE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">compupdate</span><span class="p">:</span> <span class="n">ON</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>maxerror</strong>: NUMBER</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">MAXERROR</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">maxerror</span><span class="p">:</span> <span class="mi">34</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>noload</strong>: BOOLEAN</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">NOLOAD</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">noload</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>statupdate</strong>: TYPE</p>
+<p>Parameter mapped to <code class="docutils literal"><span class="pre">STATUPDATE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">statupdate</span><span class="p">:</span> <span class="n">off</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>temp_credentials</strong>: BOOLEAN</p>
+<p>Whether this operator uses temporary security credentials. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>.
+This operator tries to use temporary security credentials as follows:</p>
+<ul class="simple">
+<li>If <code class="docutils literal"><span class="pre">role_arn</span></code> is specified, it calls <code class="docutils literal"><span class="pre">AssumeRole</span></code> action</li>
+<li>If not, it calls <code class="docutils literal"><span class="pre">GetFederationToken</span></code> action</li>
+</ul>
+<p>See details about <code class="docutils literal"><span class="pre">AssumeRole</span></code> and <code class="docutils literal"><span class="pre">GetFederationToken</span></code> in the documents of AWS Security Token Service.</p>
+<p>So either of <code class="docutils literal"><span class="pre">AssumeRole</span></code> or <code class="docutils literal"><span class="pre">GetFederationToken</span></code> action is called to use temporary security credentials by default for secure operation.
+But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">temp_credentials</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>session_duration INTEGER</strong></p>
+<p>Session duration of temporary security credentials. <em>Default</em>: <code class="docutils literal"><span class="pre">3</span> <span class="pre">hour</span></code>.
+This option isn&#8217;t used when disabling <code class="docutils literal"><span class="pre">temp_credentials</span></code></p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">session_duration</span><span class="p">:</span> <span class="mi">1800</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="redshift_unload.html" class="btn btn-neutral float-right" title="redshift_unload&gt;: Redshift unload operations" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="redshift.html" class="btn btn-neutral" title="redshift&gt;: Redshift operations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a>.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
