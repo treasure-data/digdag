@@ -7,11 +7,10 @@ Please be aware that records imported using streaming import can't be deleted fo
 Time range needs to be hourly. Setting non-zero values to minutes or seconds will be rejected.
 
     +step1:
-      td_partial_delete>:
+      td_partial_delete>: my_table
       database: mydb
-      table: mytable
-      from: 2016-01-01 00:00:00 +0800
-      to:   2016-02-01 00:00:00 +0800
+      from: 2016-01-01T00:00:00+0800
+      to:   2016-02-01T00:00:00+0800
 
 ## Secrets
 
@@ -19,6 +18,16 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   The Treasure Data API key to use when running Treasure Data queries.
 
 ## Parameters
+
+* **td_partial_delete>**: NAME
+
+  Name of the table.
+
+  Examples:
+
+  ```
+  td_partial_delete>: my_table
+  ```
 
 * **database**: NAME
 
@@ -30,19 +39,9 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   database: my_database
   ```
 
-* **table**: NAME
+* **from**: yyyy-MM-ddTHH:mm:ss[Z]
 
-  Name of the table to export.
-
-  Examples:
-
-  ```
-  table: my_table
-  ```
-
-* **from**: yyyy-MM-dd HH:mm:ss[ Z]
-
-  Delete records from this time (inclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
+  Delete records from this time (inclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in ISO-8601 (yyyy-MM-ddTHH:mm:ss[Z]) format.
 
   Examples:
 
@@ -50,9 +49,9 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   from: 2016-01-01 00:00:00 +0800
   ```
 
-* **to**: yyyy-MM-dd HH:mm:ss[ Z]
+* **to**: yyyy-MM-ddTHH:mm:ss[ Z]
 
-  Delete records to this time (exclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
+  Delete records to this time (exclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in ISO-8601 (yyyy-MM-ddTHH:mm:ss[Z]) format.
 
   Examples:
 
