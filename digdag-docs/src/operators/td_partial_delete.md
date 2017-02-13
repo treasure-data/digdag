@@ -46,17 +46,17 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   Examples:
 
   ```
-  from: 2016-01-01 00:00:00 +0800
+  from: 2016-01-01T00:00:00+0800
   ```
 
-* **to**: yyyy-MM-ddTHH:mm:ss[ Z]
+* **to**: yyyy-MM-ddTHH:mm:ss[Z]
 
   Delete records to this time (exclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in ISO-8601 (yyyy-MM-ddTHH:mm:ss[Z]) format.
 
   Examples:
 
   ```
-  to: 2016-02-01 00:00:00 +0800
+  to: 2016-02-01T00:00:00+0800
   ```
 
 * **endpoint**: ADDRESS
