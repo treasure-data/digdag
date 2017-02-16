@@ -155,18 +155,23 @@ public class UndertowServer
         control.workerInitialized(worker);
 
         HttpHandler apiHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
-        HttpHandler adminHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
+        HttpHandler adminHandler = null;
 
         logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
-        Undertow server = Undertow.builder()
+        Undertow.Builder serverBuilder = Undertow.builder()
             .addHttpListener(config.getPort(), config.getBind(), apiHandler)
-            .addHttpListener(config.getAdminPort(), config.getAdminBind(), adminHandler)
             .setWorker(worker)
             .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)  // required to enable reqtime:%T in access log
             .setServerOption(UndertowOptions.NO_REQUEST_TIMEOUT, config.getHttpNoRequestTimeout().or(60) * 1000)
             .setServerOption(UndertowOptions.REQUEST_PARSE_TIMEOUT, config.getHttpRequestParseTimeout().or(30) * 1000)
             .setServerOption(UndertowOptions.IDLE_TIMEOUT, config.getHttpIoIdleTimeout().or(300) * 1000)
-            .build();
+            ;
+        if (config.getAdminPort().isPresent()) {
+            adminHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
+            serverBuilder = serverBuilder
+                .addHttpListener(config.getAdminPort().get(), config.getAdminBind().or(config.getBind()), adminHandler);
+        }
+        Undertow server = serverBuilder.build();
         control.serverInitialized(server);
 
         server.start();  // HTTP server starts here
@@ -186,7 +191,7 @@ public class UndertowServer
                     logger.info("Bound api on {}", address);
                     localAddresses.add(address);
                 }
-                else if (rootHandler == adminHandler) {
+                else if (adminHandler != null && rootHandler == adminHandler) {
                     logger.info("Bound admin api on {}", address);
                     localAdminAddresses.add(address);
                 } else {
