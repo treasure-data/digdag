@@ -54,6 +54,7 @@ public class BuiltInVariablesIT
         Map<String, Matcher<String>> expectedOutput = ImmutableMap.<String, Matcher<String>>builder()
                 .put("session_tz_offset", is("+0000"))
                 .put("session_time", is("2016-01-02T03:04:05+00:00"))
+                .put("session_id", is("1"))
                 .put("session_uuid", is(validUuid()))
                 .put("timezone", is("UTC"))
                 .put("session_local_time", is("2016-01-02 03:04:05"))
