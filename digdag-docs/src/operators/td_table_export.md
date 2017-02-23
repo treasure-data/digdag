@@ -1,5 +1,7 @@
 # td_table_export>: Treasure Data table export to S3
 
+NOTE: We're limiting export capability to only us-east region S3 bucket. In general, please use Result Output to S3 feature using td operator.
+
 **td_table_export>** operator loads data from storages, databases, or services.
 
     +step1:
