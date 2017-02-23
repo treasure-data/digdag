@@ -93,7 +93,7 @@ public class Main
                 return 0;
             }
         }
-        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": " + programName + " v" + version);
+        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version);
         if (args.length == 0) {
             usage(null);
             return 0;
