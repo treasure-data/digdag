@@ -1723,7 +1723,7 @@ public class DatabaseSessionStoreManager
         void insertDelayedAttempt(@Bind("attemptId") long attemptId, @Bind("dependentSessionId") Long dependentSessionId, @Bind("nextRunTime") long nextRunTime);
 
         @SqlUpdate("update sessions" +
-                " set last_attempt_id = :attemptId" +
+                " set last_attempt_id = :attemptId, last_attempt_created_at = (select created_at from session_attempts where id = :attemptId)" +
                 " where id = :sessionId")
         int updateLastAttemptId(@Bind("sessionId") long sessionId, @Bind("attemptId") long attemptId);
 

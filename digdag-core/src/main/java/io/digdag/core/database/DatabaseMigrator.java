@@ -35,6 +35,7 @@ public class DatabaseMigrator
         new Migration_20161209001857_CreateDelayedSessionAttempts(),
         new Migration_20170116082921_AddAttemptIndexColumn1(),
         new Migration_20170116090744_AddAttemptIndexColumn2(),
+        new Migration_20170223220127_AddLastSessionTimeAndFlagsToSessions(),
     })
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());
