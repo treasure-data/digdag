@@ -83,6 +83,7 @@ public final class RestModels
             .createdAt(rev.getCreatedAt())
             .archiveType(rev.getArchiveType().getName())
             .archiveMd5(rev.getArchiveMd5())
+            .userInfo(Optional.of(rev.getUserInfo()))
             .build();
     }
 
