@@ -350,7 +350,7 @@
 <p>Runs a workflow scheduler that runs schedules periodically. This picks up all workflow definition files named with <code class="docutils literal"><span class="pre">.dig</span></code> suffix at the current directory. Examples:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag scheduler
 <span class="gp">$</span> digdag scheduler -d status
-<span class="gp">$</span> digdag scheduler -b 0.0.0.0
+<span class="gp">$</span> digdag scheduler -b <span class="m">0</span>.0.0.0
 </pre></div>
 </div>
 <dl class="docutils">
@@ -399,7 +399,7 @@
 </div>
 <p>Updates the executable binary file to the latest version or specified version. Examples:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag selfupdate
-<span class="gp">$</span> digdag selfupdate 0.9.5
+<span class="gp">$</span> digdag selfupdate <span class="m">0</span>.9.5
 </pre></div>
 </div>
 </div>
@@ -414,7 +414,7 @@
 <p>Runs a digdag server. &#8211;memory or &#8211;database option is required. Examples:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag server --memory
 <span class="gp">$</span> digdag server -o digdag-server
-<span class="gp">$</span> digdag server -o digdag-server -b 0.0.0.0
+<span class="gp">$</span> digdag server -o digdag-server -b <span class="m">0</span>.0.0.0
 </pre></div>
 </div>
 <dl class="docutils">
@@ -596,7 +596,7 @@
 </pre></div>
 </div>
 <p>Shows logs of a session attempt. This command works only if server (or scheduler) runs with <code class="docutils literal"><span class="pre">-O,</span> <span class="pre">--task-log</span></code> option.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag log 32
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag log <span class="m">32</span>
 <span class="gp">$</span> digdag log <span class="m">32</span> -f
 <span class="gp">$</span> digdag log <span class="m">32</span> +main
 <span class="gp">$</span> digdag log <span class="m">32</span> +main+task1
@@ -617,7 +617,7 @@
 </pre></div>
 </div>
 <p>Kills a session attempt. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag <span class="nb">kill</span> 32
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag <span class="nb">kill</span> <span class="m">32</span>
 </pre></div>
 </div>
 </div>
@@ -719,7 +719,7 @@
 </pre></div>
 </div>
 <p>Shows tasks of an session attempt. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag tasks 32
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag tasks <span class="m">32</span>
 </pre></div>
 </div>
 </div>
@@ -730,7 +730,7 @@
 </div>
 <p>Creates a project archive and upload it to the server. This command uploads workflow definition files (files with .dig suffix) at the current directory, and all other files from the current directory recursively. Examples:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag push myproj -r <span class="s2">&quot;</span><span class="k">$(</span>date +%Y-%m-%dT%H:%M:%S%z<span class="k">)</span><span class="s2">&quot;</span>
-<span class="gp">$</span> digdag push default -r <span class="s2">&quot;</span><span class="k">$(</span>git show --pretty<span class="o">=</span>format:<span class="s1">&#39;%T&#39;</span> <span class="p">|</span> head -n 1<span class="k">)</span><span class="s2">&quot;</span>
+<span class="gp">$</span> digdag push default -r <span class="s2">&quot;</span><span class="k">$(</span>git show --pretty<span class="o">=</span>format:<span class="s1">&#39;%T&#39;</span> <span class="p">|</span> head -n <span class="m">1</span><span class="k">)</span><span class="s2">&quot;</span>
 </pre></div>
 </div>
 <dl class="docutils">
