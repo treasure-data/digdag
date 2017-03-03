@@ -45,9 +45,10 @@ public class WorkflowExecutionTimeoutEnforcer
     private static final Duration DEFAULT_TASK_TTL = Duration.ofDays(1);
     private static final Duration DEFAULT_REAPING_INTERVAL = Duration.ofSeconds(5);
 
-    // This is similar to TaskStateCode.notDoneStates() but BLOCKED and PLANNED are excluded
+    // This is similar to TaskStateCode.notDoneStates() but BLOCKED, PLANNED, and READY are excluded.
+    // BLOCKED and PLANNED are excluded because there're other running tasks that should be enforced instead.
+    // READY is excluded the workflow itself is working correctly and number of threads is insufficient.
     private static final TaskStateCode[] TaskTTLEnforcedTaskStates = new TaskStateCode[] {
-        TaskStateCode.READY,
         TaskStateCode.RETRY_WAITING,
         TaskStateCode.GROUP_RETRY_WAITING,
         TaskStateCode.RUNNING,
