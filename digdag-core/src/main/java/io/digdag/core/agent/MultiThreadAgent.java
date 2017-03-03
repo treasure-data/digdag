@@ -53,8 +53,8 @@ public class MultiThreadAgent
         if (config.getMaxThreads() > 0) {
             this.executorQueue = new LinkedBlockingQueue<Runnable>();
             this.executor = new ThreadPoolExecutor(
-                    0, config.getMaxThreads(),
-                    60L, TimeUnit.SECONDS,
+                    config.getMaxThreads(), config.getMaxThreads(),
+                    0L, TimeUnit.SECONDS,
                     executorQueue, threadFactory);
         }
         else {
