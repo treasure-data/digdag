@@ -27,9 +27,10 @@ public class MultiThreadAgent
     private final OperatorManager runner;
     private final ErrorReporter errorReporter;
 
-    private final Object newTaskLock = new Object();
+    private final Object taskCountLock = new Object();
     private final BlockingQueue<Runnable> executorQueue;
     private final ThreadPoolExecutor executor;
+    private volatile int activeTaskCount = 0;
 
     private volatile boolean stop = false;
 
@@ -73,15 +74,15 @@ public class MultiThreadAgent
     {
         stop = true;
         taskServer.interruptLocalWait();
-        int maximumPossibleActiveTaskCount;
-        synchronized (newTaskLock) {
-            // synchronize newTaskLock not to reject task execution after acquiring them from taskServer
+        int activeTaskCountSnapshot;
+        synchronized (taskCountLock) {
+            // synchronize taskCountLock not to reject task execution after acquiring them from taskServer
             executor.shutdown();
-            maximumPossibleActiveTaskCount = executorQueue.size() + executor.getActiveCount();
-            newTaskLock.notifyAll();
+            activeTaskCountSnapshot = activeTaskCount;
+            taskCountLock.notifyAll();
         }
-        if (maximumPossibleActiveTaskCount > 0) {
-            logger.info("Waiting for completion of {} running tasks...", maximumPossibleActiveTaskCount);
+        if (activeTaskCountSnapshot > 0) {
+            logger.info("Waiting for completion of {} running tasks...", activeTaskCountSnapshot);
         }
         if (maximumCompletionWait.isPresent()) {
             long seconds = maximumCompletionWait.get().getSeconds();
@@ -101,13 +102,11 @@ public class MultiThreadAgent
     {
         while (!stop) {
             try {
-                synchronized (newTaskLock) {
+                synchronized (taskCountLock) {
                     if (executor.isShutdown()) {
                         break;
                     }
-                    int maximumPossibleActiveTaskCount = executorQueue.size() + executor.getActiveCount();
-                    int guaranteedAvaialbleThreads = executor.getMaximumPoolSize() - maximumPossibleActiveTaskCount;
-                    int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
+                    int maxAcquire = Math.min(executor.getMaximumPoolSize() - activeTaskCount, 10);
                     if (maxAcquire > 0) {
                         List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
                         for (TaskRequest req : reqs) {
@@ -119,12 +118,18 @@ public class MultiThreadAgent
                                     logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
                                     errorReporter.reportUncaughtError(t);
                                 }
+                                finally {
+                                    synchronized (taskCountLock) {
+                                        activeTaskCount--;
+                                    }
+                                }
                             });
+                            activeTaskCount++;
                         }
                     }
                     else {
                         // no executor thread is available. sleep for a while until a task execution finishes
-                        newTaskLock.wait(500);
+                        taskCountLock.wait(500);
                     }
                 }
             }

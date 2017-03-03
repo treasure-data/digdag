@@ -47,7 +47,7 @@ public class AgentOverAcquireIT
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
                 "--project", projectDir.toString(),
-                "-X", "agent.heartbeat-interval=10",
+                "-X", "agent.heartbeat-interval=5",
                 "-X", "agent.lock-retention-time=20",
                 "-X", "agent.max-task-threads=5",
                 "-p", "outdir=" + outdir,
@@ -55,7 +55,7 @@ public class AgentOverAcquireIT
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
 
         for (int i = 0; i < 20; i++) {
-            String one = new String(Files.readAllBytes(outdir.resolve(Integer.toString(i))), UTF_8);
+            String one = new String(Files.readAllBytes(outdir.resolve(Integer.toString(i))), UTF_8).trim();
             assertThat(one, is("1"));
         }
     }
