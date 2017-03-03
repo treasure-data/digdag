@@ -1,0 +1,9 @@
+
++loop:
+  loop>: 500
+  _do:
+    sh>: sleep 2
+
++dependent:
+  echo>: don't kill this task by task timeout
+

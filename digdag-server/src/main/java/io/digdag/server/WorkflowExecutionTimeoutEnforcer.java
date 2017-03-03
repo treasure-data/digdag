@@ -45,6 +45,14 @@ public class WorkflowExecutionTimeoutEnforcer
     private static final Duration DEFAULT_TASK_TTL = Duration.ofDays(1);
     private static final Duration DEFAULT_REAPING_INTERVAL = Duration.ofSeconds(5);
 
+    // This is similar to TaskStateCode.notDoneStates() but BLOCKED and PLANNED are excluded
+    private static final TaskStateCode[] TaskTTLEnforcedTaskStates = new TaskStateCode[] {
+        TaskStateCode.READY,
+        TaskStateCode.RETRY_WAITING,
+        TaskStateCode.GROUP_RETRY_WAITING,
+        TaskStateCode.RUNNING,
+    };
+
     private final ScheduledExecutorService scheduledExecutorService;
     private final SessionStoreManager ssm;
     private final Notifier notifier;
@@ -134,7 +142,7 @@ public class WorkflowExecutionTimeoutEnforcer
     {
         Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
 
-        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TaskStateCode.notDoneStates(), startDeadline, (long) 0, 100);
+        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TaskTTLEnforcedTaskStates, startDeadline, (long) 0, 100);
 
         Map<Long, List<TaskAttemptSummary>> attempts = expiredTasks.stream()
                 .collect(groupingBy(TaskAttemptSummary::getAttemptId));
