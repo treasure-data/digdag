@@ -1,0 +1,7 @@
+
++loop:
+  loop>: 20
+  _parallel: true
+  _do:
+    sh>: sleep 30 && /bin/echo -n 1 >> ${outdir}/${i}
+
