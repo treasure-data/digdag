@@ -20,7 +20,7 @@ import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ArchiveType;
@@ -159,7 +159,7 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public AttemptStateFlags startSession(
+    public StoredSessionAttempt startSession(
             int siteId,
             int projectId,
             String workflowName,
@@ -184,12 +184,13 @@ public class InProcessTaskCallbackApi
                 Optional.absent());
 
         // TODO FIXME SessionMonitor monitors is not set
+        StoredSessionAttemptWithSession attempt;
         try {
-            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(siteId, ar, def);
-            return attempt.getStateFlags();
+            attempt = exec.submitWorkflow(siteId, ar, def);
         }
         catch (SessionAttemptConflictException ex) {
-            return ex.getConflictedSession().getStateFlags();
+            attempt = ex.getConflictedSession();
         }
+        return attempt;
     }
 }

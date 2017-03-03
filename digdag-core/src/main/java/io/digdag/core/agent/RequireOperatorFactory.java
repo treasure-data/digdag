@@ -8,7 +8,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Instant;
+
+import static java.util.Locale.ENGLISH;
 
 public class RequireOperatorFactory
         implements OperatorFactory
@@ -66,10 +68,11 @@ public class RequireOperatorFactory
             String workflowName = config.get("_command", String.class);
             int projectId = config.get("project_id", int.class);
             Instant instant = config.get("session_time", Instant.class);
+            boolean ignoreFailure = config.get("ignore_failure", boolean.class, false);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
             Config overrideParams = config.getNestedOrGetEmpty("params");
             try {
-                AttemptStateFlags flags = callback.startSession(
+                StoredSessionAttempt attempt = callback.startSession(
                         request.getSiteId(),
                         projectId,
                         workflowName,
@@ -77,8 +80,14 @@ public class RequireOperatorFactory
                         retryAttemptName,
                         overrideParams);
 
-                boolean isDone = flags.isDone();
+                boolean isDone = attempt.getStateFlags().isDone();
                 if (isDone) {
+                    if (!ignoreFailure && !attempt.getStateFlags().isSuccess()) {
+                        // ignore_failure is false and the attempt is in error state. Make this operator failed.
+                        throw new TaskExecutionException(String.format(ENGLISH,
+                                    "Dependent workflow failed. Session id: %d, attempt id: %d",
+                                    attempt.getSessionId(), attempt.getId()));
+                    }
                     return TaskResult.empty(cf);
                 }
                 else {
