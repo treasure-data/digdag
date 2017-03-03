@@ -1,5 +1,6 @@
 package io.digdag.server.rs;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.IdAndName;
