@@ -14,7 +14,13 @@ public interface RestSessionAttempt
 {
     Id getId();
 
-    int getIndex();
+    @Value.Default
+    default int getIndex()
+    {
+        // index has default value only to keep backward compatibility.
+        // index is added since 01714615088e315ba401f4deca41b6dd58bb349b.
+        return 0;
+    }
 
     IdAndName getProject();
 
