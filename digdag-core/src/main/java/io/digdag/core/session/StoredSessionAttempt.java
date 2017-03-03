@@ -16,11 +16,14 @@ public abstract class StoredSessionAttempt
 
     public abstract long getSessionId();
 
+    public abstract int getIndex();
+
     public abstract Instant getCreatedAt();
 
     public abstract Optional<Instant> getFinishedAt();
 
-    public static StoredSessionAttempt copyOf(StoredSessionAttempt o) {
+    public static StoredSessionAttempt copyOf(StoredSessionAttempt o)
+    {
         return ImmutableStoredSessionAttempt.builder().from(o).build();
     }
 }
