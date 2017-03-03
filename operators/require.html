@@ -191,6 +191,25 @@
 </pre></div>
 </div>
 </li>
+<li><p class="first"><strong>session_time</strong>: ISO_TIME_WITH_ZONE</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
+<span class="n">session_time</span><span class="p">:</span> <span class="mi">20170101</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0000</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>timezone: UTC
+
+schedule:
+  monthly&gt;: 1,09:00:00
+
++depend_on_all_daily_workflow_in_month:
+  loop&gt;: ${moment(last_session_time).daysInMonth()}
+  _do:
+    require&gt;: daily_workflow
+    session_time: ${moment(last_session_time).add(i, &#39;day&#39;)}
+</pre></div>
+</div>
+</li>
 </ul>
 </div>
 </div>
