@@ -55,9 +55,10 @@ public class StoreParameterTest
     public void run()
         throws Exception
     {
-        tm.begin(() -> {
-            StoredSessionAttemptWithSession attempt = runWorkflow(localSite, projectPath, "store", loadYamlResource("/io/digdag/core/workflow/store.dig"));
+        StoredSessionAttemptWithSession attempt =
+                runWorkflow(embed, projectPath, "store", loadYamlResource("/io/digdag/core/workflow/store.dig"));
 
+        tm.begin(() -> {
             assertThat(attempt.getStateFlags().isSuccess(), is(true));
 
             List<ArchivedTask> tasks = localSite.getSessionStore().getTasksOfAttempt(attempt.getId());

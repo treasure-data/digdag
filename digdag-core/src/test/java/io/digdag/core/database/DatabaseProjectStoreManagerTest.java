@@ -42,11 +42,11 @@ public class DatabaseProjectStoreManagerTest
     public void testConflicts()
         throws Exception
     {
-        factory.begin(() -> {
-            Project srcProj1 = Project.of("proj1");
-            Revision srcRev1 = createRevision("rev1");
-            WorkflowDefinition srcWf1 = createWorkflow("wf1");
+        Project srcProj1 = Project.of("proj1");
+        Revision srcRev1 = createRevision("rev1");
+        WorkflowDefinition srcWf1 = createWorkflow("wf1");
 
+        StoredRevision storedRev = factory.begin(() -> {
             StoredProject storedProj = store.putAndLockProject(
                     srcProj1,
                     (store, stored) -> stored);
@@ -58,13 +58,15 @@ public class DatabaseProjectStoreManagerTest
 
             assertEquals(storedProj, storedProj2);
 
-            StoredRevision storedRev = store.putAndLockProject(
+            return store.putAndLockProject(
                     srcProj1,
                     (store, stored) -> {
                         ProjectControl lock = new ProjectControl(store, stored);
                         return lock.insertRevision(srcRev1);
                     });
+        });
 
+        factory.begin(() -> {
             assertConflict(() -> {
                 store.putAndLockProject(
                         srcProj1,
@@ -78,7 +80,9 @@ public class DatabaseProjectStoreManagerTest
                             return lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(srcWf1), sm, Instant.now());
                         });
             });
+        });
 
+        factory.begin(() -> {
             assertConflict(() -> {
                 store.putAndLockProject(
                         srcProj1,

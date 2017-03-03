@@ -94,9 +94,6 @@ public class WorkflowExecutorTest
     private void runWorkflow(String workflowName, Config config)
             throws Exception
     {
-        tm.begin(() -> {
-            WorkflowTestingUtils.runWorkflow(localSite, folder.getRoot().toPath(), workflowName, config);
-            return null;
-        });
+        WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
     }
 }
