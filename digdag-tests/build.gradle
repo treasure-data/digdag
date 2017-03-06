@@ -15,7 +15,7 @@ dependencies {
 
 test {
     forkEvery = 1
-    maxParallelForks = 2
+    maxParallelForks = System.env.CI_NODE_INDEX ? 1 : 2  // no parallel run on CI which has limited resource
     minHeapSize = "256m"
     maxHeapSize = "256m"
     environment "DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"
