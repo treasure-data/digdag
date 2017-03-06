@@ -170,8 +170,8 @@ public class ExecutionTimeoutIT
         public void testTaskNotTimeout()
                 throws Exception
         {
-            setup("executor.attempt_ttl = 20s",
-                    "executor.task_ttl = 10s",
+            setup("executor.attempt_ttl = 25s",
+                    "executor.task_ttl = 20s",
                     "executor.ttl_reaping_interval = 1s");
 
             addWorkflow(projectDir, "acceptance/attempt_timeout/task_not_timeout.dig", WORKFLOW_NAME + ".dig");
