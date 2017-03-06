@@ -232,8 +232,9 @@ export class Model {
     }
     workflow = this.get(`workflows/${id}`)
     this.workflowCache.set(id, workflow)
+    const model = this
     workflow.catch((error) => {
-      this.workflowCache.delete(id)
+      model.workflowCache.delete(id)
       throw error
     })
     return workflow
@@ -404,6 +405,7 @@ export class Model {
   }
 
   fillTDQueryCache () : Promise<*> {
+    const model = this
     if (!this.config.td.useTD) {
       return Promise.resolve({})
     }
@@ -417,7 +419,7 @@ export class Model {
       return response.json()
     }).then((queries) => {
       queries.forEach((query) => {
-        this.queriesCache.set(query.name, query)
+        model.queriesCache.set(query.name, query)
       })
     })
   }
