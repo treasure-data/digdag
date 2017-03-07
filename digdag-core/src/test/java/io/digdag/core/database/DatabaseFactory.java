@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.database.TransactionManager.ThrowableSupplier;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -23,6 +24,7 @@ public class DatabaseFactory
     private final TransactionManager tm;
     private final AutoCloseable closeable;
     private final DatabaseConfig config;
+    private boolean autoCommit = false;
 
     public DatabaseFactory(TransactionManager tm, AutoCloseable closeable, DatabaseConfig config)
     {
@@ -35,6 +37,42 @@ public class DatabaseFactory
     public TransactionManager get()
     {
         return tm;
+    }
+
+    public <T> T begin(ThrowableSupplier<T> func)
+            throws Exception
+    {
+        return tm.begin(func);
+    }
+
+    public void begin(ThrowableRunnable func)
+            throws Exception
+    {
+        begin(() -> {
+            func.run();
+            return null;
+        });
+    }
+
+    @FunctionalInterface
+    public interface ThrowableRunnable
+    {
+        void run() throws Exception;
+    }
+
+    public <T> T autoCommit(ThrowableSupplier<T> func)
+            throws Exception
+    {
+        return tm.autoCommit(func);
+    }
+
+    public void autoCommit(ThrowableRunnable func)
+            throws Exception
+    {
+        autoCommit(() -> {
+            func.run();
+            return null;
+        });
     }
 
     public DatabaseConfig getConfig()
@@ -63,6 +101,7 @@ public class DatabaseFactory
         return new WorkflowExecutor(
                 getProjectStoreManager(),
                 getSessionStoreManager(),
+                tm,
                 new NullTaskQueueDispatcher(),
                 new WorkflowCompiler(),
                 configFactory,

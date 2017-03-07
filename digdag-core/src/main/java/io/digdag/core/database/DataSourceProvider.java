@@ -88,8 +88,8 @@ public class DataSourceProvider
         hikari.setMinimumIdle(config.getMinimumPoolSize());
 
         // Here should not set connectionTestQuery (that overrides isValid) because
-        // BasicDatabaseStoreManager.validateTransactionAndCommit assumes that
-        // Connection.isValid returns false when an error happened during a transaction.
+        // ThreadLocalTransactionManager.commit assumes that Connection.isValid returns
+        // false when an error happened during a transaction.
 
         logger.debug("Using database URL {}", hikari.getJdbcUrl());
 

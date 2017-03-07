@@ -84,13 +84,12 @@ public class SessionMonitorExecutor
     {
         try {
             tm.begin(() -> {
-                        sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
-                            // runMonitor needs to return next runtime if this monitor should run again later
-                            return runMonitor(storedMonitor);
-                        });
-                        return null;
-                    }
-            );
+                sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
+                    // runMonitor needs to return next runtime if this monitor should run again later
+                    return runMonitor(storedMonitor);
+                });
+                return null;
+            });
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This session monitor scheduling will be retried.", t);

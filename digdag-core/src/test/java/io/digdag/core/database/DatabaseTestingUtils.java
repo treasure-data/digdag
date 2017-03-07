@@ -65,11 +65,16 @@ public class DatabaseTestingUtils
 
     public static DatabaseFactory setupDatabase()
     {
+        return setupDatabase(false);
+    }
+
+    public static DatabaseFactory setupDatabase(boolean autoAutoCommit)
+    {
         DatabaseConfig config = getEnvironmentDatabaseConfig();
         DataSourceProvider dsp = new DataSourceProvider(config);
 
         DBI dbi = new DBI(dsp.get());
-        TransactionManager tm = new ThreadLocalTransactionManager(dsp.get());
+        TransactionManager tm = new ThreadLocalTransactionManager(dsp.get(), autoAutoCommit);
         // FIXME
         new DatabaseMigrator(dbi, config).migrate();
 

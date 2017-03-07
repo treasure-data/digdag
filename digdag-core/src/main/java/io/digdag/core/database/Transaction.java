@@ -9,4 +9,6 @@ public interface Transaction
     void commit();
 
     void abort();
+
+    void reset();
 }
