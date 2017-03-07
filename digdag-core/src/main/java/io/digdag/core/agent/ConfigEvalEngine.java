@@ -129,8 +129,7 @@ public class ConfigEvalEngine
             return (Invocable) jsEngines.get(ReusableScriptEngineKey.of(timeZone, Thread.currentThread()));
         }
         catch (ExecutionException ex) {
-            Throwables.throwIfUnchecked(ex.getCause());
-            throw new RuntimeException(ex.getCause());
+            throw Throwables.propagate(ex.getCause());
         }
     }
 
