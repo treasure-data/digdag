@@ -50,7 +50,7 @@ function template(code, variables)
   if (typeof variables == "string") {
     variables = JSON.parse(variables);
   }
-  vs = func.call(variables);
+  var vs = func.call(variables);
 
   return vs;
 }

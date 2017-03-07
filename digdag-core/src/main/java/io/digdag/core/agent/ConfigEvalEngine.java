@@ -1,30 +1,39 @@
 package io.digdag.core.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.charset.Charset;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.Invocable;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import javax.script.Bindings;
+import javax.script.Invocable;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ConfigEvalEngine
@@ -61,14 +70,48 @@ public class ConfigEvalEngine
         RUNTIME_JS_CONTENTS = builder.build();
     }
 
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    interface ReusableScriptEngineKey
+    {
+        String getTimeZone();
+
+        // Thread is here because ScriptEngine is not guaranteed to be thread-safe.
+        Thread getThread();
+
+        static ReusableScriptEngineKey of(String timeZone, Thread thread)
+        {
+            return ImmutableReusableScriptEngineKey.builder()
+                .timeZone(timeZone)
+                .thread(thread)
+                .build();
+        }
+    }
+
     private final ObjectMapper jsonMapper;
     private final NashornScriptEngineFactory jsEngineFactory;
+
+    private final LoadingCache<ReusableScriptEngineKey, ScriptEngine> jsEngines;
 
     @Inject
     public ConfigEvalEngine()
     {
         this.jsonMapper = new ObjectMapper();
         this.jsEngineFactory = new NashornScriptEngineFactory();
+
+        this.jsEngines = CacheBuilder.newBuilder()
+            .maximumSize(30)  // TODO make this size configurable?
+            .build(new CacheLoader<ReusableScriptEngineKey, ScriptEngine>()
+                    {
+                        public ScriptEngine load(ReusableScriptEngineKey key)
+                        {
+                            ScriptEngine jsEngine = newScriptEngine(key.getTimeZone());
+                            // freeze for security: workflows by different users shouldn't affect each other.
+                            // TODO: confirm this
+                            freezeScriptEngine(jsEngine);
+                            return jsEngine;
+                        }
+                    });
     }
 
     protected Config eval(Config config, Config params)
@@ -81,11 +124,23 @@ public class ConfigEvalEngine
 
     private Invocable newTemplateInvocable(Config params)
     {
+        String timeZone = params.get("timezone", String.class);
+        try {
+            return (Invocable) jsEngines.get(ReusableScriptEngineKey.of(timeZone, Thread.currentThread()));
+        }
+        catch (ExecutionException ex) {
+            Throwables.throwIfUnchecked(ex.getCause());
+            throw new RuntimeException(ex.getCause());
+        }
+    }
+
+    private ScriptEngine newScriptEngine(String timeZone)
+    {
         ScriptEngine jsEngine = jsEngineFactory.getScriptEngine(new String[] {
             //"--language=es6",  // this is not even accepted with jdk1.8.0_20 and has a bug with jdk1.8.0_51
             "--no-java",
             "--no-syntax-extensions",
-            "-timezone=" + params.get("timezone", String.class),
+            "-timezone=" + timeZone,
         });
         try {
             for (String runtimeJs : RUNTIME_JS_CONTENTS) {
@@ -95,7 +150,18 @@ public class ConfigEvalEngine
         catch (ScriptException | ClassCastException ex) {
             throw new IllegalStateException("Unexpected script evaluation failure", ex);
         }
-        return (Invocable) jsEngine;
+        return jsEngine;
+    }
+
+    private static void freezeScriptEngine(ScriptEngine jsEngine)
+    {
+        ScriptContext context = jsEngine.getContext();
+        for (int scope : context.getScopes()) {
+            Bindings bindings = context.getBindings(scope);
+            if (bindings != null) {
+                ((ScriptObjectMirror) bindings).freeze();
+            }
+        }
     }
 
     private String invokeTemplate(Invocable templateInvocable, String code, Config params)
