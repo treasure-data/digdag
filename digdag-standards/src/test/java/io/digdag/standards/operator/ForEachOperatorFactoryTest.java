@@ -56,15 +56,11 @@ public class ForEachOperatorFactoryTest
         assertThat(subtasks, is(loadYamlResource(expectedResource)));
 
         try (DigdagEmbed embed = setupEmbed()) {
-            TransactionManager tm = embed.getInjector().getInstance(TransactionManager.class);
-            tm.begin(() -> {
-                assertTrue(
-                        runWorkflow(embed.getLocalSite(), tempPath, "test", subtasks)
-                                .getStateFlags()
-                                .isSuccess()
-                );
-                return null;
-            });
+            assertTrue(
+                    runWorkflow(embed, tempPath, "test", subtasks)
+                            .getStateFlags()
+                            .isSuccess()
+            );
         }
     }
 

@@ -130,6 +130,7 @@ public class DatabaseSecretStoreTest
         }
     }
 
+
     @Test
     public void concurrentPutShouldNotThrowExceptions()
             throws Exception

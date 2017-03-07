@@ -89,6 +89,12 @@ public class ThreadLocalTransactionManager
                 dbi.registerArgumentFactory(configMapper.getArgumentFactory());
                 handle = dbi.open();
 
+                try {
+                    handle.getConnection().setAutoCommit(autoAutoCommit);
+                }
+                catch (SQLException ex) {
+                    throw new TransactionFailedException("Failed to set auto commit: " + autoAutoCommit, ex);
+                }
                 if (!autoAutoCommit) {
                     handle.begin();
                 }
@@ -143,9 +149,18 @@ public class ThreadLocalTransactionManager
             if (state == State.COMMITTED) {
                 throw new IllegalStateException("Aborting committed transaction is not allowed");
             }
-            handle.rollback();
+            if (!autoAutoCommit) {
+                handle.rollback();
+            }
             state = State.ABORTED;
             // TODO Should call close()?
+        }
+
+        @Override
+        public void reset()
+        {
+            abort();
+            state = State.ACTIVE;
         }
     }
 
@@ -197,6 +212,16 @@ public class ThreadLocalTransactionManager
                 transaction.abort();
             }
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        Transaction transaction = threadLocalTransaction.get();
+        if (transaction == null) {
+            throw new IllegalStateException("Not in transaction");
+        }
+        transaction.reset();
     }
 
     @Override
