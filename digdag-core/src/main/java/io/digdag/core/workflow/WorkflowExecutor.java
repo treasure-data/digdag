@@ -532,12 +532,17 @@ public class WorkflowExecutor
                         return null;
                     });
 
-                    boolean someDone = tm.begin(() -> propagateAllPlannedToDone());
+                    boolean shouldWait = tm.begin(() -> {
+                        if (propagateAllPlannedToDone()) {
+                            propagateSessionArchive();
+                            return false;
+                        }
+                        else {
+                            return true;
+                        }
+                    });
 
-                    if (someDone) {
-                        tm.begin(() -> propagateSessionArchive());
-                    }
-                    else {
+                    if (shouldWait) {
                         propagatorLock.lock();
                         try {
                             if (propagatorNotice) {
