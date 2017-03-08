@@ -6,14 +6,27 @@
       td:
         database: www_access
 
-    +step1:
-      td>: queries/step1.sql
-    +step2:
-      td>: queries/step2.sql
+    +simple_query:
+      td>: queries/simple_query.sql
+
+    +create_new_table_using_result_of_select:
+      td>: queries/select_sql.sql
       create_table: mytable_${session_date_compact}
-    +step3:
-      td>: queries/step2.sql
+
+    +insert_result_of_select_into_a_table:
+      td>: queries/select_sql.sql
       insert_into: mytable
+
+    +result_with_connection:
+      td>: queries/select_sql.sql
+      result_connection: connection_created_on_console
+
+    +result_with_connection_with_settings:
+      td>: queries/select_sql.sql
+      result_connection: my_s3_connection
+      result_settings:
+        bucket: my_bucket
+        path: /logs/
 
 ## Examples
 
@@ -134,7 +147,41 @@
   ```
 
 * **priority**: 0
+
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
+
+* **result_connection**: NAME
+
+  Use a connection to write the query results to an external system.
+
+  You can create a connection using the web console.
+
+  Examples:
+
+  ```
+  reuslt_connection: my_s3_connection
+  ```
+
+* **result_settings**: MAP
+
+  Add additional settings to the result connection.
+
+  This option is valid only if `result_connection` option is set.
+
+  Examples:
+
+  ```
+  reuslt_connection: my_s3_connection
+  result_settings:
+    bucket: my_s3_bucket
+    path: /logs/
+  ```
+
+  ```
+  reuslt_connection: my_http
+  result_settings:
+    path: /endpoint
+  ```
 
 
 ## Output parameters
