@@ -231,10 +231,7 @@ public class Run
                 })
                 .initializeWithoutShutdownHook()) {
 
-            digdag.getTransactionManager().begin(() -> {
-                run(systemProps, digdag.getInjector(), workflowNameArg, matchPattern);
-                return null;
-            });
+            run(systemProps, digdag.getInjector(), workflowNameArg, matchPattern);
         }
     }
 
@@ -243,6 +240,7 @@ public class Run
     {
         final LocalSite localSite = injector.getInstance(LocalSite.class);
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+        final TransactionManager tm = injector.getInstance(TransactionManager.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
@@ -263,17 +261,23 @@ public class Run
             taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchPattern));
         }
 
+        // WorkflowExecutor uses TransactionManager#begin by itself.
+        // So other methods that access the database need to be wrapped by TransactionManager#begin.
+
         // store workflow definitions
-        StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
-                "default",
-                Instant.now().toString(),  // TODO revision name
-                project.getArchiveMetadata());
+        StoreWorkflowResult stored = tm.begin(() ->
+                localSite.storeLocalWorkflowsWithoutSchedule(
+                        "default",
+                        Instant.now().toString(),  // TODO revision name
+                        project.getArchiveMetadata()));
 
         // submit workflow
-        StoredSessionAttemptWithSession attempt = submitWorkflow(injector,
-                stored.getRevision(), stored.getWorkflowDefinitions(),
-                project, overrideParams,
-                workflowName, taskMatchPattern);
+        StoredSessionAttemptWithSession attempt = tm.begin(() ->
+                submitWorkflow(injector,
+                        stored.getRevision(), stored.getWorkflowDefinitions(),
+                        project, overrideParams,
+                        workflowName, taskMatchPattern));
+
         // TODO catch error when workflowName doesn't exist and suggest to cd to another dir
 
         // wait until it's done
@@ -282,23 +286,24 @@ public class Run
 
         // show results
         ArrayList<ArchivedTask> failedTasks = new ArrayList<>();
-        for (ArchivedTask task : localSite.getSessionStore().getTasksOfAttempt(attempt.getId())) {
+        List<ArchivedTask> tasks = tm.begin(() -> localSite.getSessionStore().getTasksOfAttempt(attempt.getId()));
+        for (ArchivedTask task : tasks) {
             if (task.getState() == TaskStateCode.ERROR) {
                 failedTasks.add(task);
             }
-            logger.debug("  Task["+task.getId()+"]: "+task.getFullName());
-            logger.debug("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
-            logger.debug("    upstreams: "+task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));
-            logger.debug("    state: "+task.getState());
-            logger.debug("    retryAt: "+task.getRetryAt());
-            logger.debug("    config: "+task.getConfig().getMerged());
-            logger.debug("    taskType: "+task.getTaskType());
-            logger.debug("    exported: "+task.getExportParams());
-            logger.debug("    stored: "+task.getStoreParams());
-            logger.debug("    stateParams: "+task.getStateParams());
-            logger.debug("    in: "+task.getReport().transform(report -> report.getInputs()).or(ImmutableList.of()));
-            logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
-            logger.debug("    error: "+task.getError());
+            logger.debug("  Task[" + task.getId() + "]: " + task.getFullName());
+            logger.debug("    parent: " + task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
+            logger.debug("    upstreams: " + task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));
+            logger.debug("    state: " + task.getState());
+            logger.debug("    retryAt: " + task.getRetryAt());
+            logger.debug("    config: " + task.getConfig().getMerged());
+            logger.debug("    taskType: " + task.getTaskType());
+            logger.debug("    exported: " + task.getExportParams());
+            logger.debug("    stored: " + task.getStoreParams());
+            logger.debug("    stateParams: " + task.getStateParams());
+            logger.debug("    in: " + task.getReport().transform(report -> report.getInputs()).or(ImmutableList.of()));
+            logger.debug("    out: " + task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
+            logger.debug("    error: " + task.getError());
         }
 
         if (!failedTasks.isEmpty()) {

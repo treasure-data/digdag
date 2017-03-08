@@ -22,7 +22,7 @@ public class ThreadLocalTransactionManager
     private final DataSource ds;
 
     private static class LazyTransaction
-            implements Transaction
+            implements Transaction, AutoCloseable
     {
         private static enum State
         {
@@ -162,6 +162,15 @@ public class ThreadLocalTransactionManager
             abort();
             state = State.ACTIVE;
         }
+
+        @Override
+        public void close()
+                throws Exception
+        {
+            if (handle != null) {
+                handle.close();
+            }
+        }
     }
 
     @Inject
@@ -197,19 +206,20 @@ public class ThreadLocalTransactionManager
             throw new IllegalStateException("Nested transaction is not allowed");
         }
 
-        LazyTransaction transaction = new LazyTransaction(ds);
-        threadLocalTransaction.set(transaction);
-        boolean committed = false;
-        try {
-            T result = func.get();
-            transaction.commit();
-            committed = true;
-            return result;
-        }
-        finally {
-            threadLocalTransaction.set(null);
-            if (!committed) {
-                transaction.abort();
+        try (LazyTransaction transaction = new LazyTransaction(ds)) {
+            threadLocalTransaction.set(transaction);
+            boolean committed = false;
+            try {
+                T result = func.get();
+                transaction.commit();
+                committed = true;
+                return result;
+            }
+            finally {
+                threadLocalTransaction.set(null);
+                if (!committed) {
+                    transaction.abort();
+                }
             }
         }
     }

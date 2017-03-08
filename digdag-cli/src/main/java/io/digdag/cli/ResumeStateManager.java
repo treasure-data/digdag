@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
+
+import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -35,6 +37,7 @@ class ResumeStateManager
     private static Logger logger = LoggerFactory.getLogger(ResumeStateManager.class);
 
     private final ConfigFactory cf;
+    private final TransactionManager tm;
     private final SessionStoreManager sessionStoreManager;
     private final YamlMapper mapper;
     private final List<ResumeStateDir> managedDirs;
@@ -43,9 +46,10 @@ class ResumeStateManager
     private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, YamlMapper mapper)
+    private ResumeStateManager(ConfigFactory cf, TransactionManager tm, SessionStoreManager sessionStoreManager, YamlMapper mapper)
     {
         this.cf = cf;
+        this.tm = tm;
         this.sessionStoreManager = sessionStoreManager;
         this.mapper = mapper;
         this.managedDirs = new CopyOnWriteArrayList<>();
@@ -112,7 +116,10 @@ class ResumeStateManager
         while (ite.hasNext()) {
             ResumeStateDir dir = ite.next();
             try {
-                dir.update();
+                tm.begin(() -> {
+                    dir.update();
+                    return null;
+                });
             }
             catch (Exception ex) {
                 logger.error("Uncaught exception during updating resume state files at {}. Stopped updating files at this directory.", dir.getPath(), ex);

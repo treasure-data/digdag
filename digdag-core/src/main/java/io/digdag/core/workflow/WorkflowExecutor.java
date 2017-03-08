@@ -529,35 +529,41 @@ public class WorkflowExecutor
                         propagateBlockedChildrenToReady();
                         retryRetryWaitingTasks();
                         enqueueReadyTasks(queuer);
-                        boolean someDone = propagateAllPlannedToDone();
+                        return null;
+                    });
 
-                        if (someDone) {
+                    boolean shouldWait = tm.begin(() -> {
+                        if (propagateAllPlannedToDone()) {
                             propagateSessionArchive();
+                            return false;
                         }
                         else {
-                            propagatorLock.lock();
-                            try {
-                                if (propagatorNotice) {
+                            return true;
+                        }
+                    });
+
+                    if (shouldWait) {
+                        propagatorLock.lock();
+                        try {
+                            if (propagatorNotice) {
+                                propagatorNotice = false;
+                                waitMsec.set(INITIAL_INTERVAL);
+                            }
+                            else {
+                                boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
+                                if (noticed && propagatorNotice) {
                                     propagatorNotice = false;
                                     waitMsec.set(INITIAL_INTERVAL);
                                 }
                                 else {
-                                    boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
-                                    if (noticed && propagatorNotice) {
-                                        propagatorNotice = false;
-                                        waitMsec.set(INITIAL_INTERVAL);
-                                    }
-                                    else {
-                                        waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
-                                    }
+                                    waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
                                 }
                             }
-                            finally {
-                                propagatorLock.unlock();
-                            }
                         }
-                        return null;
-                    });
+                        finally {
+                            propagatorLock.unlock();
+                        }
+                    }
                 }
                 catch (Exception e) {
                     // TODO: Revisit here
