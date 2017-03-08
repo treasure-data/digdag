@@ -131,12 +131,10 @@ public class ScheduleResource
     private ZoneId getTimeZoneOfSchedule(StoredSchedule sched)
             throws Exception
     {
-        return tm.begin(() -> {
-            // TODO optimize
-            return rm.getProjectStore(getSiteId())
-                    .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
-                    .getTimeZone();
-        });
+        // TODO optimize
+        return rm.getProjectStore(getSiteId())
+                .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
+                .getTimeZone();
     }
 
     @POST
