@@ -73,6 +73,7 @@ public interface ServerConfig
             .httpRequestParseTimeout(config.getOptional("server.http.request-parse-timeout", Integer.class))
             .httpIoIdleTimeout(config.getOptional("server.http.io-idle-timeout", Integer.class))
             .jmxPort(config.getOptional("server.jmx.port", Integer.class))
+            .enableHttp2(config.get("server.http.enable-http2", boolean.class, false))
             .executorEnabled(config.get("server.executor.enabled", boolean.class, true))
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
