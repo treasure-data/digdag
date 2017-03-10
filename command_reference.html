@@ -465,8 +465,6 @@
 <ul class="simple">
 <li>server.bind (ip address)</li>
 <li>server.port (integer)</li>
-<li>server.admin.bind (ip address)</li>
-<li>server.admin.port (integer)</li>
 <li>server.access-log.path (string. same with &#8211;access-log)</li>
 <li>server.access-log.pattern (string, &#8220;json&#8221;, &#8220;combined&#8221; or &#8220;common&#8221;)</li>
 <li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)</li>
@@ -474,9 +472,7 @@
 <li>server.http.no-request-timeout (maximum allowed time for clients to keep a connection open without sending requests or receiving responses in seconds. default: 60)</li>
 <li>server.http.request-parse-timeout (maximum allowed time of reading a HTTP request in seconds. this doesn&#8217;t affect on reading request body. default: 30)</li>
 <li>server.http.io-idle-timeout (maximum allowed idle time of reading HTTP request and writing HTTP response in seconds. default: 300)</li>
-<li>server.http.enable-http2 (enable HTTP/2. default: false)</li>
 <li>server.http.headers.KEY = VALUE (HTTP header to set on API responses)</li>
-<li>server.jmx.port (port to listen JMX in integer. default: JMX is disabled)</li>
 <li>database.type (enum, &#8220;h2&#8221; or &#8220;postgresql&#8221;)</li>
 <li>database.user (string)</li>
 <li>database.password (string)</li>
