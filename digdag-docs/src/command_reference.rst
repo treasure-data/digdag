@@ -331,6 +331,12 @@ In the config file, following parameters are available
 * archive.s3.path (string)
 * archive.s3.credentials.access-key-id (string. default: instance profile)
 * archive.s3.credentials.secret-access-key (string. default: instance profile)
+* log-server.type (type of log storage, "local" or "s3". default: "local")
+* log-server.s3.endpoint (string, default: "s3.amazonaws.com")
+* log-server.s3.bucket (string)
+* log-server.s3.path (string)
+* log-server.s3.credentials.access-key-id (string. default: instance profile)
+* log-server.s3.credentials.secret-access-key (string. default: instance profile)
 * digdag.secret-access-policy-file (filename)
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 
