@@ -48,7 +48,7 @@ public class WorkflowExecutionTimeoutEnforcer
     // This is similar to TaskStateCode.notDoneStates() but BLOCKED, PLANNED, and READY are excluded.
     // BLOCKED and PLANNED are excluded because there're other running tasks that should be enforced instead.
     // READY is excluded the workflow itself is working correctly and number of threads is insufficient.
-    private static final TaskStateCode[] TaskTTLEnforcedTaskStates = new TaskStateCode[] {
+    private static final TaskStateCode[] TASK_TTL_ENFORCED_STATE_CODES = new TaskStateCode[] {
         TaskStateCode.RETRY_WAITING,
         TaskStateCode.GROUP_RETRY_WAITING,
         TaskStateCode.RUNNING,
@@ -143,7 +143,7 @@ public class WorkflowExecutionTimeoutEnforcer
     {
         Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
 
-        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TaskTTLEnforcedTaskStates, startDeadline, (long) 0, 100);
+        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TASK_TTL_ENFORCED_STATE_CODES, startDeadline, (long) 0, 100);
 
         Map<Long, List<TaskAttemptSummary>> attempts = expiredTasks.stream()
                 .collect(groupingBy(TaskAttemptSummary::getAttemptId));
