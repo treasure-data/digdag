@@ -1,5 +1,6 @@
 package io.digdag.server.rs;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.IdAndName;
@@ -83,6 +84,7 @@ public final class RestModels
             .createdAt(rev.getCreatedAt())
             .archiveType(rev.getArchiveType().getName())
             .archiveMd5(rev.getArchiveMd5())
+            .userInfo(Optional.of(rev.getUserInfo()))
             .build();
     }
 
