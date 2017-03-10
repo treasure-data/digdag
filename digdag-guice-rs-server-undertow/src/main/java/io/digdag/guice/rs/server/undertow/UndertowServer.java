@@ -12,7 +12,6 @@ import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.OpenListener;
 import io.undertow.server.handlers.GracefulShutdownHandler;
-import io.undertow.server.handlers.HttpTraceHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.AccessLogReceiver;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
@@ -154,7 +153,7 @@ public class UndertowServer
         }
         control.workerInitialized(worker);
 
-        HttpHandler apiHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
+        HttpHandler apiHandler = Handlers.trace(httpHandler);
         HttpHandler adminHandler = null;
 
         logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
@@ -165,9 +164,10 @@ public class UndertowServer
             .setServerOption(UndertowOptions.NO_REQUEST_TIMEOUT, config.getHttpNoRequestTimeout().or(60) * 1000)
             .setServerOption(UndertowOptions.REQUEST_PARSE_TIMEOUT, config.getHttpRequestParseTimeout().or(30) * 1000)
             .setServerOption(UndertowOptions.IDLE_TIMEOUT, config.getHttpIoIdleTimeout().or(300) * 1000)
+            .setServerOption(UndertowOptions.ENABLE_HTTP2, config.getEnableHttp2())
             ;
         if (config.getAdminPort().isPresent()) {
-            adminHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
+            adminHandler = Handlers.trace(httpHandler);
             serverBuilder = serverBuilder
                 .addHttpListener(config.getAdminPort().get(), config.getAdminBind().or(config.getBind()), adminHandler);
         }

@@ -68,4 +68,9 @@ public interface UndertowServerConfig
      * JMX port. Null to disable JMX.
      */
     Optional<Integer> getJmxPort();
+
+    /**
+     * Enable HTTP/2.
+     */
+    boolean getEnableHttp2();
 }
