@@ -106,7 +106,6 @@ public class ExecutionTimeoutIT
     public static class AttemptTimeoutIT
             extends ExecutionTimeoutIT
     {
-
         @Test
         public void testAttemptTimeout()
                 throws Exception
@@ -158,6 +157,32 @@ public class ExecutionTimeoutIT
 
             // TODO: implement termination of blocking tasks
             // TODO: verify that blocking tasks are terminated when the attempt is canceled
+
+            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            assertThat(attempt.getCancelRequested(), is(true));
+        }
+    }
+
+    public static class TaskNotTimeoutIT
+            extends ExecutionTimeoutIT
+    {
+        @Test
+        public void testTaskNotTimeout()
+                throws Exception
+        {
+            setup("executor.attempt_ttl = 25s",
+                    "executor.task_ttl = 20s",
+                    "executor.ttl_reaping_interval = 1s");
+
+            addWorkflow(projectDir, "acceptance/attempt_timeout/task_not_timeout.dig", WORKFLOW_NAME + ".dig");
+            pushProject(server.endpoint(), projectDir, PROJECT_NAME);
+            Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
+
+            // Expect the attempt to get canceled
+            expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+
+            // Expect a notification to be sent with attempt's timeout message
+            expectNotification(attemptId, Duration.ofMinutes(2), "Workflow execution timeout"::equals);
 
             RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
             assertThat(attempt.getCancelRequested(), is(true));
