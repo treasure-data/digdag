@@ -7,7 +7,12 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${project.ext.jacksonVersion}"
 
-    compile "com.github.rholder:guava-retrying:2.0.0"
+    compile("com.github.rholder:guava-retrying:2.0.0") {
+        // guava-retrying depends on guava:[10.+,). Gradle solves it to the latest
+        // available version of guava at the moment (e.g. 21.0). This is not good.
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    compile "com.google.guava:guava:19.0"
 
     compile 'org.jboss.resteasy:resteasy-client:3.0.13.Final'
     compile 'org.apache.commons:commons-compress:1.10'
