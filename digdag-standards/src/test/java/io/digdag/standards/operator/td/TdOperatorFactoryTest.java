@@ -141,21 +141,4 @@ public class TdOperatorFactoryTest
         newOperatorFactory(TdOperatorFactory.class)
             .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
     }
-
-    @Test
-    public void rejectTooLargeConnectionId()
-            throws Exception
-    {
-        Path projectPath = Paths.get("").normalize().toAbsolutePath();
-
-        Config config = newConfig()
-            .set("database", "testdb")
-            .set("query", "select 1")
-            .set("result_connection", "18446744073709551616");
-
-        exception.expectMessage("for key 'result_connection' but got \"18446744073709551616\"");
-
-        newOperatorFactory(TdOperatorFactory.class)
-            .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
-    }
 }

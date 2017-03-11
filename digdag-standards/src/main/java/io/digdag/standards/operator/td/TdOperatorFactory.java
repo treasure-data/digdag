@@ -96,7 +96,7 @@ public class TdOperatorFactory
         private final int jobRetry;
         private final String engine;
         private final Optional<String> downloadFile;
-        private final Optional<IdOrNameParam> resultConnection;
+        private final Optional<String> resultConnection;
         private final Optional<Config> resultSettings;
         private final boolean storeLastResults;
         private final boolean preview;
@@ -129,7 +129,7 @@ public class TdOperatorFactory
                 throw new ConfigException("download_file is invalid if insert_into or create_table is set");
             }
 
-            this.resultConnection = params.getOptional("result_connection", IdOrNameParam.class);
+            this.resultConnection = params.getOptional("result_connection", String.class);
             this.resultSettings = params.has("result_settings") ?
                 Optional.of(params.parseNestedOrGetEmpty("result_settings")) :
                 Optional.absent();
@@ -216,7 +216,7 @@ public class TdOperatorFactory
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
-                    .setResultConnectionId(resultConnection.transform(idOrName -> getResultConnectionId(idOrName, op)))
+                    .setResultConnectionId(resultConnection.transform(name -> getResultConnectionId(name, op)))
                     .setResultConnectionSettings(resultSettings.transform(Config::toString))
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
@@ -228,14 +228,9 @@ public class TdOperatorFactory
         }
     }
 
-    private long getResultConnectionId(IdOrNameParam idOrName, TDOperator op)
+    private long getResultConnectionId(String name, TDOperator op)
     {
-        if (idOrName.isId()) {
-            return idOrName.getId();
-        }
-        else {
-            return op.lookupConnection(idOrName.getName());
-        }
+        return op.lookupConnection(name);
     }
 
     private static String startSelectPreviewJob(TDOperator op, String description, TableParam destTable, String domainKey)
