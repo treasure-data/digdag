@@ -202,6 +202,16 @@ public class TDOperator
         }
     }
 
+    public long lookupConnection(String name)
+    {
+        try {
+            return defaultRetryExecutor.run(() -> client.lookupConnection(name));
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex.getCause());
+        }
+    }
+
     private String submitNewJob(TDJobRequest request)
     {
         String jobId;

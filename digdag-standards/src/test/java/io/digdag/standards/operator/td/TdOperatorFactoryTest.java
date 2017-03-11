@@ -124,4 +124,21 @@ public class TdOperatorFactoryTest
         newOperatorFactory(TdOperatorFactory.class)
             .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
     }
+
+    @Test
+    public void rejectResultSettingsWithoutResultConnection()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+            .set("database", "testdb")
+            .set("query", "select 1")
+            .set("result_settings", "{\"type\":\"http\"}");
+
+        exception.expectMessage("result_settings is valid only if result_connection is set");
+
+        newOperatorFactory(TdOperatorFactory.class)
+            .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
+    }
 }

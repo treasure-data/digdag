@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.td;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -95,6 +96,8 @@ public class TdOperatorFactory
         private final int jobRetry;
         private final String engine;
         private final Optional<String> downloadFile;
+        private final Optional<String> resultConnection;
+        private final Optional<Config> resultSettings;
         private final boolean storeLastResults;
         private final boolean preview;
 
@@ -124,6 +127,15 @@ public class TdOperatorFactory
             if (downloadFile.isPresent() && (insertInto.isPresent() || createTable.isPresent())) {
                 // query results become empty if INSERT INTO or CREATE TABLE query runs
                 throw new ConfigException("download_file is invalid if insert_into or create_table is set");
+            }
+
+            this.resultConnection = params.getOptional("result_connection", String.class);
+            this.resultSettings = params.has("result_settings") ?
+                Optional.of(params.parseNestedOrGetEmpty("result_settings")) :
+                Optional.absent();
+
+            if (resultSettings.isPresent() && !resultConnection.isPresent()) {
+                throw new ConfigException("result_settings is valid only if result_connection is set");
             }
 
             this.storeLastResults = params.get("store_last_results", boolean.class, false);
@@ -204,6 +216,8 @@ public class TdOperatorFactory
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
+                    .setResultConnectionId(resultConnection.transform(name -> getResultConnectionId(name, op)))
+                    .setResultConnectionSettings(resultSettings.transform(Config::toString))
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
 
@@ -212,6 +226,11 @@ public class TdOperatorFactory
 
             return jobId;
         }
+    }
+
+    private long getResultConnectionId(String name, TDOperator op)
+    {
+        return op.lookupConnection(name);
     }
 
     private static String startSelectPreviewJob(TDOperator op, String description, TableParam destTable, String domainKey)
