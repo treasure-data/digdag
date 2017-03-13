@@ -17,7 +17,9 @@ import java.nio.file.Path;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class RequireIT
@@ -36,6 +38,7 @@ public class RequireIT
             throws Exception
     {
         projectDir = folder.getRoot().toPath().resolve("foobar");
+        Files.createDirectories(projectDir);
         config = folder.newFile().toPath();
     }
 
@@ -96,5 +99,35 @@ public class RequireIT
 
         // Verify that the file created by the child workflow is there
         assertThat(Files.exists(childOutFile), is(true));
+    }
+
+    @Test
+    public void testRequireFailsWhenDependentFails()
+            throws Exception
+    {
+        copyResource("acceptance/require/parent.dig", projectDir.resolve("parent.dig"));
+        copyResource("acceptance/require/fail.dig", projectDir.resolve("child.dig"));
+
+        CommandStatus status = main("run",
+                "-c", config.toString(),
+                "--project", projectDir.toString(),
+                "parent.dig");
+        assertThat(status.errUtf8(), status.code(), is(not(0)));
+
+        assertThat(status.errUtf8(), containsString("Dependent workflow failed."));
+    }
+
+    @Test
+    public void testRequireSucceedsWhenDependentFailsButIgnoreFailureIsSet()
+            throws Exception
+    {
+        copyResource("acceptance/require/parent_ignore_failure.dig", projectDir.resolve("parent.dig"));
+        copyResource("acceptance/require/fail.dig", projectDir.resolve("child.dig"));
+
+        CommandStatus status = main("run",
+                "-c", config.toString(),
+                "--project", projectDir.toString(),
+                "parent.dig");
+        assertThat(status.errUtf8(), status.code(), is(0));
     }
 }

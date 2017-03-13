@@ -9,7 +9,7 @@ import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.StorageObject;
-import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -36,7 +36,7 @@ public interface TaskCallbackApi
             int retryInterval, Config retryStateParams,
             Optional<Config> error);
 
-    AttemptStateFlags startSession(
+    StoredSessionAttempt startSession(
             int siteId,
             int projectId,
             String workflowName,
