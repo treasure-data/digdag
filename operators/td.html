@@ -180,14 +180,27 @@
   td:
     database: www_access
 
-+step1:
-  td&gt;: queries/step1.sql
-+step2:
-  td&gt;: queries/step2.sql
++simple_query:
+  td&gt;: queries/simple_query.sql
+
++create_new_table_using_result_of_select:
+  td&gt;: queries/select_sql.sql
   create_table: mytable_${session_date_compact}
-+step3:
-  td&gt;: queries/step2.sql
+
++insert_result_of_select_into_a_table:
+  td&gt;: queries/select_sql.sql
   insert_into: mytable
+
++result_with_connection:
+  td&gt;: queries/select_sql.sql
+  result_connection: connection_created_on_console
+
++result_with_connection_with_settings:
+  td&gt;: queries/select_sql.sql
+  result_connection: my_s3_connection
+  result_settings:
+    bucket: my_bucket
+    path: /logs/
 </pre></div>
 </div>
 <div class="section" id="examples">
@@ -282,8 +295,32 @@ Output the query results to the URL:</p>
 </pre></div>
 </div>
 </li>
-<li><p class="first"><strong>priority</strong>: 0
-Set Priority (From <code class="docutils literal"><span class="pre">-2</span></code> (VERY LOW) to <code class="docutils literal"><span class="pre">2</span></code> (VERY HIGH) , default: 0 (NORMAL)).</p>
+<li><p class="first"><strong>priority</strong>: 0</p>
+<p>Set Priority (From <code class="docutils literal"><span class="pre">-2</span></code> (VERY LOW) to <code class="docutils literal"><span class="pre">2</span></code> (VERY HIGH) , default: 0 (NORMAL)).</p>
+</li>
+<li><p class="first"><strong>result_connection</strong>: NAME</p>
+<p>Use a connection to write the query results to an external system.</p>
+<p>You can create a connection using the web console.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">reuslt_connection</span><span class="p">:</span> <span class="n">my_s3_connection</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>result_settings</strong>: MAP</p>
+<p>Add additional settings to the result connection.</p>
+<p>This option is valid only if <code class="docutils literal"><span class="pre">result_connection</span></code> option is set.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">reuslt_connection</span><span class="p">:</span> <span class="n">my_s3_connection</span>
+<span class="n">result_settings</span><span class="p">:</span>
+  <span class="n">bucket</span><span class="p">:</span> <span class="n">my_s3_bucket</span>
+  <span class="n">path</span><span class="p">:</span> <span class="o">/</span><span class="n">logs</span><span class="o">/</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">reuslt_connection</span><span class="p">:</span> <span class="n">my_http</span>
+<span class="n">result_settings</span><span class="p">:</span>
+  <span class="n">path</span><span class="p">:</span> <span class="o">/</span><span class="n">endpoint</span>
+</pre></div>
+</div>
 </li>
 </ul>
 </div>

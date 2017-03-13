@@ -210,6 +210,14 @@ schedule:
 </pre></div>
 </div>
 </li>
+<li><p class="first"><strong>ignore_failure</strong>: BOOLEAN</p>
+<p>This operator fails when the dependent workflow finished with errors by default.</p>
+<p>But if <code class="docutils literal"><span class="pre">ignore_failure:</span> <span class="pre">true</span></code> is set, this operator succeeds even when the workflow finished with errors.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
+<span class="n">ignore_failure</span><span class="p">:</span> <span class="n">true</span>
+</pre></div>
+</div>
+</li>
 </ul>
 </div>
 </div>

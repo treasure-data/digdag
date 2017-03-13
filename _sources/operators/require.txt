@@ -49,3 +49,14 @@
       session_time: ${moment(last_session_time).add(i, 'day')}
   ```
 
+* **ignore_failure**: BOOLEAN
+
+  This operator fails when the dependent workflow finished with errors by default.
+
+  But if `ignore_failure: true` is set, this operator succeeds even when the workflow finished with errors.
+
+  ```
+  require>: another_workflow
+  ignore_failure: true
+  ```
+
