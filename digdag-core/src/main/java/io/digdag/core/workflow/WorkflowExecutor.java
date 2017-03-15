@@ -451,7 +451,7 @@ public class WorkflowExecutor
     }
 
     public StoredSessionAttemptWithSession runUntilDone(long attemptId)
-            throws InterruptedException, ResourceNotFoundException
+            throws ResourceNotFoundException, InterruptedException
     {
         try {
             runWhile(() -> {
@@ -468,15 +468,7 @@ public class WorkflowExecutor
             throw ex;
         }
 
-        try {
-            return tm.begin(() -> sm.getAttemptWithSessionById(attemptId));
-        }
-        catch (ResourceNotFoundException ex) {
-            throw ex;
-        }
-        catch (Exception ex) {
-            throw Throwables.propagate(ex);
-        }
+        return tm.begin(() -> sm.getAttemptWithSessionById(attemptId), ResourceNotFoundException.class);
     }
 
     public void runUntilAllDone()
@@ -492,80 +484,68 @@ public class WorkflowExecutor
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
-            try {
-                tm.begin(() -> {
-                    Instant date = sm.getStoreTime();
-                    propagateBlockedChildrenToReady();
-                    retryRetryWaitingTasks();
-                    enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
-                    propagateAllPlannedToDone();
-                    propagateSessionArchive();
-                    return null;
-                });
-            }
-            catch (Exception e) {
-                // TODO: Revisit here
-                Throwables.propagate(e);
-            }
+            tm.begin(() -> {
+                Instant date = sm.getStoreTime();
+                propagateBlockedChildrenToReady();
+                retryRetryWaitingTasks();
+                enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+                propagateAllPlannedToDone();
+                propagateSessionArchive();
+                return null;
+            });
 
             //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             final AtomicInteger waitMsec = new AtomicInteger(INITIAL_INTERVAL);
             while (true) {
-                try {
-                    if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
-                        break;
+                if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
+                    break;
+                }
+
+                tm.begin(() -> {
+                    //boolean inced = prop.run();
+                    //boolean retried = retryRetryWaitingTasks();
+                    //if (inced || retried) {
+                    //    enqueueReadyTasks(queuer);
+                    //    propagatorNotice = true;
+                    //}
+
+                    propagateBlockedChildrenToReady();
+                    retryRetryWaitingTasks();
+                    enqueueReadyTasks(queuer);
+                    return null;
+                });
+
+                boolean shouldWait = tm.begin(() -> {
+                    if (propagateAllPlannedToDone()) {
+                        propagateSessionArchive();
+                        return false;
                     }
+                    else {
+                        return true;
+                    }
+                });
 
-                    tm.begin(() -> {
-                        //boolean inced = prop.run();
-                        //boolean retried = retryRetryWaitingTasks();
-                        //if (inced || retried) {
-                        //    enqueueReadyTasks(queuer);
-                        //    propagatorNotice = true;
-                        //}
-
-                        propagateBlockedChildrenToReady();
-                        retryRetryWaitingTasks();
-                        enqueueReadyTasks(queuer);
-                        return null;
-                    });
-
-                    boolean shouldWait = tm.begin(() -> {
-                        if (propagateAllPlannedToDone()) {
-                            propagateSessionArchive();
-                            return false;
+                if (shouldWait) {
+                    propagatorLock.lock();
+                    try {
+                        if (propagatorNotice) {
+                            propagatorNotice = false;
+                            waitMsec.set(INITIAL_INTERVAL);
                         }
                         else {
-                            return true;
-                        }
-                    });
-
-                    if (shouldWait) {
-                        propagatorLock.lock();
-                        try {
-                            if (propagatorNotice) {
+                            boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
+                            if (noticed && propagatorNotice) {
                                 propagatorNotice = false;
                                 waitMsec.set(INITIAL_INTERVAL);
                             }
                             else {
-                                boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
-                                if (noticed && propagatorNotice) {
-                                    propagatorNotice = false;
-                                    waitMsec.set(INITIAL_INTERVAL);
-                                }
-                                else {
-                                    waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
-                                }
+                                waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
                             }
                         }
-                        finally {
-                            propagatorLock.unlock();
-                        }
                     }
-                }
-                catch (Exception e) {
-                    // TODO: Revisit here
-                    Throwables.propagate(e);
+                    finally {
+                        propagatorLock.unlock();
+                    }
                 }
             }
         }

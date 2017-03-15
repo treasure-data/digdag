@@ -107,10 +107,11 @@ public class WorkflowTestingUtils
 
         try {
             StoredSessionAttemptWithSession attempt = tm.begin(() ->
-                submitWorkflow(embed.getLocalSite(), projectPath, workflowName, config)
+                submitWorkflow(embed.getLocalSite(), projectPath, workflowName, config), Exception.class
             );
             embed.getLocalSite().runUntilDone(attempt.getId());
-            return tm.begin(() -> embed.getLocalSite().getSessionStore().getAttemptById(attempt.getId()));
+            return tm.begin(() -> embed.getLocalSite().getSessionStore().getAttemptById(attempt.getId()),
+                    ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {
             throw Throwables.propagate(ex);

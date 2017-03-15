@@ -67,7 +67,7 @@ class RevisionAutoReloader
     }
 
     void watch(ProjectArchive project)
-            throws Exception
+            throws ResourceConflictException, ResourceNotFoundException
     {
         targets.add(new ReloadTarget(project));
         startAutoReload();
@@ -113,7 +113,7 @@ class RevisionAutoReloader
         private int lastRevId;
 
         private ReloadTarget(ProjectArchive project)
-                throws Exception
+                throws ResourceConflictException, ResourceNotFoundException
         {
             this.projectPath = project.getProjectPath();
             this.overrideParams = project.getArchiveMetadata().getDefaultParams();
@@ -126,7 +126,7 @@ class RevisionAutoReloader
         }
 
         private void storeProject(ProjectArchive project, int revId)
-                throws Exception
+                throws ResourceConflictException, ResourceNotFoundException
         {
             localSite.storeLocalWorkflows(
                     "default",
@@ -147,7 +147,7 @@ class RevisionAutoReloader
                     storeProject(project, lastRevId + 1);
                 }
             }
-            catch (Exception ex) {
+            catch (RuntimeException | ResourceConflictException | ResourceNotFoundException | IOException ex) {
                 logger.error("Failed to reload", ex);
             }
         }

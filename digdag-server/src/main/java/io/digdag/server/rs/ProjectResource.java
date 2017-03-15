@@ -214,7 +214,7 @@ public class ProjectResource
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             Preconditions.checkArgument(name != null, "name= is required");
@@ -223,13 +223,12 @@ public class ProjectResource
             StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
             StoredRevision rev = ps.getLatestRevision(proj.getId());
             return RestModels.project(proj, rev);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects")
     public RestProjectCollection getProjects(@QueryParam("name") String name)
-            throws Exception
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -269,33 +268,33 @@ public class ProjectResource
     @GET
     @Path("/api/projects/{id}")
     public RestProject getProject(@PathParam("id") int projId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
             StoredRevision rev = ps.getLatestRevision(proj.getId());
             return RestModels.project(proj, rev);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/revisions")
     public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
             List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
             return RestModels.revisionCollection(proj, revs);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             Preconditions.checkArgument(name != null, "name= is required");
@@ -313,13 +312,13 @@ public class ProjectResource
             StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
 
             return RestModels.workflowDefinition(proj, rev, def);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/workflows/{name}")
     public RestWorkflowDefinition getWorkflowByName(@PathParam("id") int projId, @PathParam("name") String name, @QueryParam("revision") String revName)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return getWorkflow(projId, name, revName);
     }
@@ -330,7 +329,7 @@ public class ProjectResource
             @PathParam("id") int projId,
             @QueryParam("revision") String revName,
             @QueryParam("name") String name)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -359,7 +358,7 @@ public class ProjectResource
                 collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
             }
             return RestModels.workflowDefinitionCollection(proj, rev, collection);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -368,7 +367,7 @@ public class ProjectResource
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Integer lastId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
@@ -392,7 +391,7 @@ public class ProjectResource
             }
 
             return RestModels.scheduleCollection(projectStore, scheds);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -401,7 +400,7 @@ public class ProjectResource
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -417,14 +416,14 @@ public class ProjectResource
             }
 
             return RestModels.sessionCollection(ps, sessions);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
     public Response getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -476,13 +475,13 @@ public class ProjectResource
                     }
                 }).build();
             }
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}")
     public RestProject deleteProject(@PathParam("id") int projId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -490,7 +489,7 @@ public class ProjectResource
                 StoredRevision rev = ps.getLatestRevision(proj.getId());
                 return RestModels.project(proj, rev);
             });
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @PUT
@@ -499,9 +498,9 @@ public class ProjectResource
     public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
             InputStream body, @HeaderParam("Content-Length") long contentLength,
             @QueryParam("schedule_from") String scheduleFromString)
-            throws Exception
+            throws ResourceConflictException, IOException, ResourceNotFoundException
     {
-        return tm.begin(() -> {
+        return tm.begin((TransactionManager.SupplierInTransaction<RestProject, IOException, ResourceConflictException, ResourceNotFoundException>) () -> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
 
@@ -606,7 +605,7 @@ public class ProjectResource
                         k, v));
                 return restProject;
             }
-        });
+        }, IOException.class, ResourceConflictException.class, ResourceNotFoundException.class);
     }
 
     private ArchiveMetadata readArchiveMetadata(InputStream in, String projectName)
@@ -672,7 +671,7 @@ public class ProjectResource
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
     public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
-            throws Exception
+            throws ResourceNotFoundException
     {
         tm.begin(() -> {
             if (!SecretValidation.isValidSecret(key, request.value())) {
@@ -688,13 +687,13 @@ public class ProjectResource
 
             store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
             return null;
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
     public void deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
-            throws Exception
+            throws ResourceNotFoundException
     {
         tm.begin(() -> {
             if (!SecretValidation.isValidSecretKey(key)) {
@@ -710,14 +709,14 @@ public class ProjectResource
 
             store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
             return null;
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/secrets")
     @Produces("application/json")
     public RestSecretList getProjectSecrets(@PathParam("id") int projectId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             // Verify that the project exists
@@ -731,6 +730,6 @@ public class ProjectResource
             return RestSecretList.builder()
                     .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))
                     .build();
-        });
+        }, ResourceNotFoundException.class);
     }
 }

@@ -9,6 +9,7 @@ import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
@@ -52,7 +53,6 @@ public class SessionResource
     @GET
     @Path("/api/sessions")
     public RestSessionCollection getSessions(@QueryParam("last_id") Long lastId)
-            throws Exception
     {
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -67,7 +67,7 @@ public class SessionResource
     @GET
     @Path("/api/sessions/{id}")
     public RestSession getSession(@PathParam("id") long id)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             StoredSessionWithLastAttempt session = sm.getSessionStore(getSiteId())
@@ -77,7 +77,7 @@ public class SessionResource
                     .getProjectById(session.getProjectId());
 
             return RestModels.session(session, proj.getName());
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -85,7 +85,7 @@ public class SessionResource
     public RestSessionAttemptCollection getSessionAttempts(
             @PathParam("id") long id,
             @QueryParam("last_id") Long lastId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -100,6 +100,6 @@ public class SessionResource
                     .collect(Collectors.toList());
 
             return RestModels.attemptCollection(collection);
-        });
+        }, ResourceNotFoundException.class);
     }
 }

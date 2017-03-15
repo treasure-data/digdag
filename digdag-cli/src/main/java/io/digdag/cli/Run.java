@@ -269,14 +269,14 @@ public class Run
                 localSite.storeLocalWorkflowsWithoutSchedule(
                         "default",
                         Instant.now().toString(),  // TODO revision name
-                        project.getArchiveMetadata()));
+                        project.getArchiveMetadata()), ResourceConflictException.class);
 
         // submit workflow
         StoredSessionAttemptWithSession attempt = tm.begin(() ->
                 submitWorkflow(injector,
                         stored.getRevision(), stored.getWorkflowDefinitions(),
                         project, overrideParams,
-                        workflowName, taskMatchPattern));
+                        workflowName, taskMatchPattern), Exception.class); // Hmm... Too many exceptions...
 
         // TODO catch error when workflowName doesn't exist and suggest to cd to another dir
 

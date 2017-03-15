@@ -115,7 +115,7 @@ public class LocalSite
             String projectName,
             String revisionName,
             ArchiveMetadata archive)
-            throws Exception
+            throws ResourceConflictException
     {
         return storeLocalWorkflowsImpl(
                 projectName,
@@ -131,7 +131,7 @@ public class LocalSite
             String revisionName,
             ArchiveMetadata archive,
             Instant currentTimeForSchedule)
-            throws Exception
+            throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflowsImpl(
                 projectName,

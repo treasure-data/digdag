@@ -106,29 +106,24 @@ public class WorkflowExecutionTimeoutEnforcer
 
     private void run()
     {
-        try {
-            tm.begin(() -> {
-                try {
-                    enforceAttemptTTLs();
-                }
-                catch (Throwable t) {
-                    logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
-                }
+        tm.begin(() -> {
+            try {
+                enforceAttemptTTLs();
+            }
+            catch (Throwable t) {
+                logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
+            }
 
-                try {
-                    enforceTaskTTLs();
-                }
-                catch (Throwable t) {
-                    logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
-                }
+            try {
+                enforceTaskTTLs();
+            }
+            catch (Throwable t) {
+                logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
+            }
 
-                return null;
-            });
-        }
-        catch (Exception e) {
-            Throwables.propagate(e);
-        }
-    }
+            return null;
+        });
+}
 
     private void enforceAttemptTTLs()
     {

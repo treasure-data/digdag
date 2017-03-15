@@ -40,7 +40,7 @@ public class AdminResource
     @GET
     @Path("/api/admin/attempts/{id}/userinfo")
     public Config getUserInfo(@PathParam("id") long id)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             StoredSessionAttemptWithSession session = sm.getAttemptWithSessionById(id);
@@ -53,6 +53,6 @@ public class AdminResource
             StoredRevision revision = pm.getRevisionOfWorkflowDefinition(session.getWorkflowDefinitionId().get());
 
             return revision.getUserInfo();
-        });
+        }, ResourceNotFoundException.class);
     }
 }

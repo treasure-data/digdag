@@ -81,7 +81,7 @@ public class WorkflowResource
             @QueryParam("project") String projName,
             @QueryParam("revision") String revName,
             @QueryParam("name") String wfName)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             Preconditions.checkArgument(projName != null, "project= is required");
@@ -98,7 +98,7 @@ public class WorkflowResource
             }
             StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
             return RestModels.workflowDefinition(proj, rev, def);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -106,27 +106,27 @@ public class WorkflowResource
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
             @QueryParam("last_id") Long lastId,
             @QueryParam("count") Integer count)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
                             .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId));
             return RestModels.workflowDefinitionCollection(defs);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
                             .getWorkflowDefinitionById(id);
             return RestModels.workflowDefinition(def);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -135,7 +135,7 @@ public class WorkflowResource
             @PathParam("id") long id,
             @QueryParam("session_time") LocalTimeOrInstant localTime,
             @QueryParam("mode") SessionTimeTruncate mode)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             Preconditions.checkArgument(localTime != null, "session_time= is required");
@@ -158,7 +158,7 @@ public class WorkflowResource
 
             return RestModels.workflowSessionTime(
                     def, truncated, timeZone);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     private Instant truncateSessionTime(

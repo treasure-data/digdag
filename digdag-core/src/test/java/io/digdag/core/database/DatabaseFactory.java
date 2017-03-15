@@ -5,18 +5,16 @@ import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
-import io.digdag.core.database.TransactionManager.ThrowableSupplier;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskQueueRequest;
-import org.skife.jdbi.v2.DBI;
+
+import java.util.function.Supplier;
 
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
-import static org.mockito.Mockito.mock;
 
 public class DatabaseFactory
         implements AutoCloseable, Provider<TransactionManager>
@@ -39,10 +37,10 @@ public class DatabaseFactory
         return tm;
     }
 
-    public <T> T begin(ThrowableSupplier<T> func)
+    public <T> T begin(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException> func)
             throws Exception
     {
-        return tm.begin(func);
+        return tm.begin(func, Exception.class);
     }
 
     public void begin(ThrowableRunnable func)
@@ -60,10 +58,10 @@ public class DatabaseFactory
         void run() throws Exception;
     }
 
-    public <T> T autoCommit(ThrowableSupplier<T> func)
+    public <T> T autoCommit(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException> func)
             throws Exception
     {
-        return tm.autoCommit(func);
+        return tm.autoCommit(func, Exception.class);
     }
 
     public void autoCommit(ThrowableRunnable func)

@@ -1,5 +1,6 @@
 package io.digdag.core.database;
 
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -8,6 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import javax.sql.DataSource;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -129,9 +133,9 @@ public class ThreadLocalTransactionManager
             }
             if (!isValid) {
                 throw new TransactionFailedException(
-                        "Trying to commit a transaction that is already aborted. "  +
-                        "Because current transaction is aborted, commands including " +
-                        "commit are ignored until end of transaction block.");
+                        "Trying to commit a transaction that is already aborted. " +
+                                "Because current transaction is aborted, commands including " +
+                                "commit are ignored until end of transaction block.");
             }
             else {
                 handle.commit();
@@ -199,29 +203,56 @@ public class ThreadLocalTransactionManager
     }
 
     @Override
-    public <T> T begin(ThrowableSupplier<T> func)
-            throws Exception
+    public <T> T begin(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException> func)
+    {
+        return begin(func, RuntimeException.class, RuntimeException.class, RuntimeException.class);
+    }
+
+    @Override
+    public <T, E1 extends Exception> T begin(SupplierInTransaction<T, E1, RuntimeException, RuntimeException> func, Class<E1> e1)
+            throws E1
+    {
+        return begin(func, e1, RuntimeException.class, RuntimeException.class);
+    }
+
+    @Override
+    public <T, E1 extends Exception, E2 extends Exception>
+    T begin(SupplierInTransaction<T, E1, E2, RuntimeException> func, Class<E1> e1, Class<E2> e2)
+            throws E1, E2
+    {
+        return begin(func, e1, e2, RuntimeException.class);
+    }
+
+    public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception>
+    T begin(SupplierInTransaction<T, E1, E2, E3> func, Class<E1> e1, Class<E2> e2, Class<E3> e3)
+            throws E1, E2, E3
     {
         if (threadLocalTransaction.get() != null) {
             throw new IllegalStateException("Nested transaction is not allowed");
         }
 
-        try (LazyTransaction transaction = new LazyTransaction(ds)) {
+        boolean committed = false;
+        LazyTransaction transaction = new LazyTransaction(ds);
+        try {
             threadLocalTransaction.set(transaction);
-            boolean committed = false;
-            try {
-                T result = func.get();
-                transaction.commit();
-                committed = true;
-                return result;
-            }
-            finally {
-                threadLocalTransaction.set(null);
-                if (!committed) {
-                    transaction.abort();
-                }
+            T result = func.get();
+            transaction.commit();
+            committed = true;
+            return result;
+        }
+        catch (Exception e) {
+            Throwables.propagateIfInstanceOf(e, e1);
+            Throwables.propagateIfInstanceOf(e, e2);
+            Throwables.propagateIfInstanceOf(e, e3);
+            Throwables.propagate(e);
+        }
+        finally {
+            threadLocalTransaction.set(null);
+            if (!committed) {
+                transaction.abort();
             }
         }
+        throw new IllegalStateException("Shouldn't reach here");
     }
 
     @Override
@@ -235,20 +266,33 @@ public class ThreadLocalTransactionManager
     }
 
     @Override
-    public <T> T autoCommit(ThrowableSupplier<T> func)
-            throws Exception
+    public <T> T autoCommit(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException> func)
+    {
+        return autoCommit(func, RuntimeException.class);
+    }
+
+    @Override
+    public <T, E1 extends Exception> T autoCommit(SupplierInTransaction<T, E1, RuntimeException, RuntimeException> func, Class<E1> e1)
+            throws E1
     {
         if (threadLocalTransaction.get() != null) {
             throw new IllegalStateException("Nested transaction is not allowed");
         }
 
-        LazyTransaction transaction = new LazyTransaction(ds, true);
-        threadLocalTransaction.set(transaction);
         try {
-            return func.get();
+            LazyTransaction transaction = new LazyTransaction(ds, true);
+            threadLocalTransaction.set(transaction);
+            try {
+                return func.get();
+            }
+            finally {
+                threadLocalTransaction.set(null);
+            }
         }
-        finally {
-            threadLocalTransaction.set(null);
+        catch (Exception e) {
+            Throwables.propagateIfInstanceOf(e, e1);
+            Throwables.propagate(e);
         }
+        throw new IllegalStateException("Shouldn't reach here");
     }
 }

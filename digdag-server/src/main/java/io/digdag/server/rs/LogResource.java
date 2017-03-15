@@ -62,9 +62,9 @@ public class LogResource
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId,
             InputStream body)
-            throws Exception
+            throws ResourceNotFoundException, IOException
     {
-        return tm.begin(() -> {
+        return tm.begin((TransactionManager.SupplierInTransaction<RestLogFilePutResult, ResourceNotFoundException, IOException, RuntimeException>) () -> {
             // TODO null check taskName
             // TODO null check nodeId
             LogFilePrefix prefix = getPrefix(attemptId);
@@ -72,7 +72,7 @@ public class LogResource
             byte[] data = ByteStreams.toByteArray(body);
             String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
             return RestLogFilePutResult.of(fileName);
-        });
+        }, ResourceNotFoundException.class, IOException.class);
     }
 
     @GET
@@ -82,7 +82,7 @@ public class LogResource
             @QueryParam("task") String taskName,
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             // TODO null check taskName
@@ -101,7 +101,7 @@ public class LogResource
                                 .entity("{\"message\":\"Direct upload handle is not available for this log server implementation\",\"status\":501}")
                                 .build());
             }
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -109,14 +109,14 @@ public class LogResource
     public RestLogFileHandleCollection getFileHandles(
             @PathParam("attempt_id") long attemptId,
             @QueryParam("task") String taskName)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             LogFilePrefix prefix = getPrefix(attemptId);
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
 
             return RestModels.logFileHandleCollection(handles);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -125,12 +125,12 @@ public class LogResource
     public byte[] getFile(
             @PathParam("attempt_id") long attemptId,
             @PathParam("file_name") String fileName)
-            throws Exception
+            throws ResourceNotFoundException, IOException, StorageFileNotFoundException
     {
-        return tm.begin(() -> {
+        return tm.begin((TransactionManager.SupplierInTransaction<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>) () -> {
             LogFilePrefix prefix = getPrefix(attemptId);
             return logServer.getFile(prefix, fileName);
-        });
+        }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class);
     }
 
     private LogFilePrefix getPrefix(long attemptId)

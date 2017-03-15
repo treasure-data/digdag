@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -18,7 +17,6 @@ import javax.ws.rs.core.Response;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import io.digdag.client.config.Config;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStore;
@@ -82,7 +80,7 @@ public class AttemptResource
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;
@@ -107,13 +105,13 @@ public class AttemptResource
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/attempts/{id}")
     public RestSessionAttempt getAttempt(@PathParam("id") long id)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
@@ -122,26 +120,25 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId());
 
             return RestModels.attempt(attempt, proj.getName());
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/attempts/{id}/retries")
     public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
-            throws Exception
+            throws ResourceNotFoundException
     {
         return tm.begin(() -> {
             List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
                     .getOtherAttempts(id);
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        });
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/attempts/{id}/tasks")
     public RestTaskCollection getTasks(@PathParam("id") long id)
-            throws Exception
     {
         return tm.begin(() -> {
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
@@ -154,9 +151,9 @@ public class AttemptResource
     @Consumes("application/json")
     @Path("/api/attempts")
     public Response startAttempt(RestSessionAttemptRequest request)
-            throws Exception
+            throws AttemptLimitExceededException, TaskLimitExceededException, ResourceNotFoundException
     {
-        return tm.begin(() -> {
+        return tm.begin((TransactionManager.SupplierInTransaction<Response, AttemptLimitExceededException, ResourceNotFoundException, TaskLimitExceededException>) () -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
 
             StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(
@@ -188,7 +185,7 @@ public class AttemptResource
                 RestSessionAttempt res = RestModels.attempt(conflicted, def.getProject().getName());
                 return Response.status(Response.Status.CONFLICT).entity(res).build();
             }
-        });
+        }, AttemptLimitExceededException.class, ResourceNotFoundException.class, TaskLimitExceededException.class);
     }
 
     private List<Long> collectResumingTasks(RestSessionAttemptRequest.Resume resume)
@@ -268,14 +265,14 @@ public class AttemptResource
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")
     public void killAttempt(@PathParam("id") long id)
-            throws Exception
+            throws ResourceNotFoundException, ResourceConflictException
     {
-        tm.begin(() -> {
+        tm.begin((TransactionManager.SupplierInTransaction<Void, ResourceNotFoundException, ResourceConflictException, RuntimeException>) () -> {
             boolean updated = executor.killAttemptById(getSiteId(), id);
             if (!updated) {
                 throw new ResourceConflictException("Session attempt already killed or finished");
             }
             return null;
-        });
+        }, ResourceNotFoundException.class, ResourceConflictException.class);
     }
 }
