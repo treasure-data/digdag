@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
@@ -28,7 +26,7 @@ public class ThreadLocalTransactionManager
     private static class LazyTransaction
             implements Transaction
     {
-        private static enum State
+        private enum State
         {
             ACTIVE,
             ABORTED,
@@ -289,6 +287,7 @@ public class ThreadLocalTransactionManager
             }
             finally {
                 threadLocalTransaction.set(null);
+                transaction.close();
             }
         }
         catch (Exception e) {
