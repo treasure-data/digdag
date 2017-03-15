@@ -187,42 +187,23 @@ public abstract class BasicDatabaseStoreManager <D>
             Class<E3> exClass3)
         throws E1, E2, E3
     {
-        Handle handle = transactionManager.getHandle(configMapper);
-        return action.call(handle, handle.attach(daoIface));
+        try {
+            Handle handle = transactionManager.getHandle(configMapper);
+            return action.call(handle, handle.attach(daoIface));
+        }
+        catch (Exception ex) {
+            Throwables.propagateIfInstanceOf(ex, exClass1);
+            Throwables.propagateIfInstanceOf(ex, exClass2);
+            Throwables.propagateIfInstanceOf(ex, exClass3);
+            Throwables.propagateIfPossible(ex);
+            throw new TransactionFailedException(
+                    "Transaction failed due to exception being thrown " +
+                            "from within the callback. See cause " +
+                            "for the original exception.", ex);
+        }
     }
 
     public <T> T autoCommit(AutoCommitAction<T, D> action)
-    {
-        Handle handle = transactionManager.getHandle(configMapper);
-        return action.call(handle, handle.attach(daoIface));
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T, E1 extends Exception> T autoCommit(
-            AutoCommitActionWithExceptions<T, D, E1, RuntimeException, RuntimeException> action,
-            Class<E1> exClass1)
-        throws E1
-    {
-        return autoCommit(action, exClass1, RuntimeException.class, RuntimeException.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T, E1 extends Exception, E2 extends Exception> T autoCommit(
-            AutoCommitActionWithExceptions<T, D, E1, E2, RuntimeException> action,
-            Class<E1> exClass1,
-            Class<E2> exClass2)
-        throws E1, E2
-    {
-        return autoCommit(action, exClass1, exClass2, RuntimeException.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception> T autoCommit(
-            AutoCommitActionWithExceptions<T, D, E1, E2, E3> action,
-            Class<E1> exClass1,
-            Class<E2> exClass2,
-            Class<E3> exClass3)
-        throws E1, E2, E3
     {
         Handle handle = transactionManager.getHandle(configMapper);
         return action.call(handle, handle.attach(daoIface));

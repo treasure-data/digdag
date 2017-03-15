@@ -92,7 +92,7 @@ public class DatabaseFactory
 
     public DatabaseSessionStoreManager getSessionStoreManager()
     {
-        return new DatabaseSessionStoreManager(tm, createConfigFactory(), createConfigMapper(), objectMapper(), config);
+        return new DatabaseSessionStoreManager(createConfigFactory(), tm, createConfigMapper(), objectMapper(), config);
     }
 
     public WorkflowExecutor getWorkflowExecutor()
@@ -106,8 +106,7 @@ public class DatabaseFactory
                 new WorkflowCompiler(),
                 configFactory,
                 objectMapper(),
-                configFactory.create(),
-                mock(Notifier.class));
+                configFactory.create());
     }
 
     public DatabaseSecretControlStoreManager getSecretControlStoreManager(String secret)

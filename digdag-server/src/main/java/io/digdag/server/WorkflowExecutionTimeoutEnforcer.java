@@ -71,10 +71,10 @@ public class WorkflowExecutionTimeoutEnforcer
     public WorkflowExecutionTimeoutEnforcer(
             ServerConfig serverConfig,
             SessionStoreManager ssm,
+            TransactionManager tm,
             Config systemConfig,
             Notifier notifier,
-            ProjectStoreManager psm,
-            TransactionManager tm)
+            ProjectStoreManager psm)
     {
         this.attemptTTL = systemConfig.getOptional("executor.attempt_ttl", DurationParam.class)
                 .transform(DurationParam::getDuration)

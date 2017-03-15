@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
@@ -27,7 +26,6 @@ import io.digdag.core.session.SessionControlStore;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
@@ -170,7 +168,6 @@ public class WorkflowExecutor
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
-    private Notifier notifier;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -185,8 +182,7 @@ public class WorkflowExecutor
             WorkflowCompiler compiler,
             ConfigFactory cf,
             ObjectMapper archiveMapper,
-            Config systemConfig,
-            Notifier notifier)
+            Config systemConfig)
     {
         this.rm = rm;
         this.sm = sm;
@@ -196,7 +192,6 @@ public class WorkflowExecutor
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
-        this.notifier = notifier;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -213,7 +208,7 @@ public class WorkflowExecutor
     private static final DateTimeFormatter SESSION_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
 
-    public static interface WorkflowSubmitterAction <T>
+    public interface WorkflowSubmitterAction <T>
     {
         T call(WorkflowSubmitter submitter)
             throws ResourceNotFoundException, AttemptLimitExceededException, SessionAttemptConflictException;
@@ -472,11 +467,14 @@ public class WorkflowExecutor
             Throwables.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
             throw ex;
         }
+
         try {
             return tm.begin(() -> sm.getAttemptWithSessionById(attemptId));
         }
+        catch (ResourceNotFoundException ex) {
+            throw ex;
+        }
         catch (Exception ex) {
-            // TODO: Revisit here
             throw Throwables.propagate(ex);
         }
     }

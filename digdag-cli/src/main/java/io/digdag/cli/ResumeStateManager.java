@@ -46,7 +46,7 @@ class ResumeStateManager
     private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateManager(ConfigFactory cf, TransactionManager tm, SessionStoreManager sessionStoreManager, YamlMapper mapper)
+    private ResumeStateManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, TransactionManager tm, YamlMapper mapper)
     {
         this.cf = cf;
         this.tm = tm;

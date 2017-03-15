@@ -130,7 +130,7 @@ public class DatabaseSessionStoreManager
     private final TaskAttemptSummaryMapper tasm;
 
     @Inject
-    public DatabaseSessionStoreManager(TransactionManager transactionManager, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
+    public DatabaseSessionStoreManager(ConfigFactory cf, TransactionManager transactionManager, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
         super(config.getType(), dao(config.getType()), transactionManager, cfm);
 
