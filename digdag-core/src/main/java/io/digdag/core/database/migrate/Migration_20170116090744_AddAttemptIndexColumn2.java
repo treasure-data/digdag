@@ -20,7 +20,7 @@ public class Migration_20170116090744_AddAttemptIndexColumn2
         else {
             List<IdAndSessionId> list =
                 handle.createQuery("select id, session_id from session_attempts order by session_id, id")
-                .map((index, r, ctx) -> new IdAndSessionId(r.getLong("id"), r.getLong("sessionId")))
+                .map((index, r, ctx) -> new IdAndSessionId(r.getLong("id"), r.getLong("session_id")))
                 .list();
             long lastSessionId = 0L;
             long lastIndex = 0;
@@ -30,7 +30,7 @@ public class Migration_20170116090744_AddAttemptIndexColumn2
                     lastIndex = 0;
                 }
                 lastIndex++;
-                handle.createStatement("update session_attempts where id = :id set index = :index")
+                handle.createStatement("update session_attempts set index = :index where id = :id")
                     .bind("id", s.id)
                     .bind("index", lastIndex)
                     .execute();
