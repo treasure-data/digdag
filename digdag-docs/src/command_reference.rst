@@ -456,7 +456,7 @@ Examples:
 :command:`--all`
   Retries all tasks.
 
-:command:`--resume +NAME`
+:command:`--resume`
   Retry only failed tasks. Successfully finished tasks are skipped.
 
 :command:`--resume-from +NAME`
