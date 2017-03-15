@@ -26,7 +26,7 @@ public class ThreadLocalTransactionManager
     private final DataSource ds;
 
     private static class LazyTransaction
-            implements Transaction, AutoCloseable
+            implements Transaction
     {
         private static enum State
         {
@@ -157,7 +157,6 @@ public class ThreadLocalTransactionManager
                 handle.rollback();
             }
             state = State.ABORTED;
-            // TODO Should call close()?
         }
 
         @Override
@@ -167,9 +166,7 @@ public class ThreadLocalTransactionManager
             state = State.ACTIVE;
         }
 
-        @Override
-        public void close()
-                throws Exception
+        void close()
         {
             if (handle != null) {
                 handle.close();
@@ -248,8 +245,13 @@ public class ThreadLocalTransactionManager
         }
         finally {
             threadLocalTransaction.set(null);
-            if (!committed) {
-                transaction.abort();
+            try {
+                if (!committed) {
+                    transaction.abort();
+                }
+            }
+            finally {
+                transaction.close();
             }
         }
         throw new IllegalStateException("Shouldn't reach here");
