@@ -656,12 +656,15 @@ public class Run
             String fullName = request.getTaskName();
             TaskResult result = cmd.skipTaskReports.apply(fullName);
             if (result != null) {
-                try (SetThreadName threadName = new SetThreadName(fullName)) {
-                    logger.warn("Skipped");
-                }
-                callback.taskSucceeded(request.getSiteId(),
-                        request.getTaskId(), request.getLockId(), agentId,
-                        result);
+                tm.begin(() -> {
+                    try (SetThreadName threadName = new SetThreadName(fullName)) {
+                        logger.warn("Skipped");
+                    }
+                    callback.taskSucceeded(request.getSiteId(),
+                            request.getTaskId(), request.getLockId(), agentId,
+                            result);
+                    return null;
+                });
             }
             else {
                 super.run(request);

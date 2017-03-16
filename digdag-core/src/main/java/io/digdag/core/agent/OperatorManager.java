@@ -58,7 +58,7 @@ public class OperatorManager
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
-    private final TransactionManager tm;
+    protected final TransactionManager tm;
     private final SecretStoreManager secretStoreManager;
 
     private final ScheduledExecutorService heartbeatScheduler;
