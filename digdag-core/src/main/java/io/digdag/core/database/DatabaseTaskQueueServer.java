@@ -434,7 +434,6 @@ public class DatabaseTaskQueueServer
             }
         }
         catch (Throwable t) {
-            transactionManager.reset();
             logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
             errorReporter.reportUncaughtError(t);
         }
