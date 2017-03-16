@@ -295,7 +295,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: --max-task-threads 5
 
 :command:`-c, --config PATH`
-  Server configuration property path. See `Digdag server <digdag_server.html>`_ for details.
+  Server configuration property path. See the followings for details.
 
   Example: -c digdag.properties
 
