@@ -124,10 +124,7 @@ public class MultiThreadAgent
                             for (TaskRequest req : reqs) {
                                 executor.submit(() -> {
                                     try {
-                                        transactionManager.begin(() -> {
-                                            runner.run(req);
-                                            return null;
-                                        });
+                                        runner.run(req);
                                     }
                                     catch (Throwable t) {
                                         logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);

@@ -95,17 +95,10 @@ public class DatabaseTaskQueueServer
     {
         expireExecutor.scheduleWithFixedDelay(
                 () -> {
-                    try {
-                        transactionManager.begin(
-                                () -> {
-                                    expireLocks();
-                                    return null;
-                                });
-                    }
-                    catch (Exception e) {
-                        // Already reported, right?
-                        e.printStackTrace();
-                    }
+                    transactionManager.begin(() -> {
+                        expireLocks();
+                        return null;
+                    });
                 }, expireLockInterval, expireLockInterval, TimeUnit.SECONDS);
     }
 
@@ -441,6 +434,7 @@ public class DatabaseTaskQueueServer
             }
         }
         catch (Throwable t) {
+            transactionManager.reset();
             logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
             errorReporter.reportUncaughtError(t);
         }

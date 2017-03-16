@@ -219,7 +219,7 @@ public class WorkflowExecutor
     {
         try {
             return sm.getSessionStore(siteId).sessionTransaction((transaction) -> {
-                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId)));
+                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId), tm));
             });
         }
         catch (Exception ex) {
@@ -673,6 +673,7 @@ public class WorkflowExecutor
                     }
                 }
                 catch (TaskLimitExceededException ex) {
+                    tm.reset();
                     // addErrorTasksIfAny threw TaskLimitExceededException. Giveup adding them.
                     // TODO this is a fundamental design problem. Probably _error tasks should be removed.
                     //      use notification tasks instead.
@@ -927,6 +928,7 @@ public class WorkflowExecutor
                 siteId = sm.getSiteIdOfTask(taskId);
             }
             catch (ResourceNotFoundException ex) {
+                tm.reset();
                 Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
                 logger.error("Database state error enqueuing task.", error);
                 return false;
@@ -950,6 +952,7 @@ public class WorkflowExecutor
                     dispatcher.dispatch(siteId, queueName, request);
                 }
                 catch (TaskConflictException ex) {
+                    tm.reset();
                     logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
                             encodedUnique, queueName.or("<shared>"), siteId);
                 }
@@ -969,6 +972,7 @@ public class WorkflowExecutor
                 return updated;
             }
             catch (Exception ex) {
+                tm.reset();
                 logger.error("Enqueue error, making this task failed: {}", task, ex);
                 // TODO retry here?
                 return taskFailed(lockedTask,
@@ -1015,6 +1019,7 @@ public class WorkflowExecutor
                 }
             }
             catch (RuntimeException ex) {
+                tm.reset();
                 logger.error("Invalid association of task queue lock id: {}", lock, ex);
             }
         }
@@ -1029,6 +1034,7 @@ public class WorkflowExecutor
                 attempt = sm.getAttemptWithSessionById(task.getAttemptId());
             }
             catch (ResourceNotFoundException ex) {
+                tm.reset();
                 Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated session attempt does not exist.", ex);
                 logger.error("Database state error enqueuing task.", error);
                 return Optional.absent();
@@ -1040,6 +1046,7 @@ public class WorkflowExecutor
                     rev = Optional.of(rm.getRevisionOfWorkflowDefinition(attempt.getWorkflowDefinitionId().get()));
                 }
                 catch (ResourceNotFoundException ex) {
+                    tm.reset();
                     Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated workflow definition does not exist.", ex);
                     logger.error("Database state error enqueuing task.", error);
                     return Optional.absent();
@@ -1051,6 +1058,7 @@ public class WorkflowExecutor
                 project = rm.getProjectByIdInternal(attempt.getSession().getProjectId());
             }
             catch (ResourceNotFoundException ex) {
+                tm.reset();
                 Exception error = new IllegalStateException("Task id=" + taskId + " is in the task queue but associated project does not exist.", ex);
                 logger.error("Database state error enqueuing task.", error);
                 return Optional.absent();
@@ -1138,9 +1146,11 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
+                tm.reset();
                 logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
+                tm.reset();
                 logger.warn("Ignoring preempted task entry error", ex);
             }
         }
@@ -1159,9 +1169,11 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
+                tm.reset();
                 logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
+                tm.reset();
                 logger.warn("Ignoring preempted task entry error", ex);
             }
         }
@@ -1182,9 +1194,11 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
+                tm.reset();
                 logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
+                tm.reset();
                 logger.warn("Ignoring preempted task entry error", ex);
             }
         }
@@ -1213,6 +1227,7 @@ public class WorkflowExecutor
             errorTaskAdded = errorTaskId.isPresent();
         }
         catch (TaskLimitExceededException ex) {
+            tm.reset();
             errorTaskAdded = false;
             logger.debug("Failed to add error tasks because of task limit");
         }
@@ -1263,6 +1278,7 @@ public class WorkflowExecutor
             subtaskAdded = rootSubtaskId.isPresent() || checkTaskId.isPresent();
         }
         catch (TaskLimitExceededException ex) {
+            tm.reset();
             return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
         }
 

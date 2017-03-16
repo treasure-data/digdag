@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
@@ -57,6 +58,7 @@ public class OperatorManager
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
+    private final TransactionManager tm;
     private final SecretStoreManager secretStoreManager;
 
     private final ScheduledExecutorService heartbeatScheduler;
@@ -70,6 +72,7 @@ public class OperatorManager
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
+            TransactionManager tm,
             SecretStoreManager secretStoreManager)
     {
         this.agentConfig = agentConfig;
@@ -79,8 +82,8 @@ public class OperatorManager
         this.compiler = compiler;
         this.cf = cf;
         this.evalEngine = evalEngine;
-
         this.registry = registry;
+        this.tm = tm;
         this.secretStoreManager = secretStoreManager;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
@@ -94,7 +97,12 @@ public class OperatorManager
     @PostConstruct
     public void start()
     {
-        heartbeatScheduler.scheduleAtFixedRate(() -> heartbeat(),
+        heartbeatScheduler.scheduleAtFixedRate(() -> {
+                    tm.begin(() -> {
+                        heartbeat();
+                        return null;
+                    });
+                },
                 agentConfig.getHeartbeatInterval(), agentConfig.getHeartbeatInterval(),
                 TimeUnit.SECONDS);
     }
@@ -110,24 +118,27 @@ public class OperatorManager
     {
         long taskId = request.getTaskId();
 
-        // set task name to thread name so that logger shows it
-        try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
-            try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
-                TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
-                try {
-                    runningTaskMap.put(taskId, request);
+        tm.begin(() -> {
+            // set task name to thread name so that logger shows it
+            try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
+                try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
+                    TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
                     try {
-                        runWithHeartbeat(request);
+                        runningTaskMap.put(taskId, request);
+                        try {
+                            runWithHeartbeat(request);
+                        }
+                        finally {
+                            runningTaskMap.remove(taskId);
+                        }
                     }
                     finally {
-                        runningTaskMap.remove(taskId);
+                        TaskContextLogging.leave();
                     }
                 }
-                finally {
-                    TaskContextLogging.leave();
-                }
             }
-        }
+            return null;
+        });
     }
 
     private void runWithHeartbeat(TaskRequest request)

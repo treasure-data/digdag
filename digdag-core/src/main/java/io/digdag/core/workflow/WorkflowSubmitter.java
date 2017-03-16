@@ -2,6 +2,7 @@ package io.digdag.core.workflow;
 
 import com.google.common.base.Optional;
 import io.digdag.core.Limits;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -22,13 +23,16 @@ public class WorkflowSubmitter
     private final SessionTransaction transaction;
     private final ProjectStore projectStore;
     private final SessionStore sessionStore;
+    private final TransactionManager transactionManager;
 
-    WorkflowSubmitter(int siteId, SessionTransaction transaction, ProjectStore projectStore, SessionStore sessionStore)
+    WorkflowSubmitter(int siteId, SessionTransaction transaction,
+            ProjectStore projectStore, SessionStore sessionStore, TransactionManager transactionManager)
     {
         this.siteId = siteId;
         this.transaction = transaction;
         this.projectStore = projectStore;
         this.sessionStore = sessionStore;
+        this.transactionManager = transactionManager;
     }
 
     public StoredSessionAttemptWithSession submitDelayedAttempt(
@@ -66,6 +70,7 @@ public class WorkflowSubmitter
             });
         }
         catch (ResourceConflictException sessionAlreadyExists) {
+            transactionManager.reset();
             StoredSessionAttemptWithSession conflicted;
             if (ar.getRetryAttemptName().isPresent()) {
                 conflicted = sessionStore

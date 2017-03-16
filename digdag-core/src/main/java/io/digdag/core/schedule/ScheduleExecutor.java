@@ -458,6 +458,7 @@ public class ScheduleExecutor
             logger.warn("Invalid delayed attempt: {}", delayedAttempt, ex);
         }
         catch (ResourceLimitExceededException ex) {
+            tm.reset();
             logger.warn("Failed to start delayed attempt Due to too many active tasks. Will be retried after 5 minutes.", ex);
             control.delayDelayedAttempt(delayedAttempt.getAttemptId(), Instant.now().plusSeconds(5 * 60));
             return;
