@@ -5,7 +5,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
-import io.digdag.core.database.TransactionManager;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 import org.slf4j.Logger;
@@ -22,7 +21,6 @@ public class WorkflowExecutorLoop
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutorLoop.class);
 
     private final Supplier<Thread> threadFactory;
-    private final TransactionManager transactionManager;
     private final WorkflowExecutor workflowExecutor;
 
     private volatile Thread thread = null;
@@ -34,7 +32,6 @@ public class WorkflowExecutorLoop
     @Inject
     public WorkflowExecutorLoop(
             ServerConfig serverConfig,
-            TransactionManager transactionManager,
             WorkflowExecutor workflowExecutor)
     {
         if (serverConfig.getExecutorEnabled()) {
@@ -47,7 +44,6 @@ public class WorkflowExecutorLoop
         else {
             this.threadFactory = null;
         }
-        this.transactionManager = transactionManager;
         this.workflowExecutor = workflowExecutor;
     }
 
