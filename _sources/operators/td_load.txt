@@ -9,7 +9,7 @@
 
 ## Examples
 
-  * [Examples](https://github.com/treasure-data/workflow-examples/tree/master/td_load>)
+  * [Examples](https://github.com/treasure-data/workflow-examples/tree/master/td_load)
 
 ## Secrets
 

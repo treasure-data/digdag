@@ -225,7 +225,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.6
+    $ digdag selfupdate 0.9.7
 
 Server-mode commands
 ----------------------------------
@@ -295,7 +295,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: --max-task-threads 5
 
 :command:`-c, --config PATH`
-  Server configuration property path. See `Digdag server <digdag_server.html>`_ for details.
+  Server configuration property path. See the followings for details.
 
   Example: -c digdag.properties
 
@@ -456,7 +456,7 @@ Examples:
 :command:`--all`
   Retries all tasks.
 
-:command:`--resume +NAME`
+:command:`--resume`
   Retry only failed tasks. Successfully finished tasks are skipped.
 
 :command:`--resume-from +NAME`

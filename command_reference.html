@@ -399,7 +399,7 @@
 </div>
 <p>Updates the executable binary file to the latest version or specified version. Examples:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag selfupdate
-<span class="gp">$</span> digdag selfupdate <span class="m">0</span>.9.6
+<span class="gp">$</span> digdag selfupdate <span class="m">0</span>.9.7
 </pre></div>
 </div>
 </div>
@@ -457,7 +457,7 @@
 <p class="last">Example: &#8211;max-task-threads 5</p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
-<dd><p class="first">Server configuration property path. See <a class="reference external" href="digdag_server.html">Digdag server</a> for details.</p>
+<dd><p class="first">Server configuration property path. See the followings for details.</p>
 <p class="last">Example: -c digdag.properties</p>
 </dd>
 </dl>
@@ -592,7 +592,7 @@
 <dd>Use a specific revision to retry the session.</dd>
 <dt><strong class="command">--all</strong></dt>
 <dd>Retries all tasks.</dd>
-<dt><strong class="command">--resume +NAME</strong></dt>
+<dt><strong class="command">--resume</strong></dt>
 <dd>Retry only failed tasks. Successfully finished tasks are skipped.</dd>
 <dt><strong class="command">--resume-from +NAME</strong></dt>
 <dd>Retry from this task. This task and all following tasks will be executed. All tasks before this task must have been successfully finished.</dd>
