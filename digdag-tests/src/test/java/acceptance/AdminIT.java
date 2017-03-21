@@ -28,7 +28,7 @@ public class AdminIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration()
+            .configuration("server.admin.port = 0")
             .build();
 
     private Path config;

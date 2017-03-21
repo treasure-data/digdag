@@ -2,25 +2,20 @@ package io.digdag.guice.rs.server.undertow;
 
 import com.google.common.base.Throwables;
 import com.google.inject.Injector;
-
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.server.ServerLifeCycleManager;
-
 import io.undertow.Undertow;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.servlet.api.DeploymentManager;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.ServletException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.xnio.XnioWorker;
-import org.xnio.channels.AcceptingChannel;
 
 public class UndertowServerControl
         implements GuiceRsServerControl
@@ -33,8 +28,7 @@ public class UndertowServerControl
     private XnioWorker worker = null;
     private Undertow server = null;
     private boolean started = false;
-    private List<InetSocketAddress> localAddresses = null;
-    private List<InetSocketAddress> localAdminAddresses = null;
+    private Map<String, List<InetSocketAddress>> listenAddresses = null;
     private ServerLifeCycleManager lifeCycleManager = null;
 
     UndertowServerControl()
@@ -52,7 +46,7 @@ public class UndertowServerControl
 
     void addHandler(GracefulShutdownHandler handler)
     {
-        handlers.add(handler);
+        this.handlers.add(handler);
     }
 
     void workerInitialized(XnioWorker worker)
@@ -65,11 +59,10 @@ public class UndertowServerControl
         this.server = server;
     }
 
-    void serverStarted(List<InetSocketAddress> localAddresses, List<InetSocketAddress> localAdminAddresses)
+    void serverStarted(Map<String, List<InetSocketAddress>> listenAddresses)
     {
         this.started = true;
-        this.localAddresses = localAddresses;
-        this.localAdminAddresses = localAdminAddresses;
+        this.listenAddresses = listenAddresses;
     }
 
     boolean isServerStarted()
@@ -90,14 +83,10 @@ public class UndertowServerControl
         }
     }
 
-    List<InetSocketAddress> getLocalAddresses()
+    @Override
+    public Map<String, List<InetSocketAddress>> getListenAddresses()
     {
-        return this.localAddresses;
-    }
-
-    List<InetSocketAddress> getLocalAdminAddresses()
-    {
-        return this.localAdminAddresses;
+        return this.listenAddresses;
     }
 
     @Override

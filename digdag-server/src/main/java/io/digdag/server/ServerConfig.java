@@ -2,16 +2,19 @@ package io.digdag.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.guice.rs.server.undertow.UndertowServerConfig;
+import io.digdag.guice.rs.server.undertow.UndertowListenAddress;
+import io.digdag.server.rs.AdminRestricted;
 import org.immutables.value.Value;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -19,7 +22,6 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toMap;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableServerConfig.class)
 @JsonDeserialize(as = ImmutableServerConfig.class)
 public interface ServerConfig
     extends UndertowServerConfig
@@ -29,6 +31,14 @@ public interface ServerConfig
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
     public Optional<String> getServerRuntimeInfoPath();
+
+    public int getPort();
+
+    public String getBind();
+
+    public Optional<Integer> getAdminPort();
+
+    public Optional<String> getAdminBind();
 
     public boolean getExecutorEnabled();
 
@@ -92,4 +102,27 @@ public interface ServerConfig
 
     Set<Integer> getAdminSites();
 
+    static final String API_ADDRESS = "api";
+
+    static final String ADMIN_ADDRESS = "admin";
+
+    default List<ListenAddress> getListenAddresses()
+    {
+        ImmutableList.Builder<ListenAddress> builder = ImmutableList.builder();
+        builder.add(
+                UndertowListenAddress.builder()
+                .bind(getBind())
+                .port(getPort())
+                .name(API_ADDRESS)
+                .build());
+        if (getAdminPort().isPresent()) {
+            builder.add(
+                    UndertowListenAddress.builder()
+                    .bind(getAdminBind().or(getBind()))
+                    .port(getAdminPort().get())
+                    .name(ADMIN_ADDRESS)
+                    .build());
+        }
+        return builder.build();
+    }
 }

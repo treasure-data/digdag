@@ -40,10 +40,12 @@ public class GuiceRsApplicationServlet
         Registry registry = servletContainerDispatcher.getDispatcher().getRegistry();
         ResteasyProviderFactory providerFactory = servletContainerDispatcher.getDispatcher().getProviderFactory();
 
+        // add injected providers
         for (Key<Object> key : providers) {
             providerFactory.registerProviderInstance(injector.getInstance(key));
         }
 
+        // add injected resources
         for (Map.Entry<Key<Object>, Class<?>> pair : resources.entrySet()) {
             GuiceRsResourceFactory resourceFactory = new GuiceRsResourceFactory(injector.getProvider(pair.getKey()), pair.getValue());
             registry.addResourceFactory(resourceFactory);

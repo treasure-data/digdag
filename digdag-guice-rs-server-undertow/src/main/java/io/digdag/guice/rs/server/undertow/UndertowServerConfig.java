@@ -1,28 +1,42 @@
 package io.digdag.guice.rs.server.undertow;
 
 import com.google.common.base.Optional;
+import java.util.List;
+import java.util.Map;
+import javax.net.ssl.SSLContext;
+import org.immutables.value.Value;
 
 public interface UndertowServerConfig
 {
-    /**
-     * Local port to listen on.
-     */
-    int getPort();
+    @Value.Immutable
+    @Value.Style(typeImmutable = "Undertow*")
+    interface ListenAddress
+    {
+        /**
+         * Local port to listen on.
+         */
+        int getPort();
+
+        /**
+         * Local address to listen on.
+         */
+        String getBind();
+
+        /**
+         * Enable SSL.
+         */
+        Optional<SSLContext> getSslContext();
+
+        /**
+         * Name of this local address used as a key of GuiceRsServerControl.getLocalAddresses.
+         */
+        String getName();
+    }
 
     /**
-     * Local address to listen on.
+     * List of listen addresses.
      */
-    String getBind();
-
-    /**
-     * Local port to listen on.
-     */
-    Optional<Integer> getAdminPort();
-
-    /**
-     * Local address to listen on.
-     */
-    Optional<String> getAdminBind();
+    List<ListenAddress> getListenAddresses();
 
     /**
      * Access log path. Null to disable logging.

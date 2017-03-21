@@ -16,7 +16,6 @@ import io.digdag.guice.rs.server.jmx.JmxModule;
 import org.embulk.guice.Bootstrap;
 import org.embulk.guice.CloseableInjector;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import javax.servlet.ServletContext;
 
@@ -45,26 +44,6 @@ public class UndertowBootstrap
 
         bootstrap.addModules((binder) -> {
             binder.bind(GuiceRsServerControl.class).toInstance(control);
-
-            binder.bind(UndertowServerInfo.class).toInstance(new UndertowServerInfo() {
-                @Override
-                public boolean isStarted()
-                {
-                    return control.isServerStarted();
-                }
-
-                @Override
-                public List<InetSocketAddress> getLocalAddresses()
-                {
-                    return control.getLocalAddresses();
-                }
-
-                @Override
-                public List<InetSocketAddress> getLocalAdminAddresses()
-                {
-                    return control.getLocalAdminAddresses();
-                }
-            });
         });
 
         bootstrap.addModules(new JmxModule(), (binder) -> {
