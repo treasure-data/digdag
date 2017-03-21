@@ -7,7 +7,7 @@
     +run_if_param_is_true:
       if>: ${param}
       _do:
-        sh>: echo ${param} == true
+        echo>: ${param} == true
 
 ## Options
 

@@ -9,16 +9,16 @@
         fruit: [apple, orange]
         verb: [eat, throw]
       _do:
-        sh>: echo ${verb} ${fruit}
+        echo>: ${verb} ${fruit}
         # this will generate 4 tasks:
         #  +for-fruit=apple&verb=eat:
-        #    sh>: echo eat apple
+        #    echo>: eat apple
         #  +for-fruit=apple&verb=throw:
-        #    sh>: echo throw apple
+        #    echo>: throw apple
         #  +for-fruit=orange&verb=eat:
-        #    sh>: echo eat orange
+        #    echo>: eat orange
         #  +for-fruit=orange&verb=throw:
-        #    sh>: echo throw orange
+        #    echo>: throw orange
 
 ## Options
 
