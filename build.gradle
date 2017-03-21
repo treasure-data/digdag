@@ -244,6 +244,7 @@ subprojects {
         configurations.runtime.dependencies.each(generateDependency.curry('runtime', xml))
         configurations.testCompile.dependencies.each(generateDependency.curry('test', xml))
         configurations.testRuntime.dependencies.each(generateDependency.curry('test', xml))
+        configurations.apt.dependencies.each(generateDependency.curry('provided', xml))
     }
 
     // Generate maven manifests for sub-modules
