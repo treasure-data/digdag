@@ -98,7 +98,9 @@ subprojects {
         compile 'org.slf4j:slf4j-api:1.7.21'
 
         compileOnly "org.immutables:value:2.3.9:annotations"
+        testCompileOnly "org.immutables:value:2.3.9:annotations"
         apt "org.immutables:value:2.3.9"
+        testApt "org.immutables:value:2.3.9"
 
         testCompile 'junit:junit:4.12'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
