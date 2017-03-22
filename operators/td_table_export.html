@@ -175,7 +175,7 @@
   <div class="section" id="td-table-export-treasure-data-table-export-to-s3">
 <span id="td-table-export-treasure-data-table-export-to-s3"></span><h1>td_table_export&gt;: Treasure Data table export to S3<a class="headerlink" href="#td-table-export-treasure-data-table-export-to-s3" title="Permalink to this headline">¶</a></h1>
 <p>NOTE: We&#8217;re limiting export capability to only us-east region S3 bucket. In general, please use Result Output to S3 feature using td operator. This workflow example is <a class="reference external" href="https://github.com/treasure-data/workflow-examples/tree/master/td/s3">here</a>.</p>
-<p><strong>td_table_export&gt;</strong> operator loads data from storages, databases, or services.</p>
+<p><strong>td_table_export&gt;</strong> operator exports data from Treasure Data to S3.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">td_table_export</span><span class="o">&gt;</span><span class="p">:</span>
   <span class="n">database</span><span class="p">:</span> <span class="n">mydb</span>

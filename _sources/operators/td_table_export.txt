@@ -2,7 +2,7 @@
 
 NOTE: We're limiting export capability to only us-east region S3 bucket. In general, please use Result Output to S3 feature using td operator. This workflow example is [here](https://github.com/treasure-data/workflow-examples/tree/master/td/s3).
 
-**td_table_export>** operator loads data from storages, databases, or services.
+**td_table_export>** operator exports data from Treasure Data to S3.
 
     +step1:
       td_table_export>:
