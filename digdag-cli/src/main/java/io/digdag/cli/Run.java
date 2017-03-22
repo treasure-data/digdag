@@ -641,9 +641,10 @@ public class Run
                 WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, OperatorRegistry registry,
                 Run cmd, YamlMapper yamlMapper,
+                TransactionManager tm,
                 SecretStoreManager secretStoreManager)
         {
-            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, secretStoreManager);
+            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, tm, secretStoreManager);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;

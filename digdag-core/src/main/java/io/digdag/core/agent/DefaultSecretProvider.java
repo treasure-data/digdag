@@ -9,6 +9,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;
@@ -31,12 +32,15 @@ class DefaultSecretProvider
     private final SecretAccessContext context;
     private final Config mounts;
     private final SecretStore secretStore;
+    private final TransactionManager tm;
 
-    DefaultSecretProvider(SecretAccessContext context, Config mounts, SecretStore secretStore)
+    DefaultSecretProvider(SecretAccessContext context, Config mounts, SecretStore secretStore,
+            TransactionManager tm)
     {
         this.context = context;
         this.mounts = mounts;
         this.secretStore = secretStore;
+        this.tm = tm;
     }
 
     @Override
@@ -99,12 +103,14 @@ class DefaultSecretProvider
 
     private Optional<String> fetchSecret(String key)
     {
-        Optional<String> projectSecret = secretStore.getSecret(context.projectId(), SecretScopes.PROJECT, key);
+        return tm.begin(() -> {
+            Optional<String> projectSecret = secretStore.getSecret(context.projectId(), SecretScopes.PROJECT, key);
 
-        if (projectSecret.isPresent()) {
-            return projectSecret;
-        }
+            if (projectSecret.isPresent()) {
+                return projectSecret;
+            }
 
-        return secretStore.getSecret(context.projectId(), SecretScopes.PROJECT_DEFAULT, key);
+            return secretStore.getSecret(context.projectId(), SecretScopes.PROJECT_DEFAULT, key);
+        });
     }
 }

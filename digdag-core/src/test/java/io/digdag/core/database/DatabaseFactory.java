@@ -117,6 +117,11 @@ public class DatabaseFactory
         return new DatabaseSecretStoreManager(config, tm, createConfigMapper(), new AESGCMSecretCrypto(secret));
     }
 
+    public TransactionManager getTransactionManager()
+    {
+        return tm;
+    }
+
     public static class NullTaskQueueDispatcher
             implements TaskQueueDispatcher
     {
