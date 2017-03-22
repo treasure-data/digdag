@@ -177,16 +177,16 @@
     fruit: [apple, orange]
     verb: [eat, throw]
   _do:
-    sh&gt;: echo ${verb} ${fruit}
+    echo&gt;: ${verb} ${fruit}
     # this will generate 4 tasks:
     #  +for-fruit=apple&amp;verb=eat:
-    #    sh&gt;: echo eat apple
+    #    echo&gt;: eat apple
     #  +for-fruit=apple&amp;verb=throw:
-    #    sh&gt;: echo throw apple
+    #    echo&gt;: throw apple
     #  +for-fruit=orange&amp;verb=eat:
-    #    sh&gt;: echo eat orange
+    #    echo&gt;: eat orange
     #  +for-fruit=orange&amp;verb=throw:
-    #    sh&gt;: echo throw orange
+    #    echo&gt;: throw orange
 </pre></div>
 </div>
 <div class="section" id="options">

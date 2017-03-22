@@ -29,79 +29,73 @@ For detailed information about EMR, see the [Amazon Elastic MapReduce Documentat
 
 ## Secrets
 
-* **aws.emr.access_key_id, aws.access_key_id`
+* **aws.emr.access_key_id, aws.access_key_id**
 
   The AWS Access Key ID to use when submitting EMR jobs.
 
-* `aws.emr.secret_access_key, aws.secret_access_key`
+* **aws.emr.secret_access_key, aws.secret_access_key**
 
   The AWS Secret Access Key to use when submitting EMR jobs.
 
-* `aws.emr.role_arn, aws.role_arn`
+* **aws.emr.role_arn, aws.role_arn**
 
   The AWS Role to assume when submitting EMR jobs.
 
 ## Options
 
-* `cluster**: STRING | OBJECT
+* **cluster**: STRING | OBJECT
 
   Specifies either the ID of an existing cluster to submit steps to or the configuration of a new cluster to create.
 
   **Using an existing cluster:**
 
-```
-cluster: j-7KHU3VCWGNAFL
-```
+      cluster: j-7KHU3VCWGNAFL
 
   **Creating a new minimal ephemeral cluster with just one node:**
 
-```
-cluster:
-  ec2:
-    key: my-ec2-key
-  logs: s3://my-bucket/logs/
-```
+      cluster:
+        ec2:
+          key: my-ec2-key
+        logs: s3://my-bucket/logs/
 
   **Creating a customized cluster with several hosts:**
 
-```
-cluster:
-  name: my-cluster
-  auto_terminate: false
-  release: emr-5.2.0
-  applications:
-    - hadoop
-    - spark
-    - hue
-    - zookeeper
-  ec2:
-    key: my-ec2-key
-    subnet_id: subnet-83047402b
-    master:
-      type: m4.2xlarge
-    core:
-      type: m4.xlarge
-      count: 10
-      ebs:
-        optimized: true
-        devices:
-          volume_specifiation:
-            iops: 10000
-            size_in_gb: 1000
-            type: gp2
-          volumes_per_instance: 6
-    task:
-      - type: c4.4xlarge
-        count: 20
-      - type: g2.2xlarge
-        count: 6
-  logs: s3://my-bucket/logs/
-  bootstrap:
-    - install_foo.sh
-    - name: Install Bar
-      path: install_bar.sh
-      args: [baz, quux]
-```
+      cluster:
+        name: my-cluster
+        auto_terminate: false
+        release: emr-5.2.0
+        applications:
+          - hadoop
+          - spark
+          - hue
+          - zookeeper
+        ec2:
+          key: my-ec2-key
+          subnet_id: subnet-83047402b
+          master:
+            type: m4.2xlarge
+          core:
+            type: m4.xlarge
+            count: 10
+            ebs:
+              optimized: true
+              devices:
+                volume_specifiation:
+                  iops: 10000
+                  size_in_gb: 1000
+                  type: gp2
+                volumes_per_instance: 6
+          task:
+            - type: c4.4xlarge
+              count: 20
+            - type: g2.2xlarge
+              count: 6
+        logs: s3://my-bucket/logs/
+        bootstrap:
+          - install_foo.sh
+          - name: Install Bar
+            path: install_bar.sh
+            args: [baz, quux]
 
 * **staging**: S3_URI
 
