@@ -8,6 +8,7 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
@@ -51,6 +52,7 @@ public class InProcessTaskCallbackApi
     private final AttemptBuilder attemptBuilder;
     private final AgentId agentId;
     private final WorkflowExecutor exec;
+    private final TransactionManager tm;
     private final TaskQueueClient queueClient;
 
     @Inject
@@ -62,7 +64,8 @@ public class InProcessTaskCallbackApi
             LogServerManager lm,
             AgentId agentId,
             AttemptBuilder attemptBuilder,
-            WorkflowExecutor exec)
+            WorkflowExecutor exec,
+            TransactionManager tm)
     {
         this.pm = pm;
         this.sm = sm;
@@ -71,6 +74,7 @@ public class InProcessTaskCallbackApi
         this.agentId = agentId;
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
+        this.tm = tm;
         this.queueClient = qm.getInProcessTaskQueueClient();
     }
 
@@ -82,8 +86,8 @@ public class InProcessTaskCallbackApi
         LogFilePrefix prefix;
         try {
             StoredSessionAttemptWithSession attempt =
-                sm.getSessionStore(request.getSiteId())
-                .getAttemptById(attemptId);
+                    tm.begin(() -> sm.getSessionStore(request.getSiteId()) .getAttemptById(attemptId),
+                            ResourceNotFoundException.class);
             prefix = logFilePrefixFromSessionAttempt(attempt);
         }
         catch (ResourceNotFoundException ex) {
@@ -96,12 +100,11 @@ public class InProcessTaskCallbackApi
     public void taskHeartbeat(int siteId,
             List<String> lockedIds, AgentId agentId, int lockSeconds)
     {
-        queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds);
+        tm.begin(() -> queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds));
     }
 
     @Override
     public Optional<StorageObject> openArchive(TaskRequest request)
-        throws IOException
     {
         if (!request.getRevision().isPresent()) {
             return Optional.absent();
@@ -109,10 +112,12 @@ public class InProcessTaskCallbackApi
         String revision = request.getRevision().get();
 
         try {
-            return archiveManager.openArchive(
-                    pm.getProjectStore(request.getSiteId()),
-                    request.getProjectId(),
-                    revision);
+            return tm.begin((TransactionManager.SupplierInTransaction<
+                            Optional<StorageObject>, ResourceNotFoundException,
+                            StorageFileNotFoundException, RuntimeException>) () ->
+                            archiveManager.openArchive(
+                                    pm.getProjectStore(request.getSiteId()), request.getProjectId(), revision),
+                    ResourceNotFoundException.class, StorageFileNotFoundException.class);
         }
         catch (ResourceNotFoundException ex) {
             throw new IllegalStateException(String.format(ENGLISH,
@@ -135,8 +140,7 @@ public class InProcessTaskCallbackApi
             long taskId, String lockId, AgentId agentId,
             TaskResult result)
     {
-        exec.taskSucceeded(siteId, taskId, lockId, agentId,
-                result);
+        tm.begin(() -> exec.taskSucceeded(siteId, taskId, lockId, agentId, result));
     }
 
     @Override
@@ -144,8 +148,7 @@ public class InProcessTaskCallbackApi
             long taskId, String lockId, AgentId agentId,
             Config error)
     {
-        exec.taskFailed(siteId, taskId, lockId, agentId,
-                error);
+        tm.begin(() -> exec.taskFailed(siteId, taskId, lockId, agentId, error));
     }
 
     @Override
@@ -154,8 +157,8 @@ public class InProcessTaskCallbackApi
             int retryInterval, Config retryStateParams,
             Optional<Config> error)
     {
-        exec.retryTask(siteId, taskId, lockId, agentId,
-                retryInterval, retryStateParams, error);
+        tm.begin(() -> exec.retryTask(siteId, taskId, lockId, agentId,
+                retryInterval, retryStateParams, error));
     }
 
     @Override
@@ -168,29 +171,36 @@ public class InProcessTaskCallbackApi
             Config overrideParams)
         throws ResourceNotFoundException, ResourceLimitExceededException
     {
-        ProjectStore projectStore = pm.getProjectStore(siteId);
+        return tm.begin(
+                (TransactionManager.SupplierInTransaction<StoredSessionAttempt,
+                        ResourceNotFoundException, ResourceLimitExceededException, RuntimeException>)
+                        () -> {
+                            ProjectStore projectStore = pm.getProjectStore(siteId);
 
-        StoredProject proj = projectStore.getProjectById(projectId);
-        StoredWorkflowDefinitionWithProject def = projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
+                            StoredProject proj = projectStore.getProjectById(projectId);
+                            StoredWorkflowDefinitionWithProject def =
+                                    projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
 
-        // use the HTTP request time as the runTime
-        AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                def,
-                overrideParams,
-                ScheduleTime.runNow(instant),
-                retryAttemptName,
-                Optional.absent(),
-                ImmutableList.of(),
-                Optional.absent());
+                            // use the HTTP request time as the runTime
+                            AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
+                                    def,
+                                    overrideParams,
+                                    ScheduleTime.runNow(instant),
+                                    retryAttemptName,
+                                    Optional.absent(),
+                                    ImmutableList.of(),
+                                    Optional.absent());
 
-        // TODO FIXME SessionMonitor monitors is not set
-        StoredSessionAttemptWithSession attempt;
-        try {
-            attempt = exec.submitWorkflow(siteId, ar, def);
-        }
-        catch (SessionAttemptConflictException ex) {
-            attempt = ex.getConflictedSession();
-        }
-        return attempt;
+                            // TODO FIXME SessionMonitor monitors is not set
+                            StoredSessionAttemptWithSession attempt;
+                            try {
+                                attempt = exec.submitWorkflow(siteId, ar, def);
+                            }
+                            catch (SessionAttemptConflictException ex) {
+                                attempt = ex.getConflictedSession();
+                            }
+                            return attempt;
+                        },
+                ResourceNotFoundException.class, ResourceLimitExceededException.class);
     }
 }

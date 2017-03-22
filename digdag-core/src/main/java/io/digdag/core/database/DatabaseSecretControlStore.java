@@ -2,7 +2,6 @@ package io.digdag.core.database;
 
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.spi.SecretControlStore;
-import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;

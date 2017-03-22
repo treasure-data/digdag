@@ -20,9 +20,9 @@ class DatabaseSecretStore
 
     private final SecretCrypto crypto;
 
-    DatabaseSecretStore(DatabaseConfig config, TransactionManager transactionManager, ConfigMapper cfm, int siteId, SecretCrypto crypto)
+    DatabaseSecretStore(DatabaseConfig config, TransactionManager tm, ConfigMapper cfm, int siteId, SecretCrypto crypto)
     {
-        super(config.getType(), Dao.class, transactionManager, cfm);
+        super(config.getType(), Dao.class, tm, cfm);
         this.siteId = siteId;
         this.crypto = crypto;
     }

@@ -58,7 +58,6 @@ public class OperatorManager
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
-    protected final TransactionManager tm;
     private final SecretStoreManager secretStoreManager;
 
     private final ScheduledExecutorService heartbeatScheduler;
@@ -72,7 +71,6 @@ public class OperatorManager
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
-            TransactionManager tm,
             SecretStoreManager secretStoreManager)
     {
         this.agentConfig = agentConfig;
@@ -83,7 +81,6 @@ public class OperatorManager
         this.cf = cf;
         this.evalEngine = evalEngine;
         this.registry = registry;
-        this.tm = tm;
         this.secretStoreManager = secretStoreManager;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
@@ -97,12 +94,7 @@ public class OperatorManager
     @PostConstruct
     public void start()
     {
-        heartbeatScheduler.scheduleAtFixedRate(() -> {
-                    tm.begin(() -> {
-                        heartbeat();
-                        return null;
-                    });
-                },
+        heartbeatScheduler.scheduleAtFixedRate(() -> heartbeat(),
                 agentConfig.getHeartbeatInterval(), agentConfig.getHeartbeatInterval(),
                 TimeUnit.SECONDS);
     }
@@ -118,27 +110,24 @@ public class OperatorManager
     {
         long taskId = request.getTaskId();
 
-        tm.begin(() -> {
-            // set task name to thread name so that logger shows it
-            try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
-                try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
-                    TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
+        // set task name to thread name so that logger shows it
+        try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
+            try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
+                TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
+                try {
+                    runningTaskMap.put(taskId, request);
                     try {
-                        runningTaskMap.put(taskId, request);
-                        try {
-                            runWithHeartbeat(request);
-                        }
-                        finally {
-                            runningTaskMap.remove(taskId);
-                        }
+                        runWithHeartbeat(request);
                     }
                     finally {
-                        TaskContextLogging.leave();
+                        runningTaskMap.remove(taskId);
                     }
                 }
+                finally {
+                    TaskContextLogging.leave();
+                }
             }
-            return null;
-        });
+        }
     }
 
     private void runWithHeartbeat(TaskRequest request)

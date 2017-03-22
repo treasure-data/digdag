@@ -641,10 +641,9 @@ public class Run
                 WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, OperatorRegistry registry,
                 Run cmd, YamlMapper yamlMapper,
-                TransactionManager tm,
                 SecretStoreManager secretStoreManager)
         {
-            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, tm, secretStoreManager);
+            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, secretStoreManager);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;
@@ -656,16 +655,13 @@ public class Run
             String fullName = request.getTaskName();
             TaskResult result = cmd.skipTaskReports.apply(fullName);
             if (result != null) {
-                tm.begin(() -> {
-                    try (SetThreadName threadName = new SetThreadName(fullName)) {
-                        logger.warn("Skipped");
-                    }
-                    callback.taskSucceeded(request.getSiteId(),
-                            request.getTaskId(), request.getLockId(), agentId,
-                            result);
-                    return null;
-                });
-            }
+                try (SetThreadName threadName = new SetThreadName(fullName)) {
+                    logger.warn("Skipped");
+                }
+                callback.taskSucceeded(request.getSiteId(),
+                        request.getTaskId(), request.getLockId(), agentId,
+                        result);
+        }
             else {
                 super.run(request);
             }
