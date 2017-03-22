@@ -32,15 +32,12 @@ class DefaultSecretProvider
     private final SecretAccessContext context;
     private final Config mounts;
     private final SecretStore secretStore;
-    private final TransactionManager tm;
 
-    DefaultSecretProvider(SecretAccessContext context, Config mounts, SecretStore secretStore,
-            TransactionManager tm)
+    DefaultSecretProvider(SecretAccessContext context, Config mounts, SecretStore secretStore)
     {
         this.context = context;
         this.mounts = mounts;
         this.secretStore = secretStore;
-        this.tm = tm;
     }
 
     @Override
@@ -103,14 +100,12 @@ class DefaultSecretProvider
 
     private Optional<String> fetchSecret(String key)
     {
-        return tm.begin(() -> {
-            Optional<String> projectSecret = secretStore.getSecret(context.projectId(), SecretScopes.PROJECT, key);
+        Optional<String> projectSecret = secretStore.getSecret(context.projectId(), SecretScopes.PROJECT, key);
 
-            if (projectSecret.isPresent()) {
-                return projectSecret;
-            }
+        if (projectSecret.isPresent()) {
+            return projectSecret;
+        }
 
-            return secretStore.getSecret(context.projectId(), SecretScopes.PROJECT_DEFAULT, key);
-        });
+        return secretStore.getSecret(context.projectId(), SecretScopes.PROJECT_DEFAULT, key);
     }
 }

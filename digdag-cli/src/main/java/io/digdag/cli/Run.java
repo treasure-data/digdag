@@ -638,13 +638,12 @@ public class Run
         private OperatorManagerWithSkip(
                 AgentConfig config, AgentId agentId,
                 TaskCallbackApi callback, WorkspaceManager workspaceManager,
-                WorkflowCompiler compiler, ConfigFactory cf,
+                ConfigFactory cf,
                 ConfigEvalEngine evalEngine, OperatorRegistry registry,
                 Run cmd, YamlMapper yamlMapper,
-                TransactionManager tm,
                 SecretStoreManager secretStoreManager)
         {
-            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, tm, secretStoreManager);
+            super(config, agentId, callback, workspaceManager, cf, evalEngine, registry, secretStoreManager);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;

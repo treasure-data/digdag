@@ -48,7 +48,7 @@ public class DatabaseSecretStoreTest
     public void setUp()
             throws Exception
     {
-        factory = DatabaseTestingUtils.setupDatabase(false);
+        factory = DatabaseTestingUtils.setupDatabase();
 
         factory.begin(() -> {
             ProjectStore projectStore = factory.getProjectStoreManager().getProjectStore(SITE_ID);
@@ -68,22 +68,17 @@ public class DatabaseSecretStoreTest
     public void noSecret()
             throws Exception
     {
-        factory.begin(() -> {
-            assertThat(secretControlStore.listProjectSecrets(projectId, SecretScopes.PROJECT), is(empty()));
-            assertThat(secretStore.getSecret(projectId, KEY1, SecretScopes.PROJECT), is(Optional.absent()));
-            secretControlStore.deleteProjectSecret(projectId, KEY1, SecretScopes.PROJECT);
-            return null;
-        });
+        assertThat(factory.autoCommit(() -> secretControlStore.listProjectSecrets(projectId, SecretScopes.PROJECT)), is(empty()));
+        assertThat(secretStore.getSecret(projectId, KEY1, SecretScopes.PROJECT), is(Optional.absent()));
+        factory.autoCommit(() -> secretControlStore.deleteProjectSecret(projectId, KEY1, SecretScopes.PROJECT));
     }
 
     @Test
     public void singleSecret()
             throws Exception
     {
-        factory.begin(() -> {
-            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
-        });
+        factory.autoCommit(() -> secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
     }
 
     @Test
@@ -91,29 +86,30 @@ public class DatabaseSecretStoreTest
             throws Exception
     {
         factory.begin(() -> {
-            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
-            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY2, VALUE2);
-            secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2, VALUE3);
+                    secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
+                    secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY2, VALUE2);
+                    secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2, VALUE3);
+                    return null;
+                });
 
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
 
-            // Delete with different scope should not delete the secret
-            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY1);
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+        // Delete with different scope should not delete the secret
+        factory.autoCommit(() -> secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY1));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
 
-            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.absent()));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
+        factory.autoCommit(() -> secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.absent()));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.of(VALUE2)));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
 
-            secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY2);
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.absent()));
-            assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
-        });
+        factory.autoCommit(() -> secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY2));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY2), is(Optional.absent()));
+        assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, KEY2), is(Optional.of(VALUE3)));
     }
 
     @Test
@@ -125,21 +121,19 @@ public class DatabaseSecretStoreTest
                 SecretScopes.PROJECT_DEFAULT,
                 "foobar"};
 
-        factory.begin(() -> {
-            for (String setScope : scopes) {
-                secretControlStore.setProjectSecret(projectId, setScope, KEY1, VALUE1);
-                assertThat(secretStore.getSecret(projectId, setScope, KEY1), is(Optional.of(VALUE1)));
+        for (String setScope : scopes) {
+            factory.autoCommit(() -> secretControlStore.setProjectSecret(projectId, setScope, KEY1, VALUE1));
+            assertThat(secretStore.getSecret(projectId, setScope, KEY1), is(Optional.of(VALUE1)));
 
-                for (String getScope : scopes) {
-                    if (getScope.equals(setScope)) {
-                        continue;
-                    }
-                    assertThat("set: " + setScope + ", get: " + getScope, secretStore.getSecret(projectId, getScope, KEY1), is(Optional.absent()));
+            for (String getScope : scopes) {
+                if (getScope.equals(setScope)) {
+                    continue;
                 }
-
-                secretControlStore.deleteProjectSecret(storedProject.getId(), setScope, KEY1);
+                assertThat("set: " + setScope + ", get: " + getScope, secretStore.getSecret(projectId, getScope, KEY1), is(Optional.absent()));
             }
-        });
+
+            factory.autoCommit(() -> secretControlStore.deleteProjectSecret(storedProject.getId(), setScope, KEY1));
+        }
     }
 
 

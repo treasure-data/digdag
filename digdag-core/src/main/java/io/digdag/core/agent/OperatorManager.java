@@ -57,7 +57,6 @@ public class OperatorManager
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
-    private final TransactionManager tm;    // For SecretProvider
     private final SecretStoreManager secretStoreManager;
 
     private final ScheduledExecutorService heartbeatScheduler;
@@ -69,9 +68,8 @@ public class OperatorManager
     @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
-            WorkflowCompiler compiler, ConfigFactory cf,
+            ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
-            TransactionManager tm,
             SecretStoreManager secretStoreManager)
     {
         this.agentConfig = agentConfig;
@@ -81,7 +79,6 @@ public class OperatorManager
         this.cf = cf;
         this.evalEngine = evalEngine;
         this.registry = registry;
-        this.tm = tm;
         this.secretStoreManager = secretStoreManager;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
@@ -300,8 +297,7 @@ public class OperatorManager
         Config secretMounts = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
         mergedRequest.getConfig().remove("_secrets");
 
-        DefaultSecretProvider secretProvider = new DefaultSecretProvider(
-                secretContext, secretMounts, secretStore, tm);
+        DefaultSecretProvider secretProvider = new DefaultSecretProvider(secretContext, secretMounts, secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),

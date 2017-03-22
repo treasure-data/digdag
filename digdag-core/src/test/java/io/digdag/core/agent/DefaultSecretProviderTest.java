@@ -68,7 +68,7 @@ public class DefaultSecretProviderTest
 
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.of(expectedSecret));
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore, databaseFactory.getTransactionManager());
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore);
 
         String secret = provider.getSecret(key);
 
@@ -95,7 +95,7 @@ public class DefaultSecretProviderTest
 
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, expectedKey)).thenReturn(Optional.of(expectedSecret));
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore, databaseFactory.getTransactionManager());
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore);
 
         String secret = provider.getSecret(key);
 
@@ -116,7 +116,7 @@ public class DefaultSecretProviderTest
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.of(projectSecret));
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key)).thenReturn(Optional.of(projectDefaultSecret));
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore, databaseFactory.getTransactionManager());
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore);
 
         String secret = provider.getSecret(key);
 
@@ -137,7 +137,7 @@ public class DefaultSecretProviderTest
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.absent());
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key)).thenReturn(Optional.of(projectDefaultSecret));
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore, databaseFactory.getTransactionManager());
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, mounts, secretStore);
 
         String secret = provider.getSecret(key);
 
