@@ -3,9 +3,9 @@ var DIGDAG_CONFIG = {
   td: {
     useTD: false,
     apiV4: 'https://api-console.treasuredata.com/v4',
-    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers' },
-    queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId },
-    jobUrl: function (jobId) { return 'https://console.treasuredata.com/jobs/' + jobId }
+    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/app/connections/data-transfers' },
+    queryUrl: function (queryId) { return 'https://console.treasuredata.com/app/queries/' + queryId },
+    jobUrl: function (jobId) { return 'https://console.treasuredata.com/app/jobs/' + jobId }
   },
   logoutUrl: '/',
   navbar: {
