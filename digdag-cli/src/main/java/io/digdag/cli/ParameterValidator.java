@@ -19,7 +19,20 @@ public class ParameterValidator implements IParameterValidator
     public static Map<String, String> toMap(List<String> list)
     {
         Map<String, String> map = new HashMap<>();
-        list.forEach(value -> map.put(value.substring(0, value.indexOf("=")), value.substring(value.indexOf("=")+1)));
+        String key = null;
+
+        for (String value : list) {
+            if (value.contains("=")) {
+                key = value.substring(0, value.indexOf("="));
+                String val = value.substring(value.indexOf("=") + 1);
+                map.put(key, val);
+            }
+            else {
+                String val = new StringBuilder(map.get(key)).append(",").append(value).toString();
+                map.put(key, val);
+            }
+        }
+
         return map;
     }
 }
