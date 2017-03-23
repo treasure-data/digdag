@@ -9,6 +9,7 @@ import com.google.inject.Injector;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
+import io.digdag.cli.ParameterValidator;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
@@ -25,11 +26,11 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 

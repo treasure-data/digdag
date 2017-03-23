@@ -1,6 +1,5 @@
 package io.digdag.cli;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
@@ -28,8 +27,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,7 +48,8 @@ public class Check
     @Parameter(names = {"--project"})
     String projectDirName = null;
 
-    @DynamicParameter(names = {"-p", "--param"})
+    @Parameter(names = {"-p", "--param"}, validateWith = ParameterValidator.class)
+    List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
 
     @Parameter(names = {"-P", "--params-file"})
@@ -106,6 +108,7 @@ public class Check
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
 
+        params = ParameterValidator.toMap(paramsList);
         Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         showSystemDefaults();

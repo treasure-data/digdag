@@ -1,10 +1,10 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import io.digdag.cli.ParameterValidator;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -24,7 +24,9 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.digdag.cli.Arguments.loadParams;
@@ -34,7 +36,8 @@ import static java.util.Locale.ENGLISH;
 public class Start
     extends ClientCommand
 {
-    @DynamicParameter(names = {"-p", "--param"})
+    @Parameter(names = {"-p", "--param"}, validateWith = ParameterValidator.class)
+    List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
 
     @Parameter(names = {"-P", "--params-file"})
@@ -101,6 +104,7 @@ public class Start
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
+        params = ParameterValidator.toMap(paramsList);
         Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         LocalTimeOrInstant time;

@@ -1,6 +1,5 @@
 package io.digdag.cli;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -114,7 +113,8 @@ public class Run
     @Parameter(names = {"--no-save"})
     boolean noSave = false;
 
-    @DynamicParameter(names = {"-p", "--param"})
+    @Parameter(names = {"-p", "--param"}, validateWith = ParameterValidator.class)
+    List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
 
     @Parameter(names = {"-P", "--params-file"})
@@ -243,6 +243,7 @@ public class Run
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         // read parameters
+        params = ParameterValidator.toMap(paramsList);
         Config overrideParams = loadParams(cf, loader, systemProps, paramsFile, params);
 
         // load workflow definitions
