@@ -34,7 +34,6 @@ import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskStateSummary;
-import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
