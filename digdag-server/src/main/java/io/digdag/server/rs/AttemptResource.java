@@ -153,7 +153,7 @@ public class AttemptResource
     public Response startAttempt(RestSessionAttemptRequest request)
             throws AttemptLimitExceededException, TaskLimitExceededException, ResourceNotFoundException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<Response, AttemptLimitExceededException, ResourceNotFoundException, TaskLimitExceededException>) () -> {
+        return tm.<Response, AttemptLimitExceededException, ResourceNotFoundException, TaskLimitExceededException>begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
 
             StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(
@@ -267,7 +267,7 @@ public class AttemptResource
     public void killAttempt(@PathParam("id") long id)
             throws ResourceNotFoundException, ResourceConflictException
     {
-        tm.begin((TransactionManager.SupplierInTransaction<Void, ResourceNotFoundException, ResourceConflictException, RuntimeException>) () -> {
+        tm.<Void, ResourceNotFoundException, ResourceConflictException>begin(() -> {
             boolean updated = executor.killAttemptById(getSiteId(), id);
             if (!updated) {
                 throw new ResourceConflictException("Session attempt already killed or finished");

@@ -2,8 +2,6 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.time.Instant;
-import java.io.IOException;
-import java.io.ByteArrayInputStream;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -23,8 +21,6 @@ import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.queue.TaskQueueServerManager;
 import io.digdag.core.log.LogServerManager;
@@ -112,9 +108,7 @@ public class InProcessTaskCallbackApi
         String revision = request.getRevision().get();
 
         try {
-            return tm.begin((TransactionManager.SupplierInTransaction<
-                            Optional<StorageObject>, ResourceNotFoundException,
-                            StorageFileNotFoundException, RuntimeException>) () ->
+            return tm.<Optional<StorageObject>, ResourceNotFoundException, StorageFileNotFoundException>begin(() ->
                             archiveManager.openArchive(
                                     pm.getProjectStore(request.getSiteId()), request.getProjectId(), revision),
                     ResourceNotFoundException.class, StorageFileNotFoundException.class);
@@ -171,10 +165,7 @@ public class InProcessTaskCallbackApi
             Config overrideParams)
         throws ResourceNotFoundException, ResourceLimitExceededException
     {
-        return tm.begin(
-                (TransactionManager.SupplierInTransaction<StoredSessionAttempt,
-                        ResourceNotFoundException, ResourceLimitExceededException, RuntimeException>)
-                        () -> {
+        return tm.<StoredSessionAttempt, ResourceNotFoundException, ResourceLimitExceededException>begin(() -> {
                             ProjectStore projectStore = pm.getProjectStore(siteId);
 
                             StoredProject proj = projectStore.getProjectById(projectId);

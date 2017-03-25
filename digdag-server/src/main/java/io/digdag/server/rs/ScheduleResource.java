@@ -2,17 +2,14 @@ package io.digdag.server.rs;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
@@ -20,12 +17,10 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.schedule.ScheduleControl;
 import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -36,7 +31,6 @@ import javax.ws.rs.QueryParam;
 
 import java.time.ZoneId;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Path("/")
 @Produces("application/json")
@@ -101,32 +95,31 @@ public class ScheduleResource
     public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
             throws ResourceConflictException, ResourceNotFoundException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, RuntimeException>)
-                () -> {
-                    Preconditions.checkArgument(request.getNextTime().isPresent() ||
-                            (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() -> {
+            Preconditions.checkArgument(request.getNextTime().isPresent() ||
+                    (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
 
-                    StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                            .getScheduleById(id);
-                    ZoneId timeZone = getTimeZoneOfSchedule(sched);
+            StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id);
+            ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-                    StoredSchedule updated;
-                    if (request.getNextTime().isPresent()) {
-                        updated = exec.skipScheduleToTime(getSiteId(), id,
-                                request.getNextTime().get().toInstant(timeZone),
-                                request.getNextRunTime(),
-                                request.getDryRun());
-                    }
-                    else {
-                        updated = exec.skipScheduleByCount(getSiteId(), id,
-                                request.getFromTime().get(),
-                                request.getCount().get(),
-                                request.getNextRunTime(),
-                                request.getDryRun());
-                    }
+            StoredSchedule updated;
+            if (request.getNextTime().isPresent()) {
+                updated = exec.skipScheduleToTime(getSiteId(), id,
+                        request.getNextTime().get().toInstant(timeZone),
+                        request.getNextRunTime(),
+                        request.getDryRun());
+            }
+            else {
+                updated = exec.skipScheduleByCount(getSiteId(), id,
+                        request.getFromTime().get(),
+                        request.getCount().get(),
+                        request.getNextRunTime(),
+                        request.getDryRun());
+            }
 
-                    return RestModels.scheduleSummary(updated, timeZone);
-                }, ResourceConflictException.class, ResourceNotFoundException.class);
+            return RestModels.scheduleSummary(updated, timeZone);
+        }, ResourceConflictException.class, ResourceNotFoundException.class);
     }
 
     private ZoneId getTimeZoneOfSchedule(StoredSchedule sched)
@@ -144,10 +137,14 @@ public class ScheduleResource
     public RestSessionAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
             throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException>) () ->
+        return tm.<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException>begin(() ->
         {
-            List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
-
+            List<StoredSessionAttemptWithSession> attempts =
+                    exec.backfill(getSiteId(), id,
+                            request.getFromTime(),
+                            request.getAttemptName(),
+                            request.getCount(),
+                            request.getDryRun());
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
         }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class);
     }
@@ -157,7 +154,7 @@ public class ScheduleResource
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
             throws ResourceNotFoundException, ResourceConflictException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, RuntimeException>) () ->
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() ->
         {
             // TODO: this is racy
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
@@ -179,7 +176,7 @@ public class ScheduleResource
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)
             throws ResourceNotFoundException, ResourceConflictException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, RuntimeException>) () -> {
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() -> {
             // TODO: this is racy
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
                     .getScheduleById(id);

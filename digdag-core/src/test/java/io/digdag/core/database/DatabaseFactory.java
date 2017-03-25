@@ -10,8 +10,6 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.spi.TaskQueueRequest;
 
-import java.util.function.Supplier;
-
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
@@ -22,7 +20,6 @@ public class DatabaseFactory
     private final TransactionManager tm;
     private final AutoCloseable closeable;
     private final DatabaseConfig config;
-    private boolean autoCommit = false;
 
     public DatabaseFactory(TransactionManager tm, AutoCloseable closeable, DatabaseConfig config)
     {

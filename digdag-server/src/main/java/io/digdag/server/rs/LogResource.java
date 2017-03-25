@@ -2,10 +2,8 @@ package io.digdag.server.rs;
 
 import java.util.List;
 import java.time.Instant;
-import java.util.stream.Collectors;
 import java.io.InputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -64,7 +62,7 @@ public class LogResource
             InputStream body)
             throws ResourceNotFoundException, IOException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<RestLogFilePutResult, ResourceNotFoundException, IOException, RuntimeException>) () -> {
+        return tm.<RestLogFilePutResult, ResourceNotFoundException, IOException>begin(() -> {
             // TODO null check taskName
             // TODO null check nodeId
             LogFilePrefix prefix = getPrefix(attemptId);
@@ -114,7 +112,6 @@ public class LogResource
         return tm.begin(() -> {
             LogFilePrefix prefix = getPrefix(attemptId);
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
-
             return RestModels.logFileHandleCollection(handles);
         }, ResourceNotFoundException.class);
     }
@@ -127,7 +124,7 @@ public class LogResource
             @PathParam("file_name") String fileName)
             throws ResourceNotFoundException, IOException, StorageFileNotFoundException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>) () -> {
+        return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>begin(() -> {
             LogFilePrefix prefix = getPrefix(attemptId);
             return logServer.getFile(prefix, fileName);
         }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class);

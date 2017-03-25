@@ -500,7 +500,7 @@ public class ProjectResource
             @QueryParam("schedule_from") String scheduleFromString)
             throws ResourceConflictException, IOException, ResourceNotFoundException
     {
-        return tm.begin((TransactionManager.SupplierInTransaction<RestProject, IOException, ResourceConflictException, ResourceNotFoundException>) () -> {
+        return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException>begin(() -> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
 
