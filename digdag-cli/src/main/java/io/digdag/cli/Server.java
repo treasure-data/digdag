@@ -67,7 +67,8 @@ public class Server
     List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
 
-    @DynamicParameter(names= {"-H", "--header"})
+    @Parameter(names= {"-H", "--header"}, validateWith = ParameterValidator.class)
+    List<String> headersList = new ArrayList<>();
     Map<String, String> headers = new HashMap<>();
 
     @Parameter(names = {"-P", "--params-file"})
@@ -179,6 +180,7 @@ public class Server
             props.setProperty("server.executor.enabled", Boolean.toString(false));
         }
 
+        headers = ParameterValidator.toMap(headersList);
         headers.forEach((key, value) -> props.setProperty("server.http.headers." + key, value));
 
         // Load default parameters

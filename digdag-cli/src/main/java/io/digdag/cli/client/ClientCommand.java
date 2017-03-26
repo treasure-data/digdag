@@ -46,7 +46,8 @@ public abstract class ClientCommand
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
 
-    @DynamicParameter(names = {"-H", "--header"})
+    @Parameter(names = {"-H", "--header"}, validateWith = ParameterValidator.class)
+    List<String> httpHeadersList = new ArrayList<>();
     Map<String, String> httpHeaders = new HashMap<>();
 
     @Parameter(names = {"--disable-version-check"})
@@ -107,6 +108,7 @@ public abstract class ClientCommand
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
+        httpHeaders = ParameterValidator.toMap(httpHeadersList);
         DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
