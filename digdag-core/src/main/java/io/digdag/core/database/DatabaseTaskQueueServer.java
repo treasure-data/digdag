@@ -1,6 +1,5 @@
 package io.digdag.core.database;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,26 +11,18 @@ import java.time.Instant;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Nullable;
-import com.google.common.base.*;
+
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.ErrorReporter;
-import io.digdag.core.queue.QueueSettingStore;
-import io.digdag.core.queue.QueueSettingStoreManager;
-import io.digdag.core.queue.StoredQueueSetting;
-import io.digdag.core.queue.ImmutableStoredQueueSetting;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.client.config.Config;
 import io.digdag.spi.ImmutableTaskQueueLock;
 import io.digdag.spi.TaskQueueRequest;
 import io.digdag.spi.TaskQueueLock;
@@ -39,7 +30,6 @@ import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskConflictException;
 import io.digdag.spi.TaskNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.core.repository.ResourceNotFoundException;
 import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -53,19 +43,19 @@ public class DatabaseTaskQueueServer
     private final int expireLockInterval;
     private final LocalLockMap localLockMap = new LocalLockMap();
     private final ScheduledExecutorService expireExecutor;
+    private final TransactionManager transactionManager;
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
-    public DatabaseTaskQueueServer(DBI dbi, DatabaseConfig config, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
+    public DatabaseTaskQueueServer(DatabaseConfig config, TransactionManager tm, ConfigMapper cfm, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
     {
-        super(config.getType(), Dao.class, dbi);
-
-        dbi.registerMapper(new ImmutableTaskQueueLockMapper());
+        super(config.getType(), Dao.class, tm, cfm);
 
         this.queueConfig = queueConfig;
         this.taskObjectMapper = taskObjectMapper;
+        this.transactionManager = tm;
         this.expireLockInterval = config.getExpireLockInterval();
         this.expireExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -101,9 +91,15 @@ public class DatabaseTaskQueueServer
 
     @PostConstruct
     public void start()
+            throws Exception
     {
-        expireExecutor.scheduleWithFixedDelay(() -> expireLocks(),
-                expireLockInterval, expireLockInterval, TimeUnit.SECONDS);
+        expireExecutor.scheduleWithFixedDelay(
+                () -> {
+                    transactionManager.begin(() -> {
+                        expireLocks();
+                        return null;
+                    });
+                }, expireLockInterval, expireLockInterval, TimeUnit.SECONDS);
     }
 
     @PreDestroy
@@ -416,21 +412,21 @@ public class DatabaseTaskQueueServer
                 if (isEmbededDatabase()) {
                     return handle.createStatement(
                             "update queued_task_locks" +
-                            " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
-                            " where lock_expire_time is not null" +
-                            " and lock_expire_time < :expireTime"
-                        )
-                        .bind("expireTime", Instant.now().getEpochSecond())
-                        .execute();
+                                    " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
+                                    " where lock_expire_time is not null" +
+                                    " and lock_expire_time < :expireTime"
+                    )
+                            .bind("expireTime", Instant.now().getEpochSecond())
+                            .execute();
                 }
                 else {
                     return handle.createStatement(
                             "update queued_task_locks" +
-                            " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
-                            " where lock_expire_time is not null" +
-                            " and lock_expire_time < " + statementUnixTimestampSql()
-                        )
-                        .execute();
+                                    " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
+                                    " where lock_expire_time is not null" +
+                                    " and lock_expire_time < " + statementUnixTimestampSql()
+                    )
+                            .execute();
                 }
             });
             if (c > 0) {
@@ -443,7 +439,7 @@ public class DatabaseTaskQueueServer
         }
     }
 
-    private static class ImmutableTaskQueueLockMapper
+    static class ImmutableTaskQueueLockMapper
             implements ResultSetMapper<ImmutableTaskQueueLock>
     {
         @Override

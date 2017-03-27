@@ -8,33 +8,66 @@ import io.digdag.core.agent.AgentId;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskQueueRequest;
-import org.skife.jdbi.v2.DBI;
 
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
-import static org.mockito.Mockito.mock;
 
 public class DatabaseFactory
-        implements AutoCloseable, Provider<DBI>
+        implements AutoCloseable, Provider<TransactionManager>
 {
-    private final DBI dbi;
+    private final TransactionManager tm;
     private final AutoCloseable closeable;
     private final DatabaseConfig config;
 
-    public DatabaseFactory(DBI dbi, AutoCloseable closeable, DatabaseConfig config)
+    public DatabaseFactory(TransactionManager tm, AutoCloseable closeable, DatabaseConfig config)
     {
-        this.dbi = dbi;
+        this.tm = tm;
         this.closeable = closeable;
         this.config = config;
     }
 
     @Override
-    public DBI get()
+    public TransactionManager get()
     {
-        return dbi;
+        return tm;
+    }
+
+    public <T> T begin(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException> func)
+            throws Exception
+    {
+        return tm.begin(func, Exception.class);
+    }
+
+    public void begin(ThrowableRunnable func)
+            throws Exception
+    {
+        begin(() -> {
+            func.run();
+            return null;
+        });
+    }
+
+    @FunctionalInterface
+    public interface ThrowableRunnable
+    {
+        void run() throws Exception;
+    }
+
+    public <T> T autoCommit(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException> func)
+            throws Exception
+    {
+        return tm.autoCommit(func, Exception.class);
+    }
+
+    public void autoCommit(ThrowableRunnable func)
+            throws Exception
+    {
+        autoCommit(() -> {
+            func.run();
+            return null;
+        });
     }
 
     public DatabaseConfig getConfig()
@@ -44,17 +77,17 @@ public class DatabaseFactory
 
     public DatabaseProjectStoreManager getProjectStoreManager()
     {
-        return new DatabaseProjectStoreManager(dbi, createConfigMapper(), config);
+        return new DatabaseProjectStoreManager(tm, createConfigMapper(), config);
     }
 
     public DatabaseScheduleStoreManager getScheduleStoreManager()
     {
-        return new DatabaseScheduleStoreManager(dbi, createConfigMapper(), config);
+        return new DatabaseScheduleStoreManager(tm, createConfigMapper(), config);
     }
 
     public DatabaseSessionStoreManager getSessionStoreManager()
     {
-        return new DatabaseSessionStoreManager(dbi, createConfigFactory(), createConfigMapper(), objectMapper(), config);
+        return new DatabaseSessionStoreManager(createConfigFactory(), tm, createConfigMapper(), objectMapper(), config);
     }
 
     public WorkflowExecutor getWorkflowExecutor()
@@ -63,22 +96,22 @@ public class DatabaseFactory
         return new WorkflowExecutor(
                 getProjectStoreManager(),
                 getSessionStoreManager(),
+                tm,
                 new NullTaskQueueDispatcher(),
                 new WorkflowCompiler(),
                 configFactory,
                 objectMapper(),
-                configFactory.create(),
-                mock(Notifier.class));
+                configFactory.create());
     }
 
     public DatabaseSecretControlStoreManager getSecretControlStoreManager(String secret)
     {
-        return new DatabaseSecretControlStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
+        return new DatabaseSecretControlStoreManager(config, tm, createConfigMapper(), new AESGCMSecretCrypto(secret));
     }
 
     public DatabaseSecretStoreManager getSecretStoreManager(String secret)
     {
-        return new DatabaseSecretStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
+        return new DatabaseSecretStoreManager(config, tm, createConfigMapper(), new AESGCMSecretCrypto(secret));
     }
 
     public static class NullTaskQueueDispatcher

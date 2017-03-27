@@ -2,10 +2,8 @@ package io.digdag.server.rs;
 
 import java.util.List;
 import java.time.Instant;
-import java.util.stream.Collectors;
 import java.io.InputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -18,6 +16,7 @@ import javax.ws.rs.ServerErrorException;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.io.ByteStreams;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
@@ -38,14 +37,17 @@ public class LogResource
     // GET  /api/logs/{attempt_id}/upload_handle?task=<name>&file_time=<unixtime sec>&node_id=<nodeId>
 
     private final SessionStoreManager sm;
+    private final TransactionManager tm;
     private final LogServer logServer;
 
     @Inject
     public LogResource(
             SessionStoreManager sm,
+            TransactionManager tm,
             LogServerManager lm)
     {
         this.sm = sm;
+        this.tm = tm;
         this.logServer = lm.getLogServer();
     }
 
@@ -58,15 +60,17 @@ public class LogResource
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId,
             InputStream body)
-        throws ResourceNotFoundException, IOException
+            throws ResourceNotFoundException, IOException
     {
-        // TODO null check taskName
-        // TODO null check nodeId
-        LogFilePrefix prefix = getPrefix(attemptId);
+        return tm.<RestLogFilePutResult, ResourceNotFoundException, IOException>begin(() -> {
+            // TODO null check taskName
+            // TODO null check nodeId
+            LogFilePrefix prefix = getPrefix(attemptId);
 
-        byte[] data = ByteStreams.toByteArray(body);
-        String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
-        return RestLogFilePutResult.of(fileName);
+            byte[] data = ByteStreams.toByteArray(body);
+            String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
+            return RestLogFilePutResult.of(fileName);
+        }, ResourceNotFoundException.class, IOException.class);
     }
 
     @GET
@@ -76,24 +80,26 @@ public class LogResource
             @QueryParam("task") String taskName,
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        // TODO null check taskName
-        // TODO null check nodeId
-        LogFilePrefix prefix = getPrefix(attemptId);
+        return tm.begin(() -> {
+            // TODO null check taskName
+            // TODO null check nodeId
+            LogFilePrefix prefix = getPrefix(attemptId);
 
-        Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
+            Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
 
-        if (handle.isPresent()) {
-            return handle.get();
-        }
-        else {
-            throw new ServerErrorException(
-                    Response.status(Response.Status.NOT_IMPLEMENTED)
-                    .type("application/json")
-                    .entity("{\"message\":\"Direct upload handle is not available for this log server implementation\",\"status\":501}")
-                    .build());
-        }
+            if (handle.isPresent()) {
+                return handle.get();
+            }
+            else {
+                throw new ServerErrorException(
+                        Response.status(Response.Status.NOT_IMPLEMENTED)
+                                .type("application/json")
+                                .entity("{\"message\":\"Direct upload handle is not available for this log server implementation\",\"status\":501}")
+                                .build());
+            }
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -101,12 +107,13 @@ public class LogResource
     public RestLogFileHandleCollection getFileHandles(
             @PathParam("attempt_id") long attemptId,
             @QueryParam("task") String taskName)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        LogFilePrefix prefix = getPrefix(attemptId);
-        List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
-
-        return RestModels.logFileHandleCollection(handles);
+        return tm.begin(() -> {
+            LogFilePrefix prefix = getPrefix(attemptId);
+            List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
+            return RestModels.logFileHandleCollection(handles);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -115,18 +122,20 @@ public class LogResource
     public byte[] getFile(
             @PathParam("attempt_id") long attemptId,
             @PathParam("file_name") String fileName)
-        throws StorageFileNotFoundException, ResourceNotFoundException
+            throws ResourceNotFoundException, IOException, StorageFileNotFoundException
     {
-        LogFilePrefix prefix = getPrefix(attemptId);
-        return logServer.getFile(prefix, fileName);
+        return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>begin(() -> {
+            LogFilePrefix prefix = getPrefix(attemptId);
+            return logServer.getFile(prefix, fileName);
+        }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class);
     }
 
     private LogFilePrefix getPrefix(long attemptId)
         throws ResourceNotFoundException
     {
         StoredSessionAttemptWithSession attempt =
-            sm.getSessionStore(getSiteId())
-            .getAttemptById(attemptId);
+                sm.getSessionStore(getSiteId())
+                        .getAttemptById(attemptId);
         return logFilePrefixFromSessionAttempt(attempt);
     }
 }

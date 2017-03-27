@@ -9,6 +9,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;

@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.database.ThreadLocalTransactionManager;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
@@ -21,6 +23,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import javax.sql.DataSource;
 
 import java.time.Instant;
 
@@ -46,6 +50,7 @@ public class ScheduleExecutorTest
     @Mock ProjectStoreManager projectStoreManager;
     @Mock ScheduleStoreManager scheduleStoreManager;
     @Mock SchedulerManager schedulerManager;
+    TransactionManager transactionManager;
     @Mock SessionStore sessionStore;
     @Mock SessionStoreManager sessionStoreManager;
     @Mock Scheduler scheduler;
@@ -57,6 +62,7 @@ public class ScheduleExecutorTest
     @Mock ScheduleTime nextScheduleTime;
     @Mock AttemptBuilder attemptBuilder;
     @Mock WorkflowExecutor workflowExecutor;
+    @Mock DataSource dataSource;
 
     private ScheduleExecutor scheduleExecutor;
 
@@ -67,7 +73,18 @@ public class ScheduleExecutorTest
     public void setUp()
             throws Exception
     {
-        scheduleExecutor = spy(new ScheduleExecutor(projectStoreManager, scheduleStoreManager, schedulerManager, sessionStoreManager, attemptBuilder, workflowExecutor, CONFIG_FACTORY));
+        transactionManager = new ThreadLocalTransactionManager(dataSource);
+        scheduleExecutor = spy(
+                new ScheduleExecutor(
+                        projectStoreManager,
+                        scheduleStoreManager,
+                        schedulerManager,
+                        transactionManager,
+                        sessionStoreManager,
+                        attemptBuilder,
+                        workflowExecutor,
+                        CONFIG_FACTORY
+                ));
 
         now = Instant.now();
 

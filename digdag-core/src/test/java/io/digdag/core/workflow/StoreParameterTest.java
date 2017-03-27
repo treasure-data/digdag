@@ -3,6 +3,7 @@ package io.digdag.core.workflow;
 import io.digdag.client.config.Config;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import java.nio.file.Path;
@@ -31,13 +32,15 @@ public class StoreParameterTest
     private DigdagEmbed embed;
     private LocalSite localSite;
     private Path projectPath;
+    private TransactionManager tm;
 
     @Before
     public void setUp()
         throws Exception
     {
         this.embed = setupEmbed();
-        this.localSite = embed.getInjector().getInstance(LocalSite.class);
+        this.localSite = embed.getLocalSite();
+        this.tm = embed.getTransactionManager();
         this.projectPath = folder.newFolder().toPath();
     }
 
@@ -52,28 +55,32 @@ public class StoreParameterTest
     public void run()
         throws Exception
     {
-        StoredSessionAttemptWithSession attempt = runWorkflow(localSite, projectPath, "store", loadYamlResource("/io/digdag/core/workflow/store.dig"));
+        StoredSessionAttemptWithSession attempt =
+                runWorkflow(embed, projectPath, "store", loadYamlResource("/io/digdag/core/workflow/store.dig"));
 
-        assertThat(attempt.getStateFlags().isSuccess(), is(true));
+        tm.begin(() -> {
+            assertThat(attempt.getStateFlags().isSuccess(), is(true));
 
-        List<ArchivedTask> tasks = localSite.getSessionStore().getTasksOfAttempt(attempt.getId());
+            List<ArchivedTask> tasks = localSite.getSessionStore().getTasksOfAttempt(attempt.getId());
 
-        assertStoreParams(tasks, "+verify1", newConfig()
-                .set("verify1_text", "old")
-                );
-        assertStoreParams(tasks, "+verify2", newConfig()
-                .set("verify2_override", "new")
-                .set("verify2_merge", "merged")
-                .set("verify2_merge_nested", "nested")
-                .set("verify2_reset", "true")
-                );
-        assertStoreParams(tasks, "+verify3", newConfig()
-                .set("verify3_reset", "")
-                .set("verify3_reset_set", "set")
-                .set("verify3_keep_nested", "kept")
-                .set("verify3_reset_nested", "")
-                .set("verify3_merge_nested", "new")
-                );
+            assertStoreParams(tasks, "+verify1", newConfig()
+                    .set("verify1_text", "old")
+            );
+            assertStoreParams(tasks, "+verify2", newConfig()
+                    .set("verify2_override", "new")
+                    .set("verify2_merge", "merged")
+                    .set("verify2_merge_nested", "nested")
+                    .set("verify2_reset", "true")
+            );
+            assertStoreParams(tasks, "+verify3", newConfig()
+                    .set("verify3_reset", "")
+                    .set("verify3_reset_set", "set")
+                    .set("verify3_keep_nested", "kept")
+                    .set("verify3_reset_nested", "")
+                    .set("verify3_merge_nested", "new")
+            );
+            return null;
+        });
     }
 
     private void assertStoreParams(List<ArchivedTask> tasks, String taskName, Config expected)

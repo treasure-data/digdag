@@ -17,21 +17,22 @@ class DatabaseSecretStore
         implements SecretStore
 {
     private final int siteId;
-
+    private final TransactionManager tm;
     private final SecretCrypto crypto;
 
-    DatabaseSecretStore(DatabaseConfig config, DBI dbi, int siteId, SecretCrypto crypto)
+    DatabaseSecretStore(DatabaseConfig config, TransactionManager tm, ConfigMapper cfm, int siteId, SecretCrypto crypto)
     {
-        super(config.getType(), Dao.class, dbi);
+        super(config.getType(), Dao.class, tm, cfm);
         this.siteId = siteId;
+        this.tm = tm;
         this.crypto = crypto;
-        dbi.registerMapper(new ScopedSecretMapper());
     }
 
     @Override
     public Optional<String> getSecret(int projectId, String scope, String key)
     {
-        EncryptedSecret secret = autoCommit((handle, dao) -> dao.getProjectSecret(siteId, projectId, scope, key));
+        EncryptedSecret secret =
+                tm.begin(() -> autoCommit((handle, dao) -> dao.getProjectSecret(siteId, projectId, scope, key)));
 
         if (secret == null) {
             return Optional.absent();
@@ -66,7 +67,7 @@ class DatabaseSecretStore
         }
     }
 
-    private class ScopedSecretMapper
+    static class ScopedSecretMapper
             implements ResultSetMapper<EncryptedSecret>
     {
         @Override

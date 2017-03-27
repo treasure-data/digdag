@@ -7,11 +7,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -26,7 +26,6 @@ import io.digdag.core.session.SessionControlStore;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
@@ -35,7 +34,6 @@ import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskStateSummary;
-import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -58,6 +56,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -162,12 +161,12 @@ public class WorkflowExecutor
 
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
+    private final TransactionManager tm;
     private final WorkflowCompiler compiler;
     private final TaskQueueDispatcher dispatcher;
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
-    private Notifier notifier;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -177,21 +176,21 @@ public class WorkflowExecutor
     public WorkflowExecutor(
             ProjectStoreManager rm,
             SessionStoreManager sm,
+            TransactionManager tm,
             TaskQueueDispatcher dispatcher,
             WorkflowCompiler compiler,
             ConfigFactory cf,
             ObjectMapper archiveMapper,
-            Config systemConfig,
-            Notifier notifier)
+            Config systemConfig)
     {
         this.rm = rm;
         this.sm = sm;
+        this.tm = tm;
         this.compiler = compiler;
         this.dispatcher = dispatcher;
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
-        this.notifier = notifier;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -208,7 +207,7 @@ public class WorkflowExecutor
     private static final DateTimeFormatter SESSION_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
 
-    public static interface WorkflowSubmitterAction <T>
+    public interface WorkflowSubmitterAction <T>
     {
         T call(WorkflowSubmitter submitter)
             throws ResourceNotFoundException, AttemptLimitExceededException, SessionAttemptConflictException;
@@ -219,7 +218,7 @@ public class WorkflowExecutor
     {
         try {
             return sm.getSessionStore(siteId).sessionTransaction((transaction) -> {
-                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId)));
+                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId), tm));
             });
         }
         catch (Exception ex) {
@@ -312,6 +311,7 @@ public class WorkflowExecutor
             throw ex.getCause();
         }
         catch (ResourceConflictException sessionAlreadyExists) {
+            tm.reset();
             StoredSessionAttemptWithSession conflicted;
             if (ar.getRetryAttemptName().isPresent()) {
                 conflicted = sm.getSessionStore(siteId)
@@ -466,7 +466,8 @@ public class WorkflowExecutor
             Throwables.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
             throw ex;
         }
-        return sm.getAttemptWithSessionById(attemptId);
+
+        return tm.begin(() -> sm.getAttemptWithSessionById(attemptId), ResourceNotFoundException.class);
     }
 
     public void runUntilAllDone()
@@ -482,46 +483,62 @@ public class WorkflowExecutor
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
-            Instant date = sm.getStoreTime();
-            propagateBlockedChildrenToReady();
-            retryRetryWaitingTasks();
-            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
-            propagateAllPlannedToDone();
-            propagateSessionArchive();
-
-            //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
-            int waitMsec = INITIAL_INTERVAL;
-            while (cond.getAsBoolean()) {
-                //boolean inced = prop.run();
-                //boolean retried = retryRetryWaitingTasks();
-                //if (inced || retried) {
-                //    enqueueReadyTasks(queuer);
-                //    propagatorNotice = true;
-                //}
-
+            tm.begin(() -> {
+                Instant date = sm.getStoreTime();
                 propagateBlockedChildrenToReady();
                 retryRetryWaitingTasks();
-                enqueueReadyTasks(queuer);
-                boolean someDone = propagateAllPlannedToDone();
+                enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+                propagateAllPlannedToDone();
+                propagateSessionArchive();
+                return null;
+            });
 
-                if (someDone) {
-                    propagateSessionArchive();
+            //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
+            final AtomicInteger waitMsec = new AtomicInteger(INITIAL_INTERVAL);
+            while (true) {
+                if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
+                    break;
                 }
-                else {
+
+                tm.begin(() -> {
+                    //boolean inced = prop.run();
+                    //boolean retried = retryRetryWaitingTasks();
+                    //if (inced || retried) {
+                    //    enqueueReadyTasks(queuer);
+                    //    propagatorNotice = true;
+                    //}
+
+                    propagateBlockedChildrenToReady();
+                    retryRetryWaitingTasks();
+                    enqueueReadyTasks(queuer);
+                    return null;
+                });
+
+                boolean shouldWait = tm.begin(() -> {
+                    if (propagateAllPlannedToDone()) {
+                        propagateSessionArchive();
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                });
+
+                if (shouldWait) {
                     propagatorLock.lock();
                     try {
                         if (propagatorNotice) {
                             propagatorNotice = false;
-                            waitMsec = INITIAL_INTERVAL;
+                            waitMsec.set(INITIAL_INTERVAL);
                         }
                         else {
-                            boolean noticed = propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
+                            boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
                             if (noticed && propagatorNotice) {
                                 propagatorNotice = false;
-                                waitMsec = INITIAL_INTERVAL;
+                                waitMsec.set(INITIAL_INTERVAL);
                             }
                             else {
-                                waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
+                                waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
                             }
                         }
                     }
@@ -655,6 +672,7 @@ public class WorkflowExecutor
                     }
                 }
                 catch (TaskLimitExceededException ex) {
+                    tm.reset();
                     // addErrorTasksIfAny threw TaskLimitExceededException. Giveup adding them.
                     // TODO this is a fundamental design problem. Probably _error tasks should be removed.
                     //      use notification tasks instead.
@@ -909,6 +927,7 @@ public class WorkflowExecutor
                 siteId = sm.getSiteIdOfTask(taskId);
             }
             catch (ResourceNotFoundException ex) {
+                tm.reset();
                 Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
                 logger.error("Database state error enqueuing task.", error);
                 return false;
@@ -932,6 +951,7 @@ public class WorkflowExecutor
                     dispatcher.dispatch(siteId, queueName, request);
                 }
                 catch (TaskConflictException ex) {
+                    tm.reset();
                     logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
                             encodedUnique, queueName.or("<shared>"), siteId);
                 }
@@ -951,6 +971,7 @@ public class WorkflowExecutor
                 return updated;
             }
             catch (Exception ex) {
+                tm.reset();
                 logger.error("Enqueue error, making this task failed: {}", task, ex);
                 // TODO retry here?
                 return taskFailed(lockedTask,
@@ -997,6 +1018,7 @@ public class WorkflowExecutor
                 }
             }
             catch (RuntimeException ex) {
+                tm.reset();
                 logger.error("Invalid association of task queue lock id: {}", lock, ex);
             }
         }
@@ -1011,6 +1033,7 @@ public class WorkflowExecutor
                 attempt = sm.getAttemptWithSessionById(task.getAttemptId());
             }
             catch (ResourceNotFoundException ex) {
+                tm.reset();
                 Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated session attempt does not exist.", ex);
                 logger.error("Database state error enqueuing task.", error);
                 return Optional.absent();
@@ -1022,6 +1045,7 @@ public class WorkflowExecutor
                     rev = Optional.of(rm.getRevisionOfWorkflowDefinition(attempt.getWorkflowDefinitionId().get()));
                 }
                 catch (ResourceNotFoundException ex) {
+                    tm.reset();
                     Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated workflow definition does not exist.", ex);
                     logger.error("Database state error enqueuing task.", error);
                     return Optional.absent();
@@ -1033,6 +1057,7 @@ public class WorkflowExecutor
                 project = rm.getProjectByIdInternal(attempt.getSession().getProjectId());
             }
             catch (ResourceNotFoundException ex) {
+                tm.reset();
                 Exception error = new IllegalStateException("Task id=" + taskId + " is in the task queue but associated project does not exist.", ex);
                 logger.error("Database state error enqueuing task.", error);
                 return Optional.absent();
@@ -1120,9 +1145,11 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
+                tm.reset();
                 logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
+                tm.reset();
                 logger.warn("Ignoring preempted task entry error", ex);
             }
         }
@@ -1141,9 +1168,11 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
+                tm.reset();
                 logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
+                tm.reset();
                 logger.warn("Ignoring preempted task entry error", ex);
             }
         }
@@ -1164,9 +1193,11 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
+                tm.reset();
                 logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
+                tm.reset();
                 logger.warn("Ignoring preempted task entry error", ex);
             }
         }
@@ -1195,6 +1226,7 @@ public class WorkflowExecutor
             errorTaskAdded = errorTaskId.isPresent();
         }
         catch (TaskLimitExceededException ex) {
+            tm.reset();
             errorTaskAdded = false;
             logger.debug("Failed to add error tasks because of task limit");
         }
@@ -1245,6 +1277,7 @@ public class WorkflowExecutor
             subtaskAdded = rootSubtaskId.isPresent() || checkTaskId.isPresent();
         }
         catch (TaskLimitExceededException ex) {
+            tm.reset();
             return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
         }
 
