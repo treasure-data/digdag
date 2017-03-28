@@ -78,6 +78,18 @@ public class DatabaseSecretStoreTest
     }
 
     @Test
+    public void lockSecret()
+            throws Exception
+    {
+        Optional<String> absent = secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> value);
+        assertThat(absent, is(Optional.absent()));
+
+        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
+        Optional<String> present = secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> value);
+        assertThat(present, is(Optional.of(VALUE1)));
+    }
+
+    @Test
     public void multipleSecrets()
             throws Exception
     {

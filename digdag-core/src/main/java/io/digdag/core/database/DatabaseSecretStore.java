@@ -54,10 +54,10 @@ class DatabaseSecretStore
         EncryptedSecret getProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
     }
 
-    private static class EncryptedSecret
+    static class EncryptedSecret
     {
-        private final String engine;
-        private final String value;
+        final String engine;
+        final String value;
 
         private EncryptedSecret(String engine, String value)
         {
@@ -66,7 +66,7 @@ class DatabaseSecretStore
         }
     }
 
-    private class ScopedSecretMapper
+    static class ScopedSecretMapper
             implements ResultSetMapper<EncryptedSecret>
     {
         @Override
