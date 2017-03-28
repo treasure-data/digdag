@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
@@ -53,7 +54,6 @@ public class OperatorManager
     protected final AgentId agentId;
     protected final TaskCallbackApi callback;
     private final WorkspaceManager workspaceManager;
-    private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
@@ -68,7 +68,7 @@ public class OperatorManager
     @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
-            WorkflowCompiler compiler, ConfigFactory cf,
+            ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
             SecretStoreManager secretStoreManager)
     {
@@ -76,10 +76,8 @@ public class OperatorManager
         this.agentId = agentId;
         this.callback = callback;
         this.workspaceManager = workspaceManager;
-        this.compiler = compiler;
         this.cf = cf;
         this.evalEngine = evalEngine;
-
         this.registry = registry;
         this.secretStoreManager = secretStoreManager;
 
@@ -299,8 +297,7 @@ public class OperatorManager
         Config secretMounts = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
         mergedRequest.getConfig().remove("_secrets");
 
-        DefaultSecretProvider secretProvider = new DefaultSecretProvider(
-                secretContext, secretMounts, secretStore);
+        DefaultSecretProvider secretProvider = new DefaultSecretProvider(secretContext, secretMounts, secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),

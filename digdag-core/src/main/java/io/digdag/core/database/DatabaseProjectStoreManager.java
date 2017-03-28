@@ -27,7 +27,6 @@ import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStatus;
 import io.digdag.spi.ScheduleTime;
 import org.immutables.value.Value;
-import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
@@ -35,6 +34,8 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+import javax.activation.DataSource;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -55,23 +56,10 @@ public class DatabaseProjectStoreManager
         extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
         implements ProjectStoreManager
 {
-    private final ConfigMapper cfm;
-
     @Inject
-    public DatabaseProjectStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseProjectStoreManager(TransactionManager tm, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), dao(config.getType()), dbi);
-
-        dbi.registerMapper(new StoredProjectMapper(cfm));
-        dbi.registerMapper(new StoredRevisionMapper(cfm));
-        dbi.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
-        dbi.registerMapper(new StoredWorkflowDefinitionWithProjectMapper(cfm));
-        dbi.registerMapper(new WorkflowConfigMapper());
-        dbi.registerMapper(new IdNameMapper());
-        dbi.registerMapper(new ScheduleStatusMapper());
-        dbi.registerArgumentFactory(cfm.getArgumentFactory());
-
-        this.cfm = cfm;
+        super(config.getType(), dao(config.getType()), tm, cfm);
     }
 
     private static Class<? extends Dao> dao(String type)
@@ -155,7 +143,7 @@ public class DatabaseProjectStoreManager
                         " and id " + inLargeIdListExpression(projIdList)
                     )
                     .bind("siteId", siteId)
-                    .map(new StoredProjectMapper(cfm))
+                    .map(new StoredProjectMapper(configMapper))
                     .list()
                 );
 
@@ -429,7 +417,7 @@ public class DatabaseProjectStoreManager
         public StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition def, ZoneId workflowTimeZone)
             throws ResourceConflictException
         {
-            String configText = cfm.toText(def.getConfig());
+            String configText = configMapper.toText(def.getConfig());
             String zoneId = workflowTimeZone.getId();
             long configDigest = WorkflowConfig.digest(configText, zoneId);
 
@@ -832,7 +820,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredProjectMapper
+    static class StoredProjectMapper
             implements ResultSetMapper<StoredProject>
     {
         private final ConfigMapper cfm;
@@ -862,7 +850,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredRevisionMapper
+    static class StoredRevisionMapper
             implements ResultSetMapper<StoredRevision>
     {
         private final ConfigMapper cfm;
@@ -890,7 +878,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredWorkflowDefinitionMapper
+    static class StoredWorkflowDefinitionMapper
             implements ResultSetMapper<StoredWorkflowDefinition>
     {
         private final ConfigMapper cfm;
@@ -914,7 +902,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class StoredWorkflowDefinitionWithProjectMapper
+    static class StoredWorkflowDefinitionWithProjectMapper
             implements ResultSetMapper<StoredWorkflowDefinitionWithProject>
     {
         private final ConfigMapper cfm;
@@ -954,7 +942,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class WorkflowConfigMapper
+    static class WorkflowConfigMapper
             implements ResultSetMapper<WorkflowConfig>
     {
         @Override
@@ -969,7 +957,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    private static class IdNameMapper
+    static class IdNameMapper
             implements ResultSetMapper<IdName>
     {
         @Override
@@ -989,7 +977,7 @@ public class DatabaseProjectStoreManager
         return map;
     }
 
-    private static class ScheduleStatusMapper
+    static class ScheduleStatusMapper
             implements ResultSetMapper<ScheduleStatus>
     {
         @Override
@@ -1003,5 +991,4 @@ public class DatabaseProjectStoreManager
                     getOptionalLong(r, "last_session_time").transform(it -> Instant.ofEpochSecond(it)));
         }
     }
-
 }

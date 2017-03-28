@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicReference;
+
+import io.digdag.core.database.TransactionManager;
 import org.skife.jdbi.v2.IDBI;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -45,13 +47,15 @@ public class WorkflowExecutorTest
 
     private DigdagEmbed embed;
     private LocalSite localSite;
+    private TransactionManager tm;
 
     @Before
     public void setUp()
         throws Exception
     {
         this.embed = setupEmbed();
-        this.localSite = embed.getInjector().getInstance(LocalSite.class);
+        this.localSite = embed.getLocalSite();
+        this.tm = embed.getTransactionManager();
     }
 
     @After
@@ -88,8 +92,8 @@ public class WorkflowExecutorTest
     }
 
     private void runWorkflow(String workflowName, Config config)
-        throws InterruptedException
+            throws Exception
     {
-        WorkflowTestingUtils.runWorkflow(localSite, folder.getRoot().toPath(), workflowName, config);
+        WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
     }
 }

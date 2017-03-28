@@ -1,9 +1,12 @@
 package io.digdag.server;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.core.database.Transaction;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
@@ -58,13 +61,20 @@ public class WorkflowExecutionTimeoutEnforcer
     private final SessionStoreManager ssm;
     private final Notifier notifier;
     private final ProjectStoreManager psm;
+    private final TransactionManager tm;
 
     private final Duration attemptTTL;
     private final Duration reapingInterval;
     private final Duration taskTTL;
 
     @Inject
-    public WorkflowExecutionTimeoutEnforcer(ServerConfig serverConfig, SessionStoreManager ssm, Config systemConfig, Notifier notifier, ProjectStoreManager psm)
+    public WorkflowExecutionTimeoutEnforcer(
+            ServerConfig serverConfig,
+            SessionStoreManager ssm,
+            TransactionManager tm,
+            Config systemConfig,
+            Notifier notifier,
+            ProjectStoreManager psm)
     {
         this.attemptTTL = systemConfig.getOptional("executor.attempt_ttl", DurationParam.class)
                 .transform(DurationParam::getDuration)
@@ -81,6 +91,7 @@ public class WorkflowExecutionTimeoutEnforcer
         this.ssm = ssm;
         this.notifier = notifier;
         this.psm = psm;
+        this.tm = tm;
 
         if (serverConfig.getExecutorEnabled()) {
             this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
@@ -95,20 +106,24 @@ public class WorkflowExecutionTimeoutEnforcer
 
     private void run()
     {
-        try {
-            enforceAttemptTTLs();
-        }
-        catch (Throwable t) {
-            logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
-        }
+        tm.begin(() -> {
+            try {
+                enforceAttemptTTLs();
+            }
+            catch (Throwable t) {
+                logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
+            }
 
-        try {
-            enforceTaskTTLs();
-        }
-        catch (Throwable t) {
-            logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
-        }
-    }
+            try {
+                enforceTaskTTLs();
+            }
+            catch (Throwable t) {
+                logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
+            }
+
+            return null;
+        });
+}
 
     private void enforceAttemptTTLs()
     {

@@ -17,6 +17,7 @@ import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.WorkflowFile;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.DatabaseSecretStoreManager;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -78,7 +79,7 @@ public class WorkflowTestingUtils
     }
 
     public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
-        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
+            throws Exception
     {
         ArchiveMetadata meta = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(ImmutableList.of(
@@ -99,13 +100,18 @@ public class WorkflowTestingUtils
         return localSite.submitWorkflow(ar, def);
     }
 
-    public static StoredSessionAttemptWithSession runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
-        throws InterruptedException
+    public static StoredSessionAttemptWithSession runWorkflow(DigdagEmbed embed, Path projectPath, String workflowName, Config config)
+            throws Exception
     {
+        TransactionManager tm = embed.getTransactionManager();
+
         try {
-            StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);
-            localSite.runUntilDone(attempt.getId());
-            return localSite.getSessionStore().getAttemptById(attempt.getId());
+            StoredSessionAttemptWithSession attempt = tm.begin(() ->
+                submitWorkflow(embed.getLocalSite(), projectPath, workflowName, config), Exception.class
+            );
+            embed.getLocalSite().runUntilDone(attempt.getId());
+            return tm.begin(() -> embed.getLocalSite().getSessionStore().getAttemptById(attempt.getId()),
+                    ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {
             throw Throwables.propagate(ex);

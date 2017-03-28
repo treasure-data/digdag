@@ -3,7 +3,6 @@ package io.digdag.core.database;
 import com.google.common.base.Optional;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.database.DatabaseSecretStore.EncryptedSecret;
-import io.digdag.core.database.DatabaseSecretStore.ScopedSecretMapper;
 import io.digdag.spi.SecretControlStore;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -20,12 +19,11 @@ class DatabaseSecretControlStore
     private final int siteId;
     private final SecretCrypto crypto;
 
-    DatabaseSecretControlStore(DatabaseConfig config, DBI dbi, int siteId, SecretCrypto crypto)
+    DatabaseSecretControlStore(DatabaseConfig config, TransactionManager transactionManager, ConfigMapper cfm, int siteId, SecretCrypto crypto)
     {
-        super(config.getType(), dao(config.getType()), dbi);
+        super(config.getType(), dao(config.getType()), transactionManager, cfm);
         this.siteId = siteId;
         this.crypto = crypto;
-        dbi.registerMapper(new ScopedSecretMapper());
     }
 
     private static Class<? extends Dao> dao(String type)

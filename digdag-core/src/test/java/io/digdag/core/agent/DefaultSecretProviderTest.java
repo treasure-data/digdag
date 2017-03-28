@@ -4,6 +4,8 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.database.DatabaseFactory;
+import io.digdag.core.database.DatabaseTestingUtils;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
@@ -46,12 +48,14 @@ public class DefaultSecretProviderTest
             .operatorType("baz")
             .taskName("quux")
             .build();
+    private DatabaseFactory databaseFactory;
 
     @Before
     public void setUp()
             throws Exception
     {
         MockitoAnnotations.initMocks(this);
+        databaseFactory = DatabaseTestingUtils.setupDatabase();
     }
 
     @Test

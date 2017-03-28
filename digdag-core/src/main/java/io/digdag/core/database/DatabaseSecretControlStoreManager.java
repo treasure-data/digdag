@@ -11,20 +11,22 @@ public class DatabaseSecretControlStoreManager
         implements SecretControlStoreManager
 {
     private final DatabaseConfig config;
-    private final DBI dbi;
+    private final TransactionManager tm;
+    private final ConfigMapper cfm;
     private final SecretCrypto crypto;
 
     @Inject
-    public DatabaseSecretControlStoreManager(DatabaseConfig config, DBI dbi, SecretCrypto crypto)
+    public DatabaseSecretControlStoreManager(DatabaseConfig config, TransactionManager tm, ConfigMapper cfm, SecretCrypto crypto)
     {
         this.config = config;
-        this.dbi = dbi;
+        this.tm = tm;
+        this.cfm = cfm;
         this.crypto = crypto;
     }
 
     @Override
     public SecretControlStore getSecretControlStore(int siteId)
     {
-        return new DatabaseSecretControlStore(config, dbi, siteId, crypto);
+        return new DatabaseSecretControlStore(config, tm, cfm, siteId, crypto);
     }
 }

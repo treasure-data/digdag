@@ -62,6 +62,7 @@ import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.WorkflowResourceMatcher;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.Project;
 import io.digdag.core.repository.ProjectControl;
@@ -167,6 +168,7 @@ public class ProjectResource
     private final TempFileManager tempFiles;
     private final SessionStoreManager ssm;
     private final SecretControlStoreManager scsp;
+    private final TransactionManager tm;
     private final ProjectArchiveLoader projectArchiveLoader;
 
     @Inject
@@ -181,6 +183,7 @@ public class ProjectResource
             TempFileManager tempFiles,
             SessionStoreManager ssm,
             SecretControlStoreManager scsp,
+            TransactionManager tm,
             ProjectArchiveLoader projectArchiveLoader)
     {
         this.cf = cf;
@@ -192,6 +195,7 @@ public class ProjectResource
         this.sm = sm;
         this.tempFiles = tempFiles;
         this.ssm = ssm;
+        this.tm = tm;
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
     }
@@ -210,102 +214,111 @@ public class ProjectResource
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        Preconditions.checkArgument(name != null, "name= is required");
+        return tm.begin(() -> {
+            Preconditions.checkArgument(name != null, "name= is required");
 
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
-        StoredRevision rev = ps.getLatestRevision(proj.getId());
-        return RestModels.project(proj, rev);
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
+            StoredRevision rev = ps.getLatestRevision(proj.getId());
+            return RestModels.project(proj, rev);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects")
     public RestProjectCollection getProjects(@QueryParam("name") String name)
-        throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
 
-        List<RestProject> collection;
-        if (name != null) {
-            try {
-                StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
-                StoredRevision rev = ps.getLatestRevision(proj.getId());
-                collection = ImmutableList.of(RestModels.project(proj, rev));
+            List<RestProject> collection;
+            if (name != null) {
+                try {
+                    StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
+                    StoredRevision rev = ps.getLatestRevision(proj.getId());
+                    collection = ImmutableList.of(RestModels.project(proj, rev));
+                }
+                catch (ResourceNotFoundException ex) {
+                    collection = ImmutableList.of();
+                }
             }
-            catch (ResourceNotFoundException ex) {
-                collection = ImmutableList.of();
+            else {
+                // TODO fix n-m db access
+                collection = ps.getProjects(100, Optional.absent())
+                        .stream()
+                        .map(proj -> {
+                            try {
+                                StoredRevision rev = ps.getLatestRevision(proj.getId());
+                                return RestModels.project(proj, rev);
+                            }
+                            catch (ResourceNotFoundException ex) {
+                                return null;
+                            }
+                        })
+                        .filter(proj -> proj != null)
+                        .collect(Collectors.toList());
             }
-        }
-        else {
-            // TODO fix n-m db access
-            collection = ps.getProjects(100, Optional.absent())
-                .stream()
-                .map(proj -> {
-                    try {
-                        StoredRevision rev = ps.getLatestRevision(proj.getId());
-                        return RestModels.project(proj, rev);
-                    }
-                    catch (ResourceNotFoundException ex) {
-                        return null;
-                    }
-                })
-                .filter(proj -> proj != null)
-                .collect(Collectors.toList());
-        }
 
-        return RestModels.projectCollection(collection);
+            return RestModels.projectCollection(collection);
+        });
     }
 
     @GET
     @Path("/api/projects/{id}")
     public RestProject getProject(@PathParam("id") int projId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
-        StoredRevision rev = ps.getLatestRevision(proj.getId());
-        return RestModels.project(proj, rev);
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+            StoredRevision rev = ps.getLatestRevision(proj.getId());
+            return RestModels.project(proj, rev);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/revisions")
     public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
-        List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
-        return RestModels.revisionCollection(proj, revs);
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+            List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+            return RestModels.revisionCollection(proj, revs);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        Preconditions.checkArgument(name != null, "name= is required");
+        return tm.begin(() -> {
+            Preconditions.checkArgument(name != null, "name= is required");
 
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
 
-        StoredRevision rev;
-        if (revName == null) {
-            rev = ps.getLatestRevision(proj.getId());
-        }
-        else {
-            rev = ps.getRevisionByName(proj.getId(), revName);
-        }
-        StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
+            StoredRevision rev;
+            if (revName == null) {
+                rev = ps.getLatestRevision(proj.getId());
+            }
+            else {
+                rev = ps.getRevisionByName(proj.getId(), revName);
+            }
+            StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
 
-        return RestModels.workflowDefinition(proj, rev, def);
+            return RestModels.workflowDefinition(proj, rev, def);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/workflows/{name}")
     public RestWorkflowDefinition getWorkflowByName(@PathParam("id") int projId, @PathParam("name") String name, @QueryParam("revision") String revName)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
         return getWorkflow(projId, name, revName);
     }
@@ -316,34 +329,36 @@ public class ProjectResource
             @PathParam("id") int projId,
             @QueryParam("revision") String revName,
             @QueryParam("name") String name)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
 
-        StoredRevision rev;
-        if (revName == null) {
-            rev = ps.getLatestRevision(proj.getId());
-        }
-        else {
-            rev = ps.getRevisionByName(proj.getId(), revName);
-        }
+            StoredRevision rev;
+            if (revName == null) {
+                rev = ps.getLatestRevision(proj.getId());
+            }
+            else {
+                rev = ps.getRevisionByName(proj.getId(), revName);
+            }
 
-        List<StoredWorkflowDefinition> collection;
-        if (name != null) {
-            try {
-                StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
-                collection = ImmutableList.of(def);
+            List<StoredWorkflowDefinition> collection;
+            if (name != null) {
+                try {
+                    StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
+                    collection = ImmutableList.of(def);
+                }
+                catch (ResourceNotFoundException ex) {
+                    collection = ImmutableList.of();
+                }
             }
-            catch (ResourceNotFoundException ex) {
-                collection = ImmutableList.of();
+            else {
+                // TODO should here support pagination?
+                collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
             }
-        }
-        else {
-            // TODO should here support pagination?
-            collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
-        }
-        return RestModels.workflowDefinitionCollection(proj, rev, collection);
+            return RestModels.workflowDefinitionCollection(proj, rev, collection);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -352,29 +367,31 @@ public class ProjectResource
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Integer lastId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore projectStore = rm.getProjectStore(getSiteId());
-        ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
+        return tm.begin(() -> {
+            ProjectStore projectStore = rm.getProjectStore(getSiteId());
+            ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
 
-        ensureNotDeletedProject(projectStore.getProjectById(projectId));
+            ensureNotDeletedProject(projectStore.getProjectById(projectId));
 
-        List<StoredSchedule> scheds;
-        if (workflowName != null) {
-            StoredSchedule sched;
-            try {
-                sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
-                scheds = ImmutableList.of(sched);
+            List<StoredSchedule> scheds;
+            if (workflowName != null) {
+                StoredSchedule sched;
+                try {
+                    sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
+                    scheds = ImmutableList.of(sched);
+                }
+                catch (ResourceNotFoundException e) {
+                    scheds = ImmutableList.of();
+                }
             }
-            catch (ResourceNotFoundException e) {
-                scheds = ImmutableList.of();
+            else {
+                scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
             }
-        }
-        else {
-            scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
-        }
 
-        return RestModels.scheduleCollection(projectStore, scheds);
+            return RestModels.scheduleCollection(projectStore, scheds);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
@@ -383,90 +400,96 @@ public class ProjectResource
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        SessionStore ss = ssm.getSessionStore(getSiteId());
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            SessionStore ss = ssm.getSessionStore(getSiteId());
 
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
 
-        List<StoredSessionWithLastAttempt> sessions;
-        if (workflowName != null) {
-            sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, 100, Optional.fromNullable(lastId));
-        } else {
-            sessions = ss.getSessionsOfProject(proj.getId(), 100, Optional.fromNullable(lastId));
-        }
+            List<StoredSessionWithLastAttempt> sessions;
+            if (workflowName != null) {
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, 100, Optional.fromNullable(lastId));
+            } else {
+                sessions = ss.getSessionsOfProject(proj.getId(), 100, Optional.fromNullable(lastId));
+            }
 
-        return RestModels.sessionCollection(ps, sessions);
+            return RestModels.sessionCollection(ps, sessions);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
     public Response getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
-        throws ResourceNotFoundException, StorageFileNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        ensureNotDeletedProject(ps.getProjectById(projId));
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            ensureNotDeletedProject(ps.getProjectById(projId));
 
-        Optional<ArchiveManager.StoredArchive> archiveOrNone =
-            archiveManager.getArchive(ps, projId, revName);
-        if (!archiveOrNone.isPresent()) {
-            throw new ResourceNotFoundException("Archive is not stored");
-        }
-        else {
-            ArchiveManager.StoredArchive archive = archiveOrNone.get();
-
-            Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
-            if (direct.isPresent()) {
-                try {
-                    return Response.seeOther(URI.create(String.valueOf(direct.get().getUrl()))).build();
-                }
-                catch (IllegalArgumentException ex) {
-                    logger.warn("Failed to create a HTTP response to redirect /api/projects/{id}/archive to a direct download URL. " +
-                            "Falling back to fetching from the server.", ex);
-                }
+            Optional<ArchiveManager.StoredArchive> archiveOrNone =
+                    archiveManager.getArchive(ps, projId, revName);
+            if (!archiveOrNone.isPresent()) {
+                throw new ResourceNotFoundException("Archive is not stored");
             }
+            else {
+                ArchiveManager.StoredArchive archive = archiveOrNone.get();
 
-            Optional<byte[]> bytes = archive.getByteArray();
-            if (bytes.isPresent()) {
-                return Response.ok(bytes.get()).build();
-            }
-
-            return Response.ok(new StreamingOutput() {
-                @Override
-                public void write(OutputStream out)
-                    throws IOException, WebApplicationException
-                {
-                    StorageObject obj;
+                Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
+                if (direct.isPresent()) {
                     try {
-                        obj = archive.open();
+                        return Response.seeOther(URI.create(String.valueOf(direct.get().getUrl()))).build();
                     }
-                    catch (StorageFileNotFoundException ex) {
-                        // throwing StorageFileNotFoundException should become 404 Not Found
-                        // to be consistent with the case of DirectDownloadHandle
-                        throw new NotFoundException(
-                                GenericJsonExceptionHandler
-                                .toResponse(Response.Status.NOT_FOUND, "Archive file not found"));
-                    }
-                    try (InputStream in = obj.getContentInputStream()) {
-                        ByteStreams.copy(in, out);
+                    catch (IllegalArgumentException ex) {
+                        logger.warn("Failed to create a HTTP response to redirect /api/projects/{id}/archive to a direct download URL. " +
+                                "Falling back to fetching from the server.", ex);
                     }
                 }
-            }).build();
-        }
+
+                Optional<byte[]> bytes = archive.getByteArray();
+                if (bytes.isPresent()) {
+                    return Response.ok(bytes.get()).build();
+                }
+
+                return Response.ok(new StreamingOutput() {
+                    @Override
+                    public void write(OutputStream out)
+                            throws IOException, WebApplicationException
+                    {
+                        StorageObject obj;
+                        try {
+                            obj = archive.open();
+                        }
+                        catch (StorageFileNotFoundException ex) {
+                            // throwing StorageFileNotFoundException should become 404 Not Found
+                            // to be consistent with the case of DirectDownloadHandle
+                            throw new NotFoundException(
+                                    GenericJsonExceptionHandler
+                                            .toResponse(Response.Status.NOT_FOUND, "Archive file not found"));
+                        }
+                        try (InputStream in = obj.getContentInputStream()) {
+                            ByteStreams.copy(in, out);
+                        }
+                    }
+                }).build();
+            }
+        }, ResourceNotFoundException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}")
     public RestProject deleteProject(@PathParam("id") int projId)
-        throws ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        ProjectStore ps = rm.getProjectStore(getSiteId());
-        return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
-            StoredRevision rev = ps.getLatestRevision(proj.getId());
-            return RestModels.project(proj, rev);
-        });
+        return tm.begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
+                StoredRevision rev = ps.getLatestRevision(proj.getId());
+                return RestModels.project(proj, rev);
+            });
+        }, ResourceNotFoundException.class);
     }
 
     @PUT
@@ -475,112 +498,114 @@ public class ProjectResource
     public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
             InputStream body, @HeaderParam("Content-Length") long contentLength,
             @QueryParam("schedule_from") String scheduleFromString)
-        throws IOException, ResourceConflictException, ResourceNotFoundException
+            throws ResourceConflictException, IOException, ResourceNotFoundException
     {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
+        return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException>begin(() -> {
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
 
-        Instant scheduleFrom;
-        if (scheduleFromString == null || scheduleFromString.isEmpty()) {
-            scheduleFrom = Instant.now();
-        }
-        else {
-            try {
-                scheduleFrom = Instant.parse(scheduleFromString);
+            Instant scheduleFrom;
+            if (scheduleFromString == null || scheduleFromString.isEmpty()) {
+                scheduleFrom = Instant.now();
             }
-            catch (DateTimeParseException ex) {
-                throw new IllegalArgumentException("Invalid schedule_from= parameter format. Expected yyyy-MM-dd'T'HH:mm:ss'Z' format", ex);
+            else {
+                try {
+                    scheduleFrom = Instant.parse(scheduleFromString);
+                }
+                catch (DateTimeParseException ex) {
+                    throw new IllegalArgumentException("Invalid schedule_from= parameter format. Expected yyyy-MM-dd'T'HH:mm:ss'Z' format", ex);
+                }
             }
-        }
 
-        if (contentLength > ARCHIVE_TOTAL_SIZE_LIMIT) {
-            throw new IllegalArgumentException(String.format(ENGLISH,
+            if (contentLength > ARCHIVE_TOTAL_SIZE_LIMIT) {
+                throw new IllegalArgumentException(String.format(ENGLISH,
                         "Size of the uploaded archive file exceeds limit (%d bytes)",
                         ARCHIVE_TOTAL_SIZE_LIMIT));
-        }
-        int size = (int) contentLength;
-
-        try (TempFile tempFile = tempFiles.createTempFile("upload-", ".tar.gz")) {
-            // Read uploaded data to the temp file and following variables
-            ArchiveMetadata meta;
-            byte[] md5;
-            try (OutputStream writeToTemp = Files.newOutputStream(tempFile.get())) {
-                Md5CountInputStream md5Count = new Md5CountInputStream(body);
-                meta = readArchiveMetadata(new DuplicateInputStream(md5Count, writeToTemp), name);
-                md5 = md5Count.getDigest();
-                if (md5Count.getCount() != contentLength) {
-                    throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
-                }
             }
+            int size = (int) contentLength;
 
-            ArchiveManager.Location location =
-                archiveManager.newArchiveLocation(getSiteId(), name, revision, size);
-            boolean storeInDb = location.getArchiveType().equals(ArchiveType.DB);
-
-            if (!storeInDb) {
-                // upload to storage
-                try {
-                    archiveManager
-                        .getStorage(location.getArchiveType())
-                        .put(location.getPath(), size, () -> Files.newInputStream(tempFile.get()));
+            try (TempFile tempFile = tempFiles.createTempFile("upload-", ".tar.gz")) {
+                // Read uploaded data to the temp file and following variables
+                ArchiveMetadata meta;
+                byte[] md5;
+                try (OutputStream writeToTemp = Files.newOutputStream(tempFile.get())) {
+                    Md5CountInputStream md5Count = new Md5CountInputStream(body);
+                    meta = readArchiveMetadata(new DuplicateInputStream(md5Count, writeToTemp), name);
+                    md5 = md5Count.getDigest();
+                    if (md5Count.getCount() != contentLength) {
+                        throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
+                    }
                 }
-                catch (RuntimeException | IOException ex) {
-                    throw new InternalServerErrorException("Failed to upload archive to a remote storage", ex);
+
+                ArchiveManager.Location location =
+                        archiveManager.newArchiveLocation(getSiteId(), name, revision, size);
+                boolean storeInDb = location.getArchiveType().equals(ArchiveType.DB);
+
+                if (!storeInDb) {
+                    // upload to storage
+                    try {
+                        archiveManager
+                                .getStorage(location.getArchiveType())
+                                .put(location.getPath(), size, () -> Files.newInputStream(tempFile.get()));
+                    }
+                    catch (RuntimeException | IOException ex) {
+                        throw new InternalServerErrorException("Failed to upload archive to a remote storage", ex);
+                    }
                 }
-            }
 
-            // Getting secrets might fail. To avoid ending up with a project without secrets, get the secrets _before_ storing the project.
-            // If getting the project secrets fails, the project will not be stored and the push can then be retried with the same revision.
-            Map<String, String> secrets = getSecrets().get();
+                // Getting secrets might fail. To avoid ending up with a project without secrets, get the secrets _before_ storing the project.
+                // If getting the project secrets fails, the project will not be stored and the push can then be retried with the same revision.
+                Map<String, String> secrets = getSecrets().get();
 
-            RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
-                    Project.of(name),
-                    (store, storedProject) -> {
-                        ProjectControl lockedProj = new ProjectControl(store, storedProject);
-                        StoredRevision rev;
-                        if (storeInDb) {
-                            // store data in db
-                            byte[] data = new byte[size];
-                            try (InputStream in = Files.newInputStream(tempFile.get())) {
-                                ByteStreams.readFully(in, data);
+                RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
+                        Project.of(name),
+                        (store, storedProject) -> {
+                            ProjectControl lockedProj = new ProjectControl(store, storedProject);
+                            StoredRevision rev;
+                            if (storeInDb) {
+                                // store data in db
+                                byte[] data = new byte[size];
+                                try (InputStream in = Files.newInputStream(tempFile.get())) {
+                                    ByteStreams.readFully(in, data);
+                                }
+                                catch (RuntimeException | IOException ex) {
+                                    throw new InternalServerErrorException("Failed to load archive data in memory", ex);
+                                }
+                                rev = lockedProj.insertRevision(
+                                        Revision.builderFromArchive(revision, meta, getUserInfo())
+                                                .archiveType(ArchiveType.DB)
+                                                .archivePath(Optional.absent())
+                                                .archiveMd5(Optional.of(md5))
+                                                .build()
+                                );
+                                lockedProj.insertRevisionArchiveData(rev.getId(), data);
                             }
-                            catch (RuntimeException | IOException ex) {
-                                throw new InternalServerErrorException("Failed to load archive data in memory", ex);
+                            else {
+                                // store location of the uploaded file in db
+                                rev = lockedProj.insertRevision(
+                                        Revision.builderFromArchive(revision, meta, getUserInfo())
+                                                .archiveType(location.getArchiveType())
+                                                .archivePath(Optional.of(location.getPath()))
+                                                .archiveMd5(Optional.of(md5))
+                                                .build()
+                                );
                             }
-                            rev = lockedProj.insertRevision(
-                                    Revision.builderFromArchive(revision, meta, getUserInfo())
-                                            .archiveType(ArchiveType.DB)
-                                            .archivePath(Optional.absent())
-                                            .archiveMd5(Optional.of(md5))
-                                            .build()
-                            );
-                            lockedProj.insertRevisionArchiveData(rev.getId(), data);
-                        }
-                        else {
-                            // store location of the uploaded file in db
-                            rev = lockedProj.insertRevision(
-                                    Revision.builderFromArchive(revision, meta, getUserInfo())
-                                            .archiveType(location.getArchiveType())
-                                            .archivePath(Optional.of(location.getPath()))
-                                            .archiveMd5(Optional.of(md5))
-                                            .build()
-                            );
-                        }
 
-                        List<StoredWorkflowDefinition> defs =
-                            lockedProj.insertWorkflowDefinitions(rev,
-                                    meta.getWorkflowList().get(),
-                                    srm, scheduleFrom);
-                        return RestModels.project(storedProject, rev);
-                    });
+                            List<StoredWorkflowDefinition> defs =
+                                    lockedProj.insertWorkflowDefinitions(rev,
+                                            meta.getWorkflowList().get(),
+                                            srm, scheduleFrom);
+                            return RestModels.project(storedProject, rev);
+                        });
 
-            SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(
+                SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
+                secrets.forEach((k, v) -> secretControlStore.setProjectSecret(
                         RestModels.parseProjectId(restProject.getId()),
                         SecretScopes.PROJECT_DEFAULT,
                         k, v));
-            return restProject;
-        }
+                return restProject;
+            }
+        }, IOException.class, ResourceConflictException.class, ResourceNotFoundException.class);
     }
 
     private ArchiveMetadata readArchiveMetadata(InputStream in, String projectName)
@@ -646,57 +671,65 @@ public class ProjectResource
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
     public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
-            throws IOException, ResourceConflictException, ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        if (!SecretValidation.isValidSecret(key, request.value())) {
-            throw new IllegalArgumentException("Invalid secret");
-        }
+        tm.begin(() -> {
+            if (!SecretValidation.isValidSecret(key, request.value())) {
+                throw new IllegalArgumentException("Invalid secret");
+            }
 
-        // Verify that the project exists
-        ProjectStore projectStore = rm.getProjectStore(getSiteId());
-        StoredProject project = projectStore.getProjectById(projectId);
-        ensureNotDeletedProject(project);
+            // Verify that the project exists
+            ProjectStore projectStore = rm.getProjectStore(getSiteId());
+            StoredProject project = projectStore.getProjectById(projectId);
+            ensureNotDeletedProject(project);
 
-        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
+            SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
-        store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
+            store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
+            return null;
+        }, ResourceNotFoundException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
     public void deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
-            throws IOException, ResourceConflictException, ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        if (!SecretValidation.isValidSecretKey(key)) {
-            throw new IllegalArgumentException("Invalid secret");
-        }
+        tm.begin(() -> {
+            if (!SecretValidation.isValidSecretKey(key)) {
+                throw new IllegalArgumentException("Invalid secret");
+            }
 
-        // Verify that the project exists
-        ProjectStore projectStore = rm.getProjectStore(getSiteId());
-        StoredProject project = projectStore.getProjectById(projectId);
-        ensureNotDeletedProject(project);
+            // Verify that the project exists
+            ProjectStore projectStore = rm.getProjectStore(getSiteId());
+            StoredProject project = projectStore.getProjectById(projectId);
+            ensureNotDeletedProject(project);
 
-        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
+            SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
-        store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
+            store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
+            return null;
+        }, ResourceNotFoundException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/secrets")
     @Produces("application/json")
     public RestSecretList getProjectSecrets(@PathParam("id") int projectId)
-            throws IOException, ResourceConflictException, ResourceNotFoundException
+            throws ResourceNotFoundException
     {
-        // Verify that the project exists
-        ProjectStore projectStore = rm.getProjectStore(getSiteId());
-        StoredProject project = projectStore.getProjectById(projectId);
-        ensureNotDeletedProject(project);
+        return tm.begin(() -> {
+            // Verify that the project exists
+            ProjectStore projectStore = rm.getProjectStore(getSiteId());
+            StoredProject project = projectStore.getProjectById(projectId);
+            ensureNotDeletedProject(project);
 
-        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
-        List<String> keys = store.listProjectSecrets(projectId, SecretScopes.PROJECT);
+            SecretControlStore store = scsp.getSecretControlStore(getSiteId());
+            List<String> keys = store.listProjectSecrets(projectId, SecretScopes.PROJECT);
 
-        return RestSecretList.builder()
-                .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))
-                .build();
+            return RestSecretList.builder()
+                    .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))
+                    .build();
+        }, ResourceNotFoundException.class);
     }
 }
