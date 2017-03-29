@@ -1,11 +1,24 @@
 {
-  "presets": [
-    "es2016",
-    "react"
-  ],
-  "plugins": [
-    "syntax-flow",
-    "transform-flow-strip-types",
-    "transform-class-properties"
-  ]
+  "presets": ["es2015", "stage-0", "react"],
+  "env": {
+    "development": {
+      "plugins": [
+        ["transform-object-rest-spread"],
+        ["transform-react-display-name"],
+        ["syntax-flow"],
+        ["transform-flow-strip-types"],
+        ["transform-class-properties"]
+      ]
+    },
+    "production": {
+      "plugins": [
+        ["transform-runtime"],
+        ["transform-object-rest-spread"],
+        ["transform-react-display-name"],
+        ["syntax-flow"],
+        ["transform-flow-strip-types"],
+        ["transform-class-properties"]
+      ]
+    }
+  }
 }
