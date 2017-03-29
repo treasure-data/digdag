@@ -526,23 +526,29 @@ class ScheduleListView extends React.Component {
   }
 
   disableSchedule () {
-    const { schedules } = this.state || {}
+    const { schedules } = this.state
+    if (!schedules || !schedules.length) {
+      return
+    }
     model()
-      .disableSchedule(schedules[0].id)
+      .disableSchedule(_.get(schedules, ['0', 'id']))
       .then(() => this.fetch())
   }
 
   enableSchedule () {
-    const schedule = this.state.schedules[0]
+    const { schedules } = this.state
+    if (!schedules || !schedules.length) {
+      return
+    }
     model()
-      .enableSchedule(schedule.id)
+      .enableSchedule(_.get(schedules, ['0', 'id']))
       .then(() => this.fetch())
   }
 
   render () {
-    const { schedules } = this.state || {}
+    const { schedules } = this.state
     const hasSchedule = schedules && schedules.length
-    const isPaused = hasSchedule && !schedules[0].disabledAt
+    const isPaused = hasSchedule && !_.get(schedules, ['0', 'disabledAt'])
     const rows = (schedules || []).map(schedule => {
       return (
         <tr key={schedule.id}>
