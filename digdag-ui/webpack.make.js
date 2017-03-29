@@ -31,9 +31,9 @@ module.exports = function buildWebpackConfig ({ build = false }) {
     devtool: build ? 'source-map' : 'cheap-module-source-map',
     module: {
       loaders: [{
-        test: /\.jsx?$/,
+        test: /\.(js|jsx)$/,
         exclude: /(node_modules)/,
-        loaders: ['babel']
+        loader: 'babel'
       }, {
         test: /\.css$/,
         loader: ExtractTextPlugin.extract('style', 'css'),
