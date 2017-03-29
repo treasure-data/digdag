@@ -119,25 +119,24 @@ public class MultiThreadAgent
                     // Acquire at most guaranteedAvaialbleThreads or 10. This guarantees that all tasks start immediately.
                     int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
                     if (maxAcquire > 0) {
-                        transactionManager.begin(() -> {
-                            List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
-                            for (TaskRequest req : reqs) {
-                                executor.submit(() -> {
-                                    try {
-                                        runner.run(req);
-                                    }
-                                    catch (Throwable t) {
-                                        logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
-                                        errorReporter.reportUncaughtError(t);
-                                    }
-                                    finally {
-                                        activeTaskCount.decrementAndGet();
-                                    }
-                                });
-                                activeTaskCount.incrementAndGet();
-                            }
-                            return null;
-                        });
+                        List<TaskRequest> reqs = transactionManager.begin(() ->
+                                taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000));
+
+                        for (TaskRequest req : reqs) {
+                            executor.submit(() -> {
+                                try {
+                                    runner.run(req);
+                                }
+                                catch (Throwable t) {
+                                    logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
+                                    errorReporter.reportUncaughtError(t);
+                                }
+                                finally {
+                                    activeTaskCount.decrementAndGet();
+                                }
+                            });
+                            activeTaskCount.incrementAndGet();
+                        }
                     }
                     else {
                         // no executor thread is available. sleep for a while until a task execution finishes

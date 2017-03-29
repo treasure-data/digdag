@@ -500,16 +500,24 @@ public class WorkflowExecutor
                     break;
                 }
 
-                tm.begin(() -> {
-                    //boolean inced = prop.run();
-                    //boolean retried = retryRetryWaitingTasks();
-                    //if (inced || retried) {
-                    //    enqueueReadyTasks(queuer);
-                    //    propagatorNotice = true;
-                    //}
+                //boolean inced = prop.run();
+                //boolean retried = retryRetryWaitingTasks();
+                //if (inced || retried) {
+                //    enqueueReadyTasks(queuer);
+                //    propagatorNotice = true;
+                //}
 
+                tm.begin(() -> {
                     propagateBlockedChildrenToReady();
+                    return null;
+                });
+
+                tm.begin(() -> {
                     retryRetryWaitingTasks();
+                    return null;
+                });
+
+                tm.begin(() -> {
                     enqueueReadyTasks(queuer);
                     return null;
                 });
