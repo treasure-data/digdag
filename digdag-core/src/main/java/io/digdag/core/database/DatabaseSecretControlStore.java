@@ -11,6 +11,7 @@ import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 
 import java.util.List;
+import static java.util.Locale.ENGLISH;
 
 class DatabaseSecretControlStore
         extends BasicDatabaseStoreManager<DatabaseSecretControlStore.Dao>
@@ -110,7 +111,9 @@ class DatabaseSecretControlStore
             else {
                 // TODO: look up crypto engine using name
                 if (!crypto.getName().equals(secret.engine)) {
-                    throw new AssertionError("Crypto engine mismatch");
+                    throw new AssertionError(String.format(ENGLISH,
+                                "Crypto engine mismatch. Expected '%s' but got '%s'",
+                                secret.engine, crypto.getName()));
                 }
                 String decrypted = crypto.decryptSecret(secret.value);
                 value = Optional.of(decrypted);
