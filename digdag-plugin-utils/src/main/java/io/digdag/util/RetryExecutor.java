@@ -49,21 +49,23 @@ public class RetryExecutor
     private final int retryLimit;
     private final int initialRetryWait;
     private final int maxRetryWait;
+    private final double waitGrowRate;
     private final RetryPredicate retryPredicate;
     private final RetryAction retryAction;
     private final GiveupAction giveupAction;
 
     private RetryExecutor()
     {
-        this(3, 500, 30 * 60 * 1000, null, null, null);
+        this(5, 1000, 30 * 60 * 1000, 3.0, null, null, null);
     }
 
-    private RetryExecutor(int retryLimit, int initialRetryWait, int maxRetryWait,
+    private RetryExecutor(int retryLimit, int initialRetryWait, int maxRetryWait, double waitGrowRate,
             RetryPredicate retryPredicate, RetryAction retryAction, GiveupAction giveupAction)
     {
         this.retryLimit = retryLimit;
         this.initialRetryWait = initialRetryWait;
         this.maxRetryWait = maxRetryWait;
+        this.waitGrowRate = waitGrowRate;
         this.retryPredicate = retryPredicate;
         this.retryAction = retryAction;
         this.giveupAction = giveupAction;
@@ -72,42 +74,49 @@ public class RetryExecutor
     public RetryExecutor withRetryLimit(int count)
     {
         return new RetryExecutor(
-                count, initialRetryWait, maxRetryWait,
+                count, initialRetryWait, maxRetryWait, waitGrowRate,
                 retryPredicate, retryAction, giveupAction);
     }
 
     public RetryExecutor withInitialRetryWait(int msec)
     {
         return new RetryExecutor(
-                retryLimit, msec, maxRetryWait,
+                retryLimit, msec, maxRetryWait, waitGrowRate,
                 retryPredicate, retryAction, giveupAction);
     }
 
     public RetryExecutor withMaxRetryWait(int msec)
     {
         return new RetryExecutor(
-                retryLimit, initialRetryWait, msec,
+                retryLimit, initialRetryWait, msec, waitGrowRate,
+                retryPredicate, retryAction, giveupAction);
+    }
+
+    public RetryExecutor withWaitGrowRate(double rate)
+    {
+        return new RetryExecutor(
+                retryLimit, initialRetryWait, maxRetryWait, rate,
                 retryPredicate, retryAction, giveupAction);
     }
 
     public RetryExecutor retryIf(RetryPredicate function)
     {
         return new RetryExecutor(
-                retryLimit, initialRetryWait, maxRetryWait,
+                retryLimit, initialRetryWait, maxRetryWait, waitGrowRate,
                 function, retryAction, giveupAction);
     }
 
     public RetryExecutor onRetry(RetryAction function)
     {
         return new RetryExecutor(
-                retryLimit, initialRetryWait, maxRetryWait,
+                retryLimit, initialRetryWait, maxRetryWait, waitGrowRate,
                 retryPredicate, function, giveupAction);
     }
 
     public RetryExecutor onGiveup(GiveupAction function)
     {
         return new RetryExecutor(
-                retryLimit, initialRetryWait, maxRetryWait,
+                retryLimit, initialRetryWait, maxRetryWait, waitGrowRate,
                 retryPredicate, retryAction, function);
     }
 
@@ -148,7 +157,6 @@ public class RetryExecutor
     private <T> T run(Callable<T> op, boolean interruptible)
             throws InterruptedException, RetryGiveupException
     {
-        int retryWait = initialRetryWait;
         int retryCount = 0;
 
         Exception firstException = null;
@@ -167,6 +175,9 @@ public class RetryExecutor
                     throw new RetryGiveupException(firstException);
                 }
 
+                // exponential back-off with hard limit
+                int retryWait = (int) Math.min((double) maxRetryWait, initialRetryWait * Math.pow(waitGrowRate, retryCount));
+
                 retryCount++;
                 if (retryAction != null) {
                     retryAction.onRetry(exception, retryCount, retryLimit, retryWait);
@@ -178,12 +189,6 @@ public class RetryExecutor
                     if (interruptible) {
                         throw ex;
                     }
-                }
-
-                // exponential back-off with hard limit
-                retryWait *= 2;
-                if (retryWait > maxRetryWait) {
-                    retryWait = maxRetryWait;
                 }
             }
         }
