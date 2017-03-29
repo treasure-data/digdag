@@ -99,20 +99,25 @@ public class DatabaseSecretStoreTest
     public void lockSecret()
             throws Exception
     {
-        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1);
+        factory.begin(() -> secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1));
 
         AtomicReference<Optional<String>> blockedGetValue = new AtomicReference<>(null);
         AtomicBoolean comitting = new AtomicBoolean(false);
         AtomicBoolean blockedCheckComitting = new AtomicBoolean(false);
 
-        Thread thread = secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> {
+        Thread thread = factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> {
             try {
                 AtomicBoolean started = new AtomicBoolean(false);
 
                 Thread t = new Thread(() -> {
                     started.set(true);
-                    blockedGetValue.set(
-                            secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (c1, v1) -> v1));
+                    try {
+                        blockedGetValue.set(
+                                factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (c1, v1) -> v1)));
+                    }
+                    catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
                     blockedCheckComitting.set(comitting.get());
                 });
                 t.setDaemon(true);
@@ -133,7 +138,7 @@ public class DatabaseSecretStoreTest
             catch (InterruptedException ex) {
                 throw new AssertionError(ex);
             }
-        });
+        }));
 
         thread.join();
 
