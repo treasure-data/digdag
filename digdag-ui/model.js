@@ -481,7 +481,7 @@ export class Model {
   }
 
   fetchArrayBuffer (url: string) {
-    return fetch(url).then(response => {
+    return fetch(url, { credentials: 'include' }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
       }
