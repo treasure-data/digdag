@@ -80,6 +80,7 @@ type ConsoleConfig = {
   },
   logoutUrl: ?string,
   navbar: ?{
+    className: ?string;
     brand: ?string;
     logo: ?string;
     style: ?Object;
@@ -407,7 +408,6 @@ class SessionRevisionView extends React.Component {
 }
 
 class AttemptListView extends React.Component {
-
   props:{
     attempts: Array<Attempt>;
   };
@@ -452,7 +452,6 @@ class AttemptListView extends React.Component {
 }
 
 class SessionListView extends React.Component {
-
   props:{
     sessions: Array<Session>;
   };
@@ -500,7 +499,6 @@ class SessionListView extends React.Component {
 }
 
 class ScheduleListView extends React.Component {
-
   props:{
     workflowName: string;
     projectId: string;
@@ -602,7 +600,6 @@ class ScheduleListView extends React.Component {
 }
 
 class ProjectsView extends React.Component {
-
   state = {
     projects: []
   };
@@ -629,7 +626,6 @@ class ProjectsView extends React.Component {
 }
 
 class SessionsView extends React.Component {
-
   state = {
     sessions: []
   };
@@ -665,7 +661,7 @@ class ProjectView extends React.Component {
   state = {
     project: {},
     workflows: [],
-    sessions: [],
+    sessions: []
   };
 
   componentDidMount () {
@@ -1062,7 +1058,6 @@ class AttemptView extends React.Component {
 }
 
 class SessionView extends React.Component {
-
   props:{
     session: Session;
   };
@@ -1156,7 +1151,6 @@ class SessionView extends React.Component {
   }
 }
 
-
 const SessionTime = ({t}:{t:?string}) =>
   t ? <span>{t}</span> : null
 
@@ -1234,7 +1228,6 @@ const ParamsView = ({params}:{params: Object}) =>
 
 const TaskState = ({state}:{state: string}) => {
   switch (state) {
-
     // Pending
     case 'blocked':
       return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
@@ -1282,7 +1275,6 @@ const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: O
 }
 
 class TaskListView extends React.Component {
-
   props:{
     tasks: Map<string, Task>
   }
@@ -1331,7 +1323,6 @@ class TaskListView extends React.Component {
 
 function taskDone (task: Task): boolean {
   switch (task.state) {
-
     case 'success':
     case 'group_error':
     case 'error':
@@ -1350,7 +1341,6 @@ function isSyntheticTask (task: Task): boolean {
 }
 
 class TaskTimelineRow extends React.Component {
-
   props:{
     task: Task;
     tasks: Map<string, Task>;
@@ -1366,7 +1356,6 @@ class TaskTimelineRow extends React.Component {
 
   progressBarClasses () {
     switch (this.props.task.state) {
-
       // Pending
       case 'blocked':
         return ''
@@ -1778,7 +1767,7 @@ class Navbar extends React.Component {
   }
 
   className () {
-    const navbar = DIGDAG_CONFIG.navbar
+    const { navbar } = DIGDAG_CONFIG
     return navbar && navbar.className ? navbar.className : 'navbar-inverse'
   }
 
@@ -1989,10 +1978,10 @@ class FileEditor extends React.Component {
     }
 
     const buffer = new Buffer(text)
-    const ab = new ArrayBuffer(buffer.length);
-    const view = new Uint8Array(ab);
-    view.set(buffer);
-    return ab;
+    const ab = new ArrayBuffer(buffer.length)
+    const view = new Uint8Array(ab)
+    view.set(buffer)
+    return ab
   }
 
   render () {
@@ -2000,17 +1989,17 @@ class FileEditor extends React.Component {
     return (
       <div>
         <h3>
-          <input type="text" className="form-control" value={this.state.name} onChange={this.handleNameChange.bind(this)} />
+          <input type='text' className='form-control' value={this.state.name} onChange={this.handleNameChange.bind(this)} />
         </h3>
         <pre>
           <Measure>
             { ({ width }) =>
-                <CodeEditor
-                  className='editor'
-                  language='yaml'  // TODO how to let ace guess language?
-                  value={file ? fileString(file.name, this.props.projectArchive) : ''}
-                  style={{ width }}
-                  ref={(value) => { this.editor = value }}
+              <CodeEditor
+                className='editor'
+                language='yaml'  // TODO how to let ace guess language?
+                value={file ? fileString(file.name, this.props.projectArchive) : ''}
+                style={{ width }}
+                ref={(value) => { this.editor = value }}
                 />
             }
           </Measure>
@@ -2021,7 +2010,7 @@ class FileEditor extends React.Component {
   }
 
   handleNameChange (event) {
-    this.setState({name: event.target.value});
+    this.setState({name: event.target.value})
   }
 }
 
@@ -2051,22 +2040,25 @@ class ProjectArchiveEditor extends React.Component {
 
   handleAddFile () {
     const key = uuid.v4()
-    this.state.entries.unshift({
-      newFile: true,
-      key,
-      file: null,
-      projectArchive: null,
-    })
-    this.setState({entries: this.state.entries})
+    const entries = [
+      {
+        newFile: true,
+        key,
+        file: null,
+        projectArchive: null
+      },
+      ...this.state.entries
+    ]
+    this.setState({entries})
   }
 
-  setInitialEntries() {
+  setInitialEntries () {
     const projectFiles = this.props.projectArchive ? this.props.projectArchive.files : []
     const entries = projectFiles.map(file => ({
       newFile: false,
       key: file.name,
       file: file,
-      projectArchive: this.props.projectArchive,
+      projectArchive: this.props.projectArchive
     }))
     this.setState({entries})
   }
@@ -2084,13 +2076,13 @@ class ProjectArchiveEditor extends React.Component {
 
   render () {
     const editors = this.state.entries.map(entry =>
-        <FileEditor
-          newFile={entry.newFile}
-          key={entry.key}
-          ref={(value) => { this._editors[entry.key] = value }}
-          file={entry.file}
-          projectArchive={entry.projectArchive}
-          onDelete={this.handleDelete.bind(this, entry.key)}
+      <FileEditor
+        newFile={entry.newFile}
+        key={entry.key}
+        ref={(value) => { this._editors[entry.key] = value }}
+        file={entry.file}
+        projectArchive={entry.projectArchive}
+        onDelete={this.handleDelete.bind(this, entry.key)}
         />
       )
     return (
@@ -2103,7 +2095,7 @@ class ProjectArchiveEditor extends React.Component {
     )
   }
 
-  getFiles(): Array<TarEntry> {
+  getFiles (): Array<TarEntry> {
     return this.state.entries.map(entry => {
       const editor = this._editors[entry.key]
       return ({name: editor.getName(), buffer: editor.getFileContents()})
@@ -2121,10 +2113,10 @@ class ProjectEditor extends React.Component {
   state = {
     projectId: null,
     project: null,
-    projectName: "new-project",
+    projectName: 'new-project',
     revisionName: uuid.v4(),
     projectArchive: null,
-    saveMessage: "",
+    saveMessage: ''
   };
 
   componentDidMount () {
@@ -2169,7 +2161,7 @@ class ProjectEditor extends React.Component {
     var title
     var header
     if (project) {
-      title = "Edit Workflows"
+      title = 'Edit Workflows'
       header = (
         <table className='table table-condensed'>
           <tbody>
@@ -2197,17 +2189,17 @@ class ProjectEditor extends React.Component {
         </table>
       )
     } else {
-      title = "New Project"
+      title = 'New Project'
       header = (
         <table className='table table-condensed'>
           <tbody>
             <tr>
               <td>Name</td>
-              <input type="text" className="form-control" value={this.state.projectName} onChange={this.handleNameChange.bind(this)} />
+              <input type='text' className='form-control' value={this.state.projectName} onChange={this.handleNameChange.bind(this)} />
             </tr>
             <tr>
               <td>Revision</td>
-              <input type="text" className="form-control" value={this.state.revisionName} onChange={this.handleRevisionChange.bind(this)} />
+              <input type='text' className='form-control' value={this.state.revisionName} onChange={this.handleRevisionChange.bind(this)} />
             </tr>
           </tbody>
         </table>
@@ -2218,18 +2210,18 @@ class ProjectEditor extends React.Component {
         <h2>{title}</h2>
         {header}
         <button className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
-        <span style={{paddingLeft: "0.5em"}}>{this.state.saveMessage}</span>
+        <span style={{paddingLeft: '0.5em'}}>{this.state.saveMessage}</span>
         <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref={(value) => { this._editor = value }} />
       </div>
     )
   }
 
-  handleNameChange(event) {
-    this.setState({projectName: event.target.value});
+  handleNameChange (event) {
+    this.setState({projectName: event.target.value})
   }
 
-  handleRevisionChange(event) {
-    this.setState({revisionName: event.target.value});
+  handleRevisionChange (event) {
+    this.setState({revisionName: event.target.value})
   }
 
   save () {
@@ -2245,7 +2237,7 @@ class ProjectEditor extends React.Component {
         projectId: project.id,
         project: project,
         revisionName: uuid.v4(),  // generate new revision name
-        saveMessage: `Revision ${this.state.revisionName} is saved.`,
+        saveMessage: `Revision ${this.state.revisionName} is saved.`
       })
     }).catch((error) => {
       console.log(`Saving project failed`, error)
@@ -2368,7 +2360,6 @@ class SessionPage extends React.Component {
 }
 
 class LoginPage extends React.Component {
-
   props:{
     onSubmit: (credentials:Credentials) => void;
   };
@@ -2457,7 +2448,6 @@ class LoginPage extends React.Component {
 }
 
 class WorkflowsView extends React.Component {
-
   state = {
     workflows: []
   };
@@ -2605,7 +2595,6 @@ class ConsolePage extends React.Component {
 }
 
 export default class Console extends React.Component {
-
   state:{
     authenticated: bool
   };
@@ -2649,4 +2638,3 @@ export default class Console extends React.Component {
     }
   }
 }
-

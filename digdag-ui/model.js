@@ -336,7 +336,7 @@ export class Model {
     })
   }
 
-  putProject(projectName: string, revision: string, targz: ArrayBuffer): Promise<Project> {
+  putProject (projectName: string, revision: string, targz: ArrayBuffer): Promise<Project> {
     return this.putBinary(`projects?project=${projectName}&revision=${revision}`, 'application/gzip', targz)
   }
 
@@ -377,7 +377,7 @@ export class Model {
         sessionTime: session.sessionTime,
         retryAttemptName: attemptName,
         resume: {
-          mode: "failed",
+          mode: 'failed',
           attemptId: attemptId
         }
       })
@@ -466,10 +466,10 @@ export class Model {
       credentials: 'include',
       headers: Object.assign({}, this.headers(), {
         'Content-Type': contentType,
-        'Content-Length': body.byteLength.toString(),
+        'Content-Length': body.byteLength.toString()
       }),
       method: 'PUT',
-      body: new Blob([body], {type: contentType})
+      body: new global.Blob([body], {type: contentType})
     }).then(response => {
       if (!response.ok) {
         return response.text().then(text => {
@@ -506,4 +506,3 @@ export function model (): Model {
   }
   return instance
 }
-
