@@ -889,7 +889,7 @@ function task (node:Object) {
   if (taskType) {
     command = node['_command']
   } else {
-    const operators = ['td', 'td_load', 'sh', 'rb', 'py', 'mail', '']
+    const operators = ['td', 'td_load', 'sh', 'rb', 'py', 'mail', 'redshift']
     for (let operator of operators) {
       command = node[operator + '>'] || ''
       if (command) {
@@ -921,6 +921,7 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
     'py': 'python',
     'rb': 'ruby',
     'spark': 'python',
+    'redshift': 'sql',
     'mail': task['html'] ? 'html' : 'txt'
   }
   const fileType = fileTypes[taskType]
