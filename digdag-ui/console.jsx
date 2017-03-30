@@ -138,6 +138,8 @@ class CodeViewer extends React.Component {
     require('brace/mode/json')
     require('brace/mode/sql')
     require('brace/mode/yaml')
+    require('brace/mode/python')
+    require('brace/mode/scala')
     Ace.acequire('ace/ext/language_tools')
     Ace.acequire('ace/ext/linking')
   }
@@ -887,13 +889,19 @@ function task (node:Object) {
   if (taskType) {
     command = node['_command']
   } else {
-    const operators = ['td', 'td_load', 'sh', 'rb', 'py', 'mail']
+    const operators = ['td', 'td_load', 'sh', 'rb', 'py', 'mail', '']
     for (let operator of operators) {
       command = node[operator + '>'] || ''
       if (command) {
         taskType = operator
         break
       }
+    }
+    const externalOperators = ['spark', 'script']
+    if (!taskType && externalOperators.includes(node.type)) {
+      // external operators
+      taskType = node.type
+      command = node.application
     }
   }
   return {taskType, command}
@@ -912,6 +920,7 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
     'sh': 'bash',
     'py': 'python',
     'rb': 'ruby',
+    'spark': 'python',
     'mail': task['html'] ? 'html' : 'txt'
   }
   const fileType = fileTypes[taskType]
