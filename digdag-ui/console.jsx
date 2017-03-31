@@ -1731,13 +1731,7 @@ class VersionView extends React.Component {
   };
 
   componentDidMount () {
-    const url = DIGDAG_CONFIG.url + 'version'
-    fetch(url).then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText)
-      }
-      return response.json()
-    }).then(version => {
+    model().fetchVersion().then(version => {
       this.setState(version)
     })
   }
