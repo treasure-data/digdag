@@ -11,6 +11,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import static java.util.Locale.ENGLISH;
 
 class DatabaseSecretStore
         extends BasicDatabaseStoreManager<DatabaseSecretStore.Dao>
@@ -40,7 +41,9 @@ class DatabaseSecretStore
 
         // TODO: look up crypto engine using name
         if (!crypto.getName().equals(secret.engine)) {
-            throw new AssertionError("Crypto engine mismatch");
+            throw new AssertionError(String.format(ENGLISH,
+                        "Crypto engine mismatch. Expected '%s' but got '%s'",
+                        secret.engine, crypto.getName()));
         }
 
         String decrypted = crypto.decryptSecret(secret.value);
@@ -55,10 +58,10 @@ class DatabaseSecretStore
         EncryptedSecret getProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
     }
 
-    private static class EncryptedSecret
+    static class EncryptedSecret
     {
-        private final String engine;
-        private final String value;
+        final String engine;
+        final String value;
 
         private EncryptedSecret(String engine, String value)
         {

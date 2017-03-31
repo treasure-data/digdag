@@ -13,6 +13,8 @@ import io.digdag.spi.SecretStore;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,6 +81,69 @@ public class DatabaseSecretStoreTest
     {
         factory.autoCommit(() -> secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1));
         assertThat(secretStore.getSecret(projectId, SecretScopes.PROJECT, KEY1), is(Optional.of(VALUE1)));
+    }
+
+    @Test
+    public void lockSecretGetsValue()
+            throws Exception
+    {
+        Optional<String> absent = factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> value));
+        assertThat(absent, is(Optional.absent()));
+
+        factory.begin(() -> secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1));
+        Optional<String> present = factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> value));
+        assertThat(present, is(Optional.of(VALUE1)));
+    }
+
+    @Test
+    public void lockSecret()
+            throws Exception
+    {
+        factory.begin(() -> secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1));
+
+        AtomicReference<Optional<String>> blockedGetValue = new AtomicReference<>(null);
+        AtomicBoolean comitting = new AtomicBoolean(false);
+        AtomicBoolean blockedCheckComitting = new AtomicBoolean(false);
+
+        Thread thread = factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> {
+            try {
+                AtomicBoolean started = new AtomicBoolean(false);
+
+                Thread t = new Thread(() -> {
+                    started.set(true);
+                    try {
+                        blockedGetValue.set(
+                                factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (c1, v1) -> v1)));
+                    }
+                    catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    blockedCheckComitting.set(comitting.get());
+                });
+                t.setDaemon(true);
+                t.start();
+
+                // wait until the thread starts
+                while (!started.get()) {
+                    Thread.sleep(500);
+                }
+                // wait some more to make sure that lockProjectSecret is called & blocked
+                Thread.sleep(500);
+
+                control.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1 + ".changed");
+
+                comitting.set(true);
+                return t;
+            }
+            catch (InterruptedException ex) {
+                throw new AssertionError(ex);
+            }
+        }));
+
+        thread.join();
+
+        assertThat(blockedGetValue.get(), is(Optional.of(VALUE1 + ".changed")));
+        assertThat(blockedCheckComitting.get(), is(true));
     }
 
     @Test

@@ -1,12 +1,17 @@
 package io.digdag.core.database;
 
+import com.google.common.base.Optional;
 import io.digdag.core.crypto.SecretCrypto;
+import io.digdag.core.database.DatabaseSecretStore.EncryptedSecret;
 import io.digdag.spi.SecretControlStore;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 
 import java.util.List;
+import static java.util.Locale.ENGLISH;
 
 class DatabaseSecretControlStore
         extends BasicDatabaseStoreManager<DatabaseSecretControlStore.Dao>
@@ -37,11 +42,8 @@ class DatabaseSecretControlStore
     @Override
     public void setProjectSecret(int projectId, String scope, String key, String value)
     {
-        String encrypted = crypto.encryptSecret(value);
-        String engine = crypto.getName();
-
         transaction((handle, dao) -> {
-            dao.upsertProjectSecret(siteId, projectId, scope, key, engine, encrypted);
+            new LockedControl(handle, dao).setProjectSecret(projectId, scope, key, value);
             return null;
         });
     }
@@ -50,7 +52,7 @@ class DatabaseSecretControlStore
     public void deleteProjectSecret(int projectId, String scope, String key)
     {
         transaction((handle, dao) -> {
-            dao.deleteProjectSecret(siteId, projectId, scope, key);
+            new LockedControl(handle, dao).deleteProjectSecret(projectId, scope, key);
             return null;
         });
     }
@@ -58,7 +60,75 @@ class DatabaseSecretControlStore
     @Override
     public List<String> listProjectSecrets(int projectId, String scope)
     {
-        return transaction((handle, dao) -> dao.listProjectSecrets(siteId, projectId, scope));
+        return transaction((handle, dao) -> {
+            return new LockedControl(handle, dao).listProjectSecrets(projectId, scope);
+        });
+    }
+
+    private class LockedControl
+            implements SecretControlStore
+    {
+        private final Handle handle;
+        private final Dao dao;
+
+        public LockedControl(Handle handle, Dao dao)
+        {
+            this.handle = handle;
+            this.dao = dao;
+        }
+
+        @Override
+        public void setProjectSecret(int projectId, String scope, String key, String value)
+        {
+            String encrypted = crypto.encryptSecret(value);
+            String engine = crypto.getName();
+
+            dao.upsertProjectSecret(siteId, projectId, scope, key, engine, encrypted);
+        }
+
+        @Override
+        public void deleteProjectSecret(int projectId, String scope, String key)
+        {
+            dao.deleteProjectSecret(siteId, projectId, scope, key);
+        }
+
+        @Override
+        public List<String> listProjectSecrets(int projectId, String scope)
+        {
+            return dao.listProjectSecrets(siteId, projectId, scope);
+        }
+
+        @Override
+        public <T> T lockProjectSecret(int projectId, String scope, String key, SecretLockAction<T> action)
+        {
+            EncryptedSecret secret = dao.lockProjectSecret(siteId, projectId, scope, key);
+
+            // TODO this logic is copied from DatabaseSecretStore.getSecret.
+            Optional<String> value;
+            if (secret == null) {
+                value = Optional.absent();
+            }
+            else {
+                // TODO: look up crypto engine using name
+                if (!crypto.getName().equals(secret.engine)) {
+                    throw new AssertionError(String.format(ENGLISH,
+                                "Crypto engine mismatch. Expected '%s' but got '%s'",
+                                secret.engine, crypto.getName()));
+                }
+                String decrypted = crypto.decryptSecret(secret.value);
+                value = Optional.of(decrypted);
+            }
+
+            return action.call(this, value);
+        }
+    }
+
+    @Override
+    public <T> T lockProjectSecret(int projectId, String scope, String key, SecretLockAction<T> action)
+    {
+        return transaction((handle, dao) -> {
+            return new LockedControl(handle, dao).lockProjectSecret(projectId, scope, key, action);
+        });
     }
 
     interface Dao
@@ -72,6 +142,11 @@ class DatabaseSecretControlStore
         int deleteProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
 
         int upsertProjectSecret(int siteId, int projectId, String scope, String key, String engine, String value);
+
+        @SqlQuery("select engine, value from secrets" +
+                " where site_id = :siteId and project_id = :projectId and scope = :scope and key = :key" +
+                " for update")
+        EncryptedSecret lockProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
     }
 
     interface PgDao
