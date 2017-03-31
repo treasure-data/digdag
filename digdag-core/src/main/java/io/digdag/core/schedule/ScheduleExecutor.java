@@ -185,7 +185,7 @@ public class ScheduleExecutor
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
             SessionStore ss = sessionStoreManager.getSessionStore(def.getProject().getSiteId());
-            List<StoredSessionAttemptWithSession> activeAttempts = ss.getActiveAttemptsOfWorkflow(def.getId(), 1, Optional.absent());
+            List<StoredSessionAttemptWithSession> activeAttempts = ss.getActiveAttemptsOfWorkflow(def.getProject().getId(), def.getName(), 1, Optional.absent());
 
             Scheduler sr = srm.getScheduler(def);
 

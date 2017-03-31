@@ -91,8 +91,7 @@ public class AttemptResource
                 StoredProject proj = rs.getProjectByName(projName);
                 if (wfName != null) {
                     // of workflow
-                    StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(proj.getId(), wfName);
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, wf.getId(), 100, Optional.fromNullable(lastId));
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, 100, Optional.fromNullable(lastId));
                 }
                 else {
                     // of project

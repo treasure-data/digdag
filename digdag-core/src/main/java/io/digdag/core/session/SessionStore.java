@@ -22,9 +22,9 @@ public interface SessionStore
 
     List<StoredSessionAttemptWithSession> getAttemptsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId);
 
-    List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, long workflowDefinitionId, int pageSize, Optional<Long> lastId);
+    List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, int projectId, String workflowName, int pageSize, Optional<Long> lastId);
 
-    List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(long workflowDefinitionId, int pageSize, Optional<Long> lastId);
+    List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(int projectId, String workflowName, int pageSize, Optional<Long> lastId);
 
     List<StoredSessionAttempt> getAttemptsOfSession(long sessionId, int pageSize, Optional<Long> lastId);
 

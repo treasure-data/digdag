@@ -42,8 +42,10 @@ import static org.mockito.Mockito.spy;
 public class ScheduleExecutorTest
 {
     private static final int SCHEDULE_ID = 13;
+    private static final int PROJECT_ID = 9;
     private static final int SITE_ID = 7;
     private static final long WORKFLOW_DEFINITION_ID = 17;
+    private static final String WORKFLOW_NAME = "wfwf";
 
     private static final ConfigFactory CONFIG_FACTORY = new ConfigFactory(DigdagClient.objectMapper());
 
@@ -88,12 +90,14 @@ public class ScheduleExecutorTest
 
         now = Instant.now();
 
+        when(project.getId()).thenReturn(PROJECT_ID);
         when(project.getSiteId()).thenReturn(SITE_ID);
 
         workflowConfig = CONFIG_FACTORY.create();
 
         when(workflowDefinition.getTimeZone()).thenReturn(UTC);
         when(workflowDefinition.getId()).thenReturn(WORKFLOW_DEFINITION_ID);
+        when(workflowDefinition.getName()).thenReturn(WORKFLOW_NAME);
         when(workflowDefinition.getProject()).thenReturn(project);
         when(workflowDefinition.getConfig()).thenReturn(workflowConfig);
 
@@ -125,7 +129,7 @@ public class ScheduleExecutorTest
                 .set("daily>", "12:00:00");
 
         // Indicate that there is an active attempt for this workflow
-        when(sessionStore.getActiveAttemptsOfWorkflow(eq(WORKFLOW_DEFINITION_ID), anyInt(), any(Optional.class)))
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
                 .thenReturn(ImmutableList.of(attempt));
 
         // Run the schedule executor...
@@ -147,7 +151,7 @@ public class ScheduleExecutorTest
                 .set("daily>", "12:00:00");
 
         // Indicate that there is an active attempt for this workflow
-        when(sessionStore.getActiveAttemptsOfWorkflow(eq(WORKFLOW_DEFINITION_ID), anyInt(), any(Optional.class)))
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
                 .thenReturn(ImmutableList.of(attempt));
 
         // Run the schedule executor...
