@@ -3,7 +3,7 @@ package io.digdag.server;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import io.digdag.client.config.ConfigException;
@@ -18,7 +18,8 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
-import io.digdag.guice.rs.server.undertow.UndertowServerInfo;
+import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.guice.rs.server.PostStart;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -51,7 +52,10 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.net.InetSocketAddress;
+import static java.util.stream.Collectors.toList;
 
 public class ServerModule
         extends GuiceRsModule
@@ -182,15 +186,25 @@ public class ServerModule
     public static class AdminRestrictedFilter
             implements ContainerRequestFilter
     {
-        private final UndertowServerInfo serverInfo;
+        private final GuiceRsServerControl control;
+
+        private List<InetSocketAddress> allowedAddresses = ImmutableList.of();
 
         @Context
-        private HttpServletRequest httpServletRequest;
+        private HttpServletRequest request;
 
         @Inject
-        public AdminRestrictedFilter(UndertowServerInfo serverInfo)
+        public AdminRestrictedFilter(GuiceRsServerControl control)
         {
-            this.serverInfo = serverInfo;
+            this.control = control;
+        }
+
+        @PostStart
+        public void postStart()
+        {
+            if (control.getListenAddresses().containsKey(ServerConfig.ADMIN_ADDRESS)) {
+                this.allowedAddresses = control.getListenAddresses().get(ServerConfig.ADMIN_ADDRESS);
+            }
         }
 
         @Override
@@ -198,14 +212,15 @@ public class ServerModule
                 throws IOException
         {
             // Only allow requests on the admin interfaces
-            if (!serverInfo.getLocalAdminAddresses().stream().anyMatch(a ->
-                            a.getPort() == httpServletRequest.getLocalPort() &&
-                            a.getAddress().getHostAddress().equals(httpServletRequest.getLocalAddr()))) {
+            if (!allowedAddresses.stream().anyMatch(a ->
+                        a.getPort() == request.getLocalPort() &&
+                        a.getAddress().getHostAddress().equals(request.getLocalAddr()))
+                    ) {
                 throw new NotFoundException();
             }
 
             // Only allow admin users
-            Boolean admin = (Boolean) httpServletRequest.getAttribute("admin");
+            Boolean admin = (Boolean) request.getAttribute("admin");
             if (admin == null || !admin) {
                 throw new ForbiddenException();
             }
