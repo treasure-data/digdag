@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 import io.digdag.cli.StdOut;
@@ -22,6 +23,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -41,12 +43,14 @@ class Archiver
         this.cf = cf;
     }
 
-    void createArchive(Path projectPath, Path output)
+    List<String> createArchive(Path projectPath, Path output)
             throws IOException
     {
         out.println("Creating " + output + "...");
 
         ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), cf.create());
+
+        ImmutableList.Builder<String> workflowResources = ImmutableList.builder();
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(output)))) {
             // default mode for file names longer than 100 bytes is throwing an exception (LONGFILE_ERROR)
@@ -67,9 +71,15 @@ class Archiver
                         }
                     }
                     tar.closeArchiveEntry();
+
+                    if (WorkflowResourceMatcher.defaultMatcher().matches(resourceName, absPath)) {
+                        workflowResources.add(resourceName);
+                    }
                 }
             });
         }
+
+        return workflowResources.build();
     }
 
     private TarArchiveEntry buildTarArchiveEntry(Path projectPath, Path absPath, String name)
