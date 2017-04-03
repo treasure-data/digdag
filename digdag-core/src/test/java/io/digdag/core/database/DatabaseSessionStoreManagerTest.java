@@ -263,8 +263,8 @@ public class DatabaseSessionStoreManagerTest
             assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
             assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
-            assertThat(store.getActiveAttemptsOfWorkflow(wf1.getId(), 100, Optional.absent()), containsInAnyOrder(attempt1));
-            assertThat(store.getActiveAttemptsOfWorkflow(wf2.getId(), 100, Optional.absent()), is(Matchers.empty()));
+            assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1));
+            assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
 
             // session + different session time
             AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
@@ -280,8 +280,8 @@ public class DatabaseSessionStoreManagerTest
             assertThat(ImmutableList.of(session2, session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
             assertThat(ImmutableList.of(session2, session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
-            assertThat(store.getActiveAttemptsOfWorkflow(wf1.getId(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt2));
-            assertThat(store.getActiveAttemptsOfWorkflow(wf2.getId(), 100, Optional.absent()), is(Matchers.empty()));
+            assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt2));
+            assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
 
             // session + different retry attempt name
             String retryAttemptName = "attempt3";
@@ -302,8 +302,8 @@ public class DatabaseSessionStoreManagerTest
             assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
             assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
-            assertThat(store.getActiveAttemptsOfWorkflow(wf1.getId(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt3));
-            assertThat(store.getActiveAttemptsOfWorkflow(wf2.getId(), 100, Optional.absent()), is(Matchers.empty()));
+            assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt3));
+            assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
 
             SessionStore anotherSite = manager.getSessionStore(1);
 
@@ -373,23 +373,23 @@ public class DatabaseSessionStoreManagerTest
             // TODO test with another project
 
             assertThat(ImmutableList.of(attempt3, attempt1),
-                    is(store.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.absent())));
+                    is(store.getAttemptsOfWorkflow(false, proj.getId(), wf1.getName(), 100, Optional.absent())));
             assertThat(ImmutableList.of(attempt3),
-                    is(store.getAttemptsOfWorkflow(false, wf1.getId(), 1, Optional.absent())));
+                    is(store.getAttemptsOfWorkflow(false, proj.getId(), wf1.getName(), 1, Optional.absent())));
             assertThat(ImmutableList.of(attempt1),
-                    is(store.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.of(attempt3.getId()))));
-            assertEmpty(anotherSite.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
-            assertEmpty(store.getAttemptsOfWorkflow(false, wf2.getId(), 100, Optional.absent()));
+                    is(store.getAttemptsOfWorkflow(false, proj.getId(), wf1.getName(), 100, Optional.of(attempt3.getId()))));
+            assertEmpty(anotherSite.getAttemptsOfWorkflow(false, proj.getId(), wf1.getName(), 100, Optional.absent()));
+            assertEmpty(store.getAttemptsOfWorkflow(false, proj.getId(), wf2.getName(), 100, Optional.absent()));
             // TODO test with another workflow
 
             assertThat(ImmutableList.of(attempt3, attempt2, attempt1),
-                    is(store.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.absent())));
+                    is(store.getAttemptsOfWorkflow(true, proj.getId(), wf1.getName(), 100, Optional.absent())));
             assertThat(ImmutableList.of(attempt3, attempt2),
-                    is(store.getAttemptsOfWorkflow(true, wf1.getId(), 2, Optional.absent())));
+                    is(store.getAttemptsOfWorkflow(true, proj.getId(), wf1.getName(), 2, Optional.absent())));
             assertThat(ImmutableList.of(attempt2, attempt1),
-                    is(store.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.of(attempt3.getId()))));
-            assertEmpty(anotherSite.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
-            assertEmpty(store.getAttemptsOfWorkflow(true, wf2.getId(), 100, Optional.absent()));
+                    is(store.getAttemptsOfWorkflow(true, proj.getId(), wf1.getName(), 100, Optional.of(attempt3.getId()))));
+            assertEmpty(anotherSite.getAttemptsOfWorkflow(true, proj.getId(), wf1.getName(), 100, Optional.absent()));
+            assertEmpty(store.getAttemptsOfWorkflow(true, proj.getId(), wf2.getName(), 100, Optional.absent()));
             // TODO test with another workflow
 
             StoredSessionAttempt rawAttempt1 = StoredSessionAttempt.copyOf(attempt1);
