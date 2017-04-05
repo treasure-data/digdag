@@ -34,25 +34,22 @@ public class ServerRuntimeInfoWriter
     public void postStart()
     {
         if (serverInfoPath.isPresent()) {
-            List<InetSocketAddress> apiAddresses = serverControl.getListenAddresses().get(ServerConfig.API_ADDRESS);
-            List<InetSocketAddress> adminAddresses = serverControl.getListenAddresses().get(ServerConfig.ADMIN_ADDRESS);
-
-            if (apiAddresses == null) {
-                apiAddresses = ImmutableList.of();
-            }
-            if (adminAddresses == null) {
-                adminAddresses = ImmutableList.of();
-            }
+            List<ServerRuntimeInfo.Address> apiAddresses = serverControl.getRuntimeInfo().getListenAddresses()
+                .stream()
+                .filter(a -> a.getName().equals(ServerConfig.API_ADDRESS))
+                .map(a -> a.getSocketAddress())
+                .map(sa -> ServerRuntimeInfo.Address.of(sa.getHostString(), sa.getPort()))
+                .collect(Collectors.toList());
+            List<ServerRuntimeInfo.Address> adminAddresses = serverControl.getRuntimeInfo().getListenAddresses()
+                .stream()
+                .filter(a -> a.getName().equals(ServerConfig.ADMIN_ADDRESS))
+                .map(a -> a.getSocketAddress())
+                .map(sa -> ServerRuntimeInfo.Address.of(sa.getHostString(), sa.getPort()))
+                .collect(Collectors.toList());
 
             ServerRuntimeInfo serverRuntimeInfo = ServerRuntimeInfo.builder()
-                .localAddresses(
-                        apiAddresses.stream()
-                        .map(a -> ServerRuntimeInfo.Address.of(a.getHostString(), a.getPort()))
-                        .collect(Collectors.toList()))
-                .localAdminAddresses(
-                        adminAddresses.stream()
-                        .map(a -> ServerRuntimeInfo.Address.of(a.getHostString(), a.getPort()))
-                        .collect(Collectors.toList()))
+                .localAddresses(apiAddresses)
+                .localAdminAddresses(adminAddresses)
                 .build();
 
             ObjectMapper mapper = new ObjectMapper();

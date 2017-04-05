@@ -19,7 +19,6 @@ import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.guice.rs.GuiceRsServerControl;
-import io.digdag.guice.rs.server.PostStart;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -56,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.net.InetSocketAddress;
 import static java.util.stream.Collectors.toList;
+import static io.digdag.guice.rs.GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_ATTRIBUTE;
 
 public class ServerModule
         extends GuiceRsModule
@@ -186,36 +186,20 @@ public class ServerModule
     public static class AdminRestrictedFilter
             implements ContainerRequestFilter
     {
-        private final GuiceRsServerControl control;
-
-        private List<InetSocketAddress> allowedAddresses = ImmutableList.of();
-
         @Context
         private HttpServletRequest request;
 
         @Inject
-        public AdminRestrictedFilter(GuiceRsServerControl control)
-        {
-            this.control = control;
-        }
-
-        @PostStart
-        public void postStart()
-        {
-            if (control.getListenAddresses().containsKey(ServerConfig.ADMIN_ADDRESS)) {
-                this.allowedAddresses = control.getListenAddresses().get(ServerConfig.ADMIN_ADDRESS);
-            }
-        }
+        public AdminRestrictedFilter()
+        { }
 
         @Override
         public void filter(ContainerRequestContext requestContext)
                 throws IOException
         {
             // Only allow requests on the admin interfaces
-            if (!allowedAddresses.stream().anyMatch(a ->
-                        a.getPort() == request.getLocalPort() &&
-                        a.getAddress().getHostAddress().equals(request.getLocalAddr()))
-                    ) {
+            Object listenAddressName = requestContext.getProperty(LISTEN_ADDRESS_NAME_ATTRIBUTE);
+            if (listenAddressName == null || !listenAddressName.equals(ServerConfig.ADMIN_ADDRESS)) {
                 throw new NotFoundException();
             }
 
