@@ -16,19 +16,20 @@ import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.XnioWorker;
+import io.undertow.server.HttpServerExchange;
 
 public class UndertowServerControl
         implements GuiceRsServerControl
 {
     private static final Logger logger = LoggerFactory.getLogger(UndertowServer.class);
 
+    private UndertowServerRuntimeInfo runtimeInfo = new UndertowServerRuntimeInfo();
     private DeploymentManager deployment = null;
     private Injector injector = null;
     private List<GracefulShutdownHandler> handlers = Collections.synchronizedList(new ArrayList<>());
     private XnioWorker worker = null;
     private Undertow server = null;
     private boolean started = false;
-    private Map<String, List<InetSocketAddress>> listenAddresses = null;
     private ServerLifeCycleManager lifeCycleManager = null;
 
     UndertowServerControl()
@@ -59,10 +60,9 @@ public class UndertowServerControl
         this.server = server;
     }
 
-    void serverStarted(Map<String, List<InetSocketAddress>> listenAddresses)
+    void serverStarted()
     {
         this.started = true;
-        this.listenAddresses = listenAddresses;
     }
 
     boolean isServerStarted()
@@ -84,9 +84,9 @@ public class UndertowServerControl
     }
 
     @Override
-    public Map<String, List<InetSocketAddress>> getListenAddresses()
+    public UndertowServerRuntimeInfo getRuntimeInfo()
     {
-        return this.listenAddresses;
+        return runtimeInfo;
     }
 
     @Override

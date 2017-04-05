@@ -10,5 +10,5 @@ public interface GuiceRsServerControl
 
     public void destroy();
 
-    Map<String, List<InetSocketAddress>> getListenAddresses();
+    public GuiceRsServerRuntimeInfo getRuntimeInfo();
 }

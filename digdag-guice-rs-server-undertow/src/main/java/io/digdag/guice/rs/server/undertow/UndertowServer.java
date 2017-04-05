@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.guice.rs.GuiceRsBootstrap;
+import io.digdag.guice.rs.GuiceRsServerRuntimeInfo;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.digdag.guice.rs.server.ServerBootstrap;
 import io.digdag.guice.rs.server.undertow.UndertowServerConfig.ListenAddress;
@@ -21,11 +22,14 @@ import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
+import io.undertow.servlet.spec.HttpServletRequestImpl;
+import io.undertow.util.AttachmentKey;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.SocketAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,7 +40,13 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
@@ -86,6 +96,55 @@ public class UndertowServer
         }
     }
 
+    private static AttachmentKey<String> LISTEN_ADDRESS_NAME_ATTACHMENT = AttachmentKey.create(String.class);
+
+    static class SetListenAddressNameHandler
+            implements HttpHandler
+    {
+        private final HttpHandler next;
+        private final String name;
+
+        public SetListenAddressNameHandler(HttpHandler next, String name)
+        {
+            this.next = next;
+            this.name = name;
+        }
+
+        @Override
+        public void handleRequest(HttpServerExchange exchange)
+                throws Exception
+        {
+            exchange.putAttachment(LISTEN_ADDRESS_NAME_ATTACHMENT, name);
+            next.handleRequest(exchange);
+        }
+    }
+
+    static class SetListenAddressNameServletFilter
+            implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig)
+        { }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                throws IOException, ServletException
+        {
+            if (request instanceof HttpServletRequestImpl) {
+                HttpServerExchange exchange = ((HttpServletRequestImpl) request).getExchange();
+                String name = exchange.getAttachment(LISTEN_ADDRESS_NAME_ATTACHMENT);
+                if (name != null) {
+                    request.setAttribute(GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_ATTRIBUTE, name);
+                }
+                chain.doFilter(request, response);
+            }
+        }
+
+        @Override
+        public void destroy()
+        { }
+    }
+
     private static final InheritableThreadLocal<InitializeContext> initializeContext
         = new InheritableThreadLocal<>();
 
@@ -105,6 +164,8 @@ public class UndertowServer
             .setClassLoader(bootstrap.getClass().getClassLoader())
             .setContextPath("/rs")
             .setDeploymentName("rs.war")
+            .addFilter(new FilterInfo("AddListenAddressName", SetListenAddressNameServletFilter.class))
+            .addFilterUrlMapping("AddListenAddressName", "/*", DispatcherType.REQUEST)
             .addServletContainerInitalizer(
                     new ServletContainerInitializerInfo(
                         GuiceRsServletContainerInitializer.class,
@@ -193,7 +254,6 @@ public class UndertowServer
         server.start();  // HTTP server starts here
 
         // collect local addresses
-        Map<String, List<InetSocketAddress>> listenAddresses = new HashMap<>();
         for (Undertow.ListenerInfo listenerInfo : server.getListenerInfo()) {
             OpenListener listener = httpListenerOf(listenerInfo);
             SocketAddress listenerAddress = listenerInfo.getAddress();
@@ -202,19 +262,15 @@ public class UndertowServer
             if (listenAddressConfig != null && listenerAddress instanceof InetSocketAddress) {
                 InetSocketAddress inet = (InetSocketAddress) listenerAddress;
                 logger.info("Bound on {}:{} ({})", inet.getHostString(), inet.getPort(), listenAddressConfig.getName());
-                List<InetSocketAddress> list = listenAddresses.get(listenAddressConfig.getName());
-                if (list == null) {
-                    list = new ArrayList<>();
-                    listenAddresses.put(listenAddressConfig.getName(), list);
-                }
-                list.add((InetSocketAddress) inet);
+                control.getRuntimeInfo().addListenAddress(listenAddressConfig.getName(), inet);
+                listener.setRootHandler(new SetListenAddressNameHandler(handler, listenAddressConfig.getName()));
             }
             else {
                 logger.warn("Unknown listener {} bound on {}", listenerInfo, listenerAddress);
             }
         }
 
-        control.serverStarted(listenAddresses);
+        control.serverStarted();
 
         control.postStart();
 
