@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.digdag.cli.Arguments.loadParams;
@@ -101,7 +102,19 @@ public class Push
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        injector.getInstance(Archiver.class).createArchive(projectPath, archivePath);
+        List<String> workflows = injector.getInstance(Archiver.class).createArchive(projectPath, archivePath);
+        out.println("Workflows:");
+        if (workflows.isEmpty()) {
+            out.println("  WARNING: This project doesn't include workflows. Usually, this is a mistake.");
+            out.println("           Please make sure that all *.dig files are on the top directory.");
+            out.println("           *.dig files in subdirectories are not recognized as workflows.");
+            out.println("");
+        }
+        else {
+            for (String workflow : workflows) {
+                out.println("  " + workflow);
+            }
+        }
 
         DigdagClient client = buildClient();
         if ("".equals(revision)) {
