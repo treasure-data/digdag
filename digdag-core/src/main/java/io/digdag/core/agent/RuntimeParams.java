@@ -71,6 +71,9 @@ public class RuntimeParams
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
 
+        // task_*
+        params.set("task_name", request.getTaskName());
+
         return params;
     }
 
