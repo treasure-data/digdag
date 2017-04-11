@@ -483,15 +483,11 @@ public class WorkflowExecutor
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
-            tm.begin(() -> {
-                Instant date = sm.getStoreTime();
-                propagateBlockedChildrenToReady();
-                retryRetryWaitingTasks();
-                enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
-                propagateAllPlannedToDone();
-                propagateSessionArchive();
-                return null;
-            });
+            propagateBlockedChildrenToReady();
+            retryRetryWaitingTasks();
+            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+            propagateAllPlannedToDone();
+            propagateSessionArchive();
 
             //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             final AtomicInteger waitMsec = new AtomicInteger(INITIAL_INTERVAL);
@@ -500,31 +496,21 @@ public class WorkflowExecutor
                     break;
                 }
 
-                tm.begin(() -> {
-                    //boolean inced = prop.run();
-                    //boolean retried = retryRetryWaitingTasks();
-                    //if (inced || retried) {
-                    //    enqueueReadyTasks(queuer);
-                    //    propagatorNotice = true;
-                    //}
+                //boolean inced = prop.run();
+                //boolean retried = retryRetryWaitingTasks();
+                //if (inced || retried) {
+                //    enqueueReadyTasks(queuer);
+                //    propagatorNotice = true;
+                //}
 
-                    propagateBlockedChildrenToReady();
-                    retryRetryWaitingTasks();
-                    enqueueReadyTasks(queuer);
-                    return null;
-                });
+                propagateBlockedChildrenToReady();
+                retryRetryWaitingTasks();
+                enqueueReadyTasks(queuer);
 
-                boolean shouldWait = tm.begin(() -> {
-                    if (propagateAllPlannedToDone()) {
-                        propagateSessionArchive();
-                        return false;
-                    }
-                    else {
-                        return true;
-                    }
-                });
-
-                if (shouldWait) {
+                if (propagateAllPlannedToDone()) {
+                    propagateSessionArchive();
+                }
+                else {
                     propagatorLock.lock();
                     try {
                         if (propagatorNotice) {
@@ -555,19 +541,18 @@ public class WorkflowExecutor
         boolean anyChanged = false;
         long lastParentId = 0;
         while (true) {
-            List<Long> parentIds = sm.findDirectParentsOfBlockedTasks(lastParentId);
+            long finalLastParentId = lastParentId;
+            List<Long> parentIds = tm.begin(() -> sm.findDirectParentsOfBlockedTasks(finalLastParentId));
+
             if (parentIds.isEmpty()) {
                 break;
             }
-            anyChanged =
-                parentIds
-                .stream()
-                .map(parentId -> {
-                    return sm.lockTaskIfExists(parentId, (store) ->
-                        store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0
-                    ).or(false);
-                })
-                .reduce(anyChanged, (a, b) -> a || b);
+            anyChanged = parentIds
+                    .stream()
+                    .map(parentId -> tm.begin(() ->
+                            sm.lockTaskIfExists(parentId, (store) ->
+                                    store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0)).or(false))
+                    .reduce(anyChanged, (a, b) -> a || b);
             lastParentId = parentIds.get(parentIds.size() - 1);
         }
         return anyChanged;
@@ -578,19 +563,17 @@ public class WorkflowExecutor
         boolean anyChanged = false;
         long lastTaskId = 0;
         while (true) {
-            List<Long> taskIds = sm.findTasksByState(TaskStateCode.PLANNED, lastTaskId);
+            long finalLastTaskId = lastTaskId;
+            List<Long> taskIds = tm.begin(() -> sm.findTasksByState(TaskStateCode.PLANNED, finalLastTaskId));
             if (taskIds.isEmpty()) {
                 break;
             }
-            anyChanged =
-                taskIds
-                .stream()
-                .map(taskId -> {
-                    return sm.lockTaskIfExists(taskId, (store, storedTask) ->
-                        setDoneFromDoneChildren(new TaskControl(store, storedTask))
-                    ).or(false);
-                })
-                .reduce(anyChanged, (a, b) -> a || b);
+            anyChanged = taskIds
+                    .stream()
+                    .map(taskId -> tm.begin(() ->
+                            sm.lockTaskIfExists(taskId, (store, storedTask) ->
+                                    setDoneFromDoneChildren(new TaskControl(store, storedTask)))).or(false))
+                    .reduce(anyChanged, (a, b) -> a || b);
             lastTaskId = taskIds.get(taskIds.size() - 1);
         }
         return anyChanged;
@@ -733,28 +716,28 @@ public class WorkflowExecutor
         boolean anyChanged = false;
         long lastTaskId = 0;
         while (true) {
-            List<TaskAttemptSummary> tasks = sm.findRootTasksByStates(TaskStateCode.doneStates(), lastTaskId);
+            long finalLastTaskId = lastTaskId;
+            List<TaskAttemptSummary> tasks =
+                    tm.begin(() -> sm.findRootTasksByStates(TaskStateCode.doneStates(), finalLastTaskId));
             if (tasks.isEmpty()) {
                 break;
             }
-            anyChanged =
-                tasks
-                .stream()
-                .map(task -> {
-                    return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
-                        if (summary.getStateFlags().isDone()) {
-                            // already archived. This means that another thread archived
-                            // this attempt after findRootTasksByStates call.
-                            return false;
-                        }
-                        else {
-                            SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
-                            control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
-                            return true;
-                        }
-                    }).or(false);
-                })
-                .reduce(anyChanged, (a, b) -> a || b);
+            anyChanged = tasks
+                    .stream()
+                    .map(task ->tm.begin(() ->
+                            sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
+                                if (summary.getStateFlags().isDone()) {
+                                    // already archived. This means that another thread archived
+                                    // this attempt after findRootTasksByStates call.
+                                    return false;
+                                }
+                                else {
+                                    SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
+                                    control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
+                                    return true;
+                                }
+                            }).or(false)))
+                    .reduce(anyChanged, (a, b) -> a || b);
             lastTaskId = tasks.get(tasks.size() - 1).getId();
         }
         return anyChanged;
@@ -849,7 +832,7 @@ public class WorkflowExecutor
 
     private boolean retryRetryWaitingTasks()
     {
-        return sm.trySetRetryWaitingToReady() > 0;
+        return tm.begin(() -> sm.trySetRetryWaitingToReady() > 0);
     }
 
     private class TaskQueuer
@@ -900,8 +883,12 @@ public class WorkflowExecutor
 
     private void enqueueReadyTasks(TaskQueuer queuer)
     {
-        for (long taskId : sm.findAllReadyTaskIds(100)) {  // TODO randomize this resut to achieve concurrency
-            enqueueTask(dispatcher, taskId);
+        List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(100));
+        for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
+            tm.begin(() -> {
+                enqueueTask(dispatcher, taskId);
+                return null;
+            });
             //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
         }
     }
