@@ -63,7 +63,8 @@ Name                            Description                                 Exam
 **session_local_time**          Local time format of session_time           2016-01-30 00:00:00
 **session_tz_offset**           Time zone offset part of session_time       -0800
 **session_unixtime**            Seconds since the epoch time                1454140800
-**task_name**                   Name of this task                           +my_workflow+parent_task+child_task0
+**workflow_name**               Name of this workflow                       my_workflow
+**task_name**                   Parts of this task name separated with nest [parent_task,child_task3]
 =============================== =========================================== ==========================
 
 If `schedule: option is set <scheduling_workflow.html>`_, **last_session_time** and **next_session_time** are also available as following:
