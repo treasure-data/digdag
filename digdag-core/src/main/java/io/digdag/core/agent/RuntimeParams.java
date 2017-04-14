@@ -4,10 +4,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -75,16 +71,8 @@ public class RuntimeParams
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
 
-        LinkedList<String> taskNames = new LinkedList<>(Arrays.asList(request.getTaskName().split("\\+")));
-        // Remove the head empty item
-        taskNames.remove(0);
-        String workflowName = taskNames.remove(0);
-
-        // workflow_*
-        params.set("workflow_name", workflowName);
-
         // task_*
-        params.set("task_name", taskNames);
+        params.set("task_name", request.getTaskName());
 
         return params;
     }

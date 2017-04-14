@@ -73,9 +73,7 @@ public class BuiltInVariablesIT
                 .put("next_session_local_time", is("2016-01-03 00:00:00"))
                 .put("next_session_tz_offset", is("+0000"))
                 .put("next_session_unixtime", is("1451779200"))
-                .put("workflow_name", is("built_in_variables"))
-                .put("task_name_full", is("[get_variables,task_name_full]"))
-                .put("task_name_edge", is("task_name_edge"))
+                .put("task_name", is("+built_in_variables+get_variables+task_name"))
                 .build();
 
         assertThat(values.entrySet().size(), is(expectedOutput.size()));
