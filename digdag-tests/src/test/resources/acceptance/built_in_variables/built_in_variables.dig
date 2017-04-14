@@ -50,3 +50,5 @@ schedule:
     sh>: "echo next_session_tz_offset: \\'${next_session_tz_offset}\\' >> output.yml"
   +next_session_unixtime:
     sh>: "echo next_session_unixtime: \\'${next_session_unixtime}\\' >> output.yml"
+  +task_name:
+    sh>: "echo task_name: \\'${task_name}\\' >> output.yml"
