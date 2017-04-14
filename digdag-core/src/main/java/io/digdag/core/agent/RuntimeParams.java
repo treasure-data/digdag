@@ -75,16 +75,16 @@ public class RuntimeParams
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
 
-        LinkedList<String> taskName = new LinkedList<>(Arrays.asList(request.getTaskName().split("\\+")));
+        LinkedList<String> taskNames = new LinkedList<>(Arrays.asList(request.getTaskName().split("\\+")));
         // Remove the head empty item
-        taskName.remove(0);
-        String workflowName = taskName.remove(0);
+        taskNames.remove(0);
+        String workflowName = taskNames.remove(0);
 
         // workflow_*
         params.set("workflow_name", workflowName);
 
         // task_*
-        params.set("task_name", taskName);
+        params.set("task_name", taskNames);
 
         return params;
     }
