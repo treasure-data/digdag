@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -37,6 +39,7 @@ public class ThreadLocalTransactionManager
         private final boolean autoAutoCommit;
         private Handle handle;
         private State state = State.ACTIVE;
+        private final StackTraceElement[] stackTrace;
 
         LazyTransaction(DataSource ds)
         {
@@ -50,6 +53,7 @@ public class ThreadLocalTransactionManager
         {
             this.ds = checkNotNull(ds);
             this.autoAutoCommit = autoAutoCommit;
+            this.stackTrace = Thread.currentThread().getStackTrace();
         }
 
         @Override
@@ -170,6 +174,19 @@ public class ThreadLocalTransactionManager
                 handle.close();
             }
         }
+
+        @Override
+        public String toString()
+        {
+            return "LazyTransaction{" +
+                    "autoAutoCommit=" + autoAutoCommit +
+                    ", handle=" + handle +
+                    ", state=" + state +
+                    ", stackTrace=[\n" + Arrays.stream(stackTrace)
+                            .map(st -> "  " + st.toString())
+                            .collect(Collectors.joining("\n")) +
+                    "\n]}";
+        }
     }
 
     @Inject
@@ -223,7 +240,7 @@ public class ThreadLocalTransactionManager
             throws E1, E2, E3
     {
         if (threadLocalTransaction.get() != null) {
-            throw new IllegalStateException("Nested transaction is not allowed");
+            throw new IllegalStateException("Nested transaction is not allowed: " + threadLocalTransaction.get());
         }
 
         boolean committed = false;
@@ -276,7 +293,7 @@ public class ThreadLocalTransactionManager
             throws E1
     {
         if (threadLocalTransaction.get() != null) {
-            throw new IllegalStateException("Nested transaction is not allowed");
+            throw new IllegalStateException("Nested transaction is not allowed: " + threadLocalTransaction.get());
         }
 
         try {
