@@ -107,9 +107,10 @@ public class OperatorManager
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
+        String origThreadName = String.format("[%d:%s]%s", request.getSiteId(), request.getProjectName().or("----"), request.getTaskName());
 
         // set task name to thread name so that logger shows it
-        try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
+        try (SetThreadName threadName = new SetThreadName(origThreadName)) {
             try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
                 TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
                 try {
