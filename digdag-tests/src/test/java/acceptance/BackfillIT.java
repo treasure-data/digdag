@@ -132,6 +132,22 @@ public class BackfillIT
 
         Files.createDirectories(outdir);
 
+        // Backfill the workflow with dry-run
+        {
+            CommandStatus cmd = main("backfill",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "backfill-test", "backfill_sequential",
+                    "--from", "2016-01-01",
+                    "--count", "3",
+                    "--dry-run");
+            assertThat(cmd.errUtf8(), cmd.code(), is(0));
+        }
+
+        // Verify that there're 0 sessions because it's dry-run
+        List<RestSession> sessionsDryRun = client.getSessions().getSessions();
+        assertThat(sessionsDryRun.size(), is(0));
+
         // Backfill the workflow
         {
             CommandStatus cmd = main("backfill",
