@@ -401,6 +401,7 @@ public class ScheduleExecutor
                                         .workflowDefinitionId(Optional.of(def.getId()))
                                         .timeZone(def.getTimeZone())
                                         .id(0L)
+                                        .index(0)
                                         .params(def.getConfig().getFactory().create())
                                         .stateFlags(AttemptStateFlags.empty())
                                         .sessionId(0L)
