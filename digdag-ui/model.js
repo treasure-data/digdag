@@ -388,6 +388,10 @@ export class Model {
     return this.get(`projects/${projectId}/schedules?workflow=${workflowName}`)
   }
 
+  fetchVersion () {
+    return this.get('version')
+  }
+
   enableSchedule (scheduleId: string) : Promise<*> {
     return this.post(`schedules/${scheduleId}/enable`)
   }
