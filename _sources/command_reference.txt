@@ -27,7 +27,7 @@ Options:
 
   Available types are `echo`, `sh`, `ruby`, `python`, `td` or `postgresql`.
 
-  Example: -t sh
+  Example: ``-t sh``
 
 
 run
@@ -54,34 +54,34 @@ Options:
 :command:`---project DIR`
   Use this directory as the project directory (default: current directory).
 
-  Example: --project workflow/
+  Example: ``--project workflow/``
 
 :command:`-o, --save DIR`
   Use this directory to read and write session status (default: .digdag/status).
 
   Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.
 
-  Example: -o .digdag/status
+  Example: ``-o .digdag/status``
 
 :command:`-a, --rerun`
   Rerun all tasks even if the tasks successfully finished before. In other words, ignore files at ``-o, --save`` directory.
 
-  Example: --rerun
+  Example: ``--rerun``
 
 :command:`-s, --start +NAME`
   If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at ``-o, --save`` directory.
 
-  Example: --start +step2
+  Example: ``--start +step2``
 
 :command:`-g, --goal +NAME`
   If this option is set, Digdag runs this task and its children tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at ``-o, --save`` directory.
 
-  Example: --goal +step2
+  Example: ``--goal +step2``
 
 :command:`-e, --end +NAME`
   Stops workflow right before this task. This task and following tasks will be skipped.
 
-  Example: --end +step4
+  Example: ``--end +step4``
 
 :command:`--session EXPR`
   Set session_time to this time. Argument is either of:
@@ -94,32 +94,32 @@ Options:
 
   Default is "last".
 
-  Example: --session 2016-01-01
+  Example: ``--session 2016-01-01``
 
 :command:`--no-save`
   Disables session state files completely.
 
-  Example: --no-save
+  Example: ``--no-save``
 
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
-  Example: -p environment=staging
+  Example: ``-p environment=staging``
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: -P params.dig
+  Example: ``-P params.dig``
 
 :command:`-d, --dry-run`
   Dry-run mode. This mode doesn't run tasks.
 
-  Example: -d
+  Example: ``-d``
 
 :command:`-E, --show-params`
   Show calculated parameters given to a task before running the task. Useful to use with dry-run mode.
 
-  Example: -dE
+  Example: ``-dE``
 
 
 check
@@ -140,17 +140,17 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
 :command:`---project DIR`
   Use this directory as the project directory (default: current directory).
 
-  Example: --project workflow/
+  Example: ``--project workflow/``
 
 :command:`-p, --param KEY=VALUE`
   Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
-  Example: -p environment=staging
+  Example: ``-p environment=staging``
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: -P params.dig
+  Example: ``-P params.dig``
 
 
 scheduler
@@ -171,47 +171,47 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
 :command:`---project DIR`
   Use this directory as the project directory (default: current directory).
 
-  Example: --project workflow/
+  Example: ``--project workflow/``
 
 :command:`-n, --port PORT`
   Port number to listen for web interface and api clients (default: 65432).
 
-  Example: -p 8080
+  Example: ``-p 8080``
 
 :command:`-b, --bind ADDRESS`
   IP address to listen HTTP clients (default: 127.0.0.1).
 
-  Example: -b 0.0.0.0
+  Example: ``-b 0.0.0.0``
 
 :command:`-o, --database DIR`
   Store status to this database. Default is memory that doesn't save status.
 
-  Example: --database digdag
+  Example: ``--database digdag``
 
 :command:`-O, --task-log DIR`
   Store task logs to this directory. If this option is not set, ``digdag log`` command doesn't work.
 
-  Example: --task-log digdag.log
+  Example: ``--task-log digdag.log``
 
 :command:`--max-task-threads N`
   Limit maxium number of task execution threads on this server.
 
-  Example: --max-task-threads 5
+  Example: ``--max-task-threads 5``
 
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
-  Example: -p environment=staging
+  Example: ``-p environment=staging``
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: -P params.dig
+  Example: ``-P params.dig``
 
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
 
-  Example: -c digdag-server/server.properties
+  Example: ``-c digdag-server/server.properties``
 
 selfupdate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -248,56 +248,56 @@ Runs a digdag server. --memory or --database option is required. Examples:
 :command:`-n, --port PORT`
   Port number to listen for web interface and api clients (default: 65432).
 
-  Example: -n 8080
+  Example: ``-n 8080``
 
 :command:`-b, --bind ADDRESS`
   IP address to listen HTTP clients (default: 127.0.0.1).
 
-  Example: -b 0.0.0.0
+  Example: ``-b 0.0.0.0``
 
 :command:`-o, --database DIR`
   Store status to this database.
 
-  Example: --database digdag
+  Example: ``--database digdag``
 
 :command:`-m, --memory`
   Store status in memory. Data will be removed when the server exists.
 
-  Example: --memory
+  Example: ``--memory``
 
 :command:`-O, --task-log DIR`
   Store task logs to this directory. If this option is not set, ``digdag log`` command doesn't work.
 
-  Example: --task-log digdag/sessions
+  Example: ``--task-log digdag/sessions``
 
 :command:`-A, --access-log DIR`
   Store access logs to this directory.
 
-  Example: --access-log digdag/log
+  Example: ``--access-log digdag/log``
 
 :command:`--disable-local-agent`
   Disable task execution on this server.
 
   This option is useful when there're multiple servers sharing the same underlay database and some of the servers are prepared only for REST API. See also ``--disable-executor-loop`` option.
 
-  Example: --disable-local-agent
+  Example: ``--disable-local-agent``
 
 :command:`--max-task-threads N`
   Limit maxium number of task execution threads on this server.
 
-  Example: --max-task-threads 5
+  Example: ``--max-task-threads 5``
 
 :command:`--disable-executor-loop`
   Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.
 
   This option is useful when there're multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also ``--disable-local-agent`` option.
 
-  Example: --max-task-threads 5
+  Example: ``--max-task-threads 5``
 
 :command:`-c, --config PATH`
   Server configuration property path. See the followings for details.
 
-  Example: -c digdag.properties
+  Example: ``-c digdag.properties``
 
 
 In the config file, following parameters are available
@@ -365,7 +365,7 @@ Client-mode common options:
 :command:`-e, --endpoint HOST`
   HTTP endpoint of the server (default: http://127.0.0.1:65432)
 
-  Example: digdag-server.example.com:65432
+  Example: ``--endpoint digdag-server.example.com:65432``
 
 :command:`-H, --header KEY=VALUE`
   Add a custom HTTP header. Use multiple times to set multiple headers.
@@ -373,7 +373,7 @@ Client-mode common options:
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
 
-  Example: -c digdag-server/client.properties
+  Example: ``-c digdag-server/client.properties``
 
 You can include following parameters in ~/.config/digdag/config file:
 
@@ -417,12 +417,12 @@ Starts a new session. This command requires project name, workflow name, and ses
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
-  Example: -p environment=staging
+  Example: ``-p environment=staging``
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: -P params.dig
+  Example: ``-P params.dig``
 
 
 retry
@@ -488,7 +488,7 @@ Shows logs of a session attempt. This command works only if server (or scheduler
 :command:`-f, --follow`
   Show new logs until attempt or task finishes. This is similar to UNIX ``tail -f`` command. Because server buffers logs, there're some delay until logs are actually show.
 
-  Example: --follow
+  Example: ``--follow``
 
 
 kill
@@ -544,17 +544,17 @@ Starts sessions of a schedule for past session times.
 :command:`-f, --from 'yyyy-MM-dd[ HH:mm:ss]'`
   Timestamp to start backfill from (required). Sessions from this time (including this time) until current time will be started.
 
-  Example: --from '2016-01-01'
+  Example: ``--from '2016-01-01'``
 
 :command:`--count N`
   Starts given number of sessions. By default, this command starts all sessions until current time.
 
-  Example: --count 5
+  Example: ``--count 5``
 
 :command:`--name NAME`
   Unique name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.
 
-  Example: --name backfill1
+  Example: ``--name backfill1``
 
 :command:`-d, --dry-run`
   Tries to backfill and validates the results but does nothing.
@@ -651,17 +651,17 @@ Creates a project archive and upload it to the server. This command uploads work
 :command:`--project DIR`
   Use this directory as the project directory (default: current directory).
 
-  Example: --project workflow/
+  Example: ``--project workflow/``
 
 :command:`-r, --revision REVISION`
   Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git's SHA1 hash (``git show --pretty=format:'%T' | head -n 1``) or timestamp (``date +%Y-%m-%dT%H:%M:%S%z``).
 
-  Example: -r f40172ebc58f58087b6132085982147efa9e81fb
+  Example: ``-r f40172ebc58f58087b6132085982147efa9e81fb``
 
 :command:`--schedule-from "yyyy-MM-dd HH:mm:ss Z"`
   Start schedules from this time. If this is not set, system time of the server is used. Parameter must include time zone offset. You can run ``date \"+%Y-%m-%d %H:%M:%S %z\"`` command to get current local time.
 
-  Example: --schedule-from "2017-07-29 00:00:00 +0200"
+  Example: ``--schedule-from "2017-07-29 00:00:00 +0200"``
 
 
 download
@@ -682,12 +682,12 @@ Downloads a project archive and extract to a local directory.
 :command:`-o, --output DIR`
   Extract contents to this directory (default: same with project name).
 
-  Example: -o output
+  Example: ``-o output``
 
 :command:`-r, --revision REVISION`
   Download project archive of this revision (default: latest revision).
 
-  Example: -r f40172ebc58f58087b6132085982147efa9e81fb
+  Example: ``-r f40172ebc58f58087b6132085982147efa9e81fb``
 
 
 delete

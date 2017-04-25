@@ -234,7 +234,7 @@
 <dt><strong class="command">-t, --type EXAMPLE_TYPE</strong></dt>
 <dd><p class="first">Use specified example project type (default: echo).</p>
 <p>Available types are <cite>echo</cite>, <cite>sh</cite>, <cite>ruby</cite>, <cite>python</cite>, <cite>td</cite> or <cite>postgresql</cite>.</p>
-<p class="last">Example: -t sh</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-t</span> <span class="pre">sh</span></code></p>
 </dd>
 </dl>
 </div>
@@ -257,28 +257,28 @@
 <dl class="docutils">
 <dt><strong class="command">---project DIR</strong></dt>
 <dd><p class="first">Use this directory as the project directory (default: current directory).</p>
-<p class="last">Example: &#8211;project workflow/</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--project</span> <span class="pre">workflow/</span></code></p>
 </dd>
 <dt><strong class="command">-o, --save DIR</strong></dt>
 <dd><p class="first">Use this directory to read and write session status (default: .digdag/status).</p>
 <p>Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.</p>
-<p class="last">Example: -o .digdag/status</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-o</span> <span class="pre">.digdag/status</span></code></p>
 </dd>
 <dt><strong class="command">-a, --rerun</strong></dt>
 <dd><p class="first">Rerun all tasks even if the tasks successfully finished before. In other words, ignore files at <code class="docutils literal"><span class="pre">-o,</span> <span class="pre">--save</span></code> directory.</p>
-<p class="last">Example: &#8211;rerun</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--rerun</span></code></p>
 </dd>
 <dt><strong class="command">-s, --start +NAME</strong></dt>
 <dd><p class="first">If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at <code class="docutils literal"><span class="pre">-o,</span> <span class="pre">--save</span></code> directory.</p>
-<p class="last">Example: &#8211;start +step2</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--start</span> <span class="pre">+step2</span></code></p>
 </dd>
 <dt><strong class="command">-g, --goal +NAME</strong></dt>
 <dd><p class="first">If this option is set, Digdag runs this task and its children tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at <code class="docutils literal"><span class="pre">-o,</span> <span class="pre">--save</span></code> directory.</p>
-<p class="last">Example: &#8211;goal +step2</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--goal</span> <span class="pre">+step2</span></code></p>
 </dd>
 <dt><strong class="command">-e, --end +NAME</strong></dt>
 <dd><p class="first">Stops workflow right before this task. This task and following tasks will be skipped.</p>
-<p class="last">Example: &#8211;end +step4</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--end</span> <span class="pre">+step4</span></code></p>
 </dd>
 <dt><strong class="command">--session EXPR</strong></dt>
 <dd><p class="first">Set session_time to this time. Argument is either of:</p>
@@ -292,27 +292,27 @@
 </ul>
 </div></blockquote>
 <p>Default is &#8220;last&#8221;.</p>
-<p class="last">Example: &#8211;session 2016-01-01</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--session</span> <span class="pre">2016-01-01</span></code></p>
 </dd>
 <dt><strong class="command">--no-save</strong></dt>
 <dd><p class="first">Disables session state files completely.</p>
-<p class="last">Example: &#8211;no-save</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--no-save</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
 <dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
-<p class="last">Example: -p environment=staging</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: -P params.dig</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
 </dd>
 <dt><strong class="command">-d, --dry-run</strong></dt>
 <dd><p class="first">Dry-run mode. This mode doesn&#8217;t run tasks.</p>
-<p class="last">Example: -d</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-d</span></code></p>
 </dd>
 <dt><strong class="command">-E, --show-params</strong></dt>
 <dd><p class="first">Show calculated parameters given to a task before running the task. Useful to use with dry-run mode.</p>
-<p class="last">Example: -dE</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-dE</span></code></p>
 </dd>
 </dl>
 </div>
@@ -330,15 +330,15 @@
 <dl class="docutils">
 <dt><strong class="command">---project DIR</strong></dt>
 <dd><p class="first">Use this directory as the project directory (default: current directory).</p>
-<p class="last">Example: &#8211;project workflow/</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--project</span> <span class="pre">workflow/</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
 <dd><p class="first">Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
-<p class="last">Example: -p environment=staging</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: -P params.dig</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
 </dd>
 </dl>
 </div>
@@ -356,39 +356,39 @@
 <dl class="docutils">
 <dt><strong class="command">---project DIR</strong></dt>
 <dd><p class="first">Use this directory as the project directory (default: current directory).</p>
-<p class="last">Example: &#8211;project workflow/</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--project</span> <span class="pre">workflow/</span></code></p>
 </dd>
 <dt><strong class="command">-n, --port PORT</strong></dt>
 <dd><p class="first">Port number to listen for web interface and api clients (default: 65432).</p>
-<p class="last">Example: -p 8080</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">8080</span></code></p>
 </dd>
 <dt><strong class="command">-b, --bind ADDRESS</strong></dt>
 <dd><p class="first">IP address to listen HTTP clients (default: 127.0.0.1).</p>
-<p class="last">Example: -b 0.0.0.0</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-b</span> <span class="pre">0.0.0.0</span></code></p>
 </dd>
 <dt><strong class="command">-o, --database DIR</strong></dt>
 <dd><p class="first">Store status to this database. Default is memory that doesn&#8217;t save status.</p>
-<p class="last">Example: &#8211;database digdag</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--database</span> <span class="pre">digdag</span></code></p>
 </dd>
 <dt><strong class="command">-O, --task-log DIR</strong></dt>
 <dd><p class="first">Store task logs to this directory. If this option is not set, <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">log</span></code> command doesn&#8217;t work.</p>
-<p class="last">Example: &#8211;task-log digdag.log</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--task-log</span> <span class="pre">digdag.log</span></code></p>
 </dd>
 <dt><strong class="command">--max-task-threads N</strong></dt>
 <dd><p class="first">Limit maxium number of task execution threads on this server.</p>
-<p class="last">Example: &#8211;max-task-threads 5</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
 <dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
-<p class="last">Example: -p environment=staging</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: -P params.dig</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Configuration file to load. (default: ~/.config/digdag/config)</p>
-<p class="last">Example: -c digdag-server/server.properties</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-c</span> <span class="pre">digdag-server/server.properties</span></code></p>
 </dd>
 </dl>
 </div>
@@ -420,45 +420,45 @@
 <dl class="docutils">
 <dt><strong class="command">-n, --port PORT</strong></dt>
 <dd><p class="first">Port number to listen for web interface and api clients (default: 65432).</p>
-<p class="last">Example: -n 8080</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-n</span> <span class="pre">8080</span></code></p>
 </dd>
 <dt><strong class="command">-b, --bind ADDRESS</strong></dt>
 <dd><p class="first">IP address to listen HTTP clients (default: 127.0.0.1).</p>
-<p class="last">Example: -b 0.0.0.0</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-b</span> <span class="pre">0.0.0.0</span></code></p>
 </dd>
 <dt><strong class="command">-o, --database DIR</strong></dt>
 <dd><p class="first">Store status to this database.</p>
-<p class="last">Example: &#8211;database digdag</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--database</span> <span class="pre">digdag</span></code></p>
 </dd>
 <dt><strong class="command">-m, --memory</strong></dt>
 <dd><p class="first">Store status in memory. Data will be removed when the server exists.</p>
-<p class="last">Example: &#8211;memory</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--memory</span></code></p>
 </dd>
 <dt><strong class="command">-O, --task-log DIR</strong></dt>
 <dd><p class="first">Store task logs to this directory. If this option is not set, <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">log</span></code> command doesn&#8217;t work.</p>
-<p class="last">Example: &#8211;task-log digdag/sessions</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--task-log</span> <span class="pre">digdag/sessions</span></code></p>
 </dd>
 <dt><strong class="command">-A, --access-log DIR</strong></dt>
 <dd><p class="first">Store access logs to this directory.</p>
-<p class="last">Example: &#8211;access-log digdag/log</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--access-log</span> <span class="pre">digdag/log</span></code></p>
 </dd>
 <dt><strong class="command">--disable-local-agent</strong></dt>
 <dd><p class="first">Disable task execution on this server.</p>
 <p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for REST API. See also <code class="docutils literal"><span class="pre">--disable-executor-loop</span></code> option.</p>
-<p class="last">Example: &#8211;disable-local-agent</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--disable-local-agent</span></code></p>
 </dd>
 <dt><strong class="command">--max-task-threads N</strong></dt>
 <dd><p class="first">Limit maxium number of task execution threads on this server.</p>
-<p class="last">Example: &#8211;max-task-threads 5</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">--disable-executor-loop</strong></dt>
 <dd><p class="first">Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.</p>
 <p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also <code class="docutils literal"><span class="pre">--disable-local-agent</span></code> option.</p>
-<p class="last">Example: &#8211;max-task-threads 5</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Server configuration property path. See the followings for details.</p>
-<p class="last">Example: -c digdag.properties</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-c</span> <span class="pre">digdag.properties</span></code></p>
 </dd>
 </dl>
 <p>In the config file, following parameters are available</p>
@@ -521,13 +521,13 @@
 <dl class="docutils">
 <dt><strong class="command">-e, --endpoint HOST</strong></dt>
 <dd><p class="first">HTTP endpoint of the server (default: <a class="reference external" href="http://127.0.0.1:65432">http://127.0.0.1:65432</a>)</p>
-<p class="last">Example: digdag-server.example.com:65432</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--endpoint</span> <span class="pre">digdag-server.example.com:65432</span></code></p>
 </dd>
 <dt><strong class="command">-H, --header KEY=VALUE</strong></dt>
 <dd>Add a custom HTTP header. Use multiple times to set multiple headers.</dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Configuration file to load. (default: ~/.config/digdag/config)</p>
-<p class="last">Example: -c digdag-server/client.properties</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-c</span> <span class="pre">digdag-server/client.properties</span></code></p>
 </dd>
 </dl>
 <p>You can include following parameters in ~/.config/digdag/config file:</p>
@@ -561,11 +561,11 @@
 <dd>Tries to start a new session attempt and validates the results but does nothing.</dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
 <dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
-<p class="last">Example: -p environment=staging</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: -P params.dig</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
 </dd>
 </dl>
 </div>
@@ -617,7 +617,7 @@
 <dd>Show all logs. By default, log level less than INFO and lines following those lines are skipped.</dd>
 <dt><strong class="command">-f, --follow</strong></dt>
 <dd><p class="first">Show new logs until attempt or task finishes. This is similar to UNIX <code class="docutils literal"><span class="pre">tail</span> <span class="pre">-f</span></code> command. Because server buffers logs, there&#8217;re some delay until logs are actually show.</p>
-<p class="last">Example: &#8211;follow</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--follow</span></code></p>
 </dd>
 </dl>
 </div>
@@ -660,15 +660,15 @@
 <dl class="docutils">
 <dt><strong class="command">-f, --from 'yyyy-MM-dd[ HH:mm:ss]'</strong></dt>
 <dd><p class="first">Timestamp to start backfill from (required). Sessions from this time (including this time) until current time will be started.</p>
-<p class="last">Example: &#8211;from &#8216;2016-01-01&#8217;</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--from</span> <span class="pre">'2016-01-01'</span></code></p>
 </dd>
 <dt><strong class="command">--count N</strong></dt>
 <dd><p class="first">Starts given number of sessions. By default, this command starts all sessions until current time.</p>
-<p class="last">Example: &#8211;count 5</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--count</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">--name NAME</strong></dt>
 <dd><p class="first">Unique name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.</p>
-<p class="last">Example: &#8211;name backfill1</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--name</span> <span class="pre">backfill1</span></code></p>
 </dd>
 <dt><strong class="command">-d, --dry-run</strong></dt>
 <dd>Tries to backfill and validates the results but does nothing.</dd>
@@ -746,15 +746,15 @@
 <dl class="docutils">
 <dt><strong class="command">--project DIR</strong></dt>
 <dd><p class="first">Use this directory as the project directory (default: current directory).</p>
-<p class="last">Example: &#8211;project workflow/</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--project</span> <span class="pre">workflow/</span></code></p>
 </dd>
 <dt><strong class="command">-r, --revision REVISION</strong></dt>
 <dd><p class="first">Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git&#8217;s SHA1 hash (<code class="docutils literal"><span class="pre">git</span> <span class="pre">show</span> <span class="pre">--pretty=format:'%T'</span> <span class="pre">|</span> <span class="pre">head</span> <span class="pre">-n</span> <span class="pre">1</span></code>) or timestamp (<code class="docutils literal"><span class="pre">date</span> <span class="pre">+%Y-%m-%dT%H:%M:%S%z</span></code>).</p>
-<p class="last">Example: -r f40172ebc58f58087b6132085982147efa9e81fb</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-r</span> <span class="pre">f40172ebc58f58087b6132085982147efa9e81fb</span></code></p>
 </dd>
 <dt><strong class="command">--schedule-from &quot;yyyy-MM-dd HH:mm:ss Z&quot;</strong></dt>
 <dd><p class="first">Start schedules from this time. If this is not set, system time of the server is used. Parameter must include time zone offset. You can run <code class="docutils literal"><span class="pre">date</span> <span class="pre">\&quot;+%Y-%m-%d</span> <span class="pre">%H:%M:%S</span> <span class="pre">%z\&quot;</span></code> command to get current local time.</p>
-<p class="last">Example: &#8211;schedule-from &#8220;2017-07-29 00:00:00 +0200&#8221;</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--schedule-from</span> <span class="pre">&quot;2017-07-29</span> <span class="pre">00:00:00</span> <span class="pre">+0200&quot;</span></code></p>
 </dd>
 </dl>
 </div>
@@ -772,11 +772,11 @@
 <dl class="docutils">
 <dt><strong class="command">-o, --output DIR</strong></dt>
 <dd><p class="first">Extract contents to this directory (default: same with project name).</p>
-<p class="last">Example: -o output</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-o</span> <span class="pre">output</span></code></p>
 </dd>
 <dt><strong class="command">-r, --revision REVISION</strong></dt>
 <dd><p class="first">Download project archive of this revision (default: latest revision).</p>
-<p class="last">Example: -r f40172ebc58f58087b6132085982147efa9e81fb</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-r</span> <span class="pre">f40172ebc58f58087b6132085982147efa9e81fb</span></code></p>
 </dd>
 </dl>
 </div>
