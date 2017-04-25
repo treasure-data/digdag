@@ -138,7 +138,7 @@ public class MailOperatorFactory
                                 .map(it -> newAddress(it))
                                 .toArray(InternetAddress[]::new));
 
-                msg.setSubject(subject);
+                msg.setSubject(subject, "utf-8");
 
                 List<AttachConfig> attachFiles = attachConfigs(params);
                 if (attachFiles.isEmpty()) {
