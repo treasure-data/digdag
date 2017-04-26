@@ -51,7 +51,7 @@ Runs workflow.
 
 Options:
 
-:command:`---project DIR`
+:command:`--project DIR`
   Use this directory as the project directory (default: current directory).
 
   Example: ``--project workflow/``
@@ -137,7 +137,7 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
     $ digdag check
     $ digdag check another.dig
 
-:command:`---project DIR`
+:command:`--project DIR`
   Use this directory as the project directory (default: current directory).
 
   Example: ``--project workflow/``
@@ -168,7 +168,7 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
     $ digdag scheduler -d status
     $ digdag scheduler -b 0.0.0.0
 
-:command:`---project DIR`
+:command:`--project DIR`
   Use this directory as the project directory (default: current directory).
 
   Example: ``--project workflow/``
