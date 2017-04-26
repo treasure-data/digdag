@@ -1,6 +1,5 @@
 package io.digdag.util;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -15,15 +14,12 @@ public class ResumableInputStream
     private final Reopener reopener;
     protected InputStream in;
     private long offset;
-    private long markedOffset;
 
     public ResumableInputStream(InputStream initialInputStream, Reopener reopener)
     {
         this.reopener = reopener;
         this.in = initialInputStream;
         this.offset = 0L;
-        this.reopenedAfterMark = false;
-        this.markedOffset = 0L;
     }
 
     public ResumableInputStream(Reopener reopener) throws IOException
@@ -38,7 +34,6 @@ public class ResumableInputStream
             in = null;
         }
         in = reopener.reopen(offset, closedCause);
-        reopenedAfterMark = true;
     }
 
     @Override
@@ -121,30 +116,5 @@ public class ResumableInputStream
         in.close();
     }
 
-    @Override
-    public void mark(int readlimit)
-    {
-        in.mark(readlimit);
-        markedOffset = offset;
-        reopenedAfterMark = false;
-    }
-
-    @Override
-    public void reset() throws IOException
-    {
-        if (reopenedAfterMark) {
-            offset = markedOffset;
-            reopen(new EOFException());
-        }
-        else {
-            in.reset();
-            offset = markedOffset;
-        }
-    }
-
-    @Override
-    public boolean markSupported()
-    {
-        return false;
-    }
+    // mark is not supported. If necessary, wrap using a BufferedInputStream.
 }
