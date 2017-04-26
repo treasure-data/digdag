@@ -1,7 +1,8 @@
 package io.digdag.util;
 
-import java.io.InputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class ResumableInputStream
         extends InputStream
@@ -21,6 +22,7 @@ public class ResumableInputStream
         this.reopener = reopener;
         this.in = initialInputStream;
         this.offset = 0L;
+        this.reopenedAfterMark = false;
         this.markedOffset = 0L;
     }
 
@@ -36,6 +38,7 @@ public class ResumableInputStream
             in = null;
         }
         in = reopener.reopen(offset, closedCause);
+        reopenedAfterMark = true;
     }
 
     @Override
@@ -44,9 +47,12 @@ public class ResumableInputStream
         while (true) {
             try {
                 int v = in.read();
-                offset += 1;
+                if (v >= 0) {
+                    offset += 1;
+                }
                 return v;
-            } catch (IOException | RuntimeException ex) {
+            }
+            catch (IOException | RuntimeException ex) {
                 reopen(ex);
             }
         }
@@ -58,9 +64,12 @@ public class ResumableInputStream
         while (true) {
             try {
                 int r = in.read(b);
-                offset += r;
+                if (r > 0) {
+                    offset += r;
+                }
                 return r;
-            } catch (IOException | RuntimeException ex) {
+            }
+            catch (IOException | RuntimeException ex) {
                 reopen(ex);
             }
         }
@@ -72,9 +81,12 @@ public class ResumableInputStream
         while (true) {
             try {
                 int r = in.read(b, off, len);
-                offset += r;
+                if (r > 0) {
+                    offset += r;
+                }
                 return r;
-            } catch (IOException | RuntimeException ex) {
+            }
+            catch (IOException | RuntimeException ex) {
                 reopen(ex);
             }
         }
@@ -86,9 +98,12 @@ public class ResumableInputStream
         while (true) {
             try {
                 long r = in.skip(n);
-                offset += r;
+                if (r > 0) {
+                    offset += r;
+                }
                 return r;
-            } catch (IOException | RuntimeException ex) {
+            }
+            catch (IOException | RuntimeException ex) {
                 reopen(ex);
             }
         }
@@ -111,18 +126,25 @@ public class ResumableInputStream
     {
         in.mark(readlimit);
         markedOffset = offset;
+        reopenedAfterMark = false;
     }
 
     @Override
     public void reset() throws IOException
     {
-        in.reset();
-        offset = markedOffset;
+        if (reopenedAfterMark) {
+            offset = markedOffset;
+            reopen(new EOFException());
+        }
+        else {
+            in.reset();
+            offset = markedOffset;
+        }
     }
 
     @Override
     public boolean markSupported()
     {
-        return in.markSupported();
+        return false;
     }
 }
