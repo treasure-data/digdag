@@ -15,7 +15,9 @@ import javax.servlet.ServletException;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -61,10 +63,12 @@ public class Server
     @Parameter(names = {"--disable-executor-loop"})
     boolean disableExecutorLoop = false;
 
-    @DynamicParameter(names = {"-p", "--param"})
+    @Parameter(names = {"-p", "--param"}, validateWith = ParameterValidator.class)
+    List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
 
-    @DynamicParameter(names = {"-H", "--header"})
+    @Parameter(names= {"-H", "--header"}, validateWith = ParameterValidator.class)
+    List<String> headersList = new ArrayList<>();
     Map<String, String> headers = new HashMap<>();
 
     @Parameter(names = {"-P", "--params-file"})
@@ -176,10 +180,12 @@ public class Server
             props.setProperty("server.executor.enabled", Boolean.toString(false));
         }
 
+        headers = ParameterValidator.toMap(headersList);
         headers.forEach((key, value) -> props.setProperty("server.http.headers." + key, value));
 
         // Load default parameters
         ConfigFactory cf = new ConfigFactory(objectMapper());
+        params = ParameterValidator.toMap(paramsList);
         Config defaultParams = loadParams(
                 cf, new ConfigLoaderManager(cf, new YamlConfigLoader()),
                 props, paramsFile, params);

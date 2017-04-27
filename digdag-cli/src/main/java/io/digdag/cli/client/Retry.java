@@ -1,8 +1,8 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
+import io.digdag.cli.ParameterValidator;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -11,7 +11,9 @@ import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,7 +23,8 @@ import static java.util.Locale.ENGLISH;
 public class Retry
     extends ClientCommand
 {
-    @DynamicParameter(names = {"-p", "--param"})
+    @Parameter(names = {"-p", "--param"}, validateWith = ParameterValidator.class)
+    List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
 
     @Parameter(names = {"-P", "--params-file"})
