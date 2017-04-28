@@ -205,6 +205,7 @@ public class ResumableInputStreamTest
         assertThat(reopener.getLastOffset(), is(1L));
         assertThat(reopener.getReopenCount(), is(6));
         assertThat(in.read(), is(-1));
+        assertThat(reopener.getLastOffset(), is(1L));
         assertThat(reopener.getReopenCount(), is(6));
     }
 
@@ -232,6 +233,7 @@ public class ResumableInputStreamTest
         assertThat(reopener.getReopenCount(), is(6));
         assertThat(reopener.getLastClosedCause(), instanceOf(IOException.class));
         assertThat(in.read(new byte[1]), is(-1));
+        assertThat(reopener.getLastOffset(), is(1L));
         assertThat(reopener.getReopenCount(), is(6));
     }
 
@@ -259,6 +261,7 @@ public class ResumableInputStreamTest
         assertThat(reopener.getReopenCount(), is(6));
         assertThat(reopener.getLastClosedCause(), instanceOf(IOException.class));
         assertThat(in.read(new byte[1], 0, 1), is(-1));
+        assertThat(reopener.getLastOffset(), is(1L));
         assertThat(reopener.getReopenCount(), is(6));
     }
 
@@ -286,6 +289,7 @@ public class ResumableInputStreamTest
         assertThat(reopener.getReopenCount(), is(6));
         assertThat(reopener.getLastClosedCause(), instanceOf(IOException.class));
         assertThat(in.skip(1), is(-1L));
+        assertThat(reopener.getLastOffset(), is(1L));
         assertThat(reopener.getReopenCount(), is(6));
     }
 }

@@ -27,7 +27,7 @@ public class ResumableInputStream
         this(reopener.reopen(0, null), reopener);
     }
 
-    private void reopen(Exception closedCause) throws IOException
+    private synchronized void reopen(Exception closedCause) throws IOException
     {
         if (in != null) {
             in.close();
