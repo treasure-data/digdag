@@ -104,7 +104,7 @@ To use Gmail SMTP server, you need to do either of:
   mail>: mail_body.txt
   ```
 
-  * or :command:`mail>: {body: Hello, this is from Digdag}`
+  * or :command:`mail>: {data: "Hello, this is from Digdag"}`
 
 * **subject**: SUBJECT
 
