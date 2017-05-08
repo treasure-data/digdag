@@ -21,7 +21,7 @@
 
 * **td_load>**: FILE.yml
 
-  Path to a YAML template file. This configuration needs to be guessed using td command.
+  Path to a YAML template file. This configuration needs to be guessed using td command. If you saved DataConnector job on Treasure Data, you can use job name instead of YAML path.
 
   Examples:
 
