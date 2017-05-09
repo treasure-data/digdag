@@ -64,7 +64,9 @@ NOTE: We're limiting export capability to only us-east region S3 bucket. In gene
 
 * **file_format**: TYPE
 
-  Output file format. Available formats are `tsv.gz`, `jsonl.gz`, `json.gz`, `json-line.gz`.
+  Output file format. Available formats are `tsv.gz` (tab-separated values per line) and `jsonl.gz` (json record per line).
+
+  `json.gz` and `line-json.gz` are available only for backward compatibility purpose.
 
   Examples:
 
