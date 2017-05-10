@@ -69,7 +69,10 @@ class RevisionAutoReloader
     void watch(ProjectArchive project)
             throws ResourceConflictException, ResourceNotFoundException
     {
-        targets.add(new ReloadTarget(project));
+        transactionManager.<Void, ResourceConflictException, ResourceNotFoundException>begin(() -> {
+            targets.add(new ReloadTarget(project));
+            return null;
+        }, ResourceConflictException.class, ResourceNotFoundException.class);
         startAutoReload();
     }
 
