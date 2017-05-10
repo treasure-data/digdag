@@ -74,6 +74,13 @@ Note: The **bq>** operator uses [standard SQL](https://cloud.google.com/bigquery
   destination_table: some_project:some_dataset.some_table
   ```
 
+  You can append a date as `$YYYYMMDD` form at the end of table name to store data in a specific partition.
+  See [Creating and Updating Date-Partitioned Tables](https://cloud.google.com/bigquery/docs/creating-partitioned-tables) document for details.
+
+  ```
+  destination_table: some_dataset.some_partitioned_table$20160101
+  ```
+
 * **create_disposition**: CREATE_IF_NEEDED | CREATE_NEVER
 
   Specifies whether the destination table should be automatically created when executing the query.
