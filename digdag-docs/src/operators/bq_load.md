@@ -71,6 +71,13 @@
   destination_table: some_project:some_dataset.some_table
   ```
 
+  You can append a date as `$YYYYMMDD` form at the end of table name to store data in a specific partition.
+  See [Creating and Updating Date-Partitioned Tables](https://cloud.google.com/bigquery/docs/creating-partitioned-tables) document for details.
+
+  ```
+  destination_table: some_dataset.some_partitioned_table$20160101
+  ```
+
 * **project**: NAME
 
   The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
