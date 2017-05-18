@@ -229,6 +229,11 @@
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_project</span><span class="p">:</span><span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
 </pre></div>
 </div>
+<p>You can append a date as <code class="docutils literal"><span class="pre">$YYYYMMDD</span></code> form at the end of table name to store data in a specific partition.
+See <a class="reference external" href="https://cloud.google.com/bigquery/docs/creating-partitioned-tables">Creating and Updating Date-Partitioned Tables</a> document for details.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>destination_table: some_dataset.some_partitioned_table$20160101
+</pre></div>
+</div>
 </li>
 <li><p class="first"><strong>create_disposition</strong>: CREATE_IF_NEEDED | CREATE_NEVER</p>
 <p>Specifies whether the destination table should be automatically created when executing the query.</p>
