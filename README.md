@@ -81,7 +81,7 @@ server.http.headers.access-control-allow-methods = GET, POST, PUT, DELETE, OPTIO
 server.http.headers.access-control-max-age = 1209600
 ```
 
-Then, start digdadg-ui development server:
+Then, start digdag-ui development server:
 
 ```
 $ cd digdag-ui/
