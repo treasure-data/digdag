@@ -164,7 +164,7 @@ You can set variables programmably using language API. For exampe, Python API pr
       def analyze(self, my_var):
         print("my_var should be 2: %d" % my_var)
 
-``digdag.env.store(dict)`` stores variables so that all folling tasks (including tasks which are not children of the task) can use them.
+``digdag.env.store(dict)`` stores variables so that all following tasks (including tasks which are not children of the task) can use them.
 
 ``digdag.env.export(dict)`` is same with "_export" directive in YAML file. It defines variables for their children.
 
