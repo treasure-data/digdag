@@ -101,6 +101,11 @@ Options:
 
   Example: ``--no-save``
 
+:command:`--max-task-threads N`
+  Limit maximum number of task execution threads.
+
+  Example: ``--max-task-threads 5``
+
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
@@ -194,7 +199,7 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
   Example: ``--task-log digdag.log``
 
 :command:`--max-task-threads N`
-  Limit maxium number of task execution threads on this server.
+  Limit maximum number of task execution threads on this server.
 
   Example: ``--max-task-threads 5``
 
@@ -283,7 +288,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: ``--disable-local-agent``
 
 :command:`--max-task-threads N`
-  Limit maxium number of task execution threads on this server.
+  Limit maximum number of task execution threads on this server.
 
   Example: ``--max-task-threads 5``
 
