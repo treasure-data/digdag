@@ -241,6 +241,33 @@ If ``_background: true`` parameter is set to a task or group, the task or group 
     +analyze:
         sh>: tasks/analyze_prepared_data_sets.sh
 
+Retrying failed tasks automatically
+----------------------------------
+
+If ``_retry: N`` (N is an integer: 1, 2, 3, ...) parameter is set to a group, it retires the group from the beginning when one or more children failed.
+
+.. code-block:: yaml
+
+    +prepare:
+      # If +erase_table, +load_data, or +check_loaded_data fail, it retries from
+      # +erase_table again.
+      _retry: 3
+
+      +erase_table:
+        sh>: tasks/erase_table.sh
+
+      +load_data:
+        sh>: tasks/load_data.sh
+
+      +check_loaded_data:
+        sh>: tasks/check_loaded_data.sh
+
+    +analyze:
+        sh>: tasks/analyze_prepared_data_sets.sh
+
+
+Tasks also support ``_retry: N`` parameter to retry the specific task. Note that some operators don't support the generic ``_retry`` option but has its own options to control retrying behavior.
+
 
 Sending error notification
 ----------------------------------
