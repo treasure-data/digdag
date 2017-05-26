@@ -297,7 +297,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
 
   This option is useful when there're multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also ``--disable-local-agent`` option.
 
-  Example: ``--max-task-threads 5``
+  Example: ``--disable-executor-loop``
 
 :command:`-c, --config PATH`
   Server configuration property path. See the followings for details.
