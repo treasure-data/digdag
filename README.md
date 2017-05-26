@@ -48,6 +48,14 @@ Test uses in-memory H2 database by default. To use PostgreSQL, set following env
 $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 ```
 
+## Building CLI executables
+
+```
+$ ./gradlew cli
+```
+
+It makes an executable in `pkg/`, e.g. `pkg/digdag-$VERSION.jar`.
+
 ### Releasing a new version
 
 You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY` environment variables.
