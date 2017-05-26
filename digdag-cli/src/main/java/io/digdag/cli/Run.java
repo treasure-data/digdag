@@ -137,6 +137,9 @@ public class Run
     @Parameter(names = {"-dE"})
     boolean dryRunAndShowParams = false;
 
+    @Parameter(names = {"--max-task-threads"})
+    int maxTaskThreads = 0;
+
     private Path resumeStatePath;
 
     @Override
@@ -194,6 +197,7 @@ public class Run
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
+        err.println("    --max-task-threads               Limit maxium number of task execution threads on the execution");
         Main.showCommonOptions(env, err);
         return systemExit(error);
     }
@@ -214,6 +218,10 @@ public class Run
             throws Exception
     {
         Properties systemProps = loadSystemProperties();
+
+        if (maxTaskThreads > 0) {
+            systemProps.setProperty("agent.max-task-threads", String.valueOf(maxTaskThreads));
+        }
 
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
                 .setEnvironment(env)
