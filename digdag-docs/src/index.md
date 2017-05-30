@@ -30,6 +30,7 @@ Digdag fits simple replacement of cron, IT operations automation, data analytics
    ruby_api.rst
    internal.rst
    releases.rst
+   logo.md
 ```
 
 
@@ -38,4 +39,3 @@ Digdag fits simple replacement of cron, IT operations automation, data analytics
 Digdag is open-source software licensed under [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
 See [NOTICE](https://github.com/treasure-data/digdag/blob/master/NOTICE) for details.
-
