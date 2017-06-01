@@ -116,6 +116,7 @@ public class HttpOperatorFactory
         private final Config params;
         private final String method;
         private final boolean retry;
+        private final long timeout;
 
         private HttpOperator(OperatorContext context)
         {
@@ -126,6 +127,7 @@ public class HttpOperatorFactory
             this.method = params.get("method", String.class, "GET").toUpperCase();
             this.retry = params.getOptional("retry", boolean.class)
                     .or(defaultRetry(method));
+            this.timeout = params.get("timeout", Long.class, 30L);
         }
 
         @Override
@@ -163,7 +165,7 @@ public class HttpOperatorFactory
 
             Request request = httpClient.newRequest(uri)
                     .method(method)
-                    .timeout(30, SECONDS);
+                    .timeout(timeout, SECONDS);
 
             if (authorization.isPresent()) {
                 request.header(AUTHORIZATION, authorization.get());
