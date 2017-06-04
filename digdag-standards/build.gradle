@@ -61,7 +61,9 @@ dependencies {
     testCompile project(path: ':digdag-core', configuration: 'testArtifacts')
 
     // for testing
-    testCompile 'com.github.tomakehurst:wiremock:2.6.0'
+    testCompile ('com.github.tomakehurst:wiremock:2.6.0') { exclude group: 'com.fasterxml.jackson.core' }
+
+    // test dependency conflict resolution
     testCompile 'org.eclipse.jetty:jetty-server:9.3.11.v20160721'
     testCompile 'org.eclipse.jetty:jetty-servlet:9.3.11.v20160721'
     testCompile 'org.eclipse.jetty:jetty-servlets:9.3.11.v20160721'
