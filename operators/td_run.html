@@ -176,7 +176,7 @@
   <div class="section" id="td-run-treasure-data-saved-queries">
 <span id="td-run-treasure-data-saved-queries"></span><h1>td_run&gt;: Treasure Data saved queries<a class="headerlink" href="#td-run-treasure-data-saved-queries" title="Permalink to this headline">¶</a></h1>
 <p><strong>td_run&gt;</strong> operator runs a query saved on Treasure Data.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
   <span class="n">td</span><span class="p">:</span>
     <span class="n">database</span><span class="p">:</span> <span class="n">www_access</span>
 
@@ -206,18 +206,18 @@ The Treasure Data API key to use when running Treasure Data queries.</li>
 <li><p class="first"><strong>td_run&gt;</strong>: SAVED_QUERY_ID or SAVED_QUERY_NAME</p>
 <p>Runs saved query. If number was specified, it&#8217;s considered as an ID of saved query. Otherwise it&#8217;s considered as a name of a saved query.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td_run</span><span class="o">&gt;</span><span class="p">:</span> <span class="mi">12345</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">td_run</span><span class="o">&gt;</span><span class="p">:</span> <span class="mi">12345</span>
 </pre></div>
 </div>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td_run</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_query</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">td_run</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_query</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>download_file</strong>: NAME</p>
 <p>Saves query result as a local CSV file.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">download_file</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">csv</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">download_file</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
 </li>
@@ -225,14 +225,14 @@ The Treasure Data API key to use when running Treasure Data queries.</li>
 <p>Stores the first 1 row of the query results to <code class="docutils literal"><span class="pre">${td.last_results}</span></code> variable (default: false).
 td.last_results is a map of column name and a value. To access to a single value, you can use <code class="docutils literal"><span class="pre">${td.last_results.my_count}</span></code> syntax.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">store_last_results</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">store_last_results</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>preview</strong>: BOOLEAN</p>
 <p>Tries to show some query results to confirm the results of a query.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">preview</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">preview</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
@@ -250,14 +250,14 @@ td.last_results is a map of column name and a value. To access to a single value
 <li><p class="first"><strong>td.last_job_id</strong></p>
 <p>The job id this task executed.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">52036074</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="mi">52036074</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>td.last_results</strong></p>
 <p>The first 1 row of the query results as a map. This is available only when <code class="docutils literal"><span class="pre">store_last_results:</span> <span class="pre">true</span></code> is set.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span><span class="s2">&quot;/index.html&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span><span class="s2">&quot;/index.html&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
 </pre></div>
 </div>
 </li>

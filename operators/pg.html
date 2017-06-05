@@ -166,7 +166,7 @@
   <div class="section" id="pg-postgresql-operations">
 <span id="pg-postgresql-operations"></span><h1>pg&gt;: PostgreSQL operations<a class="headerlink" href="#pg-postgresql-operations" title="Permalink to this headline">¶</a></h1>
 <p><strong>pg&gt;</strong> operator runs queries and/or DDLs on PostgreSQL.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
   <span class="n">pg</span><span class="p">:</span>
     <span class="n">host</span><span class="p">:</span> <span class="mf">192.0</span><span class="o">.</span><span class="mf">2.1</span>
     <span class="n">port</span><span class="p">:</span> <span class="mi">5430</span>
@@ -201,7 +201,7 @@ Optional user password to use when connecting to the postgres database.</li>
 <li><p class="first"><strong>pg&gt;</strong>: FILE.sql</p>
 <p>Path of the query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pg</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">complex_queries</span><span class="o">.</span><span class="n">sql</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">pg</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">complex_queries</span><span class="o">.</span><span class="n">sql</span>
 </pre></div>
 </div>
 </li>
@@ -209,7 +209,7 @@ Optional user password to use when connecting to the postgres database.</li>
 <p>Table name to create from the results. This option deletes the table if it already exists.</p>
 <p>This option adds DROP TABLE IF EXISTS; CREATE TABLE AS before the statements written in the query template file. Also, CREATE TABLE statement can be written in the query template file itself without this command.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_table</span><span class="p">:</span> <span class="n">dest_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">create_table</span><span class="p">:</span> <span class="n">dest_table</span>
 </pre></div>
 </div>
 </li>
@@ -217,56 +217,56 @@ Optional user password to use when connecting to the postgres database.</li>
 <p>Table name to append results into.</p>
 <p>This option adds INSERT INTO before the statements written in the query template file. Also, INSERT INTO statement can be written in the query template file itself without this command.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">insert_into</span><span class="p">:</span> <span class="n">dest_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">insert_into</span><span class="p">:</span> <span class="n">dest_table</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>download_file</strong>: NAME</p>
 <p>Local CSV file name to be downloaded. The file includes the result of query.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">download_file</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">csv</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">download_file</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Database name.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>host</strong>: NAME</p>
 <p>Hostname or IP address of the database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">host</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">foobar</span><span class="o">.</span><span class="n">com</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">host</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">foobar</span><span class="o">.</span><span class="n">com</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>port</strong>: NUMBER</p>
 <p>Port number to connect to the database. <em>Default</em>: <code class="docutils literal"><span class="pre">5432</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">port</span><span class="p">:</span> <span class="mi">2345</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">port</span><span class="p">:</span> <span class="mi">2345</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>user</strong>: NAME</p>
 <p>User to connect to the database</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">user</span><span class="p">:</span> <span class="n">app_user</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">user</span><span class="p">:</span> <span class="n">app_user</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>ssl</strong>: BOOLEAN</p>
 <p>Enable SSL to connect to the database. <em>Default</em>: <code class="docutils literal"><span class="pre">false</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ssl</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">ssl</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>schema</strong>: NAME</p>
 <p>Default schema name. <em>Default</em>: <code class="docutils literal"><span class="pre">public</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">schema</span><span class="p">:</span> <span class="n">my_schema</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">schema</span><span class="p">:</span> <span class="n">my_schema</span>
 </pre></div>
 </div>
 </li>
@@ -274,21 +274,21 @@ Optional user password to use when connecting to the postgres database.</li>
 <p>Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>.
 This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn&#8217;t allowed, this option should be false.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">strict_transaction</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">strict_transaction</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>status_table_schema</strong>: NAME</p>
 <p>Schema name of status table. <em>Default</em>: same as the value of <code class="docutils literal"><span class="pre">schema</span></code> option.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">status_table_schema</span><span class="p">:</span> <span class="n">writable_schema</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">status_table_schema</span><span class="p">:</span> <span class="n">writable_schema</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>status_table</strong>: NAME</p>
 <p>Table name of status table. <em>Default</em>: <code class="docutils literal"><span class="pre">__digdag_status</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">status_table</span><span class="p">:</span> <span class="n">customized_status_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">status_table</span><span class="p">:</span> <span class="n">customized_status_table</span>
 </pre></div>
 </div>
 </li>

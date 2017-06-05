@@ -171,7 +171,7 @@
   <div class="section" id="bq-running-google-bigquery-queries">
 <span id="bq-running-google-bigquery-queries"></span><h1>bq&gt;: Running Google BigQuery queries<a class="headerlink" href="#bq-running-google-bigquery-queries" title="Permalink to this headline">¶</a></h1>
 <p><strong>bq&gt;</strong> operator runs a query on Google BigQuery.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
   <span class="n">bq</span><span class="p">:</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
 
@@ -203,35 +203,35 @@
 <li><p class="first"><strong>bq&gt;</strong>: query.sql</p>
 <p>Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">bq</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>dataset</strong>: NAME</p>
 <p>Specifies the default dataset to use in the query and in the <code class="docutils literal"><span class="pre">destination_table</span></code> parameter.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset</span><span class="p">:</span> <span class="n">other_project</span><span class="p">:</span><span class="n">other_dataset</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">dataset</span><span class="p">:</span> <span class="n">other_project</span><span class="p">:</span><span class="n">other_dataset</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>destination_table</strong>: NAME</p>
 <p>Specifies a table to store the query results in.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">my_result_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_table</span><span class="p">:</span> <span class="n">my_result_table</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_project</span><span class="p">:</span><span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_project</span><span class="p">:</span><span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
 </pre></div>
 </div>
 <p>You can append a date as <code class="docutils literal"><span class="pre">$YYYYMMDD</span></code> form at the end of table name to store data in a specific partition.
 See <a class="reference external" href="https://cloud.google.com/bigquery/docs/creating-partitioned-tables">Creating and Updating Date-Partitioned Tables</a> document for details.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>destination_table: some_dataset.some_partitioned_table$20160101
+<div class="highlight-default"><div class="highlight"><pre>destination_table: some_dataset.some_partitioned_table$20160101
 </pre></div>
 </div>
 </li>
@@ -242,10 +242,10 @@ See <a class="reference external" href="https://cloud.google.com/bigquery/docs/c
 <li><code class="docutils literal"><span class="pre">CREATE_NEVER</span></code>: The destination table must already exist, otherwise the query will fail.</li>
 </ul>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_IF_NEEDED</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_IF_NEEDED</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_NEVER</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_NEVER</span>
 </pre></div>
 </div>
 </li>
@@ -257,13 +257,13 @@ See <a class="reference external" href="https://cloud.google.com/bigquery/docs/c
 <li><code class="docutils literal"><span class="pre">WRITE_EMPTY</span></code>: <em>(default)</em> The query fails if the destination table already exists and is not empty.</li>
 </ul>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_TRUNCATE</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_TRUNCATE</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_APPEND</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_APPEND</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_EMPTY</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_EMPTY</span>
 </pre></div>
 </div>
 </li>

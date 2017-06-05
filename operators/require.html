@@ -171,12 +171,12 @@
   <div class="section" id="require-depends-on-another-workflow">
 <span id="require-depends-on-another-workflow"></span><h1>require&gt;: Depends on another workflow<a class="headerlink" href="#require-depends-on-another-workflow" title="Permalink to this headline">¶</a></h1>
 <p><strong>require&gt;</strong> operator requires completion of another workflow. This operator is similar to <a class="reference external" href="call.html">call&gt; operator</a>, but this operator doesn&#8217;t start the other workflow if it&#8217;s already running or has done for the same session time of this workflow. If the workflow is running or newly started, this operator waits until it completes.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
 <span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># another_workflow.dig</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="c1"># another_workflow.dig</span>
 <span class="o">+</span><span class="n">step2</span><span class="p">:</span>
   <span class="n">sh</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">tasks</span><span class="o">/</span><span class="n">step2</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
@@ -187,17 +187,17 @@
 <li><p class="first"><strong>require&gt;</strong>: NAME</p>
 <p>Name of a workflow.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>session_time</strong>: ISO_TIME_WITH_ZONE</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
 <span class="n">session_time</span><span class="p">:</span> <span class="mi">20170101</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0000</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span>timezone: UTC
+<div class="highlight-default"><div class="highlight"><pre>timezone: UTC
 
 schedule:
   monthly&gt;: 1,09:00:00
@@ -213,7 +213,7 @@ schedule:
 <li><p class="first"><strong>ignore_failure</strong>: BOOLEAN</p>
 <p>This operator fails when the dependent workflow finished with errors by default.</p>
 <p>But if <code class="docutils literal"><span class="pre">ignore_failure:</span> <span class="pre">true</span></code> is set, this operator succeeds even when the workflow finished with errors.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">require</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span>
 <span class="n">ignore_failure</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>

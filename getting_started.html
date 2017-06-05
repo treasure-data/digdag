@@ -157,13 +157,13 @@
 <div class="section" id="downloading-the-latest-version">
 <span id="downloading-the-latest-version"></span><h2>1. Downloading the latest version<a class="headerlink" href="#downloading-the-latest-version" title="Permalink to this headline">¶</a></h2>
 <p>Digdag is a single executable file. You can install the file to <code class="docutils literal"><span class="pre">~/bin</span></code> using <code class="docutils literal"><span class="pre">curl</span></code> command as following:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ curl -o ~/bin/digdag --create-dirs -L &quot;https://dl.digdag.io/digdag-latest&quot;
+<div class="highlight-default"><div class="highlight"><pre>$ curl -o ~/bin/digdag --create-dirs -L &quot;https://dl.digdag.io/digdag-latest&quot;
 $ chmod +x ~/bin/digdag
 $ echo &#39;export PATH=&quot;$HOME/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc
 </pre></div>
 </div>
 <p>Please reopen your terminal window or type following command so that the change of PATH takes effect.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ source ~/.bashrc
+<div class="highlight-default"><div class="highlight"><pre>$ source ~/.bashrc
 </pre></div>
 </div>
 <p>If <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">--help</span></code> command works, Digdag is installed successfully.</p>
@@ -171,12 +171,12 @@ $ echo &#39;export PATH=&quot;$HOME/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc
 <div class="section" id="on-windows">
 <span id="on-windows"></span><h3>On Windows?<a class="headerlink" href="#on-windows" title="Permalink to this headline">¶</a></h3>
 <p>On Windows, please open cmd.exe or PowerShell.exe and type following command exactly:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PowerShell</span> <span class="o">-</span><span class="n">Command</span> <span class="s2">&quot;&amp; {mkdir -Force $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in\digdag.bat}&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">PowerShell</span> <span class="o">-</span><span class="n">Command</span> <span class="s2">&quot;&amp; {mkdir -Force $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in\digdag.bat}&quot;</span>
 </pre></div>
 </div>
 <p>Above command downloads a file named <code class="docutils literal"><span class="pre">digdag.bat</span></code> to a folder named <code class="docutils literal"><span class="pre">bin</span></code> at your home folder (<code class="docutils literal"><span class="pre">C:\Users\YOUR_NAME\bin</span></code>).</p>
 <p>Then, type following command so that cmd.exe or PowerShell.exe search <code class="docutils literal"><span class="pre">digdag</span></code> command from the <code class="docutils literal"><span class="pre">bin</span></code> folder:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">setx</span> <span class="n">PATH</span> <span class="s2">&quot;%PATH%;%USERPROFILE%</span><span class="se">\b</span><span class="s2">in&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">setx</span> <span class="n">PATH</span> <span class="s2">&quot;%PATH%;%USERPROFILE%</span><span class="se">\b</span><span class="s2">in&quot;</span>
 </pre></div>
 </div>
 <p>Please reopen your command window. If <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">--help</span></code> command shows usage message, Digdag is installed successfully.</p>
@@ -184,13 +184,13 @@ $ echo &#39;export PATH=&quot;$HOME/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc
 <div class="section" id="curl-did-not-work">
 <span id="curl-did-not-work"></span><h3>curl did not work?<a class="headerlink" href="#curl-did-not-work" title="Permalink to this headline">¶</a></h3>
 <p>Some environments (ex: Ubuntu 16.04) may produce the following error:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>curl: <span class="o">(</span><span class="m">77</span><span class="o">)</span> error setting certificate verify locations:
+<div class="highlight-shell"><div class="highlight"><pre>curl: <span class="o">(</span>77<span class="o">)</span> error setting certificate verify locations:
   CAfile: /etc/pki/tls/certs/ca-bundle.crt
   CApath: none
 </pre></div>
 </div>
 <p>Most likely, the SSL certificate file is in <code class="docutils literal"><span class="pre">/etc/ssl/certs/ca-certificates.crt</span></code> while <code class="docutils literal"><span class="pre">curl</span></code> expects it in <code class="docutils literal"><span class="pre">/etc/pki/tls/certs/ca-bundle.crt</span></code>. To fix this, run the folllowing:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>$ sudo mkdir -p /etc/pki/tls/certs
+<div class="highlight-shell"><div class="highlight"><pre>$ sudo mkdir -p /etc/pki/tls/certs
 $ sudo cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 </pre></div>
 </div>
@@ -204,7 +204,7 @@ $ sudo cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 <div class="section" id="running-sample-workflow">
 <span id="running-sample-workflow"></span><h2>2. Running sample workflow<a class="headerlink" href="#running-sample-workflow" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal"><span class="pre">digdag</span> <span class="pre">init</span> <span class="pre">&lt;dir&gt;</span></code> command generates sample workflow for you:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ digdag init mydag
+<div class="highlight-default"><div class="highlight"><pre>$ digdag init mydag
 $ cd mydag
 $ digdag run mydag.dig
 </pre></div>

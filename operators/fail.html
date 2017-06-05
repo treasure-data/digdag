@@ -172,7 +172,7 @@
 <span id="fail-makes-the-workflow-failed"></span><h1>fail&gt;: Makes the workflow failed<a class="headerlink" href="#fail-makes-the-workflow-failed" title="Permalink to this headline">¶</a></h1>
 <p><strong>fail&gt;</strong> always fails and makes the workflow failed.</p>
 <p>This operator is useful used with <a class="reference external" href="if.html">if&gt; operator</a> to validate resuls of a previous task with <code class="docutils literal"><span class="pre">_check</span></code> directive so that a workflow fails when the validation doesn&#8217;t pass.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>+fail_if_too_few:
+<div class="highlight-default"><div class="highlight"><pre>+fail_if_too_few:
   if&gt;: ${count &lt; 10}
   _do:
     fail&gt;: count is less than 10!

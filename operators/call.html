@@ -172,14 +172,14 @@
 <span id="call-calls-another-workflow"></span><h1>call&gt;: Calls another workflow<a class="headerlink" href="#call-calls-another-workflow" title="Permalink to this headline">¶</a></h1>
 <p><strong>call&gt;</strong> operator calls another workflow.</p>
 <p>This operator embeds another workflow as a subtask. This operator waits until all tasks of the workflow complete.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
 <span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">call</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span><span class="o">.</span><span class="n">dig</span>
 <span class="o">+</span><span class="n">step2</span><span class="p">:</span>
   <span class="n">call</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">common</span><span class="o">/</span><span class="n">shared_workflow</span><span class="o">.</span><span class="n">dig</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># another_workflow.dig</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="c1"># another_workflow.dig</span>
 <span class="o">+</span><span class="n">another</span><span class="p">:</span>
   <span class="n">sh</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">../</span><span class="n">scripts</span><span class="o">/</span><span class="n">my_script</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
@@ -191,7 +191,7 @@
 <p>Path to a workflow definition file. File name must end with <code class="docutils literal"><span class="pre">.dig</span></code>.
 If called workflow is in a subdirectory, the workflow uses the subdirectory as the working directory. For example, a task has <code class="docutils literal"><span class="pre">call&gt;:</span> <span class="pre">common/called_workflow.dig</span></code>, using <code class="docutils literal"><span class="pre">queries/data.sql</span></code> file in the called workflow should be <code class="docutils literal"><span class="pre">../queries/data.sql</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">call</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span><span class="o">.</span><span class="n">dig</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">call</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">another_workflow</span><span class="o">.</span><span class="n">dig</span>
 </pre></div>
 </div>
 </li>

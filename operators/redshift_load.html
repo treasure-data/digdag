@@ -170,7 +170,7 @@
   <div class="section" id="redshift-load-redshift-load-operations">
 <span id="redshift-load-redshift-load-operations"></span><h1>redshift_load&gt;: Redshift load operations<a class="headerlink" href="#redshift-load-redshift-load-operations" title="Permalink to this headline">¶</a></h1>
 <p><strong>redshift_load&gt;</strong> operator runs COPY statement to load data from external storage on Redshift.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
   <span class="n">redshift</span><span class="p">:</span>
     <span class="n">host</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">redshift</span><span class="o">.</span><span class="mi">1234</span><span class="n">abcd</span><span class="o">.</span><span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="o">-</span><span class="mf">1.</span><span class="n">redshift</span><span class="o">.</span><span class="n">amazonaws</span><span class="o">.</span><span class="n">com</span>
     <span class="c1"># port: 5439</span>
@@ -254,42 +254,42 @@ If this option isn&#8217;t specified, this operator tries to use a federated use
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Database name.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>host</strong>: NAME</p>
 <p>Hostname or IP address of the database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">host</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">foobar</span><span class="o">.</span><span class="n">com</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">host</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">foobar</span><span class="o">.</span><span class="n">com</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>port</strong>: NUMBER</p>
 <p>Port number to connect to the database. <em>Default</em>: <code class="docutils literal"><span class="pre">5439</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">port</span><span class="p">:</span> <span class="mi">2345</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">port</span><span class="p">:</span> <span class="mi">2345</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>user</strong>: NAME</p>
 <p>User to connect to the database</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">user</span><span class="p">:</span> <span class="n">app_user</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">user</span><span class="p">:</span> <span class="n">app_user</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>ssl</strong>: BOOLEAN</p>
 <p>Enable SSL to connect to the database. <em>Default</em>: <code class="docutils literal"><span class="pre">false</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ssl</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">ssl</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>schema</strong>: NAME</p>
 <p>Default schema name. <em>Default</em>: <code class="docutils literal"><span class="pre">public</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">schema</span><span class="p">:</span> <span class="n">my_schema</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">schema</span><span class="p">:</span> <span class="n">my_schema</span>
 </pre></div>
 </div>
 </li>
@@ -297,70 +297,70 @@ If this option isn&#8217;t specified, this operator tries to use a federated use
 <p>Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. <em>Default</em>: <code class="docutils literal"><span class="pre">true</span></code>.
 This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn&#8217;t allowed, this option should be false.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">strict_transaction</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">strict_transaction</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>status_table_schema</strong>: NAME</p>
 <p>Schema name of status table. <em>Default</em>: same as the value of <code class="docutils literal"><span class="pre">schema</span></code> option.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">status_table_schema</span><span class="p">:</span> <span class="n">writable_schema</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">status_table_schema</span><span class="p">:</span> <span class="n">writable_schema</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>status_table</strong>: NAME</p>
 <p>Table name prefix of status table. <em>Default</em>: <code class="docutils literal"><span class="pre">__digdag_status</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">status_table</span><span class="p">:</span> <span class="n">customized_status_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">status_table</span><span class="p">:</span> <span class="n">customized_status_table</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>table</strong>: NAME</p>
 <p>Table name in Redshift database to be loaded data</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">table</span><span class="p">:</span> <span class="n">access_logs</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">table</span><span class="p">:</span> <span class="n">access_logs</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>from</strong>: URI</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">FROM</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">today</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">from</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">today</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>column_list</strong>: CSV</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">COLUMN_LIST</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">column_list</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">referer</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">method</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">column_list</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">referer</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">method</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>manifest</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">MANIFEST</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">manifest</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">manifest</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>encrypted</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">ENCRYPTED</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">encrypted</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">encrypted</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>readratio</strong>: NUMBER</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">READRATIO</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">readratio</span><span class="p">:</span> <span class="mi">150</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">readratio</span><span class="p">:</span> <span class="mi">150</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>region</strong>: NAME</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">REGION</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">region</span><span class="p">:</span> <span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="o">-</span><span class="mi">1</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">region</span><span class="p">:</span> <span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="o">-</span><span class="mi">1</span>
 </pre></div>
 </div>
 </li>
@@ -368,217 +368,217 @@ This operator creates and uses a status table in the database to make an operati
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">CSV</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement.
 If you want to just use default quote charactor of <code class="docutils literal"><span class="pre">CSV</span></code> parameter, set empty string like <code class="docutils literal"><span class="pre">csv:</span> <span class="pre">''</span></code></p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">csv</span><span class="p">:</span> <span class="s2">&quot;&#39;&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">csv</span><span class="p">:</span> <span class="s2">&quot;&#39;&quot;</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>delimiter</strong>: CHARACTER</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">DELIMITER</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">delimiter</span><span class="p">:</span> <span class="s2">&quot;$&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">delimiter</span><span class="p">:</span> <span class="s2">&quot;$&quot;</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>json</strong>: URI</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">JSON</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">json</span><span class="p">:</span> <span class="n">auto</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">json</span><span class="p">:</span> <span class="n">auto</span>
 </pre></div>
 </div>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">json</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">jsonpathfile</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">json</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">jsonpathfile</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>avro</strong>: URI</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">AVRO</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">avro</span><span class="p">:</span> <span class="n">auto</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">avro</span><span class="p">:</span> <span class="n">auto</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">avro</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">jsonpathfile</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">avro</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">app</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">access_logs</span><span class="o">/</span><span class="n">jsonpathfile</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>fixedwidth</strong>: CSV</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">FIXEDWIDTH</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fixedwidth</span><span class="p">:</span> <span class="n">host</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span><span class="n">code</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="n">method</span><span class="p">:</span><span class="mi">15</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">fixedwidth</span><span class="p">:</span> <span class="n">host</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span><span class="n">code</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="n">method</span><span class="p">:</span><span class="mi">15</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>gzip</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">GZIP</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gzip</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">gzip</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>bzip2</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">BZIP2</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bzip2</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">bzip2</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>lzop</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">LZOP</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">lzop</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">lzop</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>acceptanydate</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">ACCEPTANYDATE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">acceptanydate</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">acceptanydate</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>acceptinvchars</strong>: CHARACTER</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">ACCEPTINVCHARS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">acceptinvchars</span><span class="p">:</span> <span class="s2">&quot;&amp;&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">acceptinvchars</span><span class="p">:</span> <span class="s2">&quot;&amp;&quot;</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>blanksasnull</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">BLANKSASNULL</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">blanksasnull</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">blanksasnull</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>dateformat</strong>: STRING</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">DATEFORMAT</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dateformat</span><span class="p">:</span> <span class="n">yyyy</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">dd</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">dateformat</span><span class="p">:</span> <span class="n">yyyy</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">dd</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>emptyasnull</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">EMPTYASNULL</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">emptyasnull</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">emptyasnull</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>encoding</strong>: TYPE</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">ENCODING</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">encoding</span><span class="p">:</span> <span class="n">UTF8</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">encoding</span><span class="p">:</span> <span class="n">UTF8</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>escape</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">ESCAPE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">escape</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">escape</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>explicit_ids</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">EXPLICIT_IDS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">explicit_ids</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">explicit_ids</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>fillrecord</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">FILLRECORD</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fillrecord</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">fillrecord</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>ignoreblanklines</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">IGNOREBLANKLINES</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ignoreblanklines</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">ignoreblanklines</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>ignoreheader</strong>: NUMBER</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">IGNOREHEADER</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ignoreheader</span><span class="p">:</span> <span class="mi">2</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">ignoreheader</span><span class="p">:</span> <span class="mi">2</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>null_as</strong>: STRING</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">NULL</span> <span class="pre">AS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">null_as</span><span class="p">:</span> <span class="n">nULl</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">null_as</span><span class="p">:</span> <span class="n">nULl</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>removequotes</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">REMOVEQUOTES</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">removequotes</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">removequotes</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>roundec</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">ROUNDEC</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">roundec</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">roundec</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>timeformat</strong>: STRING</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">TIMEFORMAT</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">timeformat</span><span class="p">:</span> <span class="n">YYYY</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">DD</span> <span class="n">HH</span><span class="p">:</span><span class="n">MI</span><span class="p">:</span><span class="n">SS</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">timeformat</span><span class="p">:</span> <span class="n">YYYY</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">DD</span> <span class="n">HH</span><span class="p">:</span><span class="n">MI</span><span class="p">:</span><span class="n">SS</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>trimblanks</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">TRIMBLANKS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">trimblanks</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">trimblanks</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>truncatecolumns</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">TRUNCATECOLUMNS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">truncatecolumns</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">truncatecolumns</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>comprows</strong>: NUMBER</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">COMPROWS</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">comprows</span><span class="p">:</span> <span class="mi">12</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">comprows</span><span class="p">:</span> <span class="mi">12</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>compupdate</strong>: TYPE</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">COMPUPDATE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">compupdate</span><span class="p">:</span> <span class="n">ON</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">compupdate</span><span class="p">:</span> <span class="n">ON</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>maxerror</strong>: NUMBER</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">MAXERROR</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">maxerror</span><span class="p">:</span> <span class="mi">34</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">maxerror</span><span class="p">:</span> <span class="mi">34</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>noload</strong>: BOOLEAN</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">NOLOAD</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">noload</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">noload</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>statupdate</strong>: TYPE</p>
 <p>Parameter mapped to <code class="docutils literal"><span class="pre">STATUPDATE</span></code> parameter of Redshift&#8217;s <code class="docutils literal"><span class="pre">COPY</span></code> statement</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">statupdate</span><span class="p">:</span> <span class="n">off</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">statupdate</span><span class="p">:</span> <span class="n">off</span>
 </pre></div>
 </div>
 </li>
@@ -593,7 +593,7 @@ This operator tries to use temporary security credentials as follows:</p>
 <p>So either of <code class="docutils literal"><span class="pre">AssumeRole</span></code> or <code class="docutils literal"><span class="pre">GetFederationToken</span></code> action is called to use temporary security credentials by default for secure operation.
 But if this option is disabled, this operator uses credentials as-is set in the secrets insread of temporary security credentials.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">temp_credentials</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">temp_credentials</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
@@ -601,7 +601,7 @@ But if this option is disabled, this operator uses credentials as-is set in the 
 <p>Session duration of temporary security credentials. <em>Default</em>: <code class="docutils literal"><span class="pre">3</span> <span class="pre">hour</span></code>.
 This option isn&#8217;t used when disabling <code class="docutils literal"><span class="pre">temp_credentials</span></code></p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">session_duration</span><span class="p">:</span> <span class="mi">1800</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">session_duration</span><span class="p">:</span> <span class="mi">1800</span>
 </pre></div>
 </div>
 </li>

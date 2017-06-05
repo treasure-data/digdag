@@ -177,7 +177,7 @@
 <p><strong>td_for_each&gt;</strong> operator loops subtasks for each result rows of a Hive or Presto query on Treasure Data.</p>
 <p>Subtasks set at <code class="docutils literal"><span class="pre">_do</span></code> section can reference results using ${td.each.COLUMN_NAME} syntax where COLUMN_NAME is a name of column.</p>
 <p>For example, if you run a query <code class="docutils literal"><span class="pre">select</span> <span class="pre">email,</span> <span class="pre">name</span> <span class="pre">from</span> <span class="pre">users</span></code> and the query returns 3 rows, this operator runs subtasks 3 times with <code class="docutils literal"><span class="pre">${td.each.email}</span></code> and <code class="docutils literal"><span class="pre">${td.each.name}}</span></code> parameters.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>_export:
+<div class="highlight-default"><div class="highlight"><pre>_export:
   td:
     database: www_access
 
@@ -202,14 +202,14 @@
 <li><p class="first"><strong>td&gt;</strong>: FILE.sql</p>
 <p>Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">td</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">step1</span><span class="o">.</span><span class="n">sql</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Name of a database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
 </pre></div>
 </div>
 </li>
@@ -222,10 +222,10 @@
 <li><p class="first"><strong>engine</strong>: presto</p>
 <p>Query engine (<code class="docutils literal"><span class="pre">presto</span></code> or <code class="docutils literal"><span class="pre">hive</span></code>).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
 </pre></div>
 </div>
 </li>
@@ -240,7 +240,7 @@
 <li><p class="first"><strong>td.last_job_id</strong></p>
 <p>The job id this task executed.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">52036074</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="mi">52036074</span>
 </pre></div>
 </div>
 </li>

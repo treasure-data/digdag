@@ -172,7 +172,7 @@
 <span id="loop-repeat-tasks"></span><h1>loop&gt;: Repeat tasks<a class="headerlink" href="#loop-repeat-tasks" title="Permalink to this headline">¶</a></h1>
 <p><strong>loop&gt;</strong> operator runs subtasks multiple times.</p>
 <p>This operator exports <code class="docutils literal"><span class="pre">${i}</span></code> variable for the subtasks. Its value begins from 0. For example, if count is 3, a task runs with i=0, i=1, and i=2.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>+repeat:
+<div class="highlight-default"><div class="highlight"><pre>+repeat:
   loop&gt;: 7
   _do:
     +step1:
@@ -187,14 +187,14 @@
 <li><p class="first"><strong>loop&gt;:</strong> COUNT
 Number of times to run the tasks.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">loop</span><span class="o">&gt;</span><span class="p">:</span> <span class="mi">7</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">&gt;</span><span class="p">:</span> <span class="mi">7</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>_parallel</strong>: BOOLEAN
 Runs the repeating tasks in parallel.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_parallel</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_parallel</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>

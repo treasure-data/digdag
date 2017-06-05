@@ -171,7 +171,7 @@
   <div class="section" id="gcs-wait-wait-for-a-file-in-google-cloud-storage">
 <span id="gcs-wait-wait-for-a-file-in-google-cloud-storage"></span><h1>gcs_wait&gt;: Wait for a file in Google Cloud Storage<a class="headerlink" href="#gcs-wait-wait-for-a-file-in-google-cloud-storage" title="Permalink to this headline">¶</a></h1>
 <p><strong>gcs_wait&gt;</strong> operator can be used to wait for file to appear in Google Cloud Storage.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">wait</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="o">+</span><span class="n">wait</span><span class="p">:</span>
   <span class="n">gcs_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_bucket</span><span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="n">file</span>
 
 <span class="o">+</span><span class="n">wait</span><span class="p">:</span>
@@ -192,11 +192,11 @@
 <li><p class="first"><strong>gcs_wait&gt;</strong>: URI | BUCKET/OBJECT</p>
 <p>Google Cloud Storage URI or path of the file to wait for.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gcs_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">directory</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">gz</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">gcs_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">directory</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">gz</span>
 </pre></div>
 </div>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gcs_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">directory</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">gz</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">gcs_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">directory</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">gz</span>
 </pre></div>
 </div>
 </li>
@@ -213,7 +213,7 @@
 <ul>
 <li><p class="first"><strong>gcs_wait.last_object</strong></p>
 <p>Information about the detected file.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="p">{</span>
+<div class="highlight-default"><div class="highlight"><pre>  <span class="p">{</span>
       <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
           <span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my_bucket&quot;</span><span class="p">,</span>
           <span class="s2">&quot;contentType&quot;</span><span class="p">:</span> <span class="s2">&quot;text/plain&quot;</span><span class="p">,</span>

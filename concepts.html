@@ -205,7 +205,7 @@
 <span id="dynamic-task-generation-and-check-error-tasks"></span><h2>Dynamic task generation and _check/_error tasks<a class="headerlink" href="#dynamic-task-generation-and-check-error-tasks" title="Permalink to this headline">¶</a></h2>
 <p>Digdag transforms a workflow into a set of tasks with dependencies. This graph of the tasks is called DAG, Directed Acyclic Graph. DAG is good to execute from the most dependent task to the end. However, it can&#8217;t represent loops. Representing <code class="docutils literal"><span class="pre">if</span></code> branches is also not straightforward.</p>
 <p>But loops and branches are useful. To solve this issue, Digdag dynamically appends tasks to an executing DAG. In following example, Digdag generates 3 tasks to represent a loop: <code class="docutils literal"><span class="pre">+example^sub+loop-0</span></code>, <code class="docutils literal"><span class="pre">+example^sub+loop-1</span></code>, and <code class="docutils literal"><span class="pre">+example^sub+loop-2</span></code> (name of a dynamically generated task starts with <code class="docutils literal"><span class="pre">^sub</span></code>):</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+example</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+example</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">loop&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
   <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">echo&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this is ${i}th loop</span>
@@ -219,7 +219,7 @@
 <span id="task-naming-and-resuming"></span><h2>Task naming and resuming<a class="headerlink" href="#task-naming-and-resuming" title="Permalink to this headline">¶</a></h2>
 <p>A task has an unique name in an attempt. When you retry an attempt, this name is used to match tasks in the last attempt.</p>
 <p>Children tasks have parent task&#8217;s name as the prefix. Workflow name is also prefixed as the root task. In following example, task names will be <code class="docutils literal"><span class="pre">+my_workflow+load+from_mysql+tables</span></code>, <code class="docutils literal"><span class="pre">+my_workflow+load+from_postgres</span></code>, and <code class="docutils literal"><span class="pre">+my_workflow+dump</span></code>.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># my_workflow.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># my_workflow.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">+from_mysql</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">+tables</span><span class="p p-Indicator">:</span>

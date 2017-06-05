@@ -174,7 +174,7 @@
   <div class="section" id="td-wait-table-waits-for-data-arriving-at-treasure-data-table">
 <span id="td-wait-table-waits-for-data-arriving-at-treasure-data-table"></span><h1>td_wait_table&gt;: Waits for data arriving at Treasure Data table<a class="headerlink" href="#td-wait-table-waits-for-data-arriving-at-treasure-data-table" title="Permalink to this headline">¶</a></h1>
 <p><strong>td_wait_table&gt;</strong> operator checks a table periodically until it has certain number of records in a configured range. This is useful to wait execution of following tasks until some records are imported to a table.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
   <span class="n">td</span><span class="p">:</span>
     <span class="n">database</span><span class="p">:</span> <span class="n">www_access</span>
 
@@ -199,21 +199,21 @@
 <li><p class="first"><strong>td_wait_table&gt;</strong>: FILE.sql</p>
 <p>Name of a table.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td_wait_table</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">target_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">td_wait_table</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">target_table</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>rows</strong>: N</p>
 <p>Number of rows to wait (default: 0).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rows</span><span class="p">:</span> <span class="mi">10</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">rows</span><span class="p">:</span> <span class="mi">10</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Name of a database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
 </pre></div>
 </div>
 </li>
@@ -226,10 +226,10 @@
 <li><p class="first"><strong>engine</strong>: presto</p>
 <p>Query engine (<code class="docutils literal"><span class="pre">presto</span></code> or <code class="docutils literal"><span class="pre">hive</span></code>).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
 </pre></div>
 </div>
 </li>

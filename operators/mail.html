@@ -172,7 +172,7 @@
 <li><p class="first">a) Generate a new app password at <a class="reference external" href="https://security.google.com/settings/security/apppasswords">App passwords</a>. This needs to enable 2-Step Verification first.</p>
 </li>
 <li><p class="first">b) Enable access for less secure apps at <a class="reference external" href="https://www.google.com/settings/security/lesssecureapps">Less secure apps</a>. This works even if 2-Step Verification is not enabled.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
   <span class="n">mail</span><span class="p">:</span>
     <span class="n">from</span><span class="p">:</span> <span class="s2">&quot;you@gmail.com&quot;</span>
 
@@ -203,42 +203,50 @@
 <li><p class="first"><strong>mail.host</strong>: HOST</p>
 <p>SMTP host name.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">host</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">gmail</span><span class="o">.</span><span class="n">com</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">.</span><span class="n">host</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">gmail</span><span class="o">.</span><span class="n">com</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>mail.port</strong>: PORT</p>
 <p>SMTP port number.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">port</span><span class="p">:</span> <span class="mi">587</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">.</span><span class="n">port</span><span class="p">:</span> <span class="mi">587</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>mail.username</strong>: NAME</p>
 <p>SMTP login username.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">username</span><span class="p">:</span> <span class="n">me</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">.</span><span class="n">username</span><span class="p">:</span> <span class="n">me</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>mail.password</strong>: PASSWORD</p>
 <p>SMTP login password.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="p">:</span> <span class="n">MyPaSsWoRd</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="p">:</span> <span class="n">MyPaSsWoRd</span>
+</pre></div>
+</div>
+<p>If you encountered <code class="docutils literal"><span class="pre">Unsecure</span> <span class="pre">'password'</span> <span class="pre">parameter</span> <span class="pre">is</span> <span class="pre">deprecated.</span></code> message, please confirm you used the following command.</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="c1"># Server Mode</span>
+<span class="n">digdag</span> <span class="n">secret</span> <span class="o">--</span><span class="n">project</span> <span class="n">test_mail</span> <span class="o">--</span><span class="nb">set</span> <span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="o">=</span><span class="n">xxxxx</span>
+
+<span class="c1"># Local Mode stores the parameter into `~/.config/digdag/secrets/mail.password`</span>
+<span class="n">digdag</span> <span class="n">secret</span> <span class="o">--</span><span class="n">local</span> <span class="o">--</span><span class="nb">set</span> <span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="o">=</span><span class="n">xxxxx</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>mail.tls</strong>: BOOLEAN
 Enables TLS handshake.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">tls</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">.</span><span class="n">tls</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>mail.ssl</strong>: BOOLEAN</p>
 <p>Enables legacy SSL encryption.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">ssl</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">.</span><span class="n">ssl</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
@@ -251,7 +259,7 @@ Enables TLS handshake.</p>
 <p>Path to a mail body template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.
 Alternatively, you can set <code class="docutils literal"><span class="pre">{data:</span> <span class="pre">TEXT}</span></code> to embed body text in the .dig file.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">mail_body</span><span class="o">.</span><span class="n">txt</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">mail</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">mail_body</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -261,70 +269,70 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <li><p class="first"><strong>subject</strong>: SUBJECT</p>
 <p>Subject of the email.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">subject</span><span class="p">:</span> <span class="n">Mail</span> <span class="n">From</span> <span class="n">Digdag</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subject</span><span class="p">:</span> <span class="n">Mail</span> <span class="n">From</span> <span class="n">Digdag</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>to</strong>: [ADDR1, ADDR2, ...]</p>
 <p>To addresses.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">to</span><span class="p">:</span> <span class="p">[</span><span class="n">analyst</span><span class="nd">@examile</span><span class="o">.</span><span class="n">com</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">to</span><span class="p">:</span> <span class="p">[</span><span class="n">analyst</span><span class="nd">@examile</span><span class="o">.</span><span class="n">com</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>from</strong>: ADDR
 From address.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">:</span> <span class="n">admin</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">from</span><span class="p">:</span> <span class="n">admin</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>host</strong>: NAME</p>
 <p>SMTP host name.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">host</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">gmail</span><span class="o">.</span><span class="n">com</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">host</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">gmail</span><span class="o">.</span><span class="n">com</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>port</strong>: NAME</p>
 <p>SMTP port number.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">port</span><span class="p">:</span> <span class="mi">587</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">port</span><span class="p">:</span> <span class="mi">587</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>username</strong>: NAME</p>
 <p>SMTP login username.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">username</span><span class="p">:</span> <span class="n">me</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">username</span><span class="p">:</span> <span class="n">me</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>tls</strong>: BOOLEAN</p>
 <p>Enables TLS handshake.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tls</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">tls</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>ssl</strong>: BOOLEAN</p>
 <p>Enables legacy SSL encryption.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ssl</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">ssl</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>html</strong>: BOOLEAN</p>
 <p>Uses HTML mail (default: false).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">html</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">html</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>debug</strong>: BOOLEAN</p>
 <p>Shows debug logs (default: false).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">debug</span><span class="p">:</span> <span class="n">false</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">debug</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
 </li>
@@ -336,7 +344,7 @@ From address.</p>
 <li><strong>filename: NAME</strong>: Name of this file. Default is base name of the path.</li>
 </ul>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">attach_files</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">attach_files</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">path</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">csv</span>
   <span class="o">-</span> <span class="n">path</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">dat</span>
     <span class="n">filename</span><span class="p">:</span> <span class="n">workflow_result_data</span><span class="o">.</span><span class="n">csv</span>

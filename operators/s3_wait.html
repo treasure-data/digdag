@@ -171,7 +171,7 @@
   <div class="section" id="s3-wait-wait-for-a-file-in-amazon-s3">
 <span id="s3-wait-wait-for-a-file-in-amazon-s3"></span><h1>s3_wait&gt;: Wait for a file in Amazon S3<a class="headerlink" href="#s3-wait-wait-for-a-file-in-amazon-s3" title="Permalink to this headline">¶</a></h1>
 <p><strong>s3_wait&gt;</strong> operator waits for file to appear in Amazon S3.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">wait</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="o">+</span><span class="n">wait</span><span class="p">:</span>
   <span class="n">s3_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">key</span>
 </pre></div>
 </div>
@@ -208,10 +208,10 @@
 <li><p class="first"><strong>s3_wait&gt;</strong>: BUCKET/KEY</p>
 <p>Path to the file in Amazon S3 to wait for.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">s3_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">gz</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">s3_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">my</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">gz</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">s3_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">file</span><span class="o">/</span><span class="ow">in</span><span class="o">/</span><span class="n">a</span><span class="o">/</span><span class="n">directory</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">s3_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">file</span><span class="o">/</span><span class="ow">in</span><span class="o">/</span><span class="n">a</span><span class="o">/</span><span class="n">directory</span>
 </pre></div>
 </div>
 </li>
@@ -242,7 +242,7 @@
 <ul>
 <li><p class="first"><strong>s3.last_object</strong></p>
 <p>Information about the detected file.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="p">{</span>
+<div class="highlight-default"><div class="highlight"><pre>  <span class="p">{</span>
     <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
       <span class="s2">&quot;Accept-Ranges&quot;</span><span class="p">:</span> <span class="s2">&quot;bytes&quot;</span><span class="p">,</span>
       <span class="s2">&quot;Access-Control-Allow-Origin&quot;</span><span class="p">:</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>

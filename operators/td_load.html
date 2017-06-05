@@ -176,7 +176,7 @@
   <div class="section" id="td-load-treasure-data-bulk-loading">
 <span id="td-load-treasure-data-bulk-loading"></span><h1>td_load&gt;: Treasure Data bulk loading<a class="headerlink" href="#td-load-treasure-data-bulk-loading" title="Permalink to this headline">¶</a></h1>
 <p><strong>td_load&gt;</strong> operator loads data from storages, databases, or services.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">td_load</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">config</span><span class="o">/</span><span class="n">guessed</span><span class="o">.</span><span class="n">yml</span>
   <span class="n">database</span><span class="p">:</span> <span class="n">prod</span>
   <span class="n">table</span><span class="p">:</span> <span class="n">raw</span>
@@ -202,21 +202,21 @@
 <li><p class="first"><strong>td_load&gt;</strong>: FILE.yml</p>
 <p>Path to a YAML template file. This configuration needs to be guessed using td command. If you saved DataConnector job on Treasure Data, you can use job name instead of YAML path.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td_load</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">imports</span><span class="o">/</span><span class="n">load</span><span class="o">.</span><span class="n">yml</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">td_load</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">imports</span><span class="o">/</span><span class="n">load</span><span class="o">.</span><span class="n">yml</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Name of the database load data to.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_database</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_database</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>table</strong>: NAME</p>
 <p>Name of the table load data to.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">table</span><span class="p">:</span> <span class="n">my_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">table</span><span class="p">:</span> <span class="n">my_table</span>
 </pre></div>
 </div>
 </li>
@@ -234,7 +234,7 @@
 <li><p class="first"><strong>td.last_job_id</strong></p>
 <p>The job id this task executed.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">52036074</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="mi">52036074</span>
 </pre></div>
 </div>
 </li>
