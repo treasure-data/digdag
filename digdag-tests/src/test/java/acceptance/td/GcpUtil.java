@@ -14,6 +14,7 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
 import io.digdag.client.DigdagClient;
+import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,9 +217,17 @@ public class GcpUtil
         for (TableList.Tables table : tables) {
             String tableId = table.getTableReference().getTableId();
             try {
-                bq.tables().delete(gcpProjectId, datasetId, tableId).execute();
+                RetryExecutor.retryExecutor()
+                        .retryIf((ex) ->
+                                        ex instanceof IOException ||
+                                                (ex instanceof GoogleJsonResponseException &&
+                                                        ((GoogleJsonResponseException) ex).getDetails().getErrors().stream()
+                                                                .anyMatch(x -> x.getReason().equals("resourceInUse")))
+
+                        )
+                        .run(() -> bq.tables().delete(gcpProjectId, datasetId, tableId).execute());
             }
-            catch (IOException e) {
+            catch (RetryExecutor.RetryGiveupException e) {
                 e.printStackTrace();
             }
         }
