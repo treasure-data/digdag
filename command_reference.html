@@ -134,6 +134,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
 <li class="toctree-l1"><a class="reference internal" href="internal.html">Internal architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logo.html">Logo</a></li>
 </ul>
 
             
@@ -298,6 +299,10 @@
 <dd><p class="first">Disables session state files completely.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--no-save</span></code></p>
 </dd>
+<dt><strong class="command">--max-task-threads N</strong></dt>
+<dd><p class="first">Limit maximum number of task execution threads.</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
+</dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
 <dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
@@ -375,7 +380,7 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--task-log</span> <span class="pre">digdag.log</span></code></p>
 </dd>
 <dt><strong class="command">--max-task-threads N</strong></dt>
-<dd><p class="first">Limit maxium number of task execution threads on this server.</p>
+<dd><p class="first">Limit maximum number of task execution threads on this server.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
@@ -448,13 +453,13 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--disable-local-agent</span></code></p>
 </dd>
 <dt><strong class="command">--max-task-threads N</strong></dt>
-<dd><p class="first">Limit maxium number of task execution threads on this server.</p>
+<dd><p class="first">Limit maximum number of task execution threads on this server.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">--disable-executor-loop</strong></dt>
 <dd><p class="first">Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.</p>
 <p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also <code class="docutils literal"><span class="pre">--disable-local-agent</span></code> option.</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--disable-executor-loop</span></code></p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Server configuration property path. See the followings for details.</p>
@@ -469,7 +474,7 @@
 <li>server.admin.port (integer)</li>
 <li>server.access-log.path (string. same with &#8211;access-log)</li>
 <li>server.access-log.pattern (string, &#8220;json&#8221;, &#8220;combined&#8221; or &#8220;common&#8221;)</li>
-<li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)</li>
+<li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores or 2, whichever is greater)</li>
 <li>server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)</li>
 <li>server.http.no-request-timeout (maximum allowed time for clients to keep a connection open without sending requests or receiving responses in seconds. default: 60)</li>
 <li>server.http.request-parse-timeout (maximum allowed time of reading a HTTP request in seconds. this doesn&#8217;t affect on reading request body. default: 30)</li>

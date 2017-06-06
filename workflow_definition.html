@@ -104,6 +104,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#include-another-file">!include another file</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parallel-execution">Parallel execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#retrying-failed-tasks-automatically">Retrying failed tasks automatically</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#sending-error-notification">Sending error notification</a></li>
 </ul>
 </li>
@@ -114,6 +115,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
 <li class="toctree-l1"><a class="reference internal" href="internal.html">Internal architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logo.html">Logo</a></li>
 </ul>
 
             
@@ -175,7 +177,8 @@
 </li>
 <li><a class="reference internal" href="#include-another-file" id="id13">!include another file</a></li>
 <li><a class="reference internal" href="#parallel-execution" id="id14">Parallel execution</a></li>
-<li><a class="reference internal" href="#sending-error-notification" id="id15">Sending error notification</a></li>
+<li><a class="reference internal" href="#retrying-failed-tasks-automatically" id="id15">Retrying failed tasks automatically</a></li>
+<li><a class="reference internal" href="#sending-error-notification" id="id16">Sending error notification</a></li>
 </ul>
 </div>
 <div class="section" id="workflow-definition-dig-files">
@@ -402,7 +405,7 @@
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;my_var should be 2: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">my_var</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal"><span class="pre">digdag.env.store(dict)</span></code> stores variables so that all folling tasks (including tasks which are not children of the task) can use them.</p>
+<p><code class="docutils literal"><span class="pre">digdag.env.store(dict)</span></code> stores variables so that all following tasks (including tasks which are not children of the task) can use them.</p>
 <p><code class="docutils literal"><span class="pre">digdag.env.export(dict)</span></code> is same with &#8220;_export&#8221; directive in YAML file. It defines variables for their children.</p>
 <p>See language API documents for details:</p>
 <ul class="simple">
@@ -470,8 +473,31 @@
 </pre></div>
 </div>
 </div>
+<div class="section" id="retrying-failed-tasks-automatically">
+<h2><a class="toc-backref" href="#id15">Retrying failed tasks automatically</a><a class="headerlink" href="#retrying-failed-tasks-automatically" title="Permalink to this headline">¶</a></h2>
+<p>If <code class="docutils literal"><span class="pre">_retry:</span> <span class="pre">N</span></code> (N is an integer: 1, 2, 3, ...) parameter is set to a group, it retires the group from the beginning when one or more children failed.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span><span class="p p-Indicator">:</span>
+  <span class="c1"># If +erase_table, +load_data, or +check_loaded_data fail, it retries from</span>
+  <span class="c1"># +erase_table again.</span>
+  <span class="l l-Scalar l-Scalar-Plain">_retry</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">+erase_table</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/erase_table.sh</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">+load_data</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/load_data.sh</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">+check_loaded_data</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/check_loaded_data.sh</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
+</pre></div>
+</div>
+<p>Tasks also support <code class="docutils literal"><span class="pre">_retry:</span> <span class="pre">N</span></code> parameter to retry the specific task. Note that some operators don&#8217;t support the generic <code class="docutils literal"><span class="pre">_retry</span></code> option but has its own options to control retrying behavior.</p>
+</div>
 <div class="section" id="sending-error-notification">
-<h2><a class="toc-backref" href="#id15">Sending error notification</a><a class="headerlink" href="#sending-error-notification" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">Sending error notification</a><a class="headerlink" href="#sending-error-notification" title="Permalink to this headline">¶</a></h2>
 <p>If an operator configuration is set at <code class="docutils literal"><span class="pre">_error:</span></code> parameter, the operator runs when the workflow fails.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># this task runs when a workflow fails.</span>
 <span class="l l-Scalar l-Scalar-Plain">_error</span><span class="p p-Indicator">:</span>

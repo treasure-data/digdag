@@ -116,6 +116,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../releases.html">Release Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../logo.html">Logo</a></li>
 </ul>
 
             
@@ -225,6 +226,14 @@
 <p>SMTP login password.</p>
 <p>Examples:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="p">:</span> <span class="n">MyPaSsWoRd</span>
+</pre></div>
+</div>
+<p>If you encountered <code class="docutils literal"><span class="pre">Unsecure</span> <span class="pre">'password'</span> <span class="pre">parameter</span> <span class="pre">is</span> <span class="pre">deprecated.</span></code> message, please confirm you used the following command.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Server Mode</span>
+<span class="n">digdag</span> <span class="n">secret</span> <span class="o">--</span><span class="n">project</span> <span class="n">test_mail</span> <span class="o">--</span><span class="nb">set</span> <span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="o">=</span><span class="n">xxxxx</span>
+
+<span class="c1"># Local Mode stores the parameter into `~/.config/digdag/secrets/mail.password`</span>
+<span class="n">digdag</span> <span class="n">secret</span> <span class="o">--</span><span class="n">local</span> <span class="o">--</span><span class="nb">set</span> <span class="n">mail</span><span class="o">.</span><span class="n">password</span><span class="o">=</span><span class="n">xxxxx</span>
 </pre></div>
 </div>
 </li>
