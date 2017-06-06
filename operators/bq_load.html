@@ -171,7 +171,7 @@
   <div class="section" id="bq-load-importing-data-into-google-bigquery">
 <span id="bq-load-importing-data-into-google-bigquery"></span><h1>bq_load&gt;: Importing Data into Google BigQuery<a class="headerlink" href="#bq-load-importing-data-into-google-bigquery" title="Permalink to this headline">¶</a></h1>
 <p><strong>bq_load&gt;</strong> operator can be used to import data into Google BigQuery tables.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
   <span class="n">bq</span><span class="p">:</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
 
@@ -198,10 +198,10 @@
 <li><p class="first"><strong>bq_load&gt;</strong>: URI | LIST</p>
 <p>A URI or list of URIs identifying files in GCS to import.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">bq_load</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">data</span><span class="o">.</span><span class="n">csv</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_load</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">data</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">bq_load</span><span class="o">&gt;</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_load</span><span class="o">&gt;</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">data1</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">gz</span>
   <span class="o">-</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">data2_</span><span class="o">*.</span><span class="n">csv</span><span class="o">.</span><span class="n">gz</span>
 </pre></div>
@@ -210,28 +210,28 @@
 <li><p class="first"><strong>dataset</strong>: NAME</p>
 <p>The dataset that the destination table is located in or should be created in. Can also be specified directly in the table reference.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">dataset</span><span class="p">:</span> <span class="n">my_project</span><span class="p">:</span><span class="n">my_dataset</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset</span><span class="p">:</span> <span class="n">my_project</span><span class="p">:</span><span class="n">my_dataset</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>destination_table</strong>: NAME</p>
 <p>The table to store the imported data in.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_table</span><span class="p">:</span> <span class="n">my_result_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">my_result_table</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_project</span><span class="p">:</span><span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_table</span><span class="p">:</span> <span class="n">some_project</span><span class="p">:</span><span class="n">some_dataset</span><span class="o">.</span><span class="n">some_table</span>
 </pre></div>
 </div>
 <p>You can append a date as <code class="docutils literal"><span class="pre">$YYYYMMDD</span></code> form at the end of table name to store data in a specific partition.
 See <a class="reference external" href="https://cloud.google.com/bigquery/docs/creating-partitioned-tables">Creating and Updating Date-Partitioned Tables</a> document for details.</p>
-<div class="highlight-default"><div class="highlight"><pre>destination_table: some_dataset.some_partitioned_table$20160101
+<div class="highlight-default"><div class="highlight"><pre><span></span>destination_table: some_dataset.some_partitioned_table$20160101
 </pre></div>
 </div>
 </li>
@@ -241,23 +241,23 @@ See <a class="reference external" href="https://cloud.google.com/bigquery/docs/c
 <li><p class="first"><strong>source_format</strong>: CSV | NEWLINE_DELIMITED_JSON | AVRO | DATASTORE_BACKUP</p>
 <p>The format of the files to be imported. <em>Default</em>: <code class="docutils literal"><span class="pre">CSV</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">source_format</span><span class="p">:</span> <span class="n">CSV</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source_format</span><span class="p">:</span> <span class="n">CSV</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">source_format</span><span class="p">:</span> <span class="n">NEWLINE_DELIMITED_JSON</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source_format</span><span class="p">:</span> <span class="n">NEWLINE_DELIMITED_JSON</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">source_format</span><span class="p">:</span> <span class="n">AVRO</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source_format</span><span class="p">:</span> <span class="n">AVRO</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">source_format</span><span class="p">:</span> <span class="n">DATASTORE_BACKUP</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source_format</span><span class="p">:</span> <span class="n">DATASTORE_BACKUP</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>field_delimiter</strong>: CHARACTER</p>
 <p>The separator used between fields in CSV files to be imported. <em>Default</em>: <code class="docutils literal"><span class="pre">,</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">field_delimiter</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">t&#39;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">field_delimiter</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">t&#39;</span>
 </pre></div>
 </div>
 </li>
@@ -268,10 +268,10 @@ See <a class="reference external" href="https://cloud.google.com/bigquery/docs/c
 <li><code class="docutils literal"><span class="pre">CREATE_NEVER</span></code>: The destination table must already exist, otherwise the import will fail.</li>
 </ul>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_IF_NEEDED</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_IF_NEEDED</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_NEVER</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_disposition</span><span class="p">:</span> <span class="n">CREATE_NEVER</span>
 </pre></div>
 </div>
 </li>
@@ -283,44 +283,44 @@ See <a class="reference external" href="https://cloud.google.com/bigquery/docs/c
 <li><code class="docutils literal"><span class="pre">WRITE_EMPTY</span></code>: <em>(default)</em> The import fails if the destination table already exists and is not empty.</li>
 </ul>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_TRUNCATE</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_TRUNCATE</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_APPEND</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_APPEND</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_EMPTY</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">write_disposition</span><span class="p">:</span> <span class="n">WRITE_EMPTY</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>skip_leading_rows</strong>: INTEGER</p>
 <p>The number of leading rows to skip in CSV files to import. <em>Default</em>: <code class="docutils literal"><span class="pre">0</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">skip_leading_rows</span><span class="p">:</span> <span class="mi">1</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">skip_leading_rows</span><span class="p">:</span> <span class="mi">1</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>encoding</strong>: UTF-8 | ISO-8859-1
 The character encoding of the data in the files to import. <em>Default</em>: <code class="docutils literal"><span class="pre">UTF-8</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">encoding</span><span class="p">:</span> <span class="n">ISO</span><span class="o">-</span><span class="mi">8859</span><span class="o">-</span><span class="mi">1</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">encoding</span><span class="p">:</span> <span class="n">ISO</span><span class="o">-</span><span class="mi">8859</span><span class="o">-</span><span class="mi">1</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>quote</strong>: CHARACTER</p>
 <p>The character quote of the data in the files to import. <em>Default</em>: <code class="docutils literal"><span class="pre">'&quot;'</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">quote</span><span class="p">:</span> <span class="s1">&#39;&#39;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">quote</span><span class="p">:</span> <span class="s1">&#39;&#39;</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">quote</span><span class="p">:</span> <span class="s2">&quot;&#39;&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">quote</span><span class="p">:</span> <span class="s2">&quot;&#39;&quot;</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>max_bad_records</strong>: INTEGER</p>
 <p>The maximum number of bad records to ignore before failing the import. <em>Default</em>: <code class="docutils literal"><span class="pre">0</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">max_bad_records</span><span class="p">:</span> <span class="mi">100</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">max_bad_records</span><span class="p">:</span> <span class="mi">100</span>
 </pre></div>
 </div>
 </li>

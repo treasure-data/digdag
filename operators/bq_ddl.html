@@ -170,7 +170,7 @@
   <div class="section" id="bq-ddl-managing-google-bigquery-datasets-and-tables">
 <span id="bq-ddl-managing-google-bigquery-datasets-and-tables"></span><h1>bq_ddl&gt;: Managing Google BigQuery Datasets and Tables<a class="headerlink" href="#bq-ddl-managing-google-bigquery-datasets-and-tables" title="Permalink to this headline">¶</a></h1>
 <p><strong>bq_ddl&gt;</strong> operator can be used to create, delete and clear Google BigQuery Datasets and Tables.</p>
-<div class="highlight-default"><div class="highlight"><pre>_export:
+<div class="highlight-default"><div class="highlight"><pre><span></span>_export:
   bq:
     dataset: my_dataset
 
@@ -205,12 +205,12 @@
 <p>Create new datasets.</p>
 <p>For detailed information about dataset configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/datasets#resource">Google BigQuery Datasets Documentation</a>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">create_datasets</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_datasets</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">foo</span>
   <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">bar</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>create_datasets:
+<div class="highlight-default"><div class="highlight"><pre><span></span>create_datasets:
   - foo_dataset_${session_date_compact}
   - id: bar_dataset_${session_date_compact}
     project: other_project
@@ -235,12 +235,12 @@
 <p>Create new datasets, deleting them first if they already exist. Any tables in the datasets will also be deleted.</p>
 <p>For detailed information about dataset configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/datasets#resource">Google BigQuery Datasets Documentation</a>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">empty_datasets</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">empty_datasets</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">foo</span>
   <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">bar</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>empty_datasets:
+<div class="highlight-default"><div class="highlight"><pre><span></span>empty_datasets:
   - foo_dataset_${session_date_compact}
   - id: bar_dataset_${session_date_compact}
     project: other_project
@@ -264,12 +264,12 @@
 <li><p class="first"><strong>delete_datasets</strong>: LIST</p>
 <p>Delete datasets, if they exist.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">delete_datasets</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">delete_datasets</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">foo</span>
   <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">bar</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>delete_datasets:
+<div class="highlight-default"><div class="highlight"><pre><span></span>delete_datasets:
   - foo_dataset_${last_session_date_compact}
   - other_project:bar_dataset_${last_session_date_compact}
 </pre></div>
@@ -279,13 +279,13 @@
 <p>Create new tables.</p>
 <p>For detailed information about table configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/tables#resource">Google BigQuery Tables Documentation</a>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">create_tables</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_tables</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">foo</span>
   <span class="o">-</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">bar</span>
   <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">yet_another_dataset</span><span class="o">.</span><span class="n">baz</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>create_tables:
+<div class="highlight-default"><div class="highlight"><pre><span></span>create_tables:
   - foo_dataset_${session_date_compact}
   - id: bar_dataset_${session_date_compact}
     project: other_project
@@ -314,13 +314,13 @@
 Create new tables, deleting them first if they already exist.</p>
 <p>For detailed information about table configuration parameters, see the <a class="reference external" href="https://cloud.google.com/bigquery/docs/reference/v2/tables#resource">Google BigQuery Tables Documentation</a>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">empty_tables</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">empty_tables</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">foo</span>
   <span class="o">-</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">bar</span>
   <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">yet_another_dataset</span><span class="o">.</span><span class="n">baz</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>empty_tables:
+<div class="highlight-default"><div class="highlight"><pre><span></span>empty_tables:
   - foo_table_${session_date_compact}
   - id: bar_table_${session_date_compact}
     project: other_project
@@ -348,13 +348,13 @@ Create new tables, deleting them first if they already exist.</p>
 <li><p class="first"><strong>delete_tables</strong>: LIST
 Delete tables, if they exist.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">delete_tables</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">delete_tables</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">foo</span>
   <span class="o">-</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">bar</span>
   <span class="o">-</span> <span class="n">other_project</span><span class="p">:</span><span class="n">yet_another_dataset</span><span class="o">.</span><span class="n">baz</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>delete_tables:
+<div class="highlight-default"><div class="highlight"><pre><span></span>delete_tables:
   - foo_table_${last_session_date_compact}
   - bar_table_${last_session_date_compact}
 </pre></div>

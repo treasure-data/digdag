@@ -167,7 +167,7 @@
   <div class="section" id="http-making-http-requests">
 <span id="http-making-http-requests"></span><h1>http&gt;: Making HTTP requests<a class="headerlink" href="#http-making-http-requests" title="Permalink to this headline">¶</a></h1>
 <p><strong>http&gt;</strong> operator can be used to make HTTP requests.</p>
-<div class="highlight-default"><div class="highlight"><pre>+fetch:
+<div class="highlight-default"><div class="highlight"><pre><span></span>+fetch:
   http&gt;: https://api.example.com/foobars
   store_content: true
 
@@ -178,7 +178,7 @@
     bq&gt;: query.sql
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>+notify:
+<div class="highlight-default"><div class="highlight"><pre><span></span>+notify:
   http&gt;: https://api.example.com/data/sessions/{$session_uuid}
   method: POST
   content:
@@ -209,33 +209,33 @@
 <li><p class="first"><strong>http&gt;</strong>: URI</p>
 <p>The URI of the HTTP request.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">http</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">foobar</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">http</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">foobar</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>http&gt;: https://api.example.com/data/sessions/{$session_uuid}
+<div class="highlight-default"><div class="highlight"><pre><span></span>http&gt;: https://api.example.com/data/sessions/{$session_uuid}
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>method</strong>: STRING</p>
 <p>The method of the HTTP request. <em>Default:</em> <code class="docutils literal"><span class="pre">GET</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">method</span><span class="p">:</span> <span class="n">POST</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">method</span><span class="p">:</span> <span class="n">POST</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">method</span><span class="p">:</span> <span class="n">DELETE</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">method</span><span class="p">:</span> <span class="n">DELETE</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>content</strong>: STRING | INTEGER | BOOLEAN | OBJECT | ARRAY
 The content of the HTTP request. <em>Default:</em> No content.</p>
 <p>Scalars (i.e. strings, integers, booleans, etc) will by default be sent as plain text. Objects and arrays will by default be JSON serialized. The <code class="docutils literal"><span class="pre">content_format</span></code> parameter can be used to control the content serialization format.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">content</span><span class="p">:</span> <span class="s1">&#39;hello world&#39;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">content</span><span class="p">:</span> <span class="s1">&#39;hello world&#39;</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">content</span><span class="p">:</span> <span class="s1">&#39;${session_time}&#39;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">content</span><span class="p">:</span> <span class="s1">&#39;$</span><span class="si">{session_time}</span><span class="s1">&#39;</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>content:
+<div class="highlight-default"><div class="highlight"><pre><span></span>content:
   status: RUNNING
   time: ${session_time}
 </pre></div>
@@ -248,17 +248,17 @@ The content of the HTTP request. <em>Default:</em> No content.</p>
 <li><strong>json</strong>: Serialize the content as <a class="reference external" href="http://json.org/">JSON</a> and send it as <code class="docutils literal"><span class="pre">Content-Type:</span> <span class="pre">application/json</span></code>. This format can handle any <code class="docutils literal"><span class="pre">content</span></code> parameter value type.</li>
 <li><strong>form</strong>: Encode content as an HTML form and send it as <code class="docutils literal"><span class="pre">Content-Type:</span> <span class="pre">application/x-www-form-urlencoded</span></code>. <em>Note:</em> This requires the <code class="docutils literal"><span class="pre">content</span></code> parameter value to be an object.</li>
 </ul>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">content</span><span class="p">:</span> <span class="s1">&#39;hello world @ ${session_time}&#39;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">content</span><span class="p">:</span> <span class="s1">&#39;hello world @ $</span><span class="si">{session_time}</span><span class="s1">&#39;</span>
 <span class="n">content_format</span><span class="p">:</span> <span class="n">text</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>content:
+<div class="highlight-default"><div class="highlight"><pre><span></span>content:
   status: RUNNING
   time: ${session_time}
 content_format: json
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre>content:
+<div class="highlight-default"><div class="highlight"><pre><span></span>content:
   status: RUNNING
   time: ${session_time}
 content_format: form
@@ -267,7 +267,7 @@ content_format: form
 </li>
 <li><p class="first"><strong>content_type</strong>: STRING</p>
 <p>Override the inferred <code class="docutils literal"><span class="pre">Content-Type</span></code> header.</p>
-<div class="highlight-default"><div class="highlight"><pre>content: |
+<div class="highlight-default"><div class="highlight"><pre><span></span>content: |
   &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
   &lt;notification&gt;
     &lt;status&gt;RUNNING&lt;/status&gt;

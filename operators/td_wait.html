@@ -175,7 +175,7 @@
   <div class="section" id="td-wait-waits-for-data-arriving-at-treasure-data-table">
 <span id="td-wait-waits-for-data-arriving-at-treasure-data-table"></span><h1>td_wait&gt;: Waits for data arriving at Treasure Data table<a class="headerlink" href="#td-wait-waits-for-data-arriving-at-treasure-data-table" title="Permalink to this headline">¶</a></h1>
 <p><strong>td_wait&gt;</strong> operator runs a query periodically until it returns true. This operator can use more complex query compared to <a class="reference external" href="td_wait_table.html">td_wait_table&gt; operator</a>.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
   <span class="n">td</span><span class="p">:</span>
     <span class="n">database</span><span class="p">:</span> <span class="n">www_access</span>
 
@@ -187,9 +187,9 @@
 </pre></div>
 </div>
 <p>Example queries:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">select</span> <span class="mi">1</span> <span class="kn">from</span> <span class="nn">target_table</span> <span class="n">where</span> <span class="n">TD_TIME_RANGE</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s1">&#39;${session_time}&#39;</span><span class="p">)</span> <span class="n">limit</span> <span class="mi">1</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="mi">1</span> <span class="kn">from</span> <span class="nn">target_table</span> <span class="n">where</span> <span class="n">TD_TIME_RANGE</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s1">&#39;$</span><span class="si">{session_time}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="n">limit</span> <span class="mi">1</span>
 
-<span class="n">select</span> <span class="n">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="kn">from</span> <span class="nn">target_table</span> <span class="n">where</span> <span class="n">TD_TIME_RANGE</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s1">&#39;${last_session_time}&#39;</span><span class="p">)</span>
+<span class="n">select</span> <span class="n">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="kn">from</span> <span class="nn">target_table</span> <span class="n">where</span> <span class="n">TD_TIME_RANGE</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s1">&#39;$</span><span class="si">{last_session_time}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="section" id="secrets">
@@ -206,14 +206,14 @@
 <li><p class="first"><strong>td_wait&gt;</strong>: FILE.sql</p>
 <p>Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">td_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">check_recent_record</span><span class="o">.</span><span class="n">sql</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td_wait</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">queries</span><span class="o">/</span><span class="n">check_recent_record</span><span class="o">.</span><span class="n">sql</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Name of a database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_db</span>
 </pre></div>
 </div>
 </li>
@@ -226,10 +226,10 @@
 <li><p class="first"><strong>engine</strong>: presto</p>
 <p>Query engine (<code class="docutils literal"><span class="pre">presto</span></code> or <code class="docutils literal"><span class="pre">hive</span></code>).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">presto</span>
 </pre></div>
 </div>
 </li>
@@ -244,7 +244,7 @@
 <li><p class="first"><strong>td.last_job_id</strong></p>
 <p>The job id this task executed.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="mi">52036074</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">52036074</span>
 </pre></div>
 </div>
 </li>

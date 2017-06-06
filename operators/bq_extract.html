@@ -171,7 +171,7 @@
   <div class="section" id="bq-extract-exporting-data-from-google-bigquery">
 <span id="bq-extract-exporting-data-from-google-bigquery"></span><h1>bq_extract&gt;: Exporting Data from Google BigQuery<a class="headerlink" href="#bq-extract-exporting-data-from-google-bigquery" title="Permalink to this headline">¶</a></h1>
 <p><strong>bq_extract&gt;</strong> operator can be used to export data from Google BigQuery tables.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
   <span class="n">bq</span><span class="p">:</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">my_dataset</span>
 
@@ -199,23 +199,23 @@
 <li><p class="first"><strong>bq_extract&gt;</strong>: TABLE
 A reference to the table that should be exported.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_table</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_dataset</span><span class="o">.</span><span class="n">my_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_dataset</span><span class="o">.</span><span class="n">my_table</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_project</span><span class="p">:</span><span class="n">my_dataset</span><span class="o">.</span><span class="n">my_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bq_extract</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_project</span><span class="p">:</span><span class="n">my_dataset</span><span class="o">.</span><span class="n">my_table</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>destination</strong>: URI | LIST
 A URI or list of URIs with the location of the destination export files. These must be Google Cloud Storage URIs.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export</span><span class="o">.</span><span class="n">csv</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination</span><span class="p">:</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination</span><span class="p">:</span>
   <span class="o">-</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export_1</span><span class="o">.</span><span class="n">csv</span>
   <span class="o">-</span> <span class="n">gs</span><span class="p">:</span><span class="o">//</span><span class="n">my_bucket</span><span class="o">/</span><span class="n">my_export_2</span><span class="o">.</span><span class="n">csv</span>
 </pre></div>
@@ -227,30 +227,30 @@ Whether to print out a header row in the results. <em>Default</em>: <code class=
 <li><p class="first"><strong>field_delimiter</strong>: CHARACTER
 A delimiter to use between fields in the output. <em>Default</em>: <code class="docutils literal"><span class="pre">,</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">field_delimiter</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">t&#39;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">field_delimiter</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">t&#39;</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>destination_format</strong>: CSV | NEWLINE_DELIMITED_JSON | AVRO
 The format of the destination export file. <em>Default</em>: <code class="docutils literal"><span class="pre">CSV</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_format</span><span class="p">:</span> <span class="n">CSV</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_format</span><span class="p">:</span> <span class="n">CSV</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_format</span><span class="p">:</span> <span class="n">NEWLINE_DELIMITED_JSON</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_format</span><span class="p">:</span> <span class="n">NEWLINE_DELIMITED_JSON</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">destination_format</span><span class="p">:</span> <span class="n">AVRO</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">destination_format</span><span class="p">:</span> <span class="n">AVRO</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>compression</strong>: GZIP | NONE
 The compression to use for the export file. <em>Default</em>: <code class="docutils literal"><span class="pre">NONE</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">compression</span><span class="p">:</span> <span class="n">NONE</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">compression</span><span class="p">:</span> <span class="n">NONE</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">compression</span><span class="p">:</span> <span class="n">GZIP</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">compression</span><span class="p">:</span> <span class="n">GZIP</span>
 </pre></div>
 </div>
 </li>

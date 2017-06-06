@@ -174,22 +174,22 @@
   <div class="section" id="td-ddl-treasure-data-operations">
 <span id="td-ddl-treasure-data-operations"></span><h1>td_ddl&gt;: Treasure Data operations<a class="headerlink" href="#td-ddl-treasure-data-operations" title="Permalink to this headline">¶</a></h1>
 <p><strong>td_ddl&gt;</strong> operator runs an operational task on Treasure Data.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">_export</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
   <span class="n">td</span><span class="p">:</span>
     <span class="n">database</span><span class="p">:</span> <span class="n">www_access</span>
 
 <span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">td_ddl</span><span class="o">&gt;</span><span class="p">:</span>
-  <span class="n">create_tables</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;my_table_${session_date_compact}&quot;</span><span class="p">]</span>
+  <span class="n">create_tables</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;my_table_$</span><span class="si">{session_date_compact}</span><span class="s2">&quot;</span><span class="p">]</span>
 <span class="o">+</span><span class="n">step2</span><span class="p">:</span>
   <span class="n">td_ddl</span><span class="o">&gt;</span><span class="p">:</span>
-  <span class="n">drop_tables</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;my_table_${session_date_compact}&quot;</span><span class="p">]</span>
+  <span class="n">drop_tables</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;my_table_$</span><span class="si">{session_date_compact}</span><span class="s2">&quot;</span><span class="p">]</span>
 <span class="o">+</span><span class="n">step3</span><span class="p">:</span>
   <span class="n">td_ddl</span><span class="o">&gt;</span><span class="p">:</span>
-  <span class="n">empty_tables</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;my_table_${session_date_compact}&quot;</span><span class="p">]</span>
+  <span class="n">empty_tables</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;my_table_$</span><span class="si">{session_date_compact}</span><span class="s2">&quot;</span><span class="p">]</span>
 <span class="o">+</span><span class="n">step4</span><span class="p">:</span>
   <span class="n">td_ddl</span><span class="o">&gt;</span><span class="p">:</span>
-  <span class="n">rename_tables</span><span class="p">:</span> <span class="p">[{</span><span class="n">from</span><span class="p">:</span> <span class="s2">&quot;my_table_${session_date_compact}&quot;</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="s2">&quot;my_table&quot;</span><span class="p">}]</span>
+  <span class="n">rename_tables</span><span class="p">:</span> <span class="p">[{</span><span class="n">from</span><span class="p">:</span> <span class="s2">&quot;my_table_$</span><span class="si">{session_date_compact}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="s2">&quot;my_table&quot;</span><span class="p">}]</span>
 </pre></div>
 </div>
 <div class="section" id="secrets">
@@ -206,7 +206,7 @@
 <li><p class="first"><strong>create_tables</strong>: [ARRAY OF NAMES]</p>
 <p>Create new tables if not exists.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">create_tables</span><span class="p">:</span> <span class="p">[</span><span class="n">my_table1</span><span class="p">,</span> <span class="n">my_table2</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_tables</span><span class="p">:</span> <span class="p">[</span><span class="n">my_table1</span><span class="p">,</span> <span class="n">my_table2</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
@@ -215,7 +215,7 @@
 <li><p class="first"><strong>empty_tables</strong>: [ARRAY OF NAME]</p>
 <p>Create new tables (drop it first if it exists).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">empty_tables</span><span class="p">:</span> <span class="p">[</span><span class="n">my_table1</span><span class="p">,</span> <span class="n">my_table2</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">empty_tables</span><span class="p">:</span> <span class="p">[</span><span class="n">my_table1</span><span class="p">,</span> <span class="n">my_table2</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
@@ -224,35 +224,35 @@
 <li><p class="first"><strong>drop_tables</strong>: [ARRAY OF NAMES]</p>
 <p>Drop tables if exists.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">drop_tables</span><span class="p">:</span> <span class="p">[</span><span class="n">my_table1</span><span class="p">,</span> <span class="n">my_table2</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">drop_tables</span><span class="p">:</span> <span class="p">[</span><span class="n">my_table1</span><span class="p">,</span> <span class="n">my_table2</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>rename_tables</strong>: [ARRAY OF {to:, from:}]</p>
 <p>Rename a table to another name (override the destination table if it already exists).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">rename_tables</span><span class="p">:</span> <span class="p">[{</span><span class="n">from</span><span class="p">:</span> <span class="n">my_table1</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="n">my_table2</span><span class="p">}]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rename_tables</span><span class="p">:</span> <span class="p">[{</span><span class="n">from</span><span class="p">:</span> <span class="n">my_table1</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="n">my_table2</span><span class="p">}]</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>create_databases</strong>: [ARRAY OF NAMES]</p>
 <p>Create new databases if not exists.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">create_databases</span><span class="p">:</span> <span class="p">[</span><span class="n">my_database1</span><span class="p">,</span> <span class="n">my_database2</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">create_databases</span><span class="p">:</span> <span class="p">[</span><span class="n">my_database1</span><span class="p">,</span> <span class="n">my_database2</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>empty_databases</strong>: [ARRAY OF NAME]</p>
 <p>Create new databases (drop it first if it exists).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">empty_databases</span><span class="p">:</span> <span class="p">[</span><span class="n">my_database1</span><span class="p">,</span> <span class="n">my_database2</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">empty_databases</span><span class="p">:</span> <span class="p">[</span><span class="n">my_database1</span><span class="p">,</span> <span class="n">my_database2</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>drop_databases</strong>: [ARRAY OF NAMES]</p>
 <p>Drop databases if exists.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">drop_databases</span><span class="p">:</span> <span class="p">[</span><span class="n">my_database1</span><span class="p">,</span> <span class="n">my_database2</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">drop_databases</span><span class="p">:</span> <span class="p">[</span><span class="n">my_database1</span><span class="p">,</span> <span class="n">my_database2</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>

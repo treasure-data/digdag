@@ -176,7 +176,7 @@
 <p><strong>td_partial_delete&gt;</strong> operator deletes records from a Treasure Data table.</p>
 <p>Please be aware that records imported using streaming import can&#8217;t be deleted for several hours using td_partial_delete. Records imported by INSERT INTO, Data Connector (<a class="reference external" href="https://docs.treasuredata.com/articles/data-connector-hadoop-executor">MapReduce Executor</a>), and bulk imports can be deleted immediately.</p>
 <p>Time range needs to be hourly. Setting non-zero values to minutes or seconds will be rejected.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">td_partial_delete</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_table</span>
   <span class="n">database</span><span class="p">:</span> <span class="n">mydb</span>
   <span class="n">from</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0800</span>
@@ -196,28 +196,28 @@ The Treasure Data API key to use when running Treasure Data queries.</li>
 <li><p class="first"><strong>td_partial_delete&gt;</strong>: NAME</p>
 <p>Name of the table.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">td_partial_delete</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">td_partial_delete</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">my_table</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Name of the database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_database</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_database</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>from</strong>: yyyy-MM-ddTHH:mm:ss[Z]</p>
 <p>Delete records from this time (inclusive). Actual time range is :command:<code class="docutils literal"><span class="pre">[from,</span> <span class="pre">to)</span></code>. Value should be a UNIX timestamp integer (seconds) or string in ISO-8601 (yyyy-MM-ddTHH:mm:ss[Z]) format.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">from</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0800</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0800</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>to</strong>: yyyy-MM-ddTHH:mm:ss[Z]</p>
 <p>Delete records to this time (exclusive). Actual time range is :command:<code class="docutils literal"><span class="pre">[from,</span> <span class="pre">to)</span></code>. Value should be a UNIX timestamp integer (seconds) or string in ISO-8601 (yyyy-MM-ddTHH:mm:ss[Z]) format.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">to</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">01</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0800</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">to</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">01</span><span class="n">T00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">0800</span>
 </pre></div>
 </div>
 </li>

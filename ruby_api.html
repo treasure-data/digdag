@@ -153,7 +153,7 @@
 <div class="section" id="programmable-workflow-in-ruby">
 <h2>Programmable workflow in Ruby<a class="headerlink" href="#programmable-workflow-in-ruby" title="Permalink to this headline">¶</a></h2>
 <p>workflow.dig:</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">rb</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">require</span><span class="p p-Indicator">:</span> <span class="s">&#39;tasks/my_workflow&#39;</span>
 
@@ -165,7 +165,7 @@
 </pre></div>
 </div>
 <p>tasks/my_workflow.rb:</p>
-<div class="highlight-ruby"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyWorkflow</span>
+<div class="highlight-ruby"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span>
   <span class="k">def</span> <span class="nf">step1</span>
     <span class="nb">puts</span> <span class="s2">&quot;step1&quot;</span>
   <span class="k">end</span>
@@ -179,7 +179,7 @@
 </div>
 <div class="section" id="defining-variables">
 <h2>Defining variables<a class="headerlink" href="#defining-variables" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-ruby"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyWorkflow</span>
+<div class="highlight-ruby"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span>
   <span class="k">def</span> <span class="nf">step1</span>
     <span class="no">Digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="ss">my_value</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
   <span class="k">end</span>
@@ -193,7 +193,7 @@
 </div>
 <div class="section" id="method-argument-mapping">
 <h2>Method argument mapping<a class="headerlink" href="#method-argument-mapping" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-ruby"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyWorkflow</span>
+<div class="highlight-ruby"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span>
   <span class="k">def</span> <span class="nf">step1</span>
     <span class="no">Digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="ss">my_value</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
   <span class="k">end</span>
@@ -208,7 +208,7 @@
 <div class="section" id="generating-child-tasks">
 <h2>Generating child tasks<a class="headerlink" href="#generating-child-tasks" title="Permalink to this headline">¶</a></h2>
 <p>Generating Ruby child tasks:</p>
-<div class="highlight-ruby"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyWorkflow</span>
+<div class="highlight-ruby"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span>
   <span class="k">def</span> <span class="nf">step1</span>
     <span class="no">Digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">add_subtask</span><span class="p">(</span><span class="no">MyWorkflow</span><span class="p">,</span> <span class="ss">:step3</span><span class="p">,</span> <span class="ss">arg1</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
   <span class="k">end</span>
@@ -224,7 +224,7 @@
 </pre></div>
 </div>
 <p>Generating other child tasks:</p>
-<div class="highlight-ruby"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyWorkflow</span>
+<div class="highlight-ruby"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span>
   <span class="k">def</span> <span class="nf">step1</span>
     <span class="no">Digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">add_subtask</span><span class="p">({</span>
       <span class="s1">&#39;_type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;mail&#39;</span><span class="p">,</span>

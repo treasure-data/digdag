@@ -172,7 +172,7 @@
 <span id="for-each-repeat-tasks"></span><h1>for_each&gt;: Repeat tasks<a class="headerlink" href="#for-each-repeat-tasks" title="Permalink to this headline">¶</a></h1>
 <p><strong>for_each&gt;</strong> operator runs subtasks multiple times using sets of variables.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
-<div class="highlight-default"><div class="highlight"><pre>+repeat:
+<div class="highlight-default"><div class="highlight"><pre><span></span>+repeat:
   for_each&gt;:
     fruit: [apple, orange]
     verb: [eat, throw]
@@ -195,18 +195,18 @@
 <li><p class="first"><strong>for_each&gt;</strong>: VARIABLES</p>
 <p>Variables used for the loop in <code class="docutils literal"><span class="pre">key:</span> <span class="pre">[value,</span> <span class="pre">value,</span> <span class="pre">...]</span></code> syntax. Variables can be an object or JSON string.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">for_each</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">for_each</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 </pre></div>
 </div>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">for_each</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="s1">&#39;[1, 2, 3]&#39;</span><span class="p">}</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">for_each</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="s1">&#39;[1, 2, 3]&#39;</span><span class="p">}</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>_parallel</strong>: BOOLEAN</p>
 <p>Runs the repeating tasks in parallel.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">_parallel</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_parallel</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>

@@ -172,7 +172,7 @@
 <span id="emr-amazon-elastic-map-reduce"></span><h1>emr&gt;: Amazon Elastic Map Reduce<a class="headerlink" href="#emr-amazon-elastic-map-reduce" title="Permalink to this headline">¶</a></h1>
 <p><strong>emr&gt;</strong> operator can be used to run EMR jobs, create clusters and submit steps to existing clusters.</p>
 <p>For detailed information about EMR, see the <a class="reference external" href="https://aws.amazon.com/documentation/elastic-mapreduce/">Amazon Elastic MapReduce Documentation</a>.</p>
-<div class="highlight-default"><div class="highlight"><pre>+emr_job:
+<div class="highlight-default"><div class="highlight"><pre><span></span>+emr_job:
   emr&gt;:
   cluster:
     name: my-cluster
@@ -216,18 +216,18 @@
 <li><p class="first"><strong>cluster</strong>: STRING | OBJECT</p>
 <p>Specifies either the ID of an existing cluster to submit steps to or the configuration of a new cluster to create.</p>
 <p><strong>Using an existing cluster:</strong></p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">cluster</span><span class="p">:</span> <span class="n">j</span><span class="o">-</span><span class="mi">7</span><span class="n">KHU3VCWGNAFL</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cluster</span><span class="p">:</span> <span class="n">j</span><span class="o">-</span><span class="mi">7</span><span class="n">KHU3VCWGNAFL</span>
 </pre></div>
 </div>
 <p><strong>Creating a new minimal ephemeral cluster with just one node:</strong></p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">cluster</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cluster</span><span class="p">:</span>
   <span class="n">ec2</span><span class="p">:</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">ec2</span><span class="o">-</span><span class="n">key</span>
   <span class="n">logs</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">logs</span><span class="o">/</span>
 </pre></div>
 </div>
 <p><strong>Creating a customized cluster with several hosts:</strong></p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">cluster</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cluster</span><span class="p">:</span>
   <span class="n">name</span><span class="p">:</span> <span class="n">my</span><span class="o">-</span><span class="n">cluster</span>
   <span class="n">auto_terminate</span><span class="p">:</span> <span class="n">false</span>
   <span class="n">release</span><span class="p">:</span> <span class="n">emr</span><span class="o">-</span><span class="mf">5.2</span><span class="o">.</span><span class="mi">0</span>
@@ -269,7 +269,7 @@
 <li><p class="first"><strong>staging</strong>: S3_URI</p>
 <p>A S3 folder to use for staging local files for execution on the EMR cluster. <em>Note:</em> the configured AWS credentials must have permission to put and get objects in this folder.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">staging</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">staging</span><span class="o">/</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">staging</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">staging</span><span class="o">/</span>
 </pre></div>
 </div>
 </li>
@@ -278,7 +278,7 @@
 <p>steps:
 - type: flink
 application: flink/WordCount.jar</p>
-<div class="highlight-default"><div class="highlight"><pre>- type: hive
+<div class="highlight-default"><div class="highlight"><pre><span></span>- type: hive
   script: queries/hive-query.q
   vars:
     INPUT: s3://my-bucket/data/

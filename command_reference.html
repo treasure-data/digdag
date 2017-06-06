@@ -222,11 +222,11 @@
 <h2><a class="toc-backref" href="#id1">Local-mode commands</a><a class="headerlink" href="#local-mode-commands" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="init">
 <h3><a class="toc-backref" href="#id2">init</a><a class="headerlink" href="#init" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag init &lt;dir&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag init &lt;dir&gt;
 </pre></div>
 </div>
 <p>Creates a new workflow project. This command generates a sample .dig file, scripts used in the workflow, and .gitignore file in <strong>&lt;dir&gt;</strong> directory. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag init mydag
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag init mydag
 </pre></div>
 </div>
 <p>Options:</p>
@@ -240,11 +240,11 @@
 </div>
 <div class="section" id="run">
 <h3><a class="toc-backref" href="#id3">run</a><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag run &lt;workflow.dig&gt; <span class="o">[</span>+task<span class="o">]</span> <span class="o">[</span>options...<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag run &lt;workflow.dig&gt; <span class="o">[</span>+task<span class="o">]</span> <span class="o">[</span>options...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Runs workflow.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag run workflow.dig
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag run workflow.dig
 <span class="gp">$</span> digdag run workflow.dig +step2
 <span class="gp">$</span> digdag run another.dig --start +step2
 <span class="gp">$</span> digdag run another.dig --start +step2 --end +step4
@@ -298,10 +298,6 @@
 <dd><p class="first">Disables session state files completely.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--no-save</span></code></p>
 </dd>
-<dt><strong class="command">--max-task-threads N</strong></dt>
-<dd><p class="first">Limit maximum number of task execution threads.</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
-</dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
 <dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
@@ -322,11 +318,11 @@
 </div>
 <div class="section" id="check">
 <h3><a class="toc-backref" href="#id4">check</a><a class="headerlink" href="#check" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag check <span class="o">[</span>workflow.dig<span class="o">]</span> <span class="o">[</span>options...<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag check <span class="o">[</span>workflow.dig<span class="o">]</span> <span class="o">[</span>options...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Shows workflow definitions and schedules. &#8220;c&#8221; is alias of check command. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag c
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag c
 <span class="gp">$</span> digdag check
 <span class="gp">$</span> digdag check another.dig
 </pre></div>
@@ -348,13 +344,13 @@
 </div>
 <div class="section" id="scheduler">
 <h3><a class="toc-backref" href="#id5">scheduler</a><a class="headerlink" href="#scheduler" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag scheduler <span class="o">[</span>options...<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag scheduler <span class="o">[</span>options...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Runs a workflow scheduler that runs schedules periodically. This picks up all workflow definition files named with <code class="docutils literal"><span class="pre">.dig</span></code> suffix at the current directory. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag scheduler
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag scheduler
 <span class="gp">$</span> digdag scheduler -d status
-<span class="gp">$</span> digdag scheduler -b 0.0.0.0
+<span class="gp">$</span> digdag scheduler -b <span class="m">0</span>.0.0.0
 </pre></div>
 </div>
 <dl class="docutils">
@@ -379,7 +375,7 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--task-log</span> <span class="pre">digdag.log</span></code></p>
 </dd>
 <dt><strong class="command">--max-task-threads N</strong></dt>
-<dd><p class="first">Limit maximum number of task execution threads on this server.</p>
+<dd><p class="first">Limit maxium number of task execution threads on this server.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
@@ -398,12 +394,12 @@
 </div>
 <div class="section" id="selfupdate">
 <h3><a class="toc-backref" href="#id6">selfupdate</a><a class="headerlink" href="#selfupdate" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag selfupdate <span class="o">[</span>version<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag selfupdate <span class="o">[</span>version<span class="o">]</span>
 </pre></div>
 </div>
 <p>Updates the executable binary file to the latest version or specified version. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag selfupdate
-<span class="gp">$</span> digdag selfupdate 0.9.12
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag selfupdate
+<span class="gp">$</span> digdag selfupdate <span class="m">0</span>.9.12
 </pre></div>
 </div>
 </div>
@@ -412,13 +408,13 @@
 <h2><a class="toc-backref" href="#id7">Server-mode commands</a><a class="headerlink" href="#server-mode-commands" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="server">
 <h3><a class="toc-backref" href="#id8">server</a><a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag server <span class="o">[</span>options...<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag server <span class="o">[</span>options...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Runs a digdag server. &#8211;memory or &#8211;database option is required. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag server --memory
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag server --memory
 <span class="gp">$</span> digdag server -o digdag-server
-<span class="gp">$</span> digdag server -o digdag-server -b 0.0.0.0
+<span class="gp">$</span> digdag server -o digdag-server -b <span class="m">0</span>.0.0.0
 </pre></div>
 </div>
 <dl class="docutils">
@@ -452,13 +448,13 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--disable-local-agent</span></code></p>
 </dd>
 <dt><strong class="command">--max-task-threads N</strong></dt>
-<dd><p class="first">Limit maximum number of task execution threads on this server.</p>
+<dd><p class="first">Limit maxium number of task execution threads on this server.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">--disable-executor-loop</strong></dt>
 <dd><p class="first">Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.</p>
 <p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also <code class="docutils literal"><span class="pre">--disable-local-agent</span></code> option.</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">--disable-executor-loop</span></code></p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Server configuration property path. See the followings for details.</p>
@@ -473,7 +469,7 @@
 <li>server.admin.port (integer)</li>
 <li>server.access-log.path (string. same with &#8211;access-log)</li>
 <li>server.access-log.pattern (string, &#8220;json&#8221;, &#8220;combined&#8221; or &#8220;common&#8221;)</li>
-<li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores or 2, whichever is greater)</li>
+<li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)</li>
 <li>server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)</li>
 <li>server.http.no-request-timeout (maximum allowed time for clients to keep a connection open without sending requests or receiving responses in seconds. default: 60)</li>
 <li>server.http.request-parse-timeout (maximum allowed time of reading a HTTP request in seconds. this doesn&#8217;t affect on reading request body. default: 30)</li>
@@ -513,7 +509,7 @@
 <h4><a class="toc-backref" href="#id9">Secret Encryption Key</a><a class="headerlink" href="#secret-encryption-key" title="Permalink to this headline">¶</a></h4>
 <p>The secret encryption key is used to encrypt secrets when they are stored in the digdag server database. It must be a valid 128-bit AES key, base64 encoded.</p>
 <p>Example:</p>
-<div class="highlight-none"><div class="highlight"><pre>digdag.secret-encryption-key = MDEyMzQ1Njc4OTAxMjM0NQ==
+<div class="highlight-none"><div class="highlight"><pre><span></span>digdag.secret-encryption-key = MDEyMzQ1Njc4OTAxMjM0NQ==
 </pre></div>
 </div>
 </div>
@@ -541,11 +537,11 @@
 </ul>
 <div class="section" id="start">
 <h3><a class="toc-backref" href="#id11">start</a><a class="headerlink" href="#start" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag start &lt;project-name&gt; &lt;+name&gt; --session &lt;hourly <span class="p">|</span> daily <span class="p">|</span> now <span class="p">|</span> yyyy-MM-dd <span class="p">|</span> <span class="s2">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag start &lt;project-name&gt; &lt;+name&gt; --session &lt;hourly <span class="p">|</span> daily <span class="p">|</span> now <span class="p">|</span> yyyy-MM-dd <span class="p">|</span> <span class="s2">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>&gt;
 </pre></div>
 </div>
 <p>Starts a new session. This command requires project name, workflow name, and session_time. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag start myproj +main --dry-run --session hourly
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag start myproj +main --dry-run --session hourly
 <span class="gp">$</span> digdag start myproj +main --session daily
 <span class="gp">$</span> digdag start myproj +main --session <span class="s2">&quot;2016-01-01 00:00:00&quot;</span>
 <span class="gp">$</span> digdag start myproj +main --session <span class="s2">&quot;2016-01-01&quot;</span> -p <span class="nv">environment</span><span class="o">=</span>staging -p <span class="nv">user</span><span class="o">=</span>frsyuki
@@ -575,12 +571,12 @@
 </div>
 <div class="section" id="retry">
 <h3><a class="toc-backref" href="#id12">retry</a><a class="headerlink" href="#retry" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag retry &lt;attempt-id&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag retry &lt;attempt-id&gt;
 </pre></div>
 </div>
 <p>Retry a session. One of revision options (<code class="docutils literal"><span class="pre">--latest-revision</span></code>, <code class="docutils literal"><span class="pre">--keep-revision</span></code>, or <code class="docutils literal"><span class="pre">--revision</span> <span class="pre">&lt;name&gt;</span></code>) and one of resume options (<code class="docutils literal"><span class="pre">--all</span></code>, <code class="docutils literal"><span class="pre">--resume</span></code>, or <code class="docutils literal"><span class="pre">--resume-from</span> <span class="pre">&lt;+name&gt;</span></code>) are required.</p>
 <p>Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --all
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --all
 <span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --resume
 <span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --resume-from +step2
 <span class="gp">$</span> digdag retry <span class="m">35</span> --keep-revision --resume
@@ -606,11 +602,11 @@
 </div>
 <div class="section" id="log">
 <h3><a class="toc-backref" href="#id13">log</a><a class="headerlink" href="#log" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag log &lt;attempt-id&gt; <span class="o">[</span>+task name prefix<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag log &lt;attempt-id&gt; <span class="o">[</span>+task name prefix<span class="o">]</span>
 </pre></div>
 </div>
 <p>Shows logs of a session attempt. This command works only if server (or scheduler) runs with <code class="docutils literal"><span class="pre">-O,</span> <span class="pre">--task-log</span></code> option.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag log 32
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag log <span class="m">32</span>
 <span class="gp">$</span> digdag log <span class="m">32</span> -f
 <span class="gp">$</span> digdag log <span class="m">32</span> +main
 <span class="gp">$</span> digdag log <span class="m">32</span> +main+task1
@@ -627,21 +623,21 @@
 </div>
 <div class="section" id="kill">
 <h3><a class="toc-backref" href="#id14">kill</a><a class="headerlink" href="#kill" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag <span class="nb">kill</span> &lt;attempt-id&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag <span class="nb">kill</span> &lt;attempt-id&gt;
 </pre></div>
 </div>
 <p>Kills a session attempt. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag <span class="nb">kill</span> 32
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag <span class="nb">kill</span> <span class="m">32</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="workflows">
 <h3><a class="toc-backref" href="#id15">workflows</a><a class="headerlink" href="#workflows" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag workflows <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag workflows <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
 </pre></div>
 </div>
 <p>Shows list of workflows or details of a workflow. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag workflows
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag workflows
 <span class="gp">$</span> digdag workflows myproj
 <span class="gp">$</span> digdag workflows +main
 <span class="gp">$</span> digdag workflows myproj +main
@@ -650,14 +646,14 @@
 </div>
 <div class="section" id="schedules">
 <h3><a class="toc-backref" href="#id16">schedules</a><a class="headerlink" href="#schedules" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag schedules
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag schedules
 </pre></div>
 </div>
 <p>Shows list of schedules.</p>
 </div>
 <div class="section" id="backfill">
 <h3><a class="toc-backref" href="#id17">backfill</a><a class="headerlink" href="#backfill" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag backfill &lt;project-name&gt; &lt;workflow-name&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag backfill &lt;project-name&gt; &lt;workflow-name&gt;
 </pre></div>
 </div>
 <p>Starts sessions of a schedule for past session times.</p>
@@ -680,7 +676,7 @@
 </div>
 <div class="section" id="reschedule">
 <h3><a class="toc-backref" href="#id18">reschedule</a><a class="headerlink" href="#reschedule" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag reschedule &lt;schedule-id&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag reschedule &lt;schedule-id&gt;
 </pre></div>
 </div>
 <p>Skips schedule forward to a future time. To run past schedules, use backfill instead.</p>
@@ -697,11 +693,11 @@
 </div>
 <div class="section" id="sessions">
 <h3><a class="toc-backref" href="#id19">sessions</a><a class="headerlink" href="#sessions" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag sessions <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag sessions <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
 </pre></div>
 </div>
 <p>Shows list of sessions. This command shows only the latest attempts of sessions (doesn&#8217;t include attempts retried by another attempt). To show all attempts, use <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">attempts</span></code>. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag sessions
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag sessions
 <span class="gp">$</span> digdag sessions myproj
 <span class="gp">$</span> digdag sessions myproj +main
 </pre></div>
@@ -713,11 +709,11 @@
 </div>
 <div class="section" id="attempts">
 <h3><a class="toc-backref" href="#id20">attempts</a><a class="headerlink" href="#attempts" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag attempts <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag attempts <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
 </pre></div>
 </div>
 <p>Shows list of attempts. This command shows shows all attempts including attempts retried by another attempt. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag attempts
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag attempts
 <span class="gp">$</span> digdag attempts myproj
 <span class="gp">$</span> digdag attempts myproj +main
 </pre></div>
@@ -729,22 +725,22 @@
 </div>
 <div class="section" id="tasks">
 <h3><a class="toc-backref" href="#id21">tasks</a><a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag tasks &lt;attempt-id&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag tasks &lt;attempt-id&gt;
 </pre></div>
 </div>
 <p>Shows tasks of an session attempt. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag tasks 32
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag tasks <span class="m">32</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="push">
 <h3><a class="toc-backref" href="#id22">push</a><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag push &lt;project&gt; <span class="o">[</span>options...<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag push &lt;project&gt; <span class="o">[</span>options...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Creates a project archive and upload it to the server. This command uploads workflow definition files (files with .dig suffix) at the current directory, and all other files from the current directory recursively. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag push myproj -r <span class="s2">&quot;</span><span class="k">$(</span>date +%Y-%m-%dT%H:%M:%S%z<span class="k">)</span><span class="s2">&quot;</span>
-<span class="gp">$</span> digdag push default -r <span class="s2">&quot;</span><span class="k">$(</span>git show --pretty<span class="o">=</span>format:<span class="s1">&#39;%T&#39;</span> <span class="p">|</span> head -n 1<span class="k">)</span><span class="s2">&quot;</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag push myproj -r <span class="s2">&quot;</span><span class="k">$(</span>date +%Y-%m-%dT%H:%M:%S%z<span class="k">)</span><span class="s2">&quot;</span>
+<span class="gp">$</span> digdag push default -r <span class="s2">&quot;</span><span class="k">$(</span>git show --pretty<span class="o">=</span>format:<span class="s1">&#39;%T&#39;</span> <span class="p">|</span> head -n <span class="m">1</span><span class="k">)</span><span class="s2">&quot;</span>
 </pre></div>
 </div>
 <dl class="docutils">
@@ -764,11 +760,11 @@
 </div>
 <div class="section" id="download">
 <h3><a class="toc-backref" href="#id23">download</a><a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag download &lt;project&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag download &lt;project&gt;
 </pre></div>
 </div>
 <p>Downloads a project archive and extract to a local directory.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag download myproj
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag download myproj
 <span class="gp">$</span> digdag download myproj -o output
 <span class="gp">$</span> digdag download myproj -r rev20161106
 </pre></div>
@@ -786,11 +782,11 @@
 </div>
 <div class="section" id="delete">
 <h3><a class="toc-backref" href="#id24">delete</a><a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag delete &lt;project&gt; <span class="o">[</span>options...<span class="o">]</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag delete &lt;project&gt; <span class="o">[</span>options...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Deletes a project. Sessions of the deleted project are kept retained so that we can review status of past executions later.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag delete myproj
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag delete myproj
 </pre></div>
 </div>
 </div>
@@ -798,11 +794,11 @@
 <h3><a class="toc-backref" href="#id25">secrets</a><a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h3>
 <p>Digdag provides basic secret management that can be used to securely provide e.g. passwords and api keys etc to operators.</p>
 <p>Secrets are handled separately from normal workflow parameters and are stored encrypted by the server. Local secrets are stored in the user home directory.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag secrets --project &lt;project&gt;
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag secrets --project &lt;project&gt;
 </pre></div>
 </div>
 <p>List secrets set for a project. This will only list the secret keys and will not show the actual secret values.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag secrets --project &lt;project&gt; --set key
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag secrets --project &lt;project&gt; --set key
 </pre></div>
 </div>
 <p>Set a secret key value for a project. The cli will prompt for the secret value to be entered in the terminal. The entered
@@ -810,14 +806,14 @@ value will not be displayed.</p>
 <p>Multiple secrets can be entered by listing multiple keys.</p>
 <p>It is also possible to read a secret value from a file. Note that the entire raw file contents are read and used as the
 secret value. Any whitespace and newlines etc are included as-is.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> cat secret.txt
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat secret.txt
 <span class="go">foobar</span>
 
 <span class="gp">$</span> digdag secrets --project &lt;project&gt; --set <span class="nv">key</span><span class="o">=</span>@secret.txt
 </pre></div>
 </div>
 <p>Multiple secrets can be read from a single file in JSON format.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> cat secrets.json
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat secrets.json
 <span class="go">{</span>
 <span class="go">    &quot;foo&quot;: &quot;secret1&quot;,</span>
 <span class="go">    &quot;bar&quot;: &quot;secret2&quot;</span>
@@ -827,30 +823,30 @@ secret value. Any whitespace and newlines etc are included as-is.</p>
 </pre></div>
 </div>
 <p>Secrets can also be read from stdin. The below command would set the secret key <cite>foo</cite> to the value <cite>bar</cite>.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> <span class="nb">echo</span> -n <span class="s1">&#39;bar&#39;</span> <span class="p">|</span> digdag secrets --project &lt;project&gt; --set <span class="nv">foo</span><span class="o">=</span>-
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> -n <span class="s1">&#39;bar&#39;</span> <span class="p">|</span> digdag secrets --project &lt;project&gt; --set <span class="nv">foo</span><span class="o">=</span>-
 </pre></div>
 </div>
 <p>Note that only one secret value can be read using the above command. To read multiple secrets from stdin, omit the secret key
 name on the command line and provide secret keys and values on stdin in JSON format.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> <span class="nb">echo</span> -n <span class="s1">&#39;{&quot;foo&quot;: &quot;secret1&quot;, &quot;bar&quot;: &quot;secret2&quot;}&#39;</span> <span class="p">|</span> digdag secrets --project &lt;project&gt; --set -
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> -n <span class="s1">&#39;{&quot;foo&quot;: &quot;secret1&quot;, &quot;bar&quot;: &quot;secret2&quot;}&#39;</span> <span class="p">|</span> digdag secrets --project &lt;project&gt; --set -
 
 <span class="gp">$</span> cat secrets.json <span class="p">|</span> digdag secrets --project &lt;project&gt; --set -
 </pre></div>
 </div>
 <p>To delete secrets, use the <cite>&#8211;delete</cite> command.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag secrets --project &lt;project&gt; --delete foo bar
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag secrets --project &lt;project&gt; --delete foo bar
 </pre></div>
 </div>
 <p>Secrets can also be used in local mode. Local secrets are used when running workflows in local mode using <cite>digdag run</cite>.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag secrets --local
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag secrets --local
 </pre></div>
 </div>
 <p>The above command lists all local secrets.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag secrets --local --set foo
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag secrets --local --set foo
 </pre></div>
 </div>
 <p>The above command sets the local secret <cite>foo</cite>.</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag secrets --local --delete foo bar
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag secrets --local --delete foo bar
 </pre></div>
 </div>
 <p>The above command deletes the local secrets <cite>foo</cite> and <cite>bar</cite>.</p>

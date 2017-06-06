@@ -176,7 +176,7 @@
 <span id="td-table-export-treasure-data-table-export-to-s3"></span><h1>td_table_export&gt;: Treasure Data table export to S3<a class="headerlink" href="#td-table-export-treasure-data-table-export-to-s3" title="Permalink to this headline">¶</a></h1>
 <p>NOTE: We&#8217;re limiting export capability to only us-east region S3 bucket. In general, please use Result Output to S3 feature using td operator. This workflow example is <a class="reference external" href="https://github.com/treasure-data/workflow-examples/tree/master/td/s3">here</a>.</p>
 <p><strong>td_table_export&gt;</strong> operator exports data from Treasure Data to S3.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">step1</span><span class="p">:</span>
   <span class="n">td_table_export</span><span class="o">&gt;</span><span class="p">:</span>
   <span class="n">database</span><span class="p">:</span> <span class="n">mydb</span>
   <span class="n">table</span><span class="p">:</span> <span class="n">mytable</span>
@@ -196,14 +196,14 @@
 <li><p class="first"><strong>aws.s3.access_key_id</strong>: ACCESS_KEY_ID</p>
 <p>The AWS Access Key ID to use when writing to S3.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">aws</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">access_key_id</span><span class="p">:</span> <span class="n">ABCDEFGHJKLMNOPQRSTU</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">aws</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">access_key_id</span><span class="p">:</span> <span class="n">ABCDEFGHJKLMNOPQRSTU</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>aws.s3.secret_access_key</strong>: SECRET_ACCESS_KEY</p>
 <p>The AWS Secret Access Key to use when writing to S3.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">aws</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">secret_access_key</span><span class="p">:</span> <span class="n">QUtJ</span><span class="o">/</span><span class="n">QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">aws</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">secret_access_key</span><span class="p">:</span> <span class="n">QUtJ</span><span class="o">/</span><span class="n">QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</span>
 </pre></div>
 </div>
 </li>
@@ -215,14 +215,14 @@
 <li><p class="first"><strong>database</strong>: NAME</p>
 <p>Name of the database.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">database</span><span class="p">:</span> <span class="n">my_database</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">database</span><span class="p">:</span> <span class="n">my_database</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>table</strong>: NAME</p>
 <p>Name of the table to export.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">table</span><span class="p">:</span> <span class="n">my_table</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">table</span><span class="p">:</span> <span class="n">my_table</span>
 </pre></div>
 </div>
 </li>
@@ -230,35 +230,35 @@
 <p>Output file format. Available formats are <code class="docutils literal"><span class="pre">tsv.gz</span></code> (tab-separated values per line) and <code class="docutils literal"><span class="pre">jsonl.gz</span></code> (json record per line).</p>
 <p><code class="docutils literal"><span class="pre">json.gz</span></code> and <code class="docutils literal"><span class="pre">line-json.gz</span></code> are available only for backward compatibility purpose.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">file_format</span><span class="p">:</span> <span class="n">jsonl</span><span class="o">.</span><span class="n">gz</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">file_format</span><span class="p">:</span> <span class="n">jsonl</span><span class="o">.</span><span class="n">gz</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>from</strong>: yyyy-MM-dd HH:mm:ss[ Z]</p>
 <p>Export records from this time (inclusive). Actual time range is :command:<code class="docutils literal"><span class="pre">[from,</span> <span class="pre">to)</span></code>. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">from</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="o">+</span><span class="mi">0800</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="o">+</span><span class="mi">0800</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>to</strong>: yyyy-MM-dd HH:mm:ss[ Z]</p>
 <p>Export records to this time (exclusive). Actual time range is :command:<code class="docutils literal"><span class="pre">[from,</span> <span class="pre">to)</span></code>. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">to</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">01</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="o">+</span><span class="mi">0800</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">to</span><span class="p">:</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">01</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="o">+</span><span class="mi">0800</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>s3_bucket</strong>: NAME</p>
 <p>S3 bucket name to export records to.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">s3_bucket</span><span class="p">:</span> <span class="n">my_backup_backet</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">s3_bucket</span><span class="p">:</span> <span class="n">my_backup_backet</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>s3_path_prefix</strong>: NAME</p>
 <p>S3 file name prefix.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">s3_path_prefix</span><span class="p">:</span> <span class="n">mytable</span><span class="o">/</span><span class="n">mydb</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">s3_path_prefix</span><span class="p">:</span> <span class="n">mytable</span><span class="o">/</span><span class="n">mydb</span>
 </pre></div>
 </div>
 </li>
@@ -276,7 +276,7 @@
 <li><p class="first"><strong>td.last_job_id</strong></p>
 <p>The job id this task executed.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="mi">52036074</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mi">52036074</span>
 </pre></div>
 </div>
 </li>
