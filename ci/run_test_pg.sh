@@ -11,4 +11,4 @@ idleTimeout = 10
 minimumPoolSize = 0
 "
 
-$BASEDIR/run_test_docker.sh
+$BASEDIR/run_test_docker.sh "$@"
