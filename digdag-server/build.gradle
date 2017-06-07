@@ -3,4 +3,11 @@ dependencies {
     compile project(':digdag-core')
     compile project(':digdag-client')
     compile project(':digdag-guice-rs-server-undertow')
+
+    compile('io.swagger:swagger-jaxrs:1.5.12') {
+        exclude module: 'javax.ws.rs'
+        exclude module: 'jsr311-api'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+    }
 }
