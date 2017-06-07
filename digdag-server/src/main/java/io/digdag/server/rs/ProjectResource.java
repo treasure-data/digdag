@@ -92,6 +92,7 @@ import io.digdag.client.api.SecretValidation;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.StorageObject;
 import io.digdag.util.Md5CountInputStream;
+import io.swagger.annotations.Api;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -125,6 +126,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Locale.ENGLISH;
 
+@Api("Project")
 @Path("/")
 @Produces("application/json")
 public class ProjectResource

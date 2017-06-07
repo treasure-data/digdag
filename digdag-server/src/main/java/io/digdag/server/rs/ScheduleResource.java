@@ -20,6 +20,7 @@ import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.swagger.annotations.Api;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -32,6 +33,7 @@ import javax.ws.rs.QueryParam;
 import java.time.ZoneId;
 import java.util.List;
 
+@Api("Schedule")
 @Path("/")
 @Produces("application/json")
 public class ScheduleResource

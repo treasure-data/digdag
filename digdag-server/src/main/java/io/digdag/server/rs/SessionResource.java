@@ -16,6 +16,7 @@ import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
+import io.swagger.annotations.Api;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,6 +27,7 @@ import javax.ws.rs.QueryParam;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Api("Session")
 @Path("/")
 @Produces("application/json")
 public class SessionResource

@@ -64,7 +64,7 @@ public class ServerBootstrap
                 binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
             })
-            .addModules(new ServerModule());
+            .addModules(new ServerModule(serverConfig));
     }
 
     public static GuiceRsServerControl start(ServerBootstrap bootstrap)

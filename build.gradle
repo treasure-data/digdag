@@ -97,6 +97,11 @@ subprojects {
     dependencies {
         compile 'org.slf4j:slf4j-api:1.7.21'
 
+        compile('io.swagger:swagger-jaxrs:1.5.12') {
+            exclude module: 'javax.ws.rs'
+            exclude module: 'jsr311-api'
+        }
+
         compileOnly "org.immutables:value:2.3.9:annotations"
         testCompileOnly "org.immutables:value:2.3.9:annotations"
         apt "org.immutables:value:2.3.9"

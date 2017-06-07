@@ -30,7 +30,9 @@ import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
 import io.digdag.spi.ScheduleTime;
+import io.swagger.annotations.Api;
 
+@Api("Attempt")
 @Path("/")
 @Produces("application/json")
 public class AttemptResource

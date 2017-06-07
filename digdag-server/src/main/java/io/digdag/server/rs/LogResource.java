@@ -23,9 +23,11 @@ import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
 import io.digdag.spi.*;
+import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
 
+@Api("Log")
 @Path("/")
 @Produces("application/json")
 public class LogResource

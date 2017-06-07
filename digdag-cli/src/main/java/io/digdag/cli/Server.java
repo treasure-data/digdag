@@ -63,6 +63,9 @@ public class Server
     @Parameter(names = {"--disable-executor-loop"})
     boolean disableExecutorLoop = false;
 
+    @Parameter(names = {"--enable-swagger"})
+    boolean enableSwagger = false;
+
     @Parameter(names = {"-p", "--param"}, validateWith = ParameterValidator.class)
     List<String> paramsList = new ArrayList<>();
     Map<String, String> params = new HashMap<>();
@@ -110,6 +113,7 @@ public class Server
         err.println("        --max-task-threads N         limit maxium number of task execution threads");
         err.println("        --disable-executor-loop      disable workflow executor loop");
         err.println("        --disable-local-agent        disable local task execution");
+        err.println("        --enable-swagger             enable swagger api");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
@@ -178,6 +182,10 @@ public class Server
 
         if (disableExecutorLoop) {
             props.setProperty("server.executor.enabled", Boolean.toString(false));
+        }
+
+        if (enableSwagger) {
+            props.setProperty("server.enable-swagger", Boolean.toString(true));
         }
 
         headers = ParameterValidator.toMap(headersList);
