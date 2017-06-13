@@ -197,6 +197,10 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
 
     !include : 'tasks/foo.dig'
 
+.. note::
+
+    A whitespace character before ``:`` is necessary by a limitation to be a valid YAML.
+
 
 Parallel execution
 ----------------------------------
