@@ -1,3 +1,0 @@
-_command: http://localhost:8089/api/foobar
-timeout: 3
-retry: false
