@@ -15,6 +15,7 @@ import io.digdag.spi.OperatorProvider;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
@@ -33,6 +34,9 @@ public class OperatorRegistry
         protected CommandExecutor commandExecutor;
 
         @Inject
+        protected CommandLogger commandLogger;
+
+        @Inject
         protected TemplateEngine templateEngine;
 
         @Inject
@@ -49,6 +53,7 @@ public class OperatorRegistry
         public void configure(Binder binder)
         {
             binder.bind(CommandExecutor.class).toInstance(commandExecutor);
+            binder.bind(CommandLogger.class).toInstance(commandLogger);
             binder.bind(TemplateEngine.class).toInstance(templateEngine);
             binder.bind(ConfigFactory.class).toInstance(cf);
             binder.bind(Config.class).toInstance(systemConfig);
