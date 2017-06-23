@@ -17,7 +17,9 @@ import io.digdag.core.Environment;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.GrantedPrivilegedVariables;
 import io.digdag.core.agent.OperatorRegistry;
+import io.digdag.core.agent.TaskContextCommandLogger;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
 import io.digdag.spi.ImmutableTaskRequest;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -44,6 +46,7 @@ public class OperatorTestingUtils
     {
         Injector initInjector = Guice.createInjector((Module) (binder) -> {
             binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
+            binder.bind(CommandLogger.class).to(TaskContextCommandLogger.class).in(Scopes.SINGLETON);
             binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
             binder.bind(ConfigFactory.class).toInstance(ConfigUtils.configFactory);
             binder.bind(Config.class).toInstance(newConfig());
