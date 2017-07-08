@@ -33,6 +33,40 @@ public class HttpContentEncodingIT
     }
 
     @Test
+    public void testResponseContentEncoding()
+            throws Exception
+    {
+        Response response = client.newCall(new Request.Builder()
+                .url(server.endpoint() + "/api/version")
+                .header("Accept-Encoding", "deflate")
+                .build())
+                .execute();
+        assertThat(response.code(), is(200));
+        assertThat(response.header("Content-Encoding"), is("deflate"));
+        try (DeflateInputStream in = new DeflateInputStream(response.body().byteStream())) {
+            String body = new String(ByteStreams.toByteArray(in), UTF_8);
+            assertThat(body.startsWith("{"), is(true));
+        }
+    }
+
+    @Test
+    public void testResponseContentEncodingPriority()
+            throws Exception
+    {
+        Response response = client.newCall(new Request.Builder()
+                .url(server.endpoint() + "/api/version")
+                .header("Accept-Encoding", "deflate,gzip")
+                .build())
+                .execute();
+        assertThat(response.code(), is(200));
+        assertThat(response.header("Content-Encoding"), is("gzip"));  // gzip has higher priority
+        try (GZIPInputStream in = new GZIPInputStream(response.body().byteStream())) {
+            String body = new String(ByteStreams.toByteArray(in), UTF_8);
+            assertThat(body.startsWith("{"), is(true));
+        }
+    }
+
+    @Test
     public void testRequestContentEncoding()
             throws Exception
     {

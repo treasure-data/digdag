@@ -194,6 +194,10 @@ public class UndertowServer
             }
             handler = Handlers.trace(handler);
 
+            // support "Content-Encoding: gzip | deflate" (request content encoding)
+            handler = new RequestEncodingHandler(handler)
+                .addEncoding("deflate", InflatingStreamSourceConduit.WRAPPER)
+                .addEncoding("gzip", GzipStreamSourceConduit.WRAPPER);
             // support "Accept-Encoding: gzip | deflate" (response content encoding)
             handler = new EncodingHandler(handler,
                     new ContentEncodingRepository()
