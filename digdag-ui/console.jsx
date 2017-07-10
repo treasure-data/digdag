@@ -558,8 +558,8 @@ class ScheduleListView extends React.Component {
           <td>{schedule.revision}</td>
           <td><Link to={`/projects/${schedule.project.id}`}>{schedule.project.name}</Link></td>
           <td><Link to={`/workflows/${schedule.workflow.id}`}>{schedule.workflow.name}</Link></td>
-          <td>{schedule.nextRunTime}</td>
-          <td>{schedule.nextScheduleTime}</td>
+          <td><FullTimestamp showAgo={Boolean(true)} t={schedule.nextRunTime} /></td>
+          <td><SessionTime t={schedule.nextScheduleTime} /></td>
         </tr>
       )
     })
