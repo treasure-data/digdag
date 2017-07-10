@@ -92,6 +92,8 @@ public class UndertowServerControl
     @Override
     public void stop()
     {
+        logger.info("Started shutdown process");
+
         // stops background execution threads that may take time first
         // so that HTTP requests work during waiting for background tasks.
         if (lifeCycleManager != null) {
