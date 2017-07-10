@@ -1234,7 +1234,7 @@ const Alerts = ({alertType, message}:{alertType:string, message:string}) => {
     case 'success':
       return <div className="alert alert-success" role="alert">{message}</div>
     case 'danger':
-      return <div className="alert alert-warning" role="alert">{message}</div>
+      return <div className="alert alert-danger" role="alert">{message}</div>
     default:
       return <div role="alert">{message}</div>
   }
