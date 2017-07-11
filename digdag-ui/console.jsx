@@ -2264,7 +2264,7 @@ class ProjectEditor extends React.Component {
     }).catch((error) => {
       console.log(`Saving project failed`, error)
       this.setState({
-        alertType: 'danger', 
+        alertType: 'danger',
         saveMessage: `Failed to store: ${error.message}`
       })
     })
