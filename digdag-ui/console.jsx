@@ -1232,11 +1232,11 @@ class FullTimestamp extends React.Component {
 const Alerts = ({alertType, message}:{alertType:string, message:string}) => {
   switch (alertType) {
     case 'success':
-      return <div className="alert alert-success" role="alert">{message}</div>
+      return <div className='alert alert-success' role='alert'>{message}</div>
     case 'danger':
-      return <div className="alert alert-danger" role="alert">{message}</div>
+      return <div className='alert alert-danger' role='alert'>{message}</div>
     default:
-      return <div role="alert">{message}</div>
+      return <div role='alert'>{message}</div>
   }
 }
 
@@ -2108,7 +2108,7 @@ class ProjectArchiveEditor extends React.Component {
       )
     return (
       <div>
-        <div className="btn-group">
+        <div className='btn-group'>
           <button className='btn btn-sm' onClick={this.handleAddFile.bind(this)}>Add file</button>
         </div>
         {editors}
