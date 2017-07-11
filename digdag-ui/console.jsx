@@ -1229,6 +1229,17 @@ class FullTimestamp extends React.Component {
   }
 }
 
+const Alerts = ({alertType, message}:{alertType:string, message:string}) => {
+  switch (alertType) {
+    case 'success':
+      return <div className='alert alert-success' role='alert'>{message}</div>
+    case 'danger':
+      return <div className='alert alert-danger' role='alert'>{message}</div>
+    default:
+      return <div role='alert'>{message}</div>
+  }
+}
+
 const DurationView = ({start, end}:{start:?string, end:?string}) => {
   if (!start || !end) {
     return <span />
@@ -2097,7 +2108,7 @@ class ProjectArchiveEditor extends React.Component {
       )
     return (
       <div>
-        <div>
+        <div className='btn-group'>
           <button className='btn btn-sm' onClick={this.handleAddFile.bind(this)}>Add file</button>
         </div>
         {editors}
@@ -2219,8 +2230,8 @@ class ProjectEditor extends React.Component {
       <div className='row'>
         <h2>{title}</h2>
         {header}
-        <button className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
-        <span style={{paddingLeft: '0.5em'}}>{this.state.saveMessage}</span>
+        <Alerts alertType={this.state.alertType} message={this.state.saveMessage} />
+        <button style={{marginBottom: '0.5em'}} className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
         <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref={(value) => { this._editor = value }} />
       </div>
     )
@@ -2247,11 +2258,15 @@ class ProjectEditor extends React.Component {
         projectId: project.id,
         project: project,
         revisionName: uuid.v4(),  // generate new revision name
+        alertType: 'success',
         saveMessage: `Revision ${this.state.revisionName} is saved.`
       })
     }).catch((error) => {
       console.log(`Saving project failed`, error)
-      this.setState({saveMessage: `Failed to store: ${error.message}`})
+      this.setState({
+        alertType: 'danger',
+        saveMessage: `Failed to store: ${error.message}`
+      })
     })
   }
 }
