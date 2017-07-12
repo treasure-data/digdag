@@ -6,7 +6,7 @@ import java.util.List;
 public interface PrivilegedVariables
 {
     // PrivilegedVariables fetches variables lazily.
-    // Threfore, get(String key) may throw exceptions even if the key
+    // Therefore, get(String key) may throw exceptions even if the key
     // is included in the result of getKeys() as following:
     //
     // * key is granted for secret-only access
