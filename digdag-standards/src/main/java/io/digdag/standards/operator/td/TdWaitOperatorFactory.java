@@ -16,6 +16,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
@@ -41,6 +42,7 @@ public class TdWaitOperatorFactory
     private final Map<String, String> env;
     private final DurationInterval pollInterval;
     private final DurationInterval retryInterval;
+    private final SystemDefaultConfig systemDefaultConfig;
 
     @Inject
     public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig, @Environment Map<String, String> env)
@@ -50,6 +52,7 @@ public class TdWaitOperatorFactory
         this.env = env;
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
+        this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
     }
 
     public String getType()
@@ -94,8 +97,7 @@ public class TdWaitOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
-
+            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
                 TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob);
 
                 // Fetch the job output to see if the query condition has been fulfilled

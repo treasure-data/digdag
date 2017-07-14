@@ -38,6 +38,11 @@ import static io.digdag.util.RetryExecutor.retryExecutor;
 public class TDOperator
         implements Closeable
 {
+    public interface SystemDefaultConfig
+    {
+        String getEndpoint();
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(TDOperator.class);
 
     // TODO: adjust these retry intervals and limits when all td operators have persistent retry mechanisms implemented
@@ -46,14 +51,14 @@ public class TDOperator
     private static final int MAX_RETRY_WAIT = 2000;
     private static final int MAX_RETRY_LIMIT = 3;
 
-    public static TDOperator fromConfig(Map<String, String> env, Config config, SecretProvider secrets)
+    public static TDOperator fromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config config, SecretProvider secrets)
     {
         String database = secrets.getSecretOptional("database").or(config.get("database", String.class)).trim();
         if (database.isEmpty()) {
             throw new ConfigException("Parameter 'database' is empty");
         }
 
-        TDClient client = TDClientFactory.clientFromConfig(env, config, secrets);
+        TDClient client = TDClientFactory.clientFromConfig(systemDefaultConfig, env, config, secrets);
 
         return new TDOperator(client, database);
     }
@@ -484,5 +489,19 @@ public class TDOperator
         Duration max = systemConfig.getOptional("config.td.max_retry_interval", DurationParam.class)
                 .transform(DurationParam::getDuration).or(DEFAULT_MAX_RETRY_INTERVAL);
         return DurationInterval.of(min, max);
+    }
+
+    static SystemDefaultConfig systemDefaultConfig(Config systemConfig)
+    {
+        final String endpoint = systemConfig.get("config.td.default_endpoint", String.class, "api.treasuredata.com");
+
+        return new SystemDefaultConfig()
+        {
+            @Override
+            public String getEndpoint()
+            {
+                return endpoint;
+            }
+        };
     }
 }

@@ -15,6 +15,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
 import org.msgpack.core.MessageTypeCastException;
 import org.msgpack.value.ArrayValue;
@@ -44,6 +45,7 @@ public class TdWaitTableOperatorFactory
     private final Map<String, String> env;
     private final DurationInterval pollInterval;
     private final DurationInterval retryInterval;
+    private final SystemDefaultConfig systemDefaultConfig;
 
     @Inject
     public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
@@ -51,6 +53,7 @@ public class TdWaitTableOperatorFactory
         super(systemConfig);
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
+        this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
         this.env = env;
     }
 
@@ -100,7 +103,7 @@ public class TdWaitTableOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
 
                 // Check if table exists using rest api
                 if (!state.params().get(TABLE_EXISTS, Boolean.class, false)) {

@@ -9,6 +9,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.Proxies;
+import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 
 import java.util.Map;
 
@@ -17,7 +18,7 @@ import static org.jboss.resteasy.util.Encode.decode;
 class TDClientFactory
 {
     @VisibleForTesting
-    static TDClientBuilder clientBuilderFromConfig(Map<String, String> env, Config params, SecretProvider secrets)
+    static TDClientBuilder clientBuilderFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
         TDClientBuilder builder = TDClient.newBuilder(false);
 
@@ -44,18 +45,18 @@ class TDClientFactory
         if (apikey.get().isEmpty()) {
             throw new ConfigException("The 'td.apikey' secret is empty");
         }
-        
+
         return builder
-                .setEndpoint(secrets.getSecretOptional("endpoint").or(() -> params.get("endpoint", String.class, "api.treasuredata.com")))
+                .setEndpoint(secrets.getSecretOptional("endpoint").or(() -> params.get("endpoint", String.class, systemDefaultConfig.getEndpoint())))
                 .setUseSSL(useSSL)
                 .setApiKey(apikey.get())
                 .setRetryLimit(0)  // disable td-client's retry mechanism
                 ;
     }
 
-    static TDClient clientFromConfig(Map<String, String> env, Config params, SecretProvider secrets)
+    static TDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
-        return clientBuilderFromConfig(env, params, secrets).build();
+        return clientBuilderFromConfig(systemDefaultConfig, env, params, secrets).build();
     }
 
     private static ProxyConfig proxyConfig(Config config, SecretProvider secrets)

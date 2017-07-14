@@ -13,6 +13,7 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -34,12 +35,14 @@ public class TdDdlOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(TdDdlOperatorFactory.class);
     private final Map<String, String> env;
     private final DurationInterval retryInterval;
+    private final SystemDefaultConfig systemDefaultConfig;
 
     @Inject
     public TdDdlOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
     {
         this.env = env;
         this.retryInterval = TDOperator.retryInterval(systemConfig);
+        this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
     }
 
     public String getType()
@@ -119,7 +122,7 @@ public class TdDdlOperatorFactory
                 });
             }
 
-            try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
                 // make sure that all "from" tables exist so that ignoring 404 Not Found in
                 // op.ensureExistentTableRenamed is valid.
                 if (!renameTableList.isEmpty()) {
