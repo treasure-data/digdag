@@ -45,6 +45,11 @@ cron>: ``CRON``                 Use cron format for complex scheduling      cron
           first session time: 2016-02-10 16:00:00 -0800
           first runs at: 2016-02-10 23:00:00 -0800 (11h 16m 32s later)
 
+.. note::
+
+    When a field is starting with ``*`` , enclosing in quotes is neccessary by a limitasion to be a vaild YAML.
+
+
 Running scheduler
 ----------------------------------
 
