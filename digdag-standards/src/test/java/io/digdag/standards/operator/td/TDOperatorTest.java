@@ -410,8 +410,7 @@ public class TDOperatorTest
         assertThat(defaultDefaults.getEndpoint(), is("api.treasuredata.com"));
 
         Config overrideConfig = configFactory.create()
-                .set("config.td.default_endpoint", "api.treasuredata.co.jp")
-                ;
+                .set("config.td.default_endpoint", "api.treasuredata.co.jp");
         SystemDefaultConfig overrides = TDOperator.systemDefaultConfig(overrideConfig);
         assertThat(overrides.getEndpoint(), is("api.treasuredata.co.jp"));
     }
