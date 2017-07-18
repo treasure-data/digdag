@@ -20,6 +20,7 @@ import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +47,15 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class TDOperatorTest
 {
+    static SystemDefaultConfig DEFAULT_DEFAULT_SYSTEM_CONFIG = new SystemDefaultConfig()
+    {
+        @Override
+        public String getEndpoint()
+        {
+            return "api.treasuredata.com";
+        }
+    };
+
     private static final ImmutableMap<String, String> EMPTY_ENV = ImmutableMap.of();
 
     @Rule public final ExpectedException exception = ExpectedException.none();
@@ -78,7 +88,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", "foobar").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -92,7 +102,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", "foobar").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -106,7 +116,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", "").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -120,7 +130,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", " \n\t").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -131,7 +141,7 @@ public class TDOperatorTest
                 .set("database", "foobar");
         SecretProvider secrets = key -> Optional.fromNullable(
                 ImmutableMap.of("apikey", "quux").get(key));
-        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -391,6 +401,18 @@ public class TDOperatorTest
                 .withJobId(jobId)
                 .withDomainKey(domainKey)
                 .withPollIteration(pollIteration + 1)));
+    }
+
+    @Test
+    public void testSystemDefaultConfig()
+    {
+        SystemDefaultConfig defaultDefaults = TDOperator.systemDefaultConfig(configFactory.create());
+        assertThat(defaultDefaults.getEndpoint(), is("api.treasuredata.com"));
+
+        Config overrideConfig = configFactory.create()
+                .set("config.td.default_endpoint", "api.treasuredata.co.jp");
+        SystemDefaultConfig overrides = TDOperator.systemDefaultConfig(overrideConfig);
+        assertThat(overrides.getEndpoint(), is("api.treasuredata.co.jp"));
     }
 
     private TDJobSummary summary(String jobId, TDJob.Status status) {

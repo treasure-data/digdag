@@ -8,6 +8,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
 
 import java.util.Map;
@@ -23,6 +24,7 @@ abstract class BaseTdJobOperator
 
     protected final DurationInterval pollInterval;
     protected final DurationInterval retryInterval;
+    protected final SystemDefaultConfig systemDefaultConfig;
 
     BaseTdJobOperator(OperatorContext context, Map<String, String> env, Config systemConfig)
     {
@@ -36,13 +38,13 @@ abstract class BaseTdJobOperator
 
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
+        this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
     }
 
     @Override
     public final TaskResult runTask()
     {
-        try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
-
+        try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
             Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
             if (!doneJobId.isPresent()) {

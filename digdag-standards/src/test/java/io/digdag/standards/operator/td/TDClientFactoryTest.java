@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static io.digdag.standards.operator.td.TDOperatorTest.DEFAULT_DEFAULT_SYSTEM_CONFIG;
 
 public class TDClientFactoryTest
 {
@@ -46,7 +47,7 @@ public class TDClientFactoryTest
                                 .set("use_ssl", true));
 
         TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(
-                ImmutableMap.of(), config, SECRETS);
+                DEFAULT_DEFAULT_SYSTEM_CONFIG, ImmutableMap.of(), config, SECRETS);
         TDClientConfig clientConfig = builder.buildConfig();
 
         assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));
@@ -59,7 +60,8 @@ public class TDClientFactoryTest
     {
         Map<String, String> env = ImmutableMap.of("http_proxy", "https://me:%27(%23%25@example.com:9119");
 
-        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(env, newConfig(), SECRETS);
+        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(
+                DEFAULT_DEFAULT_SYSTEM_CONFIG, env, newConfig(), SECRETS);
         TDClientConfig clientConfig = builder.buildConfig();
 
         assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));
