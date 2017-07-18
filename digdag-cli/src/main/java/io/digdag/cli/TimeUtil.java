@@ -50,7 +50,7 @@ public class TimeUtil
 
     public static String formatTimeDiff(Instant now, Instant from)
     {
-        long seconds = now.until(from, ChronoUnit.SECONDS);
+        long seconds = Math.abs(now.until(from, ChronoUnit.SECONDS));
         long hours = seconds / 3600;
         seconds %= 3600;
         long minutes = seconds / 60;
