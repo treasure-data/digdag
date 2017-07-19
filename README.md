@@ -114,3 +114,8 @@ This might not always update all necessary files (Sphinx doesn't manage update d
 
 It builds index.html at digdag-docs/build/html/index.html.
 
+### Release Notes
+
+The list of release note is [here](https://github.com/treasure-data/digdag/tree/master/digdag-docs/src/releases).
+
+
