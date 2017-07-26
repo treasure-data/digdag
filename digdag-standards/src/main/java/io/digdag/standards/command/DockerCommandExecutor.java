@@ -70,7 +70,7 @@ public class DockerCommandExecutor
         }
         else {
             imageName = baseImageName;
-            if (dockerConfig.has("pull-always")) {
+            if (dockerConfig.get("pull-always", Boolean.class, false)) {
                 pullImage(imageName);
             }
         }
