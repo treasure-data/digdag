@@ -219,7 +219,7 @@ subprojects {
         if (scope != 'compile') {
             dependencyNode.appendNode('scope', scope)
         }
-        if (dep.configuration == 'testArtifacts') {
+        if (dep.targetConfiguration == 'testArtifacts') {
             dependencyNode.appendNode('classifier', 'tests')
         }
         dep.excludeRules.each { ExcludeRule rule ->
