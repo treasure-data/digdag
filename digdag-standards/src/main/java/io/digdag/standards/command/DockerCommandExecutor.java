@@ -70,6 +70,9 @@ public class DockerCommandExecutor
         }
         else {
             imageName = baseImageName;
+            if (dockerConfig.get("pull-always", Boolean.class, false)) {
+                pullImage(imageName);
+            }
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
@@ -227,6 +230,28 @@ public class DockerCommandExecutor
             int ecode = p.waitFor();
             if (ecode != 0) {
                 throw new RuntimeException("Docker build failed");
+            }
+        }
+        catch (IOException | InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void pullImage(String imageName)
+    {
+        logger.info("Pulling docker image {}", imageName);
+        try {
+            ImmutableList.Builder<String> command = ImmutableList.builder();
+            command.add("docker").add("pull").add(imageName);
+
+            ProcessBuilder docker = new ProcessBuilder(command.build());
+            docker.redirectError(ProcessBuilder.Redirect.INHERIT);
+            docker.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+
+            Process p = docker.start();
+            int ecode = p.waitFor();
+            if (ecode != 0) {
+                throw new RuntimeException("Docker pull failed");
             }
         }
         catch (IOException | InterruptedException ex) {
