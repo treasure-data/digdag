@@ -89,3 +89,15 @@ Setting an alert if a workflow doesn't finish within expected time
     +long_running_job:
       sh>: long_running_job.sh
 
+
+Skipping a next workflow session
+----------------------------------
+
+Sometimes you have frequently running workflows (e.g. sessions every 30 or 60 minutes) that take longer than the duration between sessions. This variability in the duration of a workflow can occur for a number reasons. For example, you may be seeing an increase in the amount of data you are normally processing.
+
+For example, let’s say we have a workflow that is running hourly, and it normally takes only 30 minutes. But it’s the holiday season and now there has been a huge increase in usage of your site – so much data is now being process the workflow is taking 1 hour and 30 minutes. During this time period, a 2nd workflow has started running for the following hour, which causes further strain on your available resources because both are running at the same time.
+
+It’s this case it’s best to skip the next hour’s workflow session, and instead utilize the subsequent session to process 2 hours of data. To do this, we’ve added the following:
+
+* Added a `skip_on_overtime: true | false` schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.
+* Scheduled workflow sessions now have a `last_executed_session_time` variable which contains the previously executed session time. It is usually same with `last_session_time` but has different value when `skip_on_overtime: true` is set or the session is the first execution.
