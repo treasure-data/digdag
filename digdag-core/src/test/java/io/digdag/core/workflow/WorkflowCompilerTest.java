@@ -76,4 +76,12 @@ public class WorkflowCompilerTest
         exception.expect(ConfigException.class);
         compiler.compile("unused_keys_in_group", config);
     }
+
+    @Test
+    public void verifyErrorTaskIsValidated()
+    {
+        Config config = loadYamlResource("/io/digdag/core/workflow/invalid_error_task.dig");
+        exception.expect(ConfigException.class);
+        compiler.compile("invalid_error_task", config);
+    }
 }
