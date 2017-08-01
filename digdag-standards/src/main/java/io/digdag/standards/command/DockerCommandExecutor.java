@@ -1,15 +1,11 @@
 package io.digdag.standards.command;
 
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-import java.io.File;
-import java.io.OutputStreamWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.BufferedWriter;
@@ -17,8 +13,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
@@ -44,20 +40,20 @@ public class DockerCommandExecutor
         this.simple = simple;
     }
 
-    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb, Map<String, String> environments)
         throws IOException
     {
         // TODO set TZ environment variable
         Config config = request.getConfig();
         if (config.has("docker")) {
-            return startWithDocker(projectPath, request, pb);
+            return startWithDocker(projectPath, request, pb, environments);
         }
         else {
-            return simple.start(projectPath.toAbsolutePath(), request, pb);
+            return simple.start(projectPath.toAbsolutePath(), request, pb, environments);
         }
     }
 
-    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb, Map<String, String> environments)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
@@ -107,9 +103,14 @@ public class DockerCommandExecutor
             //    }
             //}
             //command.add("--env-file").add(envFile.toAbsolutePath().toString());
-            for (Map.Entry<String, String> pair : pb.environment().entrySet()) {
-                command.add("-e").add(pair.getKey() + "=" + pair.getValue());
-            }
+
+//            for (Map.Entry<String, String> pair : pb.environment().entrySet()) {
+//                command.add("-e").add(pair.getKey() + "=" + pair.getValue());
+//            }
+
+            environments.forEach((key, value) ->
+                    command.add("-e").add(key + "=" + value));
+
 
             // image name
             command.add(imageName);

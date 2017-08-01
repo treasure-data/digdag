@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.util.Collections;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.ByteStreams;
@@ -115,7 +116,7 @@ public class EmbulkOperatorFactory
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                Process p = exec.start(workspace.getPath(), request, pb);
+                Process p = exec.start(workspace.getPath(), request, pb, Collections.emptyMap());
                 p.getOutputStream().close();
                 try (InputStream stdout = p.getInputStream()) {
                     ByteStreams.copy(stdout, buffer);
