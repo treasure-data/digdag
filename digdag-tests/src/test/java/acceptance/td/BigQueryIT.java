@@ -410,7 +410,7 @@ public class BigQueryIT
                     .put("outfile", outfile.toString())
                     .build());
 
-            expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(10), attemptSuccess(server.endpoint(), attemptId), Duration.ofSeconds(20));
 
             assertThat(Files.exists(outfile), is(true));
 

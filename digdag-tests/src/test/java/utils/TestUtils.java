@@ -21,7 +21,6 @@ import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
@@ -64,7 +63,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -314,18 +315,30 @@ public class TestUtils
     public static void expect(TemporalAmount timeout, Callable<Boolean> condition)
             throws Exception
     {
+        expect(timeout, condition, Duration.ofSeconds(5));
+    }
+
+    public static void expect(TemporalAmount timeout, Callable<Boolean> condition, TemporalAmount interval)
+            throws Exception
+    {
         Instant deadline = Instant.now().plus(timeout);
         while (Instant.now().toEpochMilli() < deadline.toEpochMilli()) {
             if (condition.call()) {
                 return;
             }
-            Thread.sleep(1000);
+            Thread.sleep(interval.get(ChronoUnit.SECONDS) * 1000);
         }
 
         fail("Timeout after: " + timeout);
     }
 
     public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition)
+            throws Exception
+    {
+        return expectValue(timeout, condition, Duration.ofSeconds(5));
+    }
+
+    public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition, TemporalAmount interval)
             throws Exception
     {
         Instant deadline = Instant.now().plus(timeout);
@@ -338,7 +351,7 @@ public class TestUtils
             }
             catch (Exception ignore) {
             }
-            Thread.sleep(1000);
+            Thread.sleep(interval.get(ChronoUnit.SECONDS) * 1000);
         }
 
         throw new AssertionError("Timeout after: " + timeout);
