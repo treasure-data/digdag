@@ -44,7 +44,7 @@ before_cache:
   - sudo chown `id -u`:`id -g` -R $HOME/.gradle $HOME/.m2  # make them cachable
 
 script:
-  - ci/run_test.sh
+  - travis_wait ci/run_test.sh
 
 after_success:
   - ci/travis_report_coverage.sh
