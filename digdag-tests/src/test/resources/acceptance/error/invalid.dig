@@ -1,5 +1,5 @@
-+message:
-  echo>: Workflow started
++started:
+  sh>: touch ${outdir}/started.out
 +task:
   echo>: ok
   _error:

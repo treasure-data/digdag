@@ -187,7 +187,7 @@ public class WorkflowCompiler
                 // can make the task failed with error message if generating the task failed.
                 Config errorTask = config.getNestedOrGetEmpty("_error");
                 if (!errorTask.isEmpty()) {
-                    WorkflowCompiler.this.compile(fullName + "^error", errorTask);
+                    WorkflowCompiler.this.compileTasks(fullName, "^error", errorTask);
                 }
 
                 return addTask(parent, name, fullName, false, config);

@@ -1,0 +1,11 @@
++started:
+  sh>: touch ${outdir}/started.out
++task:
+  fail>: Failed
+  _error:
+    +message1:
+      sh>: touch ${outdir}/error1.out
+    +message2:
+      sh>: touch ${outdir}/error2.out
++finished:
+  sh>: touch ${outdir}/finished.out
