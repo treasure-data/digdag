@@ -27,7 +27,7 @@ public class ErrorTaskIT
     public void errorTaskRuns()
             throws Exception
     {
-        copyResource("acceptance/error/error_task.dig", root().resolve("error_task.dig"));
+        copyResource("acceptance/error_task/error_task.dig", root().resolve("error_task.dig"));
         CommandStatus status = main("run",
                 "-o", root().toString(),
                 "--project", root().toString(),
@@ -41,15 +41,30 @@ public class ErrorTaskIT
     }
 
     @Test
-    public void invalidErrorTask()
+    public void validatingErrorTasksAtLeafTask()
             throws Exception
     {
-        copyResource("acceptance/error/invalid.dig", root().resolve("invalid.dig"));
+        copyResource("acceptance/error_task/invalid_at_leaf.dig", root().resolve("invalid_at_leaf.dig"));
         CommandStatus status = main("run",
                 "-o", root().toString(),
                 "--project", root().toString(),
                 "-p", "outdir=" + root(),
-                "invalid.dig");
+                "invalid_at_leaf.dig");
+        assertThat(status.errUtf8(), status.code(), is(not(0)));
+        assertThat(Files.exists(root().resolve("started.out")), is(false));  // workflow should not start (validation should happen before starting the workflow)
+        assertThat(status.errUtf8(), containsString("A task can't have more than one operator"));
+    }
+
+    @Test
+    public void validatingErrorTasksAtGroupingTask()
+            throws Exception
+    {
+        copyResource("acceptance/error_task/invalid_at_group.dig", root().resolve("invalid_at_group.dig"));
+        CommandStatus status = main("run",
+                "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "outdir=" + root(),
+                "invalid_at_group.dig");
         assertThat(status.errUtf8(), status.code(), is(not(0)));
         assertThat(Files.exists(root().resolve("started.out")), is(false));  // workflow should not start (validation should happen before starting the workflow)
         assertThat(status.errUtf8(), containsString("A task can't have more than one operator"));
