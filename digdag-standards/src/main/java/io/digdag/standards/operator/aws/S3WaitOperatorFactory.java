@@ -4,8 +4,6 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -141,26 +139,14 @@ public class S3WaitOperatorFactory
             AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
             AmazonS3Client s3Client = s3ClientFactory.create(credentials, configuration);
 
+            Aws.configureServiceClient(s3Client, endpoint, regionName);
+
             S3ClientOptions clientOptions = new S3ClientOptions();
             if (pathStyleAccess.isPresent()) {
                 clientOptions.setPathStyleAccess(pathStyleAccess.get());
             }
             s3Client.setS3ClientOptions(clientOptions);
 
-            // Configure endpoint or region. Endpoint takes precedence over region.
-            if (endpoint.isPresent()) {
-                s3Client.setEndpoint(endpoint.get());
-            }
-            else if (regionName.isPresent()) {
-                Regions region;
-                try {
-                    region = Regions.fromName(regionName.get());
-                }
-                catch (IllegalArgumentException e) {
-                    throw new ConfigException("Illegal AWS region: " + regionName.get());
-                }
-                s3Client.setRegion(Region.getRegion(region));
-            }
 
             GetObjectMetadataRequest req = new GetObjectMetadataRequest(bucket.get(), key.get());
 
