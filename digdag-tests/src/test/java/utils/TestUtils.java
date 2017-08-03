@@ -318,7 +318,7 @@ public class TestUtils
         expect(timeout, condition, Duration.ofSeconds(5));
     }
 
-    public static void expect(TemporalAmount timeout, Callable<Boolean> condition, TemporalAmount interval)
+    public static void expect(TemporalAmount timeout, Callable<Boolean> condition, Duration interval)
             throws Exception
     {
         Instant deadline = Instant.now().plus(timeout);
@@ -326,7 +326,7 @@ public class TestUtils
             if (condition.call()) {
                 return;
             }
-            Thread.sleep(interval.get(ChronoUnit.SECONDS) * 1000);
+            Thread.sleep(interval.toMillis());
         }
 
         fail("Timeout after: " + timeout);
@@ -338,7 +338,7 @@ public class TestUtils
         return expectValue(timeout, condition, Duration.ofSeconds(5));
     }
 
-    public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition, TemporalAmount interval)
+    public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition, Duration interval)
             throws Exception
     {
         Instant deadline = Instant.now().plus(timeout);
@@ -351,7 +351,7 @@ public class TestUtils
             }
             catch (Exception ignore) {
             }
-            Thread.sleep(interval.get(ChronoUnit.SECONDS) * 1000);
+            Thread.sleep(interval.toMillis());
         }
 
         throw new AssertionError("Timeout after: " + timeout);
