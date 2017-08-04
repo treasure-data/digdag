@@ -382,6 +382,26 @@ public class DatabaseSessionStoreManager
     public boolean requestCancelAttempt(long attemptId)
     {
         return transaction((handle, dao) -> {
+            // Lock all running tasks.
+            handle.createQuery("select id from tasks" +
+                    " where attempt_id = :attemptId" +
+                    " and state = " + TaskStateCode.RUNNING_CODE +
+                    " for update")
+                .bind("attemptId", attemptId)
+                .mapTo(Long.class)
+                .list();
+            // Locking running tasks is necessary to avoid following scenario:
+            //   Thread-A: WorkflowExecutor.taskSucceeded or taskFailed
+            //   Thread-B: requestCancelAttempt
+            //   1. Thread-A locks task1 (lockTaskIfExists).
+            //   2. Thread-A checks stateFlags of task1 => not cancel-requested.
+            //   3. Thread-B issues UPDATE to set cancel-requested flag to all tasks.
+            //      This can set cancel-requested flag to some tasks immediately, but
+            //      updating task1 blocks because it's locked.
+            //   4. Thread-A inserts some generated subtasks: task2.
+            //   5. Thread-A unlocks task1.
+            //   6. Thread-B continues UPDATE statement. It updates task1. But it
+            //      might not update task2 depending on processing order.
             int n = handle.createStatement("update tasks" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
