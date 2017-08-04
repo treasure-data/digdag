@@ -1,0 +1,7 @@
++started:
+  sh>: touch ${outdir}/started.out
++task:
+  echo>: ok
+  _error:
+    echo>: invalid
+    sh>: echo duplicated

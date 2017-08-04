@@ -660,6 +660,14 @@ public class WorkflowExecutor
                     // TODO this is a fundamental design problem. Probably _error tasks should be removed.
                     //      use notification tasks instead.
                 }
+                catch (ConfigException ex) {
+                    // Workflow config has a problem (e.g. more than one operator). Nothing we can do here.
+                    // WorkflowCompiler should be validation so that this error doesn't happen.
+                    // TODO this is a fundamental design problem. Probably _error tasks should be removed.
+                    //      use notification tasks instead.
+                    logger.warn("Found a broken _error task in attempt {} task {}. Skipping this task.",
+                            task.getAttemptId(), task.getId(), ex);
+                }
 
                 if (errorTaskIds.isEmpty()) {
                     // set GROUP_ERROR state
@@ -1217,6 +1225,11 @@ public class WorkflowExecutor
             errorTaskAdded = false;
             logger.debug("Failed to add error tasks because of task limit");
         }
+        catch (ConfigException ex) {
+            errorTaskAdded = false;
+            logger.warn("Found a broken _error task in attempt {} task {}. Skipping this task.",
+                    lockedTask.get().getAttemptId(), lockedTask.get().getId(), ex);
+        }
 
         boolean updated;
         if (errorTaskAdded) {
@@ -1265,6 +1278,10 @@ public class WorkflowExecutor
         }
         catch (TaskLimitExceededException ex) {
             tm.reset();
+            return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
+        }
+        catch (ConfigException ex) {
+            // Subtask config or _check task config has a problem (e.g. more than one operator).
             return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
         }
 

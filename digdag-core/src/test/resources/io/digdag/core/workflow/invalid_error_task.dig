@@ -1,0 +1,5 @@
++task:
+  echo>: ok
+  _error:
+    echo>: invalid
+    sh>: echo duplicated

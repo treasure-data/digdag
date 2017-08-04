@@ -120,7 +120,7 @@ public class WorkflowCompiler
         }
     }
 
-    private static class Context
+    private class Context
     {
         private List<TaskBuilder> tasks = new ArrayList<>();
 
@@ -180,6 +180,9 @@ public class WorkflowCompiler
                 if (config.getKeys().stream().filter(key -> key.endsWith(">")).count() > 1) {
                     throw new ConfigException("A task can't have more than one operator: " + config);
                 }
+
+                validateSpecialSubtasks(fullName, config);
+
                 return addTask(parent, name, fullName, false, config);
             }
             else {
@@ -257,7 +260,21 @@ public class WorkflowCompiler
                     }
                 }
 
+                validateSpecialSubtasks(fullName, config);
+
                 return tb;
+            }
+        }
+
+        private void validateSpecialSubtasks(String fullName, Config config)
+        {
+            // Validating _error task here because _error task is generated when a task failed
+            // and it can do nothing if generating the error task failed. On the other hand,
+            // _check, _do, and other similar tasks are generated when a task succeeded and they
+            // can make the task failed with error message if generating the task failed.
+            Config errorTask = config.getNestedOrGetEmpty("_error");
+            if (!errorTask.isEmpty()) {
+                WorkflowCompiler.this.compileTasks(fullName, "^error", errorTask);
             }
         }
 
