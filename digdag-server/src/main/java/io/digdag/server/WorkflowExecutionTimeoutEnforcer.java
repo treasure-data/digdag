@@ -106,69 +106,86 @@ public class WorkflowExecutionTimeoutEnforcer
 
     private void run()
     {
-        tm.begin(() -> {
-            try {
-                enforceAttemptTTLs();
-            }
-            catch (Throwable t) {
-                logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
-            }
+        try {
+            enforceAttemptTTLs();
+        }
+        catch (Throwable t) {
+            logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
+        }
 
-            try {
-                enforceTaskTTLs();
-            }
-            catch (Throwable t) {
-                logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
-            }
-
-            return null;
-        });
-}
+        try {
+            enforceTaskTTLs();
+        }
+        catch (Throwable t) {
+            logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
+        }
+    }
 
     private void enforceAttemptTTLs()
     {
-        Instant creationDeadline = ssm.getStoreTime().minus(attemptTTL);
-
-        List<StoredSessionAttempt> expiredAttempts = ssm.findActiveAttemptsCreatedBefore(creationDeadline, (long) 0, 100);
+        List<StoredSessionAttempt> expiredAttempts = tm.begin(() -> {
+            Instant creationDeadline = ssm.getStoreTime().minus(attemptTTL);
+            return ssm.findActiveAttemptsCreatedBefore(creationDeadline, (long) 0, 100);
+        });
 
         for (StoredSessionAttempt attempt : expiredAttempts) {
-            AttemptStateFlags stateFlags;
             try {
-                stateFlags = ssm.getAttemptStateFlags(attempt.getId());
-            }
-            catch (ResourceNotFoundException e) {
-                logger.debug("Session Attempt not found, ignoring: {}", attempt, e);
-                continue;
-            }
+                tm.begin(() -> {
+                    AttemptStateFlags stateFlags;
+                    try {
+                        stateFlags = ssm.getAttemptStateFlags(attempt.getId());
+                    }
+                    catch (ResourceNotFoundException e) {
+                        logger.debug("Session Attempt not found, ignoring: {}", attempt, e);
+                        return null;
+                    }
 
-            if (stateFlags.isCancelRequested()) {
-                logger.debug("Session Attempt already canceled, ignoring: {}", attempt);
-                continue;
-            }
+                    if (stateFlags.isCancelRequested()) {
+                        logger.debug("Session Attempt already canceled, ignoring: {}", attempt);
+                        return null;
+                    }
 
-            logger.info("Session Attempt timed out, canceling: {}", attempt);
-            boolean canceled = ssm.requestCancelAttempt(attempt.getId());
-            if (canceled) {
-                sendTimeoutNotification("Workflow execution timeout", attempt.getId());
+                    logger.info("Session Attempt timed out, canceling: {}", attempt);
+                    boolean canceled = ssm.requestCancelAttempt(attempt.getId());
+                    if (canceled) {
+                        sendTimeoutNotification("Workflow execution timeout", attempt.getId());
+                    }
+
+                    return null;
+                });
+            }
+            catch (Throwable t) {
+                logger.error("Uncaught exception when enforcing attempt TTLs of attempt {}. Ignoring. Loop continues.", attempt.getId(), t);
             }
         }
     }
 
     private void enforceTaskTTLs()
     {
-        Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
-
-        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TASK_TTL_ENFORCED_STATE_CODES, startDeadline, (long) 0, 100);
+        List<TaskAttemptSummary> expiredTasks = tm.begin(() -> {
+            Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
+            return ssm.findTasksStartedBeforeWithState(TASK_TTL_ENFORCED_STATE_CODES, startDeadline, (long) 0, 100);
+        });
 
         Map<Long, List<TaskAttemptSummary>> attempts = expiredTasks.stream()
                 .collect(groupingBy(TaskAttemptSummary::getAttemptId));
 
         for (Map.Entry<Long, List<TaskAttemptSummary>> entry : attempts.entrySet()) {
-            logger.info("Task(s) timed out, canceling Session Attempt: {}, tasks={}", entry.getKey(), entry.getValue());
-            boolean canceled = ssm.requestCancelAttempt(entry.getKey());
-            String taskIds = entry.getValue().stream().mapToLong(TaskAttemptSummary::getId).mapToObj(Long::toString).collect(joining(","));
-            if (canceled) {
-                sendTimeoutNotification("Task execution timeout: " + taskIds, entry.getKey());
+            long attemptId = entry.getKey();
+            try {
+                tm.begin(() -> {
+                    logger.info("Task(s) timed out, canceling Session Attempt: {}, tasks={}", attemptId, entry.getValue());
+                    boolean canceled = ssm.requestCancelAttempt(attemptId);
+                    String taskIds = entry.getValue().stream().mapToLong(TaskAttemptSummary::getId).mapToObj(Long::toString).collect(joining(","));
+                    if (canceled) {
+                        sendTimeoutNotification("Task execution timeout: " + taskIds, attemptId);
+                    }
+
+                    return null;
+                });
+            }
+            catch (Throwable t) {
+                logger.error("Uncaught exception when enforcing task TTLs of attempt {}. Ignoring. Loop continues.", entry.getKey(), t);
             }
         }
     }
