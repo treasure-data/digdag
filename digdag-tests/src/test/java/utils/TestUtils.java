@@ -79,6 +79,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -685,6 +686,15 @@ public class TestUtils
      */
     public static HttpProxyServer startRequestFailingProxy(int failures, ConcurrentMap<String, List<FullHttpRequest>> requests, HttpResponseStatus error)
     {
+        return startRequestFailingProxy(failures, requests, error, (req, reqCount) -> Optional.absent());
+    }
+
+    /**
+     * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
+     */
+    public static HttpProxyServer startRequestFailingProxy(int defaultFailures, ConcurrentMap<String, List<FullHttpRequest>> requests, HttpResponseStatus error,
+            BiFunction<FullHttpRequest, Integer, Optional<Boolean>> customFailDecider)
+    {
         return startRequestFailingProxy(request -> {
             String key = request.getMethod() + " " + request.getUri();
             List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, k -> new ArrayList<>());
@@ -693,7 +703,7 @@ public class TestUtils
                 keyedRequests.add(request.copy());
                 n = keyedRequests.size();
             }
-            boolean fail = n % failures != 0;
+            boolean fail = customFailDecider.apply(request, n).or(() -> n % defaultFailures != 0);
             if (fail) {
                 return Optional.of(error);
             }
