@@ -5,11 +5,12 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
@@ -18,13 +19,11 @@ import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.ServiceUnavailableException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
@@ -36,6 +35,8 @@ import static org.junit.Assume.assumeThat;
 
 public class ServerGracefulShutdownIT
 {
+    private final Logger logger = LoggerFactory.getLogger(ServerGracefulShutdownIT.class);
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -112,6 +113,7 @@ public class ServerGracefulShutdownIT
 
             RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
             if (attempt.getDone()) {
+                logger.warn("The attempt itself already finished... Is it expected situation....? attempt={}", attempt);
                 return true;
             }
 
@@ -164,7 +166,7 @@ public class ServerGracefulShutdownIT
         assertThat(Files.exists(root().resolve("after_sleep.out")), is(false));
 
         // REST API should be alive for a while
-        assertThat(aliveSeconds, greaterThan(3));
+        assertThat(aliveSeconds, greaterThan(5));
 
         assertThat(server.outUtf8(), containsString("Waiting for completion of 2 running tasks..."));
         assertThat(server.outUtf8(), containsString("Closing HTTP listening sockets"));

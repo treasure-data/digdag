@@ -21,7 +21,6 @@ import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
@@ -64,7 +63,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,6 +79,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -314,18 +316,30 @@ public class TestUtils
     public static void expect(TemporalAmount timeout, Callable<Boolean> condition)
             throws Exception
     {
+        expect(timeout, condition, Duration.ofSeconds(5));
+    }
+
+    public static void expect(TemporalAmount timeout, Callable<Boolean> condition, Duration interval)
+            throws Exception
+    {
         Instant deadline = Instant.now().plus(timeout);
         while (Instant.now().toEpochMilli() < deadline.toEpochMilli()) {
             if (condition.call()) {
                 return;
             }
-            Thread.sleep(1000);
+            Thread.sleep(interval.toMillis());
         }
 
         fail("Timeout after: " + timeout);
     }
 
     public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition)
+            throws Exception
+    {
+        return expectValue(timeout, condition, Duration.ofSeconds(5));
+    }
+
+    public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition, Duration interval)
             throws Exception
     {
         Instant deadline = Instant.now().plus(timeout);
@@ -338,7 +352,7 @@ public class TestUtils
             }
             catch (Exception ignore) {
             }
-            Thread.sleep(1000);
+            Thread.sleep(interval.toMillis());
         }
 
         throw new AssertionError("Timeout after: " + timeout);
@@ -672,6 +686,15 @@ public class TestUtils
      */
     public static HttpProxyServer startRequestFailingProxy(int failures, ConcurrentMap<String, List<FullHttpRequest>> requests, HttpResponseStatus error)
     {
+        return startRequestFailingProxy(failures, requests, error, (req, reqCount) -> Optional.absent());
+    }
+
+    /**
+     * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
+     */
+    public static HttpProxyServer startRequestFailingProxy(int defaultFailures, ConcurrentMap<String, List<FullHttpRequest>> requests, HttpResponseStatus error,
+            BiFunction<FullHttpRequest, Integer, Optional<Boolean>> customFailDecider)
+    {
         return startRequestFailingProxy(request -> {
             String key = request.getMethod() + " " + request.getUri();
             List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, k -> new ArrayList<>());
@@ -680,7 +703,7 @@ public class TestUtils
                 keyedRequests.add(request.copy());
                 n = keyedRequests.size();
             }
-            boolean fail = n % failures != 0;
+            boolean fail = customFailDecider.apply(request, n).or(() -> n % defaultFailures != 0);
             if (fail) {
                 return Optional.of(error);
             }

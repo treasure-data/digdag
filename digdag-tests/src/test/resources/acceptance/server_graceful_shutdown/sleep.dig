@@ -4,10 +4,10 @@ timezone: UTC
   _parallel: true
 
   +sleep:
-    sh>: sleep 5
+    sh>: sleep 10
 
   +sleep_and_touch:
-    sh>: sleep 5; touch ${outdir}/done.out
+    sh>: sleep 10; touch ${outdir}/done.out
 
   +start_checker:
     echo>: started

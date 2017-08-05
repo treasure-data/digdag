@@ -119,10 +119,10 @@ public class ExecutionTimeoutIT
             Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
 
             // Expect the attempt to get canceled
-            expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+            expect(Duration.ofMinutes(4), () -> client.getSessionAttempt(attemptId).getCancelRequested(), Duration.ofSeconds(10));
 
             // And then the attempt should be done pretty soon
-            expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getDone());
+            expect(Duration.ofMinutes(4), () -> client.getSessionAttempt(attemptId).getDone(), Duration.ofSeconds(10));
 
             // Expect a notification to be sent
             expectNotification(attemptId, Duration.ofMinutes(2), "Workflow execution timeout"::equals);

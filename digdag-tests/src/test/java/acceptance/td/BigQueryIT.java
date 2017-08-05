@@ -20,10 +20,13 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +42,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static acceptance.td.GcpUtil.BQ_TAG;
 import static acceptance.td.GcpUtil.GCP_CREDENTIAL;
@@ -91,7 +95,15 @@ public class BigQueryIT
     {
         assumeThat(GCP_CREDENTIAL, not(isEmptyOrNullString()));
 
-        proxyServer = TestUtils.startRequestFailingProxy(2);
+        proxyServer = TestUtils.startRequestFailingProxy(2, new ConcurrentHashMap<>(), HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                (req, reqCount) -> {
+                    // io.digdag.standards.operator.gcp.BqJobRunner sends "CONNECT www.googleapis.com" frequently. It can easily cause infinite retry.
+                    // So the following custom logic should be used for that kind of requests.
+                    if (req.getMethod().equals(HttpMethod.CONNECT)) {
+                        return Optional.of(reqCount % 5 == 0);
+                    }
+                    return Optional.absent();
+                });
 
         server = TemporaryDigdagServer.builder()
                 .environment(ImmutableMap.of(
@@ -410,7 +422,7 @@ public class BigQueryIT
                     .put("outfile", outfile.toString())
                     .build());
 
-            expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(10), attemptSuccess(server.endpoint(), attemptId), Duration.ofSeconds(20));
 
             assertThat(Files.exists(outfile), is(true));
 
