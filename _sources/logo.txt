@@ -17,4 +17,4 @@ Feel free to use these logos on your slides, blog posts, etc.!
 ## Links
 
 - [Digdag.ai](_static/logo/dig-dag-logo-symbol.ai)
-- [Full list of files](_static/logo/)
+- [Full list of files](https://github.com/treasure-data/digdag/tree/master/digdag-docs/src/_static/logo)
