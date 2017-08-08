@@ -1,0 +1,4 @@
+_command: false
+_else_do:
+  echo>: Condition is false
+

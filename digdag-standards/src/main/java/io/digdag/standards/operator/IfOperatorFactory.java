@@ -2,6 +2,7 @@ package io.digdag.standards.operator;
 
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -41,10 +42,12 @@ public class IfOperatorFactory
         {
             Config params = request.getConfig();
 
-            Config doConfig = request.getConfig().getNested("_do");
-
+            Config doConfig = request.getConfig().getNestedOrGetEmpty("_do");
+            Config elseDoConfig = request.getConfig().getNestedOrGetEmpty("_else_do");
             boolean condition = params.get("_command", boolean.class);
-
+            if(doConfig.isEmpty() && elseDoConfig.isEmpty()){
+                throw new ConfigException("Both _do and _else_do are not specified.");
+            }
             if (condition) {
                 return TaskResult.defaultBuilder(request)
                     .subtaskConfig(doConfig)
@@ -52,6 +55,7 @@ public class IfOperatorFactory
             }
             else {
                 return TaskResult.defaultBuilder(request)
+                    .subtaskConfig(elseDoConfig)
                     .build();
             }
         }
