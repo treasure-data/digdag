@@ -346,7 +346,6 @@ In the config file, following parameters are available
 * log-server.s3.path (string)
 * log-server.s3.credentials.access-key-id (string. default: instance profile)
 * log-server.s3.credentials.secret-access-key (string. default: instance profile)
-* digdag.secret-access-policy-file (filename)
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 
 
