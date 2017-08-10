@@ -19,6 +19,7 @@ import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.ServiceUnavailableException;
 
@@ -130,14 +131,20 @@ public class ServerGracefulShutdownIT
         Id attemptId = startSleepTask();
 
         server.terminateProcess();
+        Instant terminateStartedAt = Instant.now();
 
         // server started termination but it should be alive at most 5 seconds.
 
-        int aliveSeconds = 0;
+        int aliveCount = 0;
         while (true) {
+            Instant loopStartedAt = Instant.now();
+            if (loopStartedAt.isAfter(terminateStartedAt.plus(Duration.ofMinutes(10)))) {
+                throw new IllegalStateException("Server didn't shutdown within 10 minutes");
+            }
+
             try {
                 client.getSessionAttempt(attemptId);
-                aliveSeconds++;
+                aliveCount++;
             }
             catch (Exception ex) {
                 // if REST API fails, the cause should be 503 Service Unavailable or
@@ -152,11 +159,11 @@ public class ServerGracefulShutdownIT
                 }
             }
 
-            if (aliveSeconds > Duration.ofMinutes(5).getSeconds()) {
-                throw new IllegalStateException("Server doesn't shutdown");
+            // sleep for 1 second
+            long sleepMillis = Duration.between(Instant.now(), loopStartedAt.plusSeconds(1)).toMillis();
+            if (sleepMillis > 0) {
+                Thread.sleep(sleepMillis);
             }
-
-            Thread.sleep(1000);
         }
 
         // all running tasks should be done
@@ -166,7 +173,7 @@ public class ServerGracefulShutdownIT
         assertThat(Files.exists(root().resolve("after_sleep.out")), is(false));
 
         // REST API should be alive for a while
-        assertThat(aliveSeconds, greaterThan(5));
+        assertThat(aliveCount, greaterThan(3));
 
         assertThat(server.outUtf8(), containsString("Waiting for completion of 2 running tasks..."));
         assertThat(server.outUtf8(), containsString("Closing HTTP listening sockets"));
