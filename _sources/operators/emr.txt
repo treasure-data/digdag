@@ -41,6 +41,30 @@ For detailed information about EMR, see the [Amazon Elastic MapReduce Documentat
 
   The AWS Role to assume when submitting EMR jobs.
 
+* **aws.emr.region, aws.region**
+
+  The AWS region to use for EMR service.
+
+* **aws.emr.endpoint**
+
+  The AWS EMR [endpoint address](http://docs.aws.amazon.com/general/latest/gr/rande.html) to use.
+
+* **aws.s3.region, aws.region**
+
+  The AWS region to use for S3 service to store staging files.
+
+* **aws.s3.endpoint**
+
+  The AWS S3 [endpoint address](http://docs.aws.amazon.com/general/latest/gr/rande.html) to use for staging files.
+
+* **aws.kms.region, aws.region**
+
+  The AWS region to use for KMS service to encrypt variables passed to EMR jobs.
+
+* **aws.kms.endpoint**
+
+  The AWS KMS [endpoint address](http://docs.aws.amazon.com/general/latest/gr/rande.html) to use for EMR variable encryption.
+
 ## Options
 
 * **cluster**: STRING | OBJECT
@@ -106,6 +130,30 @@ For detailed information about EMR, see the [Amazon Elastic MapReduce Documentat
   ```
   staging: s3://my-bucket/staging/
   ```
+
+* **emr.region**
+
+  The AWS region to use for EMR service.
+
+* **emr.endpoint**
+
+  The AWS EMR [endpoint address](http://docs.aws.amazon.com/general/latest/gr/rande.html) to use.
+
+* **s3.region**
+
+  The AWS region to use for S3 service to store staging files.
+
+* **s3.endpoint**
+
+  The AWS S3 [endpoint address](http://docs.aws.amazon.com/general/latest/gr/rande.html) to use for staging files.
+
+* **kms.region**
+
+  The AWS region to use for KMS service to encrypt variables passed to EMR jobs.
+
+* **kms.endpoint**
+
+  The AWS KMS [endpoint address](http://docs.aws.amazon.com/general/latest/gr/rande.html) to use for EMR variable encryption.
 
 * **steps**: LIST
 

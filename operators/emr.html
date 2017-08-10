@@ -209,6 +209,24 @@
 <li><p class="first"><strong>aws.emr.role_arn, aws.role_arn</strong></p>
 <p>The AWS Role to assume when submitting EMR jobs.</p>
 </li>
+<li><p class="first"><strong>aws.emr.region, aws.region</strong></p>
+<p>The AWS region to use for EMR service.</p>
+</li>
+<li><p class="first"><strong>aws.emr.endpoint</strong></p>
+<p>The AWS EMR <a class="reference external" href="http://docs.aws.amazon.com/general/latest/gr/rande.html">endpoint address</a> to use.</p>
+</li>
+<li><p class="first"><strong>aws.s3.region, aws.region</strong></p>
+<p>The AWS region to use for S3 service to store staging files.</p>
+</li>
+<li><p class="first"><strong>aws.s3.endpoint</strong></p>
+<p>The AWS S3 <a class="reference external" href="http://docs.aws.amazon.com/general/latest/gr/rande.html">endpoint address</a> to use for staging files.</p>
+</li>
+<li><p class="first"><strong>aws.kms.region, aws.region</strong></p>
+<p>The AWS region to use for KMS service to encrypt variables passed to EMR jobs.</p>
+</li>
+<li><p class="first"><strong>aws.kms.endpoint</strong></p>
+<p>The AWS KMS <a class="reference external" href="http://docs.aws.amazon.com/general/latest/gr/rande.html">endpoint address</a> to use for EMR variable encryption.</p>
+</li>
 </ul>
 </div>
 <div class="section" id="options">
@@ -273,6 +291,24 @@
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">staging</span><span class="p">:</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span><span class="n">staging</span><span class="o">/</span>
 </pre></div>
 </div>
+</li>
+<li><p class="first"><strong>emr.region</strong></p>
+<p>The AWS region to use for EMR service.</p>
+</li>
+<li><p class="first"><strong>emr.endpoint</strong></p>
+<p>The AWS EMR <a class="reference external" href="http://docs.aws.amazon.com/general/latest/gr/rande.html">endpoint address</a> to use.</p>
+</li>
+<li><p class="first"><strong>s3.region</strong></p>
+<p>The AWS region to use for S3 service to store staging files.</p>
+</li>
+<li><p class="first"><strong>s3.endpoint</strong></p>
+<p>The AWS S3 <a class="reference external" href="http://docs.aws.amazon.com/general/latest/gr/rande.html">endpoint address</a> to use for staging files.</p>
+</li>
+<li><p class="first"><strong>kms.region</strong></p>
+<p>The AWS region to use for KMS service to encrypt variables passed to EMR jobs.</p>
+</li>
+<li><p class="first"><strong>kms.endpoint</strong></p>
+<p>The AWS KMS <a class="reference external" href="http://docs.aws.amazon.com/general/latest/gr/rande.html">endpoint address</a> to use for EMR variable encryption.</p>
 </li>
 <li><p class="first"><strong>steps</strong>: LIST</p>
 <p>A list of steps to submit to the EMR cluster.</p>
