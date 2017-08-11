@@ -53,6 +53,16 @@ You can use [Docker](https://www.docker.com/) to run tasks in a container.  If `
     +step1:
       py>: tasks.MyWorkflow.step1
 
+Digdag caches pulled image and reuses it. By default, currently, Digdag uses the cached image consistently even if there is an update. You can set `pull_always: true` option so that Digdag checks update and pulls the latest image of the tag every time when a task starts.
+
+    _export:
+      docker:
+        image: ubuntu:latest
+        pull_always: true
+    
+    +step1:
+      py>: tasks.MyWorkflow.step1
+
 ## Next steps
 
 * [Concepts](concepts.html)
