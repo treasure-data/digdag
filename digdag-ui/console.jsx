@@ -1301,6 +1301,52 @@ const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: O
   return <a href={link} target='_blank'>{jobId}</a>
 }
 
+function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
+  let collectChildrenRecursively = function (result: Array<Task>, taskGroups: Map<string, Array<Task>>, parentTask: Task) {
+    let group: ?Array<Task> = taskGroups.get(parentTask.id)
+    if (group != null) {
+      taskGroups.delete(parentTask.id)
+      group.forEach(t => {
+        result.push(t)
+        collectChildrenRecursively(result, taskGroups, t)
+      })
+    }
+  }
+
+  // First, divide tasks into rootTasks and taskGroups.
+  let rootTasks: Array<Task> = []
+  let taskGroups: Map<string, Array<Task>> = new Map();  // {parentId => Array<Task>}
+  tasks.forEach(t => {
+    if (t.parentId != null) {
+      let parentId: string = t.parentId
+      let group: ?Array<Task> = taskGroups.get(parentId)
+      if (group != null) {
+        group.push(t)
+      } else {
+        taskGroups.set(parentId, [t])
+      }
+    } else {
+      rootTasks.push(t)
+    }
+  })
+
+  // For each root task, push it to the result, and push its children to the result.
+  let result: Array<Task> = []
+  rootTasks.forEach(t => {
+    result.push(t)
+    // collect children recursively
+    collectChildrenRecursively(result, taskGroups, t)
+  })
+
+  // This is actually unnecessary but in case something is wrong, concatenate all
+  // remaining task groups at the end.
+  Array.from(taskGroups.values()).forEach(remainingGroup => {
+    Array.prototype.push.apply(result, remainingGroup)
+  })
+
+  return result
+}
+
 class TaskListView extends React.Component {
   props:{
     tasks: Map<string, Task>
@@ -1326,7 +1372,7 @@ class TaskListView extends React.Component {
           </thead>
           <tbody>
             {
-              Array.from(this.props.tasks.values()).map(task =>
+              sortTasksForTreeView(Array.from(this.props.tasks.values())).map(task =>
                 <tr key={task.id}>
                   <td>{task.id}</td>
                   <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
@@ -1489,7 +1535,7 @@ const TaskTimelineView = ({tasks, startTime, endTime}:{
         </tr>
       </thead>
       <tbody>
-        { Array.from(tasks.values())
+        { sortTasksForTreeView(Array.from(tasks.values()))
           .filter(task => task.parentId != null)
           .filter(task => !isSyntheticTask(task))
           .map(task =>
