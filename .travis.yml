@@ -38,7 +38,7 @@ before_install:
     -v `pwd`/:/digdag \
     -v $HOME/.gradle:/root/.gradle \
     $BUILD_IMAGE \
-    ./gradlew testClasses
+    ./gradlew testClasses --no-daemon
   - ci/validate.sh
 
 install: true

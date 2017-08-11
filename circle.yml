@@ -20,7 +20,7 @@ dependencies:
       -v `pwd`/:/digdag \
       -v ~/.gradle:/root/.gradle \
       $BUILD_IMAGE \
-      ./gradlew testClasses
+      ./gradlew testClasses --no-daemon
 
 test:
   pre:
