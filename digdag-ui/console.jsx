@@ -1302,8 +1302,8 @@ const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: O
 }
 
 function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
-  let collectChildrenRecursively = function (result: Array<Task>, taskGroups: Map<string, Array<Task>>, parentTask: Task) {
-    let group: ?Array<Task> = taskGroups.get(parentTask.id)
+  function collectChildrenRecursively (result: Array<Task>, taskGroups: Map<string, Array<Task>>, parentTask: Task) {
+    const group: ?Array<Task> = taskGroups.get(parentTask.id)
     if (group != null) {
       taskGroups.delete(parentTask.id)
       group.forEach(t => {
@@ -1314,12 +1314,12 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
   }
 
   // First, divide tasks into rootTasks and taskGroups.
-  let rootTasks: Array<Task> = []
-  let taskGroups: Map<string, Array<Task>> = new Map();  // {parentId => Array<Task>}
+  const rootTasks: Array<Task> = []
+  const taskGroups: Map<string, Array<Task>> = new Map();  // {parentId => Array<Task>}
   tasks.forEach(t => {
-    if (t.parentId != null) {
-      let parentId: string = t.parentId
-      let group: ?Array<Task> = taskGroups.get(parentId)
+    const parentId: ?string = t.parentId
+    if (parentId != null) {
+      const group: ?Array<Task> = taskGroups.get(parentId)
       if (group != null) {
         group.push(t)
       } else {
@@ -1331,7 +1331,7 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
   })
 
   // For each root task, push it to the result, and push its children to the result.
-  let result: Array<Task> = []
+  const result: Array<Task> = []
   rootTasks.forEach(t => {
     result.push(t)
     // collect children recursively
