@@ -202,6 +202,16 @@
   <span class="n">py</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">tasks</span><span class="o">.</span><span class="n">MyWorkflow</span><span class="o">.</span><span class="n">step1</span>
 </pre></div>
 </div>
+<p>Digdag caches pulled image and reuses it. By default, currently, Digdag uses the cached image consistently even if there is an update. You can set <code class="docutils literal"><span class="pre">pull_always:</span> <span class="pre">true</span></code> option so that Digdag checks update and pulls the latest image of the tag every time when a task starts.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+  <span class="n">docker</span><span class="p">:</span>
+    <span class="n">image</span><span class="p">:</span> <span class="n">ubuntu</span><span class="p">:</span><span class="n">latest</span>
+    <span class="n">pull_always</span><span class="p">:</span> <span class="n">true</span>
+
+<span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+  <span class="n">py</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">tasks</span><span class="o">.</span><span class="n">MyWorkflow</span><span class="o">.</span><span class="n">step1</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="next-steps">
