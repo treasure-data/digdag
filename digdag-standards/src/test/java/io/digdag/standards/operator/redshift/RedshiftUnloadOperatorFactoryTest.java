@@ -136,4 +136,26 @@ public class RedshiftUnloadOperatorFactoryTest
                         "GZIP\n"
                 ));
     }
+
+    @Test
+    public void createUnloadConfigWithParallelOn()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "query", "select * from users",
+                "to", "s3://my-bucket/my-path",
+                "fixedwidth", "col1:11,col2:222,col3:333,col4:4444",
+                "gzip", true,
+                "parallel", "ON"
+        );
+        String queryId = UUID.randomUUID().toString();
+        String sql = getUnloadConfig(configInput, queryId);
+        assertThat(sql,
+                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "_'\n" +
+                        "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
+                        "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n" +
+                        "GZIP\n" +
+                        "PARALLEL ON\n"
+                ));
+    }
 }
