@@ -28,7 +28,7 @@ public class RedshiftUnloadOperatorFactoryTest
     private RedshiftUnloadOperatorFactory operatorFactory;
 
     @Rule
-    public ExpectedException thrown= ExpectedException.none();
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void setUp()
