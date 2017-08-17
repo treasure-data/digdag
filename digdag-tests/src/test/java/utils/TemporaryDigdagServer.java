@@ -311,6 +311,7 @@ public class TemporaryDigdagServer
             processArgs.add(java.toString());
             processArgs.addAll(asList(
                     "-cp", classPath,
+                    "-XX:TieredStopAtLevel=1", "-Xverify:none",  // for faster startup and less memory consumption on CI
                     "-Xms128m", "-Xmx128m"));
             if (version.isPresent()) {
                 processArgs.add("-D" + VERSION_PROPERTY + "=" + version.get());
