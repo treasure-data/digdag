@@ -68,6 +68,7 @@ public class WorkflowTestingUtils
                 operatorFactoryBinder.addBinding().to(FailOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(StoreOperatorFactory.class).in(Scopes.SINGLETON);
+                operatorFactoryBinder.addBinding().to(IfOperatorFactory.class).in(Scopes.SINGLETON);
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());

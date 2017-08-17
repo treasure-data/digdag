@@ -74,6 +74,26 @@ public class WorkflowExecutorTest
         assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("trytrytrytry"));
     }
 
+
+    @Test
+    public void ifOperatorDelayedEvalDo()
+            throws Exception
+    {
+        runWorkflow("if_operator", loadYamlResource("/io/digdag/core/workflow/if_operator_do.dig"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("OK_do"));
+
+    }
+
+    @Test
+    public void ifOperatorDelayedEvalElseDo()
+            throws Exception
+    {
+        runWorkflow("if_operator", loadYamlResource("/io/digdag/core/workflow/if_operator_else_do.dig"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("OK_else_do"));
+
+    }
+
+
     private void runWorkflow(String workflowName, Config config)
             throws Exception
     {
