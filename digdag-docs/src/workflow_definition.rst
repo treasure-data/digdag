@@ -151,7 +151,7 @@ If a task has ``_export`` directive, the task and its children can use the varia
 Using API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can set variables programmably using language API. For exampe, Python API provides ``digdag.env.export`` and ``digdag.env.store``:
+You can set variables programmably using language API. For example, Python API provides ``digdag.env.export`` and ``digdag.env.store``:
 
 .. code-block:: python
 

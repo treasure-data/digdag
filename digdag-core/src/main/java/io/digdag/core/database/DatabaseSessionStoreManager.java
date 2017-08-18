@@ -1846,7 +1846,12 @@ public class DatabaseSessionStoreManager
         long setStartedState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks" +
-                " set updated_at = now(), state = :newState, state_params = NULL" +  // always set state_params = NULL
+                " set updated_at = now(), state = :newState" +
+                // Here doesn't set state_params to NULL so that users can debug the reasons of the failure
+                // using state_params. This also provides consistent behavior with SUCCESS state which doesn't
+                // reset state_params. Leaving state_params doesn't have side effects because:
+                // * Tasks in done states (SUCCESS, GROUP_ERRRO, ERROR, CANCELED) won't change any more.
+                // * When the session is retried with resume, ResumingTask doesn't restore state_params.
                 " where id = :id" +
                 " and state = :oldState")
         long setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);

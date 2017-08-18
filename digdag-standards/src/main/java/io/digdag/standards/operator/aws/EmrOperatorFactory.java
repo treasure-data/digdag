@@ -181,10 +181,39 @@ public class EmrOperatorFactory
             AWSCredentials credentials = credentials(tag);
 
             SecretProvider awsSecrets = context.getSecrets().getSecrets("aws");
+            SecretProvider s3Secrets = awsSecrets.getSecrets("s3");
+            SecretProvider emrSecrets = awsSecrets.getSecrets("emr");
+            SecretProvider kmsSecrets = awsSecrets.getSecrets("kms");
 
-            Optional<String> emrEndpoint = awsSecrets.getSecretOptional("emr.endpoint");
-            Optional<String> s3Endpoint = awsSecrets.getSecretOptional("s3.endpoint");
-            Optional<String> kmsEndpoint = awsSecrets.getSecretOptional("kms.endpoint");
+            Optional<String> s3RegionName = Aws.first(
+                    () -> s3Secrets.getSecretOptional("region"),
+                    () -> awsSecrets.getSecretOptional("region"),
+                    () -> params.getOptional("s3.region", String.class));
+
+            Optional<String> emrRegionName = Aws.first(
+                    () -> emrSecrets.getSecretOptional("region"),
+                    () -> awsSecrets.getSecretOptional("region"),
+                    () -> params.getOptional("emr.region", String.class));
+
+            Optional<String> kmsRegionName = Aws.first(
+                    () -> kmsSecrets.getSecretOptional("region"),
+                    () -> awsSecrets.getSecretOptional("region"),
+                    () -> params.getOptional("kms.region", String.class));
+
+            Optional<String> emrEndpoint = Aws.first(
+                    () -> emrSecrets.getSecretOptional("endpoint"),
+                    () -> params.getOptional("emr.endpoint", String.class),
+                    () -> emrRegionName.transform(regionName -> "elasticmapreduce." + regionName + ".amazonaws.com"));
+
+            Optional<String> s3Endpoint = Aws.first(
+                    () -> s3Secrets.getSecretOptional("endpoint"),
+                    () -> params.getOptional("s3.endpoint", String.class),
+                    () -> s3RegionName.transform(regionName -> "s3." + regionName + ".amazonaws.com"));
+
+            Optional<String> kmsEndpoint = Aws.first(
+                    () -> kmsSecrets.getSecretOptional("endpoint"),
+                    () -> params.getOptional("kms.endpoint", String.class),
+                    () -> kmsRegionName.transform(regionName -> "kms." + regionName + ".amazonaws.com"));
 
             ClientConfiguration emrClientConfiguration = new ClientConfiguration();
             ClientConfiguration s3ClientConfiguration = new ClientConfiguration();
@@ -194,9 +223,13 @@ public class EmrOperatorFactory
             Aws.configureProxy(s3ClientConfiguration, s3Endpoint, environment);
             Aws.configureProxy(kmsClientConfiguration, kmsEndpoint, environment);
 
-            AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials, emrClientConfiguration);
+            AmazonElasticMapReduceClient emr = new AmazonElasticMapReduceClient(credentials, emrClientConfiguration);
             AmazonS3Client s3 = new AmazonS3Client(credentials, s3ClientConfiguration);
             AWSKMSClient kms = new AWSKMSClient(credentials, kmsClientConfiguration);
+
+            Aws.configureServiceClient(s3, s3Endpoint, s3RegionName);
+            Aws.configureServiceClient(emr, emrEndpoint, emrRegionName);
+            Aws.configureServiceClient(kms, kmsEndpoint, kmsRegionName);
 
             // Set up file stager
             Optional<AmazonS3URI> staging = params.getOptional("staging", String.class).transform(s -> {
