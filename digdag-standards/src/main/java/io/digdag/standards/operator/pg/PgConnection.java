@@ -17,12 +17,17 @@ import io.digdag.standards.operator.jdbc.JdbcResultSet;
 import io.digdag.standards.operator.jdbc.TableReference;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static java.util.Locale.ENGLISH;
 import static org.postgresql.core.Utils.escapeIdentifier;
 
 public class PgConnection
     extends AbstractJdbcConnection
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @VisibleForTesting
     public static PgConnection open(PgConnectionConfig config)
     {
@@ -41,6 +46,7 @@ public class PgConnection
         try {
             execute("SET TRANSACTION READ ONLY");
             try (Statement stmt = connection.createStatement()) {
+                loggingExecuteSQL(sql);
                 ResultSet rs = stmt.executeQuery(sql);  // executeQuery throws exception if given query includes multiple statements
                 resultHandler.accept(new PgResultSet(rs));
             }
@@ -77,6 +83,14 @@ public class PgConnection
     public TransactionHelper getStrictTransactionHelper(String statusTableSchema, String statusTableName, Duration cleanupDuration)
     {
         return new PgPersistentTransactionHelper(statusTableSchema, statusTableName, cleanupDuration);
+    }
+
+    private void loggingExecuteSQL(String sql)
+    {
+        for(String line: sql.split("\r?\n"))
+        {
+            logger.info(line);
+        }
     }
 
     private class PgPersistentTransactionHelper
@@ -215,11 +229,13 @@ public class PgConnection
         protected void executeStatement(String desc, String sql)
         {
             try {
+                loggingExecuteSQL(sql);
                 execute(sql);
             }
             catch (SQLException ex) {
                 throw new DatabaseException("Failed to " + desc, ex);
             }
         }
+
     }
 }
