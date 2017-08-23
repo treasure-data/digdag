@@ -257,7 +257,7 @@ public class HttpOperatorFactory
             catch (RuntimeException e) {
                 logger.info("Exception without response: {} {}", req.getMethod(), safeUri);
                 if(retry){
-                    throw new RuntimeException(e.toString());
+                    throw e;
                 }
                 else {
                     throw new TaskExecutionException(e.toString());
