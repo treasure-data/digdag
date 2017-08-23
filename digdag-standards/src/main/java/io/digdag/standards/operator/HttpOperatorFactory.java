@@ -254,6 +254,15 @@ public class HttpOperatorFactory
             catch (HttpResponseException e) {
                 throw error(req, uriIsSecret, e.getResponse());
             }
+            catch (RuntimeException e) {
+                logger.info("Exception without response: {} {}", req.getMethod(), safeUri);
+                if(retry){
+                    throw new RuntimeException(e.toString());
+                }
+                else {
+                    throw new TaskExecutionException(e.toString());
+                }
+            }
 
             logger.info("Received HTTP response: {} {}: {}", req.getMethod(), safeUri, res);
 
