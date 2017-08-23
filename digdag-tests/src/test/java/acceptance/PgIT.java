@@ -175,6 +175,30 @@ public class PgIT
     }
 
     @Test
+    public void selectAndDownloadWithNullValues()
+            throws Exception
+    {
+        copyResource("acceptance/pg/select_download.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupSourceTable(true);
+
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        assertThat(status.code(), is(0));
+
+        List<String> csvLines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                csvLines.add(line);
+            }
+            assertThat(csvLines.toString(), is(stringContainsInOrder(
+                    Arrays.asList("id,name,score", "0,,", ",bar,", ",,5.0")
+            )));
+        }
+    }
+
+    @Test
     public void createTable()
             throws Exception
     {
@@ -270,14 +294,26 @@ public class PgIT
 
     private void setupSourceTable()
     {
+        setupSourceTable(false);
+    }
+
+    private void setupSourceTable(boolean withNulls)
+    {
         SecretProvider secrets = getDatabaseSecrets();
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             switchSearchPath(conn);
             conn.executeUpdate("CREATE TABLE " + SRC_TABLE + " (id integer, name text, score real)");
-            conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (0, 'foo', 3.14)");
-            conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (1, 'bar', 1.23)");
-            conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (2, 'baz', 5.00)");
+            if (withNulls) {
+                conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (0, NULL, NULL)");
+                conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (NULL, 'bar', NULL)");
+                conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (NULL, NULL, 5.00)");
+            }
+            else {
+                conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (0, 'foo', 3.14)");
+                conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (1, 'bar', 1.23)");
+                conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (2, 'baz', 5.00)");
+            }
 
             conn.executeUpdate("GRANT SELECT ON " + SRC_TABLE +  " TO " + RESTRICTED_USER);
         }
