@@ -211,7 +211,7 @@ public class RedshiftConnection
         appendOption(sb, "NULL AS", unloadConfig.nullAs);
         appendOption(sb, "ESCAPE", unloadConfig.escape);
         appendOption(sb, "ALLOWOVERWRITE", unloadConfig.allowoverwrite);
-        appendOption(sb, "PARALLEL", unloadConfig.parallel);
+        appendOption(sb, "PARALLEL", unloadConfig.parallel, true);
 
         return sb.toString();
     }
