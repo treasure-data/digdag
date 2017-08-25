@@ -255,12 +255,12 @@ public class HttpOperatorFactory
                 throw error(req, uriIsSecret, e.getResponse());
             }
             catch (RuntimeException e) {
-                logger.info("Exception without response: {} {}", req.getMethod(), safeUri);
-                if(retry){
+                logger.warn("Exception without response: {} {}", req.getMethod(), safeUri);
+                if (retry) {
                     throw e;
                 }
                 else {
-                    throw new TaskExecutionException(e.toString());
+                    throw new TaskExecutionException(e);
                 }
             }
 
