@@ -27,6 +27,7 @@ import java.time.Instant;
 import static io.digdag.client.DigdagVersion.buildVersion;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.SECONDS;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -247,6 +248,21 @@ public class DigdagClientTest
         RecordedRequest request = mockWebServer.takeRequest();
 
         assertThat(request.getHeader(USER_AGENT), is("DigdagClient/" + buildVersion()));
+    }
+
+    @Test
+    public void testAcceptEncoding()
+            throws InterruptedException
+    {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200)
+                .setHeader(CONTENT_TYPE, "application/json")
+                .setBody("{\"version\":\"1.2.3\"}"));
+
+        client.getVersion();
+
+        RecordedRequest request = mockWebServer.takeRequest();
+
+        assertThat(request.getHeader(ACCEPT_ENCODING), is("gzip"));
     }
 
     @Test
