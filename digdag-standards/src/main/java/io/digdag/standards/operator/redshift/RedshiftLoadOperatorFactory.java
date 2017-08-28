@@ -123,7 +123,7 @@ public class RedshiftLoadOperatorFactory
                                     value = objectMapper.readValue(in, new TypeReference<Map<String, Object>>() {});
                                 }
                                 catch (IOException e) {
-                                    Throwables.propagate(e);
+                                    throw Throwables.propagate(e);
                                 }
                                 @SuppressWarnings("unchecked")
                                 List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");

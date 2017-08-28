@@ -256,7 +256,7 @@ public class ThreadLocalTransactionManager
             Throwables.propagateIfInstanceOf(e, e1);
             Throwables.propagateIfInstanceOf(e, e2);
             Throwables.propagateIfInstanceOf(e, e3);
-            Throwables.propagate(e);
+            throw Throwables.propagate(e);
         }
         finally {
             threadLocalTransaction.set(null);
@@ -269,7 +269,6 @@ public class ThreadLocalTransactionManager
                 transaction.close();
             }
         }
-        throw new IllegalStateException("Shouldn't reach here");
     }
 
     @Override
@@ -309,8 +308,7 @@ public class ThreadLocalTransactionManager
         }
         catch (Exception e) {
             Throwables.propagateIfInstanceOf(e, e1);
-            Throwables.propagate(e);
+            throw Throwables.propagate(e);
         }
-        throw new IllegalStateException("Shouldn't reach here");
     }
 }

@@ -222,7 +222,7 @@ public class DatabaseSecretStoreTest
                     });
                 }
                 catch (Exception e) {
-                    Throwables.propagate(e);
+                    throw Throwables.propagate(e);
                 }
             }));
         }
