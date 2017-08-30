@@ -327,6 +327,8 @@ const AttemptStatusView = ({attempt}) => {
   if (attempt.done) {
     if (attempt.success) {
       return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
+    } else if (attempt.cancelRequested) {
+      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
     } else {
       return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Failure</span>
     }
