@@ -166,7 +166,7 @@ public class RedshiftUnloadOperatorFactory
                 });
             }
             catch (RetryExecutor.RetryGiveupException e) {
-                Throwables.propagate(e);
+                throw Throwables.propagate(e);
             }
         }
     }
