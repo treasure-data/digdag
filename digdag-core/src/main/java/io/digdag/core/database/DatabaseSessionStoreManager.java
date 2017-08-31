@@ -1513,7 +1513,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id in (select id from projects where site_id = :siteId)" +
+                " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
                 " and s.id < :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
