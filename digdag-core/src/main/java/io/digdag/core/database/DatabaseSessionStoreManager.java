@@ -1466,6 +1466,15 @@ public class DatabaseSessionStoreManager
     public interface H2Dao
             extends Dao
     {
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id in (select id from projects where site_id = :siteId)" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit")
+        List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
         // h2's MERGE doesn't reutrn generated id when conflicting row already exists
         @SqlUpdate("merge into sessions" +
                 " (project_id, workflow_name, session_time)" +
@@ -1486,6 +1495,17 @@ public class DatabaseSessionStoreManager
     public interface PgDao
             extends Dao
     {
+        // This query uses "sessions.project_id = any(array(select ..))" instead of "in" (semi-join) so that
+        // PostgreSQL doesn't use a bad query plan which scans almost all records from sessions table.
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit")
+        List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
         @SqlQuery("insert into sessions" +
                 " (project_id, workflow_name, session_time)" +
                 " values (:projectId, :workflowName, :sessionTime)" +
@@ -1510,13 +1530,6 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select now() as date")
         Instant now();
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-                " from sessions s" +
-                " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
-                " and s.id < :lastId" +
-                " order by s.id desc" +
-                " limit :limit")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
