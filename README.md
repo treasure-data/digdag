@@ -31,6 +31,11 @@ Installing Node.js using Homebrew on Mac OS X:
 $ brew install node
 ```
 
+* Python 3
+  * sphinx
+  * sphinx_rtd_theme
+  * recommonmark
+
 ### Running tests
 
 ```
