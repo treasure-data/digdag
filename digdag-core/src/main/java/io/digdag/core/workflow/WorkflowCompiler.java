@@ -58,7 +58,7 @@ public class WorkflowCompiler
         private final String name;
         private final String fullName;
         private final TaskType taskType;
-        private final Config config;
+        private Config config;
         private final List<TaskBuilder> children = new ArrayList<TaskBuilder>();
         private final List<TaskBuilder> upstreams = new ArrayList<TaskBuilder>();
 
@@ -90,6 +90,13 @@ public class WorkflowCompiler
         public Config getConfig()
         {
             return config;
+        }
+
+        public Config modifyConfig()
+        {
+            Config newConfig = config.deepCopy();  // keep the original config immutable
+            this.config = newConfig;
+            return newConfig;
         }
 
         private void addChild(TaskBuilder child)
@@ -238,6 +245,7 @@ public class WorkflowCompiler
                             }
                             subtask.addUpstream(up);
                         }
+                        subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
                         names.put(subtask.getName(), subtask);
                     }
                 }
@@ -257,6 +265,7 @@ public class WorkflowCompiler
                             beforeList.clear();
                             beforeList.add(subtask);
                         }
+                        subtask.modifyConfig().remove("_background");  // suppress "Parameter '_background' is not used" warning message
                     }
                 }
 
