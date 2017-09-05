@@ -73,7 +73,7 @@ public class BackgroundAfterIT
         CommandStatus runStatus = runResource("background_with_parallel.dig");
 
         assertThat(runStatus.errUtf8(), runStatus.code(), not(is(0)));
-        assertThat(runStatus.errUtf8(), containsString("error: Setting \"_background: true\" option is invalid (unnecessary) is its parent task has \"_parallel: true\" option"));
+        assertThat(runStatus.errUtf8(), containsString("error: Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option"));
     }
 
     @Test
@@ -109,7 +109,7 @@ public class BackgroundAfterIT
         CommandStatus runStatus = runResource("after_without_parallel.dig");
 
         assertThat(runStatus.errUtf8(), runStatus.code(), not(is(0)));
-        assertThat(runStatus.errUtf8(), containsString("Option \"_after\" is valid only if its parent task has \"_parallel: true\""));
+        assertThat(runStatus.errUtf8(), containsString("error: Setting \"_after\" option is invalid if its parent task doesn't have \"_parallel: true\" option"));
     }
 
     private void assertOutputContents(String name, String contents)

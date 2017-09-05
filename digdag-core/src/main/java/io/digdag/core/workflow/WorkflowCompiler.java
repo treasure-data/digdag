@@ -236,7 +236,7 @@ public class WorkflowCompiler
                     Map<String, TaskBuilder> names = new HashMap<>();
                     for (TaskBuilder subtask : subtasks) {
                         if (subtask.getConfig().get("_background", boolean.class, false)) {
-                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) is its parent task has \"_parallel: true\" option");
+                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option");
                         }
                         for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
                             TaskBuilder up = names.get(upName);
@@ -253,7 +253,7 @@ public class WorkflowCompiler
                     List<TaskBuilder> beforeList = new ArrayList<>();
                     for (TaskBuilder subtask : subtasks) {
                         if (subtask.getConfig().has("_after")) {
-                            throw new ConfigException("Option \"_after\" is valid only if its parent task has \"_parallel: true\"");
+                            throw new ConfigException("Setting \"_after\" option is invalid if its parent task doesn't have \"_parallel: true\" option");
                         }
                         if (subtask.getConfig().get("_background", boolean.class, false)) {
                             beforeList.add(subtask);
