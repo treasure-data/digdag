@@ -32,3 +32,8 @@ General Changes
 Release Date
 ------------------
 2016-03-16
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+

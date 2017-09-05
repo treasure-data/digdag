@@ -51,3 +51,10 @@ Plugin API changes
 Release Date
 ------------
 2016-12-14
+
+Contributors
+------------------
+* Daniel Norberg
+* Daniele Zannotti
+* Sadayuki Furuhashi
+

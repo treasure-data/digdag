@@ -20,3 +20,10 @@ Server Changes
 Release Date
 ------------
 2017-03-14
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+* Toru Takahashi
+* szyn
+

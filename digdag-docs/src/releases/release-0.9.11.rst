@@ -16,3 +16,11 @@ Operator Changes
 Release Date
 ------------
 2017-05-17
+
+Contributors
+------------------
+* Keisuke Noda
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* Satoru Kamikaseda
+

@@ -22,3 +22,13 @@ Release Date
 ------------
 2017-04-27
 
+
+Contributors
+------------------
+* Daniele Zannotti
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* Satoru Kamikaseda
+* Toru Takahashi
+* szyn
+

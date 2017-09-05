@@ -11,3 +11,10 @@ Workflow Changes
 Release Date
 ------------
 2016-09-21
+
+Contributors
+------------------
+* Daniel Norberg
+* Daniele Zannotti
+* Sadayuki Furuhashi
+

@@ -29,3 +29,8 @@ SPI changes
 Release Date
 ------------------
 2016-04-01
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+

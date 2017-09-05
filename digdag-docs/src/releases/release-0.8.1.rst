@@ -42,3 +42,10 @@ Plugin API changes
 Release Date
 ------------
 2016-06-14
+
+Contributors
+------------------
+* Daniel Norberg
+* Lewuathe
+* Sadayuki Furuhashi
+

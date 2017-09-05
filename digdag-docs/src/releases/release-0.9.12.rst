@@ -15,3 +15,9 @@ General Changes
 Release Date
 ------------
 2017-05-17
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+* Toru Takahashi
+

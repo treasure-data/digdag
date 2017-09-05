@@ -24,3 +24,9 @@ Server mode changes
 Release Date
 ------------
 2016-05-12
+
+Contributors
+------------------
+* Daniel Norberg
+* Sadayuki Furuhashi
+

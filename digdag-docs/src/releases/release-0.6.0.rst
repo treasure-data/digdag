@@ -21,3 +21,9 @@ General changes
 Release Date
 ------------------
 2016-04-18
+
+Contributors
+------------------
+* Daniel Norberg
+* Sadayuki Furuhashi
+
