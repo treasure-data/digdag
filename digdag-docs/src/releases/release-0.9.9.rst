@@ -15,3 +15,10 @@ General Changes
 Release Date
 ------------
 2017-04-14
+
+Contributors
+------------------
+* Hiroyuki Yamanaka
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+

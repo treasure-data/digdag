@@ -17,3 +17,14 @@ Server mode changes
 Release Date
 ------------
 2016-07-19
+
+Contributors
+------------------
+* Daniel Norberg
+* Masayasu Yamamoto
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* Yasuharu Sawada
+* choplin
+* dozenyutaro
+
