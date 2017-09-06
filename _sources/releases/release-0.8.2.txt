@@ -25,3 +25,13 @@ Local mode changes
 Release Date
 ------------
 2016-06-21
+
+Contributors
+------------------
+* Daniel Norberg
+* Hiroyuki Sato
+* Kimura Takaumi
+* Sadayuki Furuhashi
+* Takeshi HASEGAWA
+* Toru Takahashi
+

@@ -25,3 +25,12 @@ General Changes
 Release Date
 ------------
 2017-02-06
+
+Contributors
+------------------
+* Daniel Norberg
+* Daniele Zannotti
+* Kazuki Ohta
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+

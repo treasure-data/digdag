@@ -24,3 +24,11 @@ General Changes
 Release Date
 ------------
 2017-09-04
+
+Contributors
+------------------
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* You Yamagata
+* grimrose
+

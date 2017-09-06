@@ -10,3 +10,11 @@ General Changes
 Release Date
 ------------
 2017-03-14
+
+Contributors
+------------------
+* Akira KAWAGUCHI
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* Toru Takahashi
+

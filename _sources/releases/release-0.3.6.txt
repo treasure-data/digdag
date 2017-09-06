@@ -16,3 +16,9 @@ Operator Changes
 Release Date
 ------------------
 2016-03-11
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+* Taro L. Saito
+

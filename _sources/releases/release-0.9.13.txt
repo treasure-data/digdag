@@ -33,3 +33,22 @@ UI Changes
 Release Date
 ------------
 2017-07-18
+
+Contributors
+------------------
+* Akira KAWAGUCHI
+* Akira Koyasu
+* FUJI Goro (gfx)
+* Hiroyuki Sato
+* KAWACHI Takashi
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* Shota Suzuki
+* Shunsuke Maeda
+* Takehiro Shiozaki
+* Toru Takahashi
+* Yoichi Nakayama
+* shio-phys
+* shunsuke maeda
+* uu59
+

@@ -16,3 +16,10 @@ General changes
 Release Date
 ------------
 2016-08-09
+
+Contributors
+------------------
+* Daniel Norberg
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+

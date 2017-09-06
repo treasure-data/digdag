@@ -9,3 +9,8 @@ General changes
 Release Date
 ------------
 2016-08-31
+
+Contributors
+------------------
+* Daniel Norberg
+

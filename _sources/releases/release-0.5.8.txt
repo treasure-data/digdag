@@ -22,3 +22,8 @@ Client-mode changes
 Release Date
 ------------------
 2016-04-06
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+
