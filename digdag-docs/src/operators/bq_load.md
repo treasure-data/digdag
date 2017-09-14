@@ -224,6 +224,52 @@
       - ALLOW_FIELD_ADDITION
       - ALLOW_FIELD_RELAXATION
 
+* **schema**: OBJECT | STRING
+
+  A table schema. It can accept object, json or yml file path.
+
+  Example:
+
+  You can write schema within .dag file directly.
+
+  ```yml
+  +step:
+    bq_load>: gs://<bucket>/path/to_file
+    ...
+    schema:
+      - name: "name",
+        type: "string"
+      ...
+  ```
+
+  Or you can write it as external file.
+
+  ```json
+  {
+    "fields": [
+      {"name": "name", "type": "STRING"},
+      ...
+    ]
+  }
+  ```
+  ```yml
+  fields:
+    - name: "name",
+      type: "string"
+    ...
+  ```
+
+  And specify the file path.
+
+  ```yml
+  +step:
+    bq_load>: gs://<bucket>/path/to_file
+    ...
+    schema: path/to/schema.json
+    # or
+    # schema: path/to/schema.yml
+  ```
+
 ## Output parameters
 
 * **bq.last_job_id**
