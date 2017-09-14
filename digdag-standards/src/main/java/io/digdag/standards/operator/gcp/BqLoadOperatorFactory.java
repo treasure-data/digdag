@@ -22,6 +22,8 @@ import io.digdag.standards.operator.td.YamlLoader;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.io.FilenameUtils;
+
 import static io.digdag.standards.operator.gcp.Bq.tableReference;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ENGLISH;
@@ -122,9 +124,13 @@ class BqLoadOperatorFactory
 
             String fileName = params.get("schema", String.class);
             try {
-                String schemaYaml = workspace.templateFile(templateEngine, fileName, UTF_8, params);
-                ObjectNode schemaJson = new YamlLoader().loadString(schemaYaml);
-                return objectMapper.readValue(schemaJson.traverse(), TableSchema.class);
+                String schemaString = workspace.templateFile(templateEngine, fileName, UTF_8, params);
+                if (FilenameUtils.getExtension(fileName).equals("json")) {
+                    return objectMapper.readValue(schemaString, TableSchema.class);
+                } else {
+                    ObjectNode schemaJson = new YamlLoader().loadString(schemaString);
+                    return objectMapper.readValue(schemaJson.traverse(), TableSchema.class);
+                }
             }
             catch (IOException ex) {
                 throw workspace.propagateIoException(ex, fileName, ConfigException::new);
