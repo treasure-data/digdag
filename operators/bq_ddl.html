@@ -177,18 +177,18 @@
 
 +prepare:
   bq_ddl&gt;:
-    create_datasets:
-      - my_dataset_${session_date_compact}
-    empty_datasets:
-      - my_dataset_${session_date_compact}
-    delete_datasets:
-      - my_dataset_${last_session_date_compact}
-    create_tables:
-      - my_table_${session_date_compact}
-    empty_tables:
-      - my_table_${session_date_compact}
-    delete_tables:
-      - my_table_${last_session_date_compact}
+  create_datasets:
+    - my_dataset_${session_date_compact}
+  empty_datasets:
+    - my_dataset_${session_date_compact}
+  delete_datasets:
+    - my_dataset_${last_session_date_compact}
+  create_tables:
+    - my_table_${session_date_compact}
+  empty_tables:
+    - my_table_${session_date_compact}
+  delete_tables:
+    - my_table_${last_session_date_compact}
 </pre></div>
 </div>
 <div class="section" id="secrets">
