@@ -127,7 +127,8 @@ class BqLoadOperatorFactory
                 String schemaString = workspace.templateFile(templateEngine, fileName, UTF_8, params);
                 if (FilenameUtils.getExtension(fileName).equals("json")) {
                     return objectMapper.readValue(schemaString, TableSchema.class);
-                } else {
+                }
+                else {
                     ObjectNode schemaJson = new YamlLoader().loadString(schemaString);
                     return objectMapper.readValue(schemaJson.traverse(), TableSchema.class);
                 }
