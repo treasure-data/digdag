@@ -259,7 +259,7 @@
     ...
   ```
 
-  And specify the file path.
+  And specify the file path. Supported formats are YAML and JSON. If an extension of the path is `.json` bq_load try parse as JSON, otherwise YAML.
 
   ```yml
   +step:
