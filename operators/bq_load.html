@@ -346,6 +346,44 @@ The character encoding of the data in the files to import. <em>Default</em>: <co
 - ALLOW_FIELD_ADDITION
 - ALLOW_FIELD_RELAXATION</p>
 </li>
+<li><p class="first"><strong>schema</strong>: OBJECT | STRING</p>
+<p>A table schema. It can accept object, json or yml file path.</p>
+<p>Example:</p>
+<p>You can write schema within .dag file directly.</p>
+<div class="highlight-yml"><div class="highlight"><pre><span></span>+step:
+  bq_load&gt;: gs://&lt;bucket&gt;/path/to_file
+  ...
+  schema:
+    - name: &quot;name&quot;,
+      type: &quot;string&quot;
+    ...
+</pre></div>
+</div>
+<p>Or you can write it as external file.</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span>{
+  &quot;fields&quot;: [
+    {&quot;name&quot;: &quot;name&quot;, &quot;type&quot;: &quot;STRING&quot;},
+    ...
+  ]
+}
+</pre></div>
+</div>
+<div class="highlight-yml"><div class="highlight"><pre><span></span>fields:
+  - name: &quot;name&quot;,
+    type: &quot;string&quot;
+  ...
+</pre></div>
+</div>
+<p>And specify the file path. Supported formats are YAML and JSON. If an extension of the path is <code class="docutils literal"><span class="pre">.json</span></code> bq_load try parse as JSON, otherwise YAML.</p>
+<div class="highlight-yml"><div class="highlight"><pre><span></span>+step:
+  bq_load&gt;: gs://&lt;bucket&gt;/path/to_file
+  ...
+  schema: path/to/schema.json
+  # or
+  # schema: path/to/schema.yml
+</pre></div>
+</div>
+</li>
 </ul>
 </div>
 <div class="section" id="output-parameters">
