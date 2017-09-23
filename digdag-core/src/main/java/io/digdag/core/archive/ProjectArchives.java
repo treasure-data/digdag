@@ -79,7 +79,9 @@ public class ProjectArchives
                     ByteStreams.copy(archive, out);
                 }
             }
-            Files.setPosixFilePermissions(path, getPosixFilePermissions(entry));
+            if (!Files.isSymbolicLink(path)) {
+                Files.setPosixFilePermissions(path, getPosixFilePermissions(entry));
+            }
         }
     }
 
