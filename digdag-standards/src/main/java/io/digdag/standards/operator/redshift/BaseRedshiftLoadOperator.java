@@ -40,9 +40,9 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @VisibleForTesting
-    BaseRedshiftLoadOperator(OperatorContext context, TemplateEngine templateEngine)
+    BaseRedshiftLoadOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
     {
-        super(context, templateEngine);
+        super(systemConfig, context, templateEngine);
     }
 
     /* TODO: This method name should be connectionConfig() or something? */

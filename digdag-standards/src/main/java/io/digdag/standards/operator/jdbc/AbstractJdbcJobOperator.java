@@ -1,19 +1,23 @@
 package io.digdag.standards.operator.jdbc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigKey;
+import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,13 +30,17 @@ public abstract class AbstractJdbcJobOperator<C>
     private static final String POLL_INTERVAL = "pollInterval";
     private static final int INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 1200;
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     private static final String QUERY_ID = "queryId";
 
-    protected AbstractJdbcJobOperator(OperatorContext context, TemplateEngine templateEngine)
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final int maxStoredResultSize;
+
+    protected AbstractJdbcJobOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
     {
         super(context, templateEngine);
+        Config config = systemConfig.getNestedOrGetEmpty("jdbc").deepCopy().merge(systemConfig.getNestedOrGetEmpty(type()));
+        this.maxStoredResultSize = config.get("max_stored_result_size", int.class, 64 * 1024);
     }
 
     @Override
@@ -55,9 +63,15 @@ public abstract class AbstractJdbcJobOperator<C>
             throw new ConfigException("Can't use download_file with insert_into or create_table");
         }
 
-        // TODO support store_last_results
+        boolean storeContent = params.get("store_content", boolean.class, false);
+        if (storeContent && queryModifier > 0) {
+            throw new ConfigException("Can't use store_content with insert_into or create_table");
+        }
+        if (downloadFile.isPresent() && storeContent) {
+            throw new ConfigException("Can't use both download_file and store_content at once");
+        }
 
-        boolean readOnlyMode = downloadFile.isPresent();  // or store_last_results == true
+        boolean readOnlyMode = downloadFile.isPresent() || storeContent;
 
         boolean strictTransaction = strictTransaction(params);
 
@@ -85,13 +99,17 @@ public abstract class AbstractJdbcJobOperator<C>
             }
 
             if (readOnlyMode) {
+                ImmutableTaskResult.Builder builder = TaskResult.defaultBuilder(request);
                 if (downloadFile.isPresent()) {
                     connection.executeReadOnlyQuery(query, (results) -> downloadResultsToFile(results, downloadFile.get()));
+                }
+                else if (storeContent) {
+                    connection.executeReadOnlyQuery(query, (results) -> storeResultInTaskResult(builder, results));
                 }
                 else {
                     connection.executeReadOnlyQuery(query, (results) -> skipResults(results));
                 }
-                return TaskResult.defaultBuilder(request).build();
+                return builder.build();
             }
             else {
                 String statement;
@@ -200,5 +218,53 @@ public abstract class AbstractJdbcJobOperator<C>
     {
         while (results.next() != null)
             ;
+    }
+
+    private void storeResultInTaskResult(ImmutableTaskResult.Builder builder, JdbcResultSet jdbcResultSet)
+    {
+        List<String> columnNames = jdbcResultSet.getColumnNames();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        StringBuilder buf = new StringBuilder();
+        boolean isFirst = true;
+
+        buf.append("[");
+        while (true) {
+            if (isFirst) {
+                isFirst = false;
+            }
+            else {
+                buf.append(',');
+            }
+
+            List<Object> values = jdbcResultSet.next();
+            if (values == null) {
+                break;
+            }
+            HashMap<String, Object> map = new HashMap<>();
+            for (int i = 0; i < columnNames.size(); i++) {
+                map.put(columnNames.get(i), values.get(i));
+            }
+            try {
+                buf.append(objectMapper.writeValueAsString(map));
+            }
+            catch (JsonProcessingException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+        buf.append("]");
+
+        if (buf.length() > maxStoredResultSize) {
+            throw new TaskExecutionException("Content is too large: " + buf.length() + " > " + maxStoredResultSize);
+        }
+
+        ConfigFactory cf = request.getConfig().getFactory();
+        Config result = cf.create();
+        // TODO: Revisit these codes later
+        // Config taskState = result.getNestedOrSetEmpty(type());
+        // taskState.set("last_content", buf.toString());
+        builder.addResetStoreParams(ConfigKey.of(type(), "last_content"));
+
+        builder.storeParams(result);
     }
 }

@@ -15,11 +15,13 @@ public class RedshiftOperatorFactory
         implements OperatorFactory
 {
     private static final String OPERATOR_TYPE = "redshift";
+    private final Config systemConfig;
     private final TemplateEngine templateEngine;
 
     @Inject
-    public RedshiftOperatorFactory(TemplateEngine templateEngine)
+    public RedshiftOperatorFactory(Config systemConfig, TemplateEngine templateEngine)
     {
+        this.systemConfig = systemConfig;
         this.templateEngine = templateEngine;
     }
 
@@ -32,7 +34,7 @@ public class RedshiftOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new RedshiftOperator(context, templateEngine);
+        return new RedshiftOperator(systemConfig, context, templateEngine);
     }
 
     private static class RedshiftOperator
@@ -40,9 +42,9 @@ public class RedshiftOperatorFactory
     {
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
-        RedshiftOperator(OperatorContext context, TemplateEngine templateEngine)
+        RedshiftOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
         {
-            super(context, templateEngine);
+            super(systemConfig, context, templateEngine);
         }
 
         @Override

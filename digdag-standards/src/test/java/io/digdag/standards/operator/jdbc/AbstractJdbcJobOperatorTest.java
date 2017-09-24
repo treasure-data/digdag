@@ -2,7 +2,9 @@ package io.digdag.standards.operator.jdbc;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.PrivilegedVariables;
@@ -78,7 +80,7 @@ public class AbstractJdbcJobOperatorTest
     {
         public TestJobOperator(OperatorContext context, TemplateEngine templateEngine)
         {
-            super(context, templateEngine);
+            super(new ConfigFactory(DigdagClient.objectMapper()).create(), context, templateEngine);
         }
 
         @Override
