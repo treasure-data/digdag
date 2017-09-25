@@ -17,8 +17,10 @@ import io.digdag.spi.TemplateEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -63,15 +65,15 @@ public abstract class AbstractJdbcJobOperator<C>
             throw new ConfigException("Can't use download_file with insert_into or create_table");
         }
 
-        boolean storeContent = params.get("store_content", boolean.class, false);
-        if (storeContent && queryModifier > 0) {
-            throw new ConfigException("Can't use store_content with insert_into or create_table");
+        boolean storeResult = params.get("store_result", boolean.class, false);
+        if (storeResult && queryModifier > 0) {
+            throw new ConfigException("Can't use store_result with insert_into or create_table");
         }
-        if (downloadFile.isPresent() && storeContent) {
-            throw new ConfigException("Can't use both download_file and store_content at once");
+        if (downloadFile.isPresent() && storeResult) {
+            throw new ConfigException("Can't use both download_file and store_result at once");
         }
 
-        boolean readOnlyMode = downloadFile.isPresent() || storeContent;
+        boolean readOnlyMode = downloadFile.isPresent() || storeResult;
 
         boolean strictTransaction = strictTransaction(params);
 
@@ -103,7 +105,7 @@ public abstract class AbstractJdbcJobOperator<C>
                 if (downloadFile.isPresent()) {
                     connection.executeReadOnlyQuery(query, (results) -> downloadResultsToFile(results, downloadFile.get()));
                 }
-                else if (storeContent) {
+                else if (storeResult) {
                     connection.executeReadOnlyQuery(query, (results) -> storeResultInTaskResult(builder, results));
                 }
                 else {
@@ -223,20 +225,9 @@ public abstract class AbstractJdbcJobOperator<C>
     private void storeResultInTaskResult(ImmutableTaskResult.Builder builder, JdbcResultSet jdbcResultSet)
     {
         List<String> columnNames = jdbcResultSet.getColumnNames();
+        List<Map<String, Object>> lastResult = new ArrayList<>();
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        StringBuilder buf = new StringBuilder();
-        boolean isFirst = true;
-
-        buf.append("[");
         while (true) {
-            if (isFirst) {
-                isFirst = false;
-            }
-            else {
-                buf.append(',');
-            }
-
             List<Object> values = jdbcResultSet.next();
             if (values == null) {
                 break;
@@ -245,25 +236,19 @@ public abstract class AbstractJdbcJobOperator<C>
             for (int i = 0; i < columnNames.size(); i++) {
                 map.put(columnNames.get(i), values.get(i));
             }
-            try {
-                buf.append(objectMapper.writeValueAsString(map));
-            }
-            catch (JsonProcessingException e) {
-                throw Throwables.propagate(e);
-            }
+            lastResult.add(map);
         }
-        buf.append("]");
 
-        if (buf.length() > maxStoredResultSize) {
-            throw new TaskExecutionException("Content is too large: " + buf.length() + " > " + maxStoredResultSize);
+        long lengthInJSON = lastResult.toString().length();
+        if (lengthInJSON > maxStoredResultSize) {
+            throw new TaskExecutionException("The length of the result is too large: " + lengthInJSON + "(length represented in JSON) > " + maxStoredResultSize);
         }
 
         ConfigFactory cf = request.getConfig().getFactory();
         Config result = cf.create();
-        // TODO: Revisit these codes later
-        // Config taskState = result.getNestedOrSetEmpty(type());
-        // taskState.set("last_content", buf.toString());
-        builder.addResetStoreParams(ConfigKey.of(type(), "last_content"));
+        Config taskState = result.getNestedOrSetEmpty(type());
+        taskState.set("last_result", lastResult);
+        builder.addResetStoreParams(ConfigKey.of(type(), "last_result"));
 
         builder.storeParams(result);
     }
