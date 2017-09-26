@@ -1,7 +1,5 @@
 package io.digdag.standards.operator.jdbc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
@@ -36,13 +34,17 @@ public abstract class AbstractJdbcJobOperator<C>
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final int maxStoredResultSize;
+    private final long maxStoredResultRows;
+    private final int maxStoredResultColumns;
+    private final int maxStoredResultValueSize;
 
     protected AbstractJdbcJobOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
     {
         super(context, templateEngine);
         Config config = systemConfig.getNestedOrGetEmpty("jdbc").deepCopy().merge(systemConfig.getNestedOrGetEmpty(type()));
-        this.maxStoredResultSize = config.get("max_stored_result_size", int.class, 64 * 1024);
+        this.maxStoredResultRows = config.get("max_stored_result_rows", int.class, 4096);
+        this.maxStoredResultColumns = config.get("max_stored_result_columns", int.class, 64);
+        this.maxStoredResultValueSize = config.get("max_stored_result_value_size", int.class, 256);
     }
 
     @Override
@@ -225,23 +227,39 @@ public abstract class AbstractJdbcJobOperator<C>
     private void storeResultInTaskResult(ImmutableTaskResult.Builder builder, JdbcResultSet jdbcResultSet)
     {
         List<String> columnNames = jdbcResultSet.getColumnNames();
+        if (columnNames.size() > maxStoredResultColumns) {
+            throw new TaskExecutionException("The number of result columns exceeded the limit: " + columnNames.size() + " > " + maxStoredResultColumns);
+        }
         List<Map<String, Object>> lastResult = new ArrayList<>();
 
+        long rows = 0;
         while (true) {
             List<Object> values = jdbcResultSet.next();
             if (values == null) {
                 break;
             }
+
+            rows += 1;
+            if (rows > maxStoredResultRows) {
+                throw new TaskExecutionException("The number of result rows exceeded the limit: " + rows + " > " + maxStoredResultRows);
+            }
+
             HashMap<String, Object> map = new HashMap<>();
             for (int i = 0; i < columnNames.size(); i++) {
-                map.put(columnNames.get(i), values.get(i));
+                Object v = values.get(i);
+                if (v instanceof String) {
+                    String s = (String) v;
+                    if (s.length() > maxStoredResultValueSize) {
+                        throw new TaskExecutionException("The size of result value exceeded the limit: " + s.length() + " > " + maxStoredResultValueSize);
+                    }
+                }
+                map.put(columnNames.get(i), v);
             }
             lastResult.add(map);
         }
 
         long lengthInJSON = lastResult.toString().length();
-        if (lengthInJSON > maxStoredResultSize) {
-            throw new TaskExecutionException("The length of the result is too large: " + lengthInJSON + "(length represented in JSON) > " + maxStoredResultSize);
+        if (lengthInJSON > maxStoredResultRows) {
         }
 
         ConfigFactory cf = request.getConfig().getFactory();
