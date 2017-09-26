@@ -1,0 +1,16 @@
++group:
+  +forward_task:
+    sh>: for t in 1 2 4 8 16; do test -f ${outdir}/background_done.txt && echo ok > ${outdir}/background_task.txt && break || sleep $t; done
+
+  +background_task:
+    _background: true
+    sh>: touch ${outdir}/background_done.txt
+
+  +following_task:
+    # workflow fails if test fails
+    sh>: test -f ${outdir}/background_done.txt
+
+  +following_group:
+    +task:
+      # workflow fails if test fails
+      sh>: test -f ${outdir}/background_done.txt

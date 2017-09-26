@@ -1,0 +1,10 @@
++group:
+  _parallel: true
+
+  +forward_task:
+    echo>: forward
+
+  +background:
+    _background: true
+    echo>: background
+

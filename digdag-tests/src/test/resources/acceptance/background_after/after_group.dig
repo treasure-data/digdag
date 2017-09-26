@@ -1,0 +1,11 @@
++group:
+  _parallel: true
+
+  +before:
+    sh>: touch ${outdir}/before.txt
+
+  +after_group:
+    _after: [+before]
+    +task:
+      sh>: test -f ${outdir}/before.txt && echo ok > ${outdir}/after_group.txt
+
