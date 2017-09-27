@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.io.InputStream;
 import java.io.IOException;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.Encoded;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -119,6 +120,7 @@ public class LogResource
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")
+    @Encoded
     public byte[] getFile(
             @PathParam("attempt_id") long attemptId,
             @PathParam("file_name") String fileName)
@@ -126,7 +128,7 @@ public class LogResource
     {
         return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>begin(() -> {
             LogFilePrefix prefix = getPrefix(attemptId);
-            return logServer.getFile(prefix, fileName);
+            return logServer.getFile(prefix, fileName.replaceFirst("%5E", "^"));
         }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class);
     }
 
