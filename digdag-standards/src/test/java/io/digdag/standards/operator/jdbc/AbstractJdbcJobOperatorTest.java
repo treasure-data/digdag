@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
@@ -22,7 +23,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -60,9 +60,9 @@ public class AbstractJdbcJobOperatorTest
     public static class TestJobOperator
         extends AbstractJdbcJobOperator<TestConnectionConfig>
     {
-        public TestJobOperator(OperatorContext context, TemplateEngine templateEngine)
+        public TestJobOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
         {
-            super(new ConfigFactory(DigdagClient.objectMapper()).create(), context, templateEngine);
+            super(systemConfig, context, templateEngine);
         }
 
         @Override
@@ -90,12 +90,24 @@ public class AbstractJdbcJobOperatorTest
         }
     }
 
-    private TestJobOperator getJdbcOperator(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
+    private TestJobOperator getJdbcOperator(
+            Map<String, Object> configInput,
+            Optional<Map<String, Object>> lastState)
+            throws IOException
+    {
+        return getJdbcOperator(Optional.absent(), configInput, lastState);
+    }
+
+    private TestJobOperator getJdbcOperator(
+            Optional<Config> systemConfig,
+            Map<String, Object> configInput,
+            Optional<Map<String, Object>> lastState)
             throws IOException
     {
         final TaskRequest taskRequest = testHelper.createTaskRequest(configInput, lastState);
         TemplateEngine templateEngine = testHelper.injector().getInstance(TemplateEngine.class);
-        return Mockito.spy(new TestJobOperator(new OperatorContext() {
+        return Mockito.spy(new TestJobOperator(systemConfig.or(new ConfigFactory(DigdagClient.objectMapper()).create()),
+                new OperatorContext() {
             @Override
             public Path getProjectPath()
             {
@@ -130,7 +142,13 @@ public class AbstractJdbcJobOperatorTest
     private TaskResult runTaskReadOnly(Map<String, Object> configInput, String sql)
             throws IOException, NotReadOnlyException
     {
-        TestJobOperator operator = getJdbcOperator(configInput, Optional.absent());
+        return runTaskReadOnly(Optional.absent(), configInput, sql);
+    }
+
+    private TaskResult runTaskReadOnly(Optional<Config> systemConfig, Map<String, Object> configInput, String sql)
+            throws IOException, NotReadOnlyException
+    {
+        TestJobOperator operator = getJdbcOperator(systemConfig, configInput, Optional.absent());
 
         JdbcConnection connection = Mockito.mock(JdbcConnection.class);
 
@@ -232,6 +250,80 @@ public class AbstractJdbcJobOperatorTest
         assertThat(second.get("int").asInt(), is(12345));
         assertThat(second.get("str").asText(), is("bar"));
         assertThat(second.get("float").floatValue(), is(0.12f));
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void selectAndStoreResultWithExceedingMaxRows()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = ImmutableMap.of(
+                "host", "foobar.com",
+                "user", "testuser",
+                "database", "testdb",
+                "store_result", true,
+                "query", sql
+        );
+        Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        Config opConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        opConfig.set("max_stored_result_rows", 1);
+        systemConfig.set("jdbc", opConfig);
+        runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void selectAndStoreResultWithExceedingMaxColumns()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = ImmutableMap.of(
+                "host", "foobar.com",
+                "user", "testuser",
+                "database", "testdb",
+                "store_result", true,
+                "query", sql
+        );
+        Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        Config opConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        opConfig.set("max_stored_result_columns", 2);
+        systemConfig.set("testop", opConfig);
+        runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void selectAndStoreResultWithExceedingMaxValueSize()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = ImmutableMap.of(
+                "host", "foobar.com",
+                "user", "testuser",
+                "database", "testdb",
+                "store_result", true,
+                "query", sql
+        );
+        Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        Config opConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        opConfig.set("max_stored_result_value_size", 2);
+        systemConfig.set("testop", opConfig);
+        runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
+    }
+
+    @Test(expected = ConfigException.class)
+    public void selectAndStoreResultWithConflictOption()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = new ImmutableMap.Builder<String, Object>()
+                .put("host", "foobar.com")
+                .put("user", "testuser")
+                .put("database", "testdb")
+                .put("store_result", true)
+                .put("download_file", "result.csv")
+                .put("query", sql)
+                .build();
+
+        runTaskReadOnly(configInput, sql);
     }
 
     @Test
