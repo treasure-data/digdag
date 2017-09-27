@@ -199,6 +199,35 @@ public class PgIT
     }
 
     @Test
+    public void selectAndStoreResult()
+            throws Exception
+    {
+        copyResource("acceptance/pg/select_store_result.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupSourceTable();
+
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "outfile=out",
+                "pg.dig");
+        assertThat(status.code(), is(0));
+
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "out")))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+            assertThat(lines.toString(), is(stringContainsInOrder(
+                    Arrays.asList("foo", "bar", "baz")
+            )));
+        }
+    }
+
+    @Test
     public void createTable()
             throws Exception
     {
