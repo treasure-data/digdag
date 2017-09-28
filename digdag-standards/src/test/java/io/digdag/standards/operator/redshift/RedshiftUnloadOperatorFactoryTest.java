@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.util.Map;
 import java.util.UUID;
 
+import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
@@ -33,7 +34,7 @@ public class RedshiftUnloadOperatorFactoryTest
     @Before
     public void setUp()
     {
-        operatorFactory = testHelper.injector().getInstance(RedshiftUnloadOperatorFactory.class);
+        operatorFactory = newOperatorFactory(RedshiftUnloadOperatorFactory.class);
     }
 
     @Test
