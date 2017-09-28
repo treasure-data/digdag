@@ -265,9 +265,7 @@ public class AbstractJdbcJobOperatorTest
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        Config opConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        opConfig.set("max_store_result_rows", 1);
-        systemConfig.set("jdbc", opConfig);
+        systemConfig.set("config.jdbc.max_store_result_rows", 1);
         runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
     }
 
@@ -284,9 +282,7 @@ public class AbstractJdbcJobOperatorTest
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        Config opConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        opConfig.set("max_store_result_columns", 2);
-        systemConfig.set("testop", opConfig);
+        systemConfig.set("config.testop.max_store_result_columns", 2);
         runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
     }
 
@@ -303,9 +299,7 @@ public class AbstractJdbcJobOperatorTest
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        Config opConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        opConfig.set("max_store_result_value_size", 2);
-        systemConfig.set("testop", opConfig);
+        systemConfig.set("config.testop.max_store_result_value_size", 2);
         runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
     }
 

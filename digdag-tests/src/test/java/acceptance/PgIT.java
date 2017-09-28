@@ -228,6 +228,44 @@ public class PgIT
     }
 
     @Test
+    public void selectAndStoreResultWithExceedingMaxStoreResultRows()
+            throws Exception
+    {
+        copyResource("acceptance/pg/select_store_result.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupSourceTable();
+
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "outfile=out",
+                "-X", "config.pg.max_store_result_rows=2",
+                "pg.dig");
+        assertThat(status.code(), is(1));
+    }
+
+    @Test
+    public void selectAndStoreResultWithExceedingMaxStoreResultValueSize()
+            throws Exception
+    {
+        copyResource("acceptance/pg/select_store_result.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupSourceTable();
+
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "outfile=out",
+                "-X", "config.jdbc.max_store_result_value_size=2",
+                "pg.dig");
+        assertThat(status.code(), is(1));
+    }
+
+    @Test
     public void createTable()
             throws Exception
     {

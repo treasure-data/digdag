@@ -38,13 +38,18 @@ public abstract class AbstractJdbcJobOperator<C>
     private final int maxStoreResultColumns;
     private final int maxStoreResultValueSize;
 
+    private <T> Optional<T> getConfigValue(Config systemConfig, String key, Class<T> clazz)
+    {
+        return systemConfig.getOptional(String.format("config.%s.%s", type(), key), clazz)
+                .or(systemConfig.getOptional(String.format("config.jdbc.%s", key), clazz));
+    }
+
     protected AbstractJdbcJobOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
     {
         super(context, templateEngine);
-        Config config = systemConfig.getNestedOrGetEmpty("jdbc").deepCopy().merge(systemConfig.getNestedOrGetEmpty(type()));
-        this.maxStoreResultRows = config.get("max_store_result_rows", int.class, 4096);
-        this.maxStoreResultColumns = config.get("max_store_result_columns", int.class, 64);
-        this.maxStoreResultValueSize = config.get("max_store_result_value_size", int.class, 256);
+        this.maxStoreResultRows = getConfigValue(systemConfig, "max_store_result_rows", long.class).or(8192L);
+        this.maxStoreResultColumns = getConfigValue(systemConfig, "max_store_result_columns", int.class).or(64);
+        this.maxStoreResultValueSize = getConfigValue(systemConfig, "max_store_result_value_size", int.class).or(256);
     }
 
     @Override
