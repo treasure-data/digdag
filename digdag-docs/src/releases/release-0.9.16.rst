@@ -5,7 +5,7 @@ Operator Changes
 ----------------
 
 * Fix unexpectedly escaped ``parallel`` option in ``redshift>:`` operator
-* Fix unexpected retry even with ``retry: false`` option in ``http:>`` operator
+* Fix unexpected retry even with ``retry: false`` option in ``http>:`` operator
 * Support NULL-able values with ``pg>:`` operator's ``download_file`` option
 
 UI Changes
