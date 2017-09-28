@@ -2,27 +2,42 @@
 
 **pg>** operator runs queries and/or DDLs on PostgreSQL.
 
-    _export:
-      pg:
-        host: 192.0.2.1
-        port: 5430
-        database: production_db
-        user: app_user
-        ssl: true
-        schema: myschema
-        # strict_transaction: false
+```
+_export:
+  pg:
+    host: 192.0.2.1
+    port: 5430
+    database: production_db
+    user: app_user
+    ssl: true
+    schema: myschema
+    # strict_transaction: false
 
-    +replace_deduplicated_master_table:
-      pg>: queries/dedup_master_table.sql
-      create_table: dedup_master
++replace_deduplicated_master_table:
+  pg>: queries/dedup_master_table.sql
+  create_table: dedup_master
 
-    +prepare_summary_table:
-      pg>: queries/create_summary_table_ddl.sql
++prepare_summary_table:
+  pg>: queries/create_summary_table_ddl.sql
 
-    +insert_to_summary_table:
-      pg>: queries/join_log_with_master.sql
-      insert_into: summary_table
++insert_to_summary_table:
+  pg>: queries/join_log_with_master.sql
+  insert_into: summary_table
+```
 
+```
++select_members:
+  pg>: select_members.sql
+  store_result: true
+
++send_email:
+  for_each>:
+    member: ${pg.last_result}
+  _do:
+    mail>: body.txt
+    subject: Hello, ${member.name}!
+    to: [${member.email}]
+```
 
 ## Secrets
 
@@ -73,6 +88,16 @@
 
   ```
   download_file: output.csv
+  ```
+
+* **store_result**: BOOLEAN
+
+  Whether to store the query result. *Default:* `false`.
+
+  Examples:
+
+  ```
+  store_result: true
   ```
 
 * **database**: NAME
