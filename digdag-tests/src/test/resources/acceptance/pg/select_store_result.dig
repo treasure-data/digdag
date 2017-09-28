@@ -7,7 +7,6 @@ timezone: UTC
   user: digdag_test
   store_result: true
 
-
 +process:
   for_each>:
     user: ${pg.last_result}

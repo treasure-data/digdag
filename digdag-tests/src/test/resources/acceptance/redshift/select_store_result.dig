@@ -1,0 +1,14 @@
+timezone: UTC
+
++run:
+  redshift>: select_table.sql
+  host: ${redshift_host}
+  database: ${redshift_database}
+  user: ${redshift_user}
+  store_result: true
+
++process:
+  for_each>:
+    user: ${redshift.last_result}
+  _do:
+    sh>: echo ${user.name} >> $outfile
