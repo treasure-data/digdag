@@ -1,0 +1,29 @@
+
++initialize:
+  +task:
+    py>: helper.store_v
+    value: initial
+
++loop:
+  for_each>:
+    outer: [1, 2, 3, 4, 5]
+  _parallel: true
+  _do:
+    for_each>:
+      inner: [1, 2, 3, 4, 5]
+    _parallel: true
+    _do:
+      +get:
+        sh>: echo ${v} > parallel_get_first_${outer}_${inner}.out
+
+      +dynamic_override_in_parallel:
+        if>: true
+        _do:
+          py>: helper.store_v
+          value: override_${outer}_${inner}
+
+      +dynamic_get_in_parallel:
+        if>: true
+        _do:
+          sh>: echo ${v} > parallel_override_${outer}_${inner}.out
+

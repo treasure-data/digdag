@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ImmutableMap;
@@ -22,6 +23,7 @@ public class TaskTree
     }
 
     private final Map<Long, TaskRelation> map;
+    private final Map<Long, List<TaskRelation>> parentIdToSortedChildren;
 
     public TaskTree(List<TaskRelation> rels)
     {
@@ -30,6 +32,16 @@ public class TaskTree
             builder.put(rel.getId(), rel);
         }
         this.map = builder.build();
+        this.parentIdToSortedChildren = map.values().stream()
+            .filter(rel -> rel.getParentId().isPresent())
+            .collect(Collectors.groupingBy(
+                    // key: parent id
+                    rel -> rel.getParentId().get(),
+                    // value: list sorted by TaskRelation::getId
+                    Collectors.collectingAndThen(
+                          Collectors.toList(),
+                          siblings -> siblings.stream().sorted((a, b) -> Long.valueOf(a.getId()).compareTo(b.getId())).collect(Collectors.toList())
+                          )));
     }
 
     public long getRootTaskId()
@@ -96,9 +108,9 @@ public class TaskTree
 
     public <T> T walkChildrenRecursively(long id, T value, Walker<T> walker)
     {
-        for (TaskRelation rel : map.values()) {
-            if (rel.getParentId().isPresent() && rel.getParentId().get() == id) {
-                TaskRelation child = rel;
+        List<TaskRelation> sortedChildren = parentIdToSortedChildren.get(id);
+        if (sortedChildren != null) {
+            for (TaskRelation child : sortedChildren) {
                 value = walker.walk(value, child);
                 value = walkChildrenRecursively(child.getId(), value, walker);
             }
@@ -113,16 +125,22 @@ public class TaskTree
 
     private <T> T walkUpstreamSiblings(long id, T value, Walker<T> walker, Set<Long> walkedSet)
     {
-        Set<Long> upstreams = ImmutableSet.copyOf(get(id).getUpstreams());
-        for (TaskRelation rel : map.values()) {
-            // here uses order of map.values instead of order of get(id).getUpstreams
-            // so that farther (younger) siblings always comes first
-            if (upstreams.contains(rel.getId())) {
+        // walk over depending siblings in the order of parentIdToSortedChildren
+        // so that farther (younger == smaller id) always comes first
+        TaskRelation rel = get(id);
+        Set<Long> upstreams = ImmutableSet.copyOf(rel.getUpstreams());
+        if (upstreams.isEmpty()) {
+            return value;
+        }
+        // if there is a upstream sibling, parent id must exists (because root task never has upstream siblings)
+        List<TaskRelation> sortedSiblings = parentIdToSortedChildren.get(rel.getParentId().get());
+        for (TaskRelation sibling : sortedSiblings) {
+            if (upstreams.contains(sibling.getId())) {
                 // here has deduplication because upstream ids could include
                 // same id with with upstream's upstreams.
-                if (walkedSet.add(rel.getId())) {
-                    value = walkUpstreamSiblings(rel.getId(), value, walker, walkedSet);
-                    value = walker.walk(value, rel);
+                if (walkedSet.add(sibling.getId())) {
+                    value = walkUpstreamSiblings(sibling.getId(), value, walker, walkedSet);
+                    value = walker.walk(value, sibling);
                 }
             }
         }
