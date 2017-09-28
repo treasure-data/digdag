@@ -44,11 +44,6 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AbstractJdbcJobOperatorTest
 {
-    public void setUp()
-            throws Exception
-    {
-    }
-
     private final JdbcOpTestHelper testHelper = new JdbcOpTestHelper();
 
     @Value.Immutable

@@ -263,15 +263,10 @@ public abstract class AbstractJdbcJobOperator<C>
             lastResult.add(map);
         }
 
-        long lengthInJSON = lastResult.toString().length();
-        if (lengthInJSON > maxStoreResultRows) {
-        }
-
         ConfigFactory cf = request.getConfig().getFactory();
         Config result = cf.create();
         Config taskState = result.getNestedOrSetEmpty(type());
         taskState.set("last_result", lastResult);
-        builder.addResetStoreParams(ConfigKey.of(type(), "last_result"));
 
         builder.storeParams(result);
     }
