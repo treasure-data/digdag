@@ -1,0 +1,17 @@
++range-from=0&until=1:
+  echo>: do
+  _export:
+    range: {from: 0, until: 1}
++range-from=1&until=2:
+  echo>: do
+  _export:
+    range: {from: 1, until: 2}
++range-from=2&until=3:
+  echo>: do
+  _export:
+    range: {from: 2, until: 3}
++range-from=3&until=4:
+  echo>: do
+  _export:
+    range: {from: 3, until: 4}
+_parallel: true

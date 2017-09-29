@@ -1,0 +1,6 @@
+_command:
+  from: 1
+  until: 8
+step: 3
+_do:
+  echo>: do

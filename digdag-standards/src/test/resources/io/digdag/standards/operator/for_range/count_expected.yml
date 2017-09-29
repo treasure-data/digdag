@@ -1,0 +1,12 @@
++range-from=1&until=4:
+  echo>: do
+  _export:
+    range: {from: 1, until: 4}
++range-from=4&until=7:
+  echo>: do
+  _export:
+    range: {from: 4, until: 7}
++range-from=7&until=8:
+  echo>: do
+  _export:
+    range: {from: 7, until: 8}
