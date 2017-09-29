@@ -33,9 +33,11 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
+import static utils.TestUtils.assertCommandStatus;
 import static utils.TestUtils.configFactory;
 import static utils.TestUtils.copyResource;
 
@@ -160,7 +162,7 @@ public class PgIT
         setupSourceTable();
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
@@ -184,7 +186,7 @@ public class PgIT
         setupSourceTable(true);
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
@@ -199,10 +201,10 @@ public class PgIT
     }
 
     @Test
-    public void selectAndStoreResult()
+    public void selectAndStoreLastResults()
             throws Exception
     {
-        copyResource("acceptance/pg/select_store_result.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_store_last_results.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
         setupSourceTable();
@@ -213,7 +215,7 @@ public class PgIT
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         List<String> lines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "out")))) {
@@ -228,10 +230,10 @@ public class PgIT
     }
 
     @Test
-    public void selectAndStoreResultWithExceedingMaxStoreResultRows()
+    public void selectAndStoreLastResultsWithExceedingMaxRows()
             throws Exception
     {
-        copyResource("acceptance/pg/select_store_result.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_store_last_results.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
         setupSourceTable();
@@ -241,16 +243,16 @@ public class PgIT
                 "--project", root().toString(),
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
-                "-X", "config.pg.max_store_result_rows=2",
+                "-X", "config.pg.max_store_last_results_rows=2",
                 "pg.dig");
-        assertThat(status.code(), is(1));
+        assertCommandStatus(status, Optional.of("The number of result rows exceeded the limit"));
     }
 
     @Test
-    public void selectAndStoreResultWithExceedingMaxStoreResultValueSize()
+    public void selectAndStoreLastResultsWithExceedingMaxValueSize()
             throws Exception
     {
-        copyResource("acceptance/pg/select_store_result.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_store_last_results.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
         setupSourceTable();
@@ -260,9 +262,9 @@ public class PgIT
                 "--project", root().toString(),
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
-                "-X", "config.jdbc.max_store_result_value_size=2",
+                "-X", "config.jdbc.max_store_last_results_value_size=2",
                 "pg.dig");
-        assertThat(status.code(), is(1));
+        assertCommandStatus(status, Optional.of("The size of result value exceeded the limit"));
     }
 
     @Test
@@ -276,7 +278,7 @@ public class PgIT
         setupDestTable();
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -296,7 +298,7 @@ public class PgIT
         setupDestTable();
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -328,7 +330,7 @@ public class PgIT
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
                 "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -349,7 +351,7 @@ public class PgIT
         setupDestTable();
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),

@@ -28,11 +28,11 @@ _export:
 ```
 +select_members:
   redshift>: select_members.sql
-  store_result: true
+  store_last_results: true
 
 +send_email:
   for_each>:
-    member: ${redshift.last_result}
+    member: ${redshift.last_results}
   _do:
     mail>: body.txt
     subject: Hello, ${member.name}!
@@ -91,14 +91,14 @@ _export:
   download_file: output.csv
   ```
 
-* **store_result**: BOOLEAN
+* **store_last_results**: BOOLEAN
 
   Whether to store the query result. *Default:* `false`.
 
   Examples:
 
   ```
-  store_result: true
+  store_last_results: true
   ```
 
 * **database**: NAME

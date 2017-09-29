@@ -227,12 +227,12 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_result", true,
+                "store_last_results", true,
                 "query", sql
         );
 
         TaskResult taskResult = runTaskReadOnly(configInput, sql);
-        JsonNode lastResult = taskResult.getStoreParams().getNestedOrGetEmpty("testop").get("last_result", JsonNode.class);
+        JsonNode lastResult = taskResult.getStoreParams().getNestedOrGetEmpty("testop").get("last_results", JsonNode.class);
 
         assertThat(lastResult.size(), is(2));
 
@@ -256,11 +256,11 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_result", true,
+                "store_last_results", true,
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        systemConfig.set("config.jdbc.max_store_result_rows", 1);
+        systemConfig.set("config.jdbc.max_store_last_results_rows", 1);
         runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
     }
 
@@ -273,11 +273,11 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_result", true,
+                "store_last_results", true,
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        systemConfig.set("config.testop.max_store_result_columns", 2);
+        systemConfig.set("config.testop.max_store_last_results_columns", 2);
         runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
     }
 
@@ -290,11 +290,11 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_result", true,
+                "store_last_results", true,
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
-        systemConfig.set("config.testop.max_store_result_value_size", 2);
+        systemConfig.set("config.testop.max_store_last_results_value_size", 2);
         runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
     }
 
@@ -307,7 +307,7 @@ public class AbstractJdbcJobOperatorTest
                 .put("host", "foobar.com")
                 .put("user", "testuser")
                 .put("database", "testdb")
-                .put("store_result", true)
+                .put("store_last_results", true)
                 .put("download_file", "result.csv")
                 .put("query", sql)
                 .build();

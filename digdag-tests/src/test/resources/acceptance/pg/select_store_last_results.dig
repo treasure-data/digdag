@@ -5,10 +5,10 @@ timezone: UTC
   host: localhost
   database: ${pg_database}
   user: digdag_test
-  store_result: true
+  store_last_results: true
 
 +process:
   for_each>:
-    user: ${pg.last_result}
+    user: ${pg.last_results}
   _do:
     sh>: echo ${user.name} >> $outfile

@@ -6,7 +6,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
@@ -34,9 +33,9 @@ public abstract class AbstractJdbcJobOperator<C>
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final long maxStoreResultRows;
-    private final int maxStoreResultColumns;
-    private final int maxStoreResultValueSize;
+    private final long maxStoreLastResultsRows;
+    private final int maxStoreLastResultsColumns;
+    private final int maxStoreLastResultsValueSize;
 
     private <T> Optional<T> getConfigValue(Config systemConfig, String key, Class<T> clazz)
     {
@@ -47,9 +46,9 @@ public abstract class AbstractJdbcJobOperator<C>
     protected AbstractJdbcJobOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
     {
         super(context, templateEngine);
-        this.maxStoreResultRows = getConfigValue(systemConfig, "max_store_result_rows", long.class).or(8192L);
-        this.maxStoreResultColumns = getConfigValue(systemConfig, "max_store_result_columns", int.class).or(64);
-        this.maxStoreResultValueSize = getConfigValue(systemConfig, "max_store_result_value_size", int.class).or(256);
+        this.maxStoreLastResultsRows = getConfigValue(systemConfig, "max_store_last_results_rows", long.class).or(8192L);
+        this.maxStoreLastResultsColumns = getConfigValue(systemConfig, "max_store_last_results_columns", int.class).or(64);
+        this.maxStoreLastResultsValueSize = getConfigValue(systemConfig, "max_store_last_results_value_size", int.class).or(256);
     }
 
     @Override
@@ -72,12 +71,12 @@ public abstract class AbstractJdbcJobOperator<C>
             throw new ConfigException("Can't use download_file with insert_into or create_table");
         }
 
-        boolean storeResult = params.get("store_result", boolean.class, false);
+        boolean storeResult = params.get("store_last_results", boolean.class, false);
         if (storeResult && queryModifier > 0) {
-            throw new ConfigException("Can't use store_result with insert_into or create_table");
+            throw new ConfigException("Can't use store_last_results with insert_into or create_table");
         }
         if (downloadFile.isPresent() && storeResult) {
-            throw new ConfigException("Can't use both download_file and store_result at once");
+            throw new ConfigException("Can't use both download_file and store_last_results at once");
         }
 
         boolean readOnlyMode = downloadFile.isPresent() || storeResult;
@@ -232,8 +231,8 @@ public abstract class AbstractJdbcJobOperator<C>
     private void storeResultInTaskResult(ImmutableTaskResult.Builder builder, JdbcResultSet jdbcResultSet)
     {
         List<String> columnNames = jdbcResultSet.getColumnNames();
-        if (columnNames.size() > maxStoreResultColumns) {
-            throw new TaskExecutionException("The number of result columns exceeded the limit: " + columnNames.size() + " > " + maxStoreResultColumns);
+        if (columnNames.size() > maxStoreLastResultsColumns) {
+            throw new TaskExecutionException("The number of result columns exceeded the limit: " + columnNames.size() + " > " + maxStoreLastResultsColumns);
         }
         List<Map<String, Object>> lastResult = new ArrayList<>();
 
@@ -245,8 +244,8 @@ public abstract class AbstractJdbcJobOperator<C>
             }
 
             rows += 1;
-            if (rows > maxStoreResultRows) {
-                throw new TaskExecutionException("The number of result rows exceeded the limit: " + rows + " > " + maxStoreResultRows);
+            if (rows > maxStoreLastResultsRows) {
+                throw new TaskExecutionException("The number of result rows exceeded the limit: " + rows + " > " + maxStoreLastResultsRows);
             }
 
             HashMap<String, Object> map = new HashMap<>();
@@ -254,8 +253,8 @@ public abstract class AbstractJdbcJobOperator<C>
                 Object v = values.get(i);
                 if (v instanceof String) {
                     String s = (String) v;
-                    if (s.length() > maxStoreResultValueSize) {
-                        throw new TaskExecutionException("The size of result value exceeded the limit: " + s.length() + " > " + maxStoreResultValueSize);
+                    if (s.length() > maxStoreLastResultsValueSize) {
+                        throw new TaskExecutionException("The size of result value exceeded the limit: " + s.length() + " > " + maxStoreLastResultsValueSize);
                     }
                 }
                 map.put(columnNames.get(i), v);
@@ -266,7 +265,7 @@ public abstract class AbstractJdbcJobOperator<C>
         ConfigFactory cf = request.getConfig().getFactory();
         Config result = cf.create();
         Config taskState = result.getNestedOrSetEmpty(type());
-        taskState.set("last_result", lastResult);
+        taskState.set("last_results", lastResult);
 
         builder.storeParams(result);
     }

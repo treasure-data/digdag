@@ -5,10 +5,10 @@ timezone: UTC
   host: ${redshift_host}
   database: ${redshift_database}
   user: ${redshift_user}
-  store_result: true
+  store_last_results: true
 
 +process:
   for_each>:
-    user: ${redshift.last_result}
+    user: ${redshift.last_results}
   _do:
     sh>: echo ${user.name} >> $outfile

@@ -197,7 +197,7 @@ public class RedshiftIT
                 "-p", "download_file_in_config=" + resultFile.toString(),
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertThat(Files.exists(resultFile), is(true));
 
@@ -211,7 +211,7 @@ public class RedshiftIT
     public void selectAndStoreResult()
             throws Exception
     {
-        copyResource("acceptance/redshift/select_store_result.dig", projectDir.resolve("redshift.dig"));
+        copyResource("acceptance/redshift/select_store_last_results.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
 
         setupSourceTable();
@@ -223,7 +223,7 @@ public class RedshiftIT
                 "-p", "outfile=out",
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         List<String> lines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(projectDir.toFile(), "out")))) {
@@ -253,7 +253,7 @@ public class RedshiftIT
                 "-p", "redshift_user=" + redshiftUser,
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -284,7 +284,7 @@ public class RedshiftIT
                 "-p", "redshift_user=" + redshiftUser,
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         List<String> statusTables = listStatusTables();
         assertThat(statusTables.size(), is(0));
@@ -336,7 +336,7 @@ public class RedshiftIT
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
                 "-c", configFileWithRestrictedUser.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -606,6 +606,7 @@ public class RedshiftIT
                 "-p", "role_arn_in_config=" + s3WrongRoleArn,
                 "-c", configFile.toString(),
                 "redshift.dig");
+        // TODO: Check an error message
         assertThat(status.code(), is(1));
     }
 
@@ -1075,7 +1076,7 @@ public class RedshiftIT
                 "-p", "to_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         ImmutableList<Map<String, Object>> expected = ImmutableList.of(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -1103,7 +1104,7 @@ public class RedshiftIT
                 "-p", "to_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         ImmutableList<Map<String, Object>> expected = ImmutableList.of(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -1129,7 +1130,7 @@ public class RedshiftIT
                 "-p", "to_in_config=" + String.format("s3://%s/%s", s3Bucket, s3ParentKey),
                 "-c", configFile.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
 
         ImmutableList<Map<String, Object>> expected = ImmutableList.of(
                 ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
@@ -1228,7 +1229,7 @@ public class RedshiftIT
                 "-p", "status_table_schema_in_config=" + STATUS_TABLE_SECHEMA,
                 "-c", configFilePath.toString(),
                 "redshift.dig");
-        assertThat(status.code(), is(0));
+        assertCommandStatus(status);
     }
 
     private void loadFromS3AndAssert(
