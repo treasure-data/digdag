@@ -36,6 +36,7 @@ import static io.digdag.client.api.SecretValidation.isValidSecretValue;
 import static java.lang.Boolean.TRUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 public class Secrets
         extends ClientCommand
@@ -113,7 +114,7 @@ public class Secrets
         Map<String, String> setSecrets = parseSet(set);
         for (Map.Entry<String, String> entry : setSecrets.entrySet()) {
             Path secretFilePath = secretsDir.resolve(entry.getKey());
-            Files.write(secretFilePath, entry.getValue().getBytes(UTF_8), CREATE);
+            Files.write(secretFilePath, entry.getValue().getBytes(UTF_8), CREATE, TRUNCATE_EXISTING);
             err.println("Secret '" + entry.getKey() + "' set");
         }
     }
