@@ -2,27 +2,42 @@
 
 **redshift>** operator runs queries and/or DDLs on Redshift.
 
-    _export:
-      redshift:
-        host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
-        # port: 5439
-        database: production_db
-        user: app_user
-        ssl: true
-        schema: myschema
-        # strict_transaction: false
+```
+_export:
+  redshift:
+    host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
+    # port: 5439
+    database: production_db
+    user: app_user
+    ssl: true
+    schema: myschema
+    # strict_transaction: false
 
-    +replace_deduplicated_master_table:
-      redshift>: queries/dedup_master_table.sql
-      create_table: dedup_master
++replace_deduplicated_master_table:
+  redshift>: queries/dedup_master_table.sql
+  create_table: dedup_master
 
-    +prepare_summary_table:
-      redshift>: queries/create_summary_table_ddl.sql
++prepare_summary_table:
+  redshift>: queries/create_summary_table_ddl.sql
 
-    +insert_to_summary_table:
-      redshift>: queries/join_log_with_master.sql
-      insert_into: summary_table
++insert_to_summary_table:
+  redshift>: queries/join_log_with_master.sql
+  insert_into: summary_table
+```
 
+```
++select_members:
+  redshift>: select_members.sql
+  store_last_results: true
+
++send_email:
+  for_each>:
+    member: ${redshift.last_results}
+  _do:
+    mail>: body.txt
+    subject: Hello, ${member.name}!
+    to: [${member.email}]
+```
 
 ## Secrets
 
@@ -74,6 +89,16 @@
 
   ```
   download_file: output.csv
+  ```
+
+* **store_last_results**: BOOLEAN
+
+  Whether to store the query result. *Default:* `false`.
+
+  Examples:
+
+  ```
+  store_last_results: true
   ```
 
 * **database**: NAME

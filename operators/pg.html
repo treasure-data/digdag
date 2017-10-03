@@ -189,6 +189,19 @@
   <span class="n">insert_into</span><span class="p">:</span> <span class="n">summary_table</span>
 </pre></div>
 </div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>+select_members:
+  pg&gt;: select_members.sql
+  store_last_results: true
+
++send_email:
+  for_each&gt;:
+    member: ${pg.last_results}
+  _do:
+    mail&gt;: body.txt
+    subject: Hello, ${member.name}!
+    to: [${member.email}]
+</pre></div>
+</div>
 <div class="section" id="secrets">
 <span id="secrets"></span><h2>Secrets<a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -226,6 +239,13 @@ Optional user password to use when connecting to the postgres database.</li>
 <p>Local CSV file name to be downloaded. The file includes the result of query.</p>
 <p>Examples:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">download_file</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>store_last_results</strong>: BOOLEAN</p>
+<p>Whether to store the query result. <em>Default:</em> <code class="docutils literal"><span class="pre">false</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">store_last_results</span><span class="p">:</span> <span class="n">true</span>
 </pre></div>
 </div>
 </li>
