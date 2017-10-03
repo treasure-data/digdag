@@ -93,6 +93,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -783,6 +784,24 @@ public class TestUtils
             if (listing.getNextMarker() == null) {
                 break;
             }
+        }
+    }
+
+    public static void assertCommandStatus(CommandStatus status)
+    {
+        assertCommandStatus(status, Optional.absent());
+    }
+
+    public static void assertCommandStatus(CommandStatus status, Optional<String> partOfErrorMessage)
+    {
+        if (partOfErrorMessage.isPresent()) {
+            // Failed
+            assertThat(status.code(), is(1));
+            assertThat(status.errUtf8(), is(containsString(partOfErrorMessage.get())));
+        }
+        else {
+            // Finished successfully
+            assertThat(status.errUtf8(), status.code(), is(0));
         }
     }
 }

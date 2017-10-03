@@ -13,11 +13,13 @@ public class PgOperatorFactory
         implements OperatorFactory
 {
     private static final String OPERATOR_TYPE = "pg";
+    private final Config systemConfig;
     private final TemplateEngine templateEngine;
 
     @Inject
-    public PgOperatorFactory(TemplateEngine templateEngine)
+    public PgOperatorFactory(Config systemConfig, TemplateEngine templateEngine)
     {
+        this.systemConfig = systemConfig;
         this.templateEngine = templateEngine;
     }
 
@@ -30,15 +32,15 @@ public class PgOperatorFactory
     @Override
     public PgOperator newOperator(OperatorContext context)
     {
-        return new PgOperator(context, templateEngine);
+        return new PgOperator(systemConfig, context, templateEngine);
     }
 
     static class PgOperator
         extends AbstractJdbcJobOperator<PgConnectionConfig>
     {
-        PgOperator(OperatorContext context, TemplateEngine templateEngine)
+        PgOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
         {
-            super(context, templateEngine);
+            super(systemConfig, context, templateEngine);
         }
 
         @Override
