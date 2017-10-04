@@ -106,7 +106,7 @@ public class ForRangeOperatorFactory
         private static void enforceTaskCountLimit(int size)
         {
             if (size > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many for_range subtasks. Limit: " + Limits.maxWorkflowTasks());
+                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + Limits.maxWorkflowTasks());
             }
         }
     }
