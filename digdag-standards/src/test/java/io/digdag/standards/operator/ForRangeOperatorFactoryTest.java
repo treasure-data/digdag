@@ -62,12 +62,12 @@ public class ForRangeOperatorFactoryTest
     }
 
     @Test
-    public void testCount()
+    public void testSlices()
         throws Exception
     {
         assertByResource(
-                "/io/digdag/standards/operator/for_range/count.yml",
-                "/io/digdag/standards/operator/for_range/count_expected.yml");
+                "/io/digdag/standards/operator/for_range/slices.yml",
+                "/io/digdag/standards/operator/for_range/slices_expected.yml");
     }
 
     @Test
@@ -86,5 +86,14 @@ public class ForRangeOperatorFactoryTest
         assertByResource(
                 "/io/digdag/standards/operator/for_range/parallel.yml",
                 "/io/digdag/standards/operator/for_range/parallel_expected.yml");
+    }
+
+    @Test
+    public void testParse()
+        throws Exception
+    {
+        assertByResource(
+                "/io/digdag/standards/operator/for_range/parse.yml",
+                "/io/digdag/standards/operator/for_range/parse_expected.yml");
     }
 }

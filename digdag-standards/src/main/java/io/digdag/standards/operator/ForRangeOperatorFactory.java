@@ -55,39 +55,39 @@ public class ForRangeOperatorFactory
 
             Config rangeConfig = params.parseNested("_command");
             long from = rangeConfig.get("from", long.class);
-            long until = rangeConfig.get("until", long.class);
+            long to = rangeConfig.get("to", long.class);
 
-            Optional<Long> stepConfig = request.getConfig().getOptional("step", Long.class);
-            Optional<Long> countConfig = request.getConfig().getOptional("count", Long.class);
+            Optional<Long> stepConfig = rangeConfig.getOptional("step", Long.class);
+            Optional<Long> slicesConfig = rangeConfig.getOptional("slices", Long.class);
 
-            if (stepConfig.isPresent() && countConfig.isPresent()) {
-                throw new ConfigException("Setting both step and count options to for_range is invalid");
+            if (stepConfig.isPresent() && slicesConfig.isPresent()) {
+                throw new ConfigException("Setting both step and slices options to for_range is invalid");
             }
-            if (!stepConfig.isPresent() && !countConfig.isPresent()) {
-                throw new ConfigException("step or count option is required for for_range");
+            if (!stepConfig.isPresent() && !slicesConfig.isPresent()) {
+                throw new ConfigException("step or slices option is required for for_range");
             }
 
-            long step = stepConfig.or(() -> (until - from + (countConfig.get() - 1)) / countConfig.get());
+            long step = stepConfig.or(() -> (to - from + (slicesConfig.get() - 1)) / slicesConfig.get());
 
-            int count = 0;
+            int slices = 0;
             Config generated = doConfig.getFactory().create();
-            for (long pos = from; pos < until; pos += step) {
+            for (long pos = from; pos < to; pos += step) {
                 long rangeFrom = pos;
-                long rangeUntil = Math.min(pos + step, until);
+                long rangeto = Math.min(pos + step, to);
                 Config exportParams = params.getFactory().create();
                 exportParams.getNestedOrSetEmpty("range")
                     .set("from", rangeFrom)
-                    .set("until", rangeUntil);
+                    .set("to", rangeto);
                 Config subtask = params.getFactory().create();
                 subtask.setAll(doConfig);
                 subtask.getNestedOrSetEmpty("_export").setAll(exportParams);
                 generated.set(
-                        buildTaskName(rangeFrom, rangeUntil),
+                        buildTaskName(rangeFrom, rangeto),
                         subtask);
-                count++;
+                slices++;
             }
 
-            enforceTaskCountLimit(count);
+            enforceTaskCountLimit(slices);
 
             if (parallel) {
                 generated.set("_parallel", parallel);
@@ -98,9 +98,9 @@ public class ForRangeOperatorFactory
                 .build();
         }
 
-        private static String buildTaskName(long rangeFrom, long rangeUntil)
+        private static String buildTaskName(long rangeFrom, long rangeto)
         {
-            return String.format("+range-from=%d&until=%d", rangeFrom, rangeUntil);
+            return String.format("+range-from=%d&to=%d", rangeFrom, rangeto);
         }
 
         private static void enforceTaskCountLimit(int size)

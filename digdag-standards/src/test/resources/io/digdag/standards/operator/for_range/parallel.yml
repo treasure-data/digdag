@@ -1,7 +1,7 @@
 _command:
   from: 0
-  until: 4
-count: 4
+  to: 4
+  slices: 4
 _parallel: true
 _do:
   echo>: do
