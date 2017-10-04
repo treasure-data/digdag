@@ -69,25 +69,26 @@ public class ForRangeOperatorFactory
 
             long step = stepConfig.or(() -> (to - from + (slicesConfig.get() - 1)) / slicesConfig.get());
 
-            int slices = 0;
+            int index = 0;
             Config generated = doConfig.getFactory().create();
             for (long pos = from; pos < to; pos += step) {
                 long rangeFrom = pos;
-                long rangeto = Math.min(pos + step, to);
+                long rangeTo = Math.min(pos + step, to);
                 Config exportParams = params.getFactory().create();
                 exportParams.getNestedOrSetEmpty("range")
                     .set("from", rangeFrom)
-                    .set("to", rangeto);
+                    .set("to", rangeTo)
+                    .set("index", index);
                 Config subtask = params.getFactory().create();
                 subtask.setAll(doConfig);
                 subtask.getNestedOrSetEmpty("_export").setAll(exportParams);
                 generated.set(
-                        buildTaskName(rangeFrom, rangeto),
+                        buildTaskName(rangeFrom, rangeTo),
                         subtask);
-                slices++;
+                index++;
             }
 
-            enforceTaskCountLimit(slices);
+            enforceTaskCountLimit(index);
 
             if (parallel) {
                 generated.set("_parallel", parallel);
@@ -98,9 +99,9 @@ public class ForRangeOperatorFactory
                 .build();
         }
 
-        private static String buildTaskName(long rangeFrom, long rangeto)
+        private static String buildTaskName(long rangeFrom, long rangeTo)
         {
-            return String.format("+range-from=%d&to=%d", rangeFrom, rangeto);
+            return String.format("+range-from=%d&to=%d", rangeFrom, rangeTo);
         }
 
         private static void enforceTaskCountLimit(int size)

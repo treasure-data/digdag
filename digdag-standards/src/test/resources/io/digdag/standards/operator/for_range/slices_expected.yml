@@ -1,12 +1,12 @@
 +range-from=1&to=4:
   echo>: do
   _export:
-    range: {from: 1, to: 4}
+    range: {from: 1, to: 4, index: 0}
 +range-from=4&to=7:
   echo>: do
   _export:
-    range: {from: 4, to: 7}
+    range: {from: 4, to: 7, index: 1}
 +range-from=7&to=8:
   echo>: do
   _export:
-    range: {from: 7, to: 8}
+    range: {from: 7, to: 8, index: 2}
