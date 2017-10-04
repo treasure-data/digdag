@@ -66,8 +66,15 @@ public class ForRangeOperatorFactory
             if (!stepConfig.isPresent() && !slicesConfig.isPresent()) {
                 throw new ConfigException("step or slices option is required for for_range");
             }
+            if (stepConfig.isPresent() && stepConfig.get() <= 0) {
+                throw new ConfigException("step option must be same or greater than 1 but got " + stepConfig.get());
+            }
+            if (slicesConfig.isPresent() && slicesConfig.get() <= 0) {
+                throw new ConfigException("slices option must be same or greater than 1 but got " + slicesConfig.get());
+            }
 
             long step = stepConfig.or(() -> (to - from + (slicesConfig.get() - 1)) / slicesConfig.get());
+            assert step > 0;
 
             int index = 0;
             Config generated = doConfig.getFactory().create();
