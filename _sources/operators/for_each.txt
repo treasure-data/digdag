@@ -1,4 +1,4 @@
-# for_each>: Repeat tasks
+# for_each>: Repeat tasks for values
 
 **for_each>** operator runs subtasks multiple times using sets of variables.
 
