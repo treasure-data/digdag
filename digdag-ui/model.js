@@ -299,7 +299,7 @@ export class Model {
 
   fetchLogFile (attemptId: string, file: LogFileHandle) {
     if (!file.direct) {
-      return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${file.fileName}`)
+      return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${encodeURIComponent(file.fileName)}`)
     }
     return this.fetchArrayBuffer(file.direct)
   }
