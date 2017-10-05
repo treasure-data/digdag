@@ -8,6 +8,7 @@ Workflow control operators
     require.md
     loop.md
     for_each.md
+    for_range.md
     if.md
     fail.md
     echo.md
