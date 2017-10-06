@@ -7,6 +7,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.PropertiesFileCredentialsProvider;;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageFactory;
@@ -28,6 +29,13 @@ public class S3StorageFactory
                 buildClientConfiguration(config));
         if (config.has("endpoint")) {
             client.setEndpoint(config.get("endpoint", String.class));
+        }
+
+        if (config.has("path-style-access")) {
+            client.setS3ClientOptions(
+              new S3ClientOptions().withPathStyleAccess(
+                config.get("path-style-access", Boolean.class)
+              ));
         }
 
         String bucket = config.get("bucket", String.class);
