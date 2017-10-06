@@ -28,7 +28,7 @@ _export:
 ```
 +select_members:
   redshift>: select_members.sql
-  store_last_results: true
+  store_last_results: first
 
 +send_email:
   for_each>:
@@ -93,12 +93,20 @@ _export:
 
 * **store_last_results**: BOOLEAN
 
-  Whether to store the query result. *Default:* `false`.
+  Whether to store the query results to ``redshift.last_results`` parameter. *Default:* `false`.
+
+  Setting ``first`` stores the first row to the parameter as an object (e.g. ``${redshift.last_results.count}``).
+
+  Setting ``all`` stores all rows to the parameter as an array of objects (e.g. ``${redshift.last_results[0].name}``). If number of rows exceeds limit, task fails.
 
   Examples:
 
   ```
-  store_last_results: true
+  store_last_results: first
+  ```
+
+  ```
+  store_last_results: all
   ```
 
 * **database**: NAME

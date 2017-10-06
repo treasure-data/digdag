@@ -238,6 +238,34 @@ public class RedshiftIT
     }
 
     @Test
+    public void selectAndStoreResultsWithFirst()
+            throws Exception
+    {
+        copyResource("acceptance/redshift/select_store_last_results_first.dig", projectDir.resolve("redshift.dig"));
+        copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
+
+        setupSourceTable();
+
+        CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+                "-p", "redshift_database=" + database,
+                "-p", "redshift_host=" + redshiftHost,
+                "-p", "redshift_user=" + redshiftUser,
+                "-p", "outfile=out",
+                "-c", configFile.toString(),
+                "redshift.dig");
+        assertCommandStatus(status);
+
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(new File(projectDir.toFile(), "out")))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line.trim());
+            }
+            assertThat(lines, is(Arrays.asList("foo")));
+        }
+    }
+
+    @Test
     public void createTable()
             throws Exception
     {

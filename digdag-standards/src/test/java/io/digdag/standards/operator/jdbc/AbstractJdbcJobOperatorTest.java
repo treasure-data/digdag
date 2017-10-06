@@ -219,7 +219,7 @@ public class AbstractJdbcJobOperatorTest
     }
 
     @Test
-    public void selectAndStoreResult()
+    public void selectAndStoreAllResults()
             throws IOException, NotReadOnlyException
     {
         String sql = "SELECT * FROM users";
@@ -227,7 +227,7 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_last_results", true,
+                "store_last_results", "all",
                 "query", sql
         );
 
@@ -247,8 +247,8 @@ public class AbstractJdbcJobOperatorTest
         assertThat(second.get("float").floatValue(), is(0.12f));
     }
 
-    @Test(expected = TaskExecutionException.class)
-    public void selectAndStoreResultWithExceedingMaxRows()
+    @Test
+    public void selectAndStoreFirstResults()
             throws IOException, NotReadOnlyException
     {
         String sql = "SELECT * FROM users";
@@ -256,7 +256,51 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_last_results", true,
+                "store_last_results", "first",
+                "query", sql
+        );
+
+        TaskResult taskResult = runTaskReadOnly(configInput, sql);
+        JsonNode first = taskResult.getStoreParams().getNestedOrGetEmpty("testop").get("last_results", JsonNode.class);
+
+        assertThat(first.size(), is(3));
+        assertThat(first.get("int").asInt(), is(42));
+        assertThat(first.get("str").asText(), is("foo"));
+        assertThat(first.get("float").floatValue(), is(3.14f));
+    }
+
+    @Test
+    public void selectAndStoreFirstResultsConfiguredByBoolean()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = ImmutableMap.of(
+                "host", "foobar.com",
+                "user", "testuser",
+                "database", "testdb",
+                "store_last_results", true,  // true == "first"
+                "query", sql
+        );
+
+        TaskResult taskResult = runTaskReadOnly(configInput, sql);
+        JsonNode first = taskResult.getStoreParams().getNestedOrGetEmpty("testop").get("last_results", JsonNode.class);
+
+        assertThat(first.size(), is(3));
+        assertThat(first.get("int").asInt(), is(42));
+        assertThat(first.get("str").asText(), is("foo"));
+        assertThat(first.get("float").floatValue(), is(3.14f));
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void selectAndStoreAllResultsWithExceedingMaxRows()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = ImmutableMap.of(
+                "host", "foobar.com",
+                "user", "testuser",
+                "database", "testdb",
+                "store_last_results", "all",
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
@@ -265,7 +309,7 @@ public class AbstractJdbcJobOperatorTest
     }
 
     @Test(expected = TaskExecutionException.class)
-    public void selectAndStoreResultWithExceedingMaxColumns()
+    public void selectAndStoreAllResultsWithExceedingMaxColumns()
             throws IOException, NotReadOnlyException
     {
         String sql = "SELECT * FROM users";
@@ -273,7 +317,7 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_last_results", true,
+                "store_last_results", "all",
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
@@ -282,7 +326,7 @@ public class AbstractJdbcJobOperatorTest
     }
 
     @Test(expected = TaskExecutionException.class)
-    public void selectAndStoreResultWithExceedingMaxValueSize()
+    public void selectAndStoreFirstResultsWithExceedingMaxColumns()
             throws IOException, NotReadOnlyException
     {
         String sql = "SELECT * FROM users";
@@ -290,7 +334,24 @@ public class AbstractJdbcJobOperatorTest
                 "host", "foobar.com",
                 "user", "testuser",
                 "database", "testdb",
-                "store_last_results", true,
+                "store_last_results", "first",
+                "query", sql
+        );
+        Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
+        systemConfig.set("config.testop.max_store_last_results_columns", 2);
+        runTaskReadOnly(Optional.of(systemConfig), configInput, sql);
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void selectAndStoreAllResultsWithExceedingMaxValueSize()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = ImmutableMap.of(
+                "host", "foobar.com",
+                "user", "testuser",
+                "database", "testdb",
+                "store_last_results", "all",
                 "query", sql
         );
         Config systemConfig = new ConfigFactory(DigdagClient.objectMapper()).create();
@@ -299,7 +360,7 @@ public class AbstractJdbcJobOperatorTest
     }
 
     @Test(expected = ConfigException.class)
-    public void selectAndStoreResultWithConflictOption()
+    public void selectAndStoreLastResultsWithConflictOption()
             throws IOException, NotReadOnlyException
     {
         String sql = "SELECT * FROM users";
@@ -307,7 +368,24 @@ public class AbstractJdbcJobOperatorTest
                 .put("host", "foobar.com")
                 .put("user", "testuser")
                 .put("database", "testdb")
-                .put("store_last_results", true)
+                .put("store_last_results", "all")
+                .put("download_file", "result.csv")
+                .put("query", sql)
+                .build();
+
+        runTaskReadOnly(configInput, sql);
+    }
+
+    @Test
+    public void selectAndFalseStoreLastResultsWithoutConflicts()
+            throws IOException, NotReadOnlyException
+    {
+        String sql = "SELECT * FROM users";
+        Map<String, Object> configInput = new ImmutableMap.Builder<String, Object>()
+                .put("host", "foobar.com")
+                .put("user", "testuser")
+                .put("database", "testdb")
+                .put("store_last_results", false)
                 .put("download_file", "result.csv")
                 .put("query", sql)
                 .build();
