@@ -33,9 +33,9 @@ public class S3StorageFactory
 
         if (config.has("path-style-access")) {
             client.setS3ClientOptions(
-              new S3ClientOptions().withPathStyleAccess(
-                config.get("path-style-access", Boolean.class)
-              ));
+              S3ClientOptions.builder().setPathStyleAccess(
+                config.get("path-style-access", Boolean.class, false)
+              ).build());
         }
 
         String bucket = config.get("bucket", String.class);
