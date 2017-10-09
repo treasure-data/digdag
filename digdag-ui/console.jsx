@@ -1317,7 +1317,7 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
 
   // First, divide tasks into rootTasks and taskGroups.
   const rootTasks: Array<Task> = []
-  const taskGroups: Map<string, Array<Task>> = new Map();  // {parentId => Array<Task>}
+  const taskGroups: Map<string, Array<Task>> = new Map()  // {parentId => Array<Task>}
   tasks.forEach(t => {
     const parentId: ?string = t.parentId
     if (parentId != null) {
