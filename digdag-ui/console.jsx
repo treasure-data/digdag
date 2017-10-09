@@ -355,6 +355,13 @@ function attemptCanResume (attempt) {
   return attempt.done && !attempt.success
 }
 
+function attemptCanKill (attempt) {
+  if (!attempt) {
+    return false
+  }
+  return !attempt.done && !attempt.success
+}
+
 const SessionStatusView = ({session}:{session: Session}) => {
   const attempt = session.lastAttempt
   return attempt
@@ -1023,8 +1030,15 @@ class AttemptView extends React.Component {
     })
   }
 
+  killAttempt () {
+    model()
+        .killAttempt(this.props.attemptId)
+        .then(() => this.forceUpdate())
+  }
+
   render () {
     const attempt = this.state.attempt
+    const canKill = attemptCanKill(attempt)
 
     if (!attempt) {
       return null
@@ -1032,7 +1046,17 @@ class AttemptView extends React.Component {
 
     return (
       <div className='row'>
-        <h2>Attempt</h2>
+        <h2>
+          Attempt
+          {canKill &&
+          <button
+            className='btn btn-danger pull-right'
+            onClick={this.killAttempt.bind(this)}
+          >
+            KILL
+          </button>
+          }
+        </h2>
         <table className='table table-condensed'>
           <tbody>
             <tr>
