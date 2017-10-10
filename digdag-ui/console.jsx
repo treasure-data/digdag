@@ -355,11 +355,11 @@ function attemptCanResume (attempt) {
   return attempt.done && !attempt.success
 }
 
-function attemptCanKill (attempt) {
+function attemptCanBeKilled (attempt) {
   if (!attempt) {
     return false
   }
-  return !attempt.done && !attempt.success
+  return !attempt.done && !attempt.cancelRequested
 }
 
 const SessionStatusView = ({session}:{session: Session}) => {
@@ -1038,7 +1038,7 @@ class AttemptView extends React.Component {
 
   render () {
     const attempt = this.state.attempt
-    const canKill = attemptCanKill(attempt)
+    const canKill = attemptCanBeKilled(attempt)
 
     if (!attempt) {
       return null
