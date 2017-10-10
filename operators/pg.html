@@ -191,7 +191,7 @@
 </div>
 <div class="highlight-default"><div class="highlight"><pre><span></span>+select_members:
   pg&gt;: select_members.sql
-  store_last_results: true
+  store_last_results: first
 
 +send_email:
   for_each&gt;:
@@ -242,10 +242,15 @@ Optional user password to use when connecting to the postgres database.</li>
 </pre></div>
 </div>
 </li>
-<li><p class="first"><strong>store_last_results</strong>: BOOLEAN</p>
-<p>Whether to store the query result. <em>Default:</em> <code class="docutils literal"><span class="pre">false</span></code>.</p>
+<li><p class="first"><strong>store_last_results</strong>: first | all</p>
+<p>Whether to store the query results to <code class="docutils literal"><span class="pre">pg.last_results</span></code> parameter. <em>Default:</em> <code class="docutils literal"><span class="pre">false</span></code>.</p>
+<p>Setting <code class="docutils literal"><span class="pre">first</span></code> stores the first row to the parameter as an object (e.g. <code class="docutils literal"><span class="pre">${pg.last_results.count}</span></code>).</p>
+<p>Setting <code class="docutils literal"><span class="pre">all</span></code> stores all rows to the parameter as an array of objects (e.g. <code class="docutils literal"><span class="pre">${pg.last_results[0].name}</span></code>). If number of rows exceeds limit, task fails.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">store_last_results</span><span class="p">:</span> <span class="n">true</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">store_last_results</span><span class="p">:</span> <span class="n">first</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">store_last_results</span><span class="p">:</span> <span class="nb">all</span>
 </pre></div>
 </div>
 </li>
