@@ -51,6 +51,17 @@ public abstract class AbstractJdbcResultSet
         }
     }
 
+    @Override
+    public boolean skip()
+    {
+        try {
+            return resultSet.next();
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to fetch next rows", ex);
+        }
+    }
+
     private List<Object> getObjects() throws SQLException
     {
         List<Object> results = new ArrayList<>(columnNames.size());

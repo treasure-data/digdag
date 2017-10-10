@@ -230,6 +230,33 @@ public class PgIT
     }
 
     @Test
+    public void selectAndStoreLastResultsWithFirst()
+            throws Exception
+    {
+        copyResource("acceptance/pg/select_store_last_results_first.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupSourceTable();
+
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "outfile=out",
+                "pg.dig");
+        assertCommandStatus(status);
+
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "out")))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line.trim());
+            }
+            assertThat(lines, is(Arrays.asList("foo")));
+        }
+    }
+
+    @Test
     public void selectAndStoreLastResultsWithExceedingMaxRows()
             throws Exception
     {

@@ -2,6 +2,7 @@ package io.digdag.standards.operator.jdbc;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
@@ -71,15 +72,15 @@ public abstract class AbstractJdbcJobOperator<C>
             throw new ConfigException("Can't use download_file with insert_into or create_table");
         }
 
-        boolean storeResult = params.get("store_last_results", boolean.class, false);
-        if (storeResult && queryModifier > 0) {
+        StoreLastResultsOption storeResultsOption = params.get("store_last_results", StoreLastResultsOption.class, StoreLastResultsOption.FALSE);
+        if (storeResultsOption.isEnabled() && queryModifier > 0) {
             throw new ConfigException("Can't use store_last_results with insert_into or create_table");
         }
-        if (downloadFile.isPresent() && storeResult) {
+        if (downloadFile.isPresent() && storeResultsOption.isEnabled()) {
             throw new ConfigException("Can't use both download_file and store_last_results at once");
         }
 
-        boolean readOnlyMode = downloadFile.isPresent() || storeResult;
+        boolean readOnlyMode = downloadFile.isPresent() || storeResultsOption.isEnabled();
 
         boolean strictTransaction = strictTransaction(params);
 
@@ -111,8 +112,8 @@ public abstract class AbstractJdbcJobOperator<C>
                 if (downloadFile.isPresent()) {
                     connection.executeReadOnlyQuery(query, (results) -> downloadResultsToFile(results, downloadFile.get()));
                 }
-                else if (storeResult) {
-                    connection.executeReadOnlyQuery(query, (results) -> storeResultInTaskResult(builder, results));
+                else if (storeResultsOption.isEnabled()) {
+                    connection.executeReadOnlyQuery(query, (results) -> storeResultsInTaskResult(results, storeResultsOption, builder));
                 }
                 else {
                     connection.executeReadOnlyQuery(query, (results) -> skipResults(results));
@@ -228,13 +229,35 @@ public abstract class AbstractJdbcJobOperator<C>
             ;
     }
 
-    private void storeResultInTaskResult(ImmutableTaskResult.Builder builder, JdbcResultSet jdbcResultSet)
+    private void storeResultsInTaskResult(JdbcResultSet jdbcResultSet, StoreLastResultsOption option, ImmutableTaskResult.Builder builder)
+    {
+        int columnsCount = jdbcResultSet.getColumnNames().size();
+        if (columnsCount > maxStoreLastResultsColumns) {
+            throw new TaskExecutionException("The number of result columns exceeded the limit: " + columnsCount + " > " + maxStoreLastResultsColumns);
+        }
+
+        Object lastResults;
+        switch (option) {
+        case ALL:
+            lastResults = collectAllResults(jdbcResultSet);
+            break;
+        case FIRST:
+            lastResults = collectFirstResults(jdbcResultSet);
+            break;
+        default:
+            throw new AssertionError("Unexpected StoreLastResultsOption: " + option);
+        }
+
+        Config storeParams = request.getConfig().getFactory().create();
+        storeParams.getNestedOrSetEmpty(type())
+            .set("last_results", lastResults);
+        builder.storeParams(storeParams);
+    }
+
+    private List<Map<String, Object>> collectAllResults(JdbcResultSet jdbcResultSet)
     {
         List<String> columnNames = jdbcResultSet.getColumnNames();
-        if (columnNames.size() > maxStoreLastResultsColumns) {
-            throw new TaskExecutionException("The number of result columns exceeded the limit: " + columnNames.size() + " > " + maxStoreLastResultsColumns);
-        }
-        List<Map<String, Object>> lastResult = new ArrayList<>();
+        ImmutableList.Builder<Map<String, Object>> lastResults = ImmutableList.builder();
 
         long rows = 0;
         while (true) {
@@ -248,25 +271,41 @@ public abstract class AbstractJdbcJobOperator<C>
                 throw new TaskExecutionException("The number of result rows exceeded the limit: " + rows + " > " + maxStoreLastResultsRows);
             }
 
-            HashMap<String, Object> map = new HashMap<>();
-            for (int i = 0; i < columnNames.size(); i++) {
-                Object v = values.get(i);
-                if (v instanceof String) {
-                    String s = (String) v;
-                    if (s.length() > maxStoreLastResultsValueSize) {
-                        throw new TaskExecutionException("The size of result value exceeded the limit: " + s.length() + " > " + maxStoreLastResultsValueSize);
-                    }
-                }
-                map.put(columnNames.get(i), v);
-            }
-            lastResult.add(map);
+            lastResults.add(buildResultsMap(columnNames, values));
         }
 
-        ConfigFactory cf = request.getConfig().getFactory();
-        Config result = cf.create();
-        Config taskState = result.getNestedOrSetEmpty(type());
-        taskState.set("last_results", lastResult);
+        return lastResults.build();
+    }
 
-        builder.storeParams(result);
+    private Map<String, Object> collectFirstResults(JdbcResultSet jdbcResultSet)
+    {
+        List<Object> values = jdbcResultSet.next();
+        if (values == null) {
+            return new HashMap<>();
+        }
+
+        Map<String, Object> lastResults = buildResultsMap(jdbcResultSet.getColumnNames(), values);
+
+        // consume all results
+        while (jdbcResultSet.skip())
+            ;
+
+        return lastResults;
+    }
+
+    private Map<String, Object> buildResultsMap(List<String> columnNames, List<Object> values)
+    {
+        HashMap<String, Object> map = new HashMap<>();
+        for (int i = 0; i < columnNames.size(); i++) {
+            Object v = values.get(i);
+            if (v instanceof String) {
+                String s = (String) v;
+                if (s.length() > maxStoreLastResultsValueSize) {
+                    throw new TaskExecutionException("The size of result value exceeded the limit: " + s.length() + " > " + maxStoreLastResultsValueSize);
+                }
+            }
+            map.put(columnNames.get(i), v);
+        }
+        return map;
     }
 }

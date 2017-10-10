@@ -138,6 +138,8 @@ public class TdOperatorFactory
                 throw new ConfigException("result_settings is valid only if result_connection is set");
             }
 
+            // TODO store_last_results should be io.digdag.standards.operator.jdbc.StoreLastResultsOption
+            // instead of boolean to be consistent with pg> and redshift> operators but not implemented yet.
             this.storeLastResults = params.get("store_last_results", boolean.class, false);
 
             this.preview = params.get("preview", boolean.class, false);
