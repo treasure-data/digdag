@@ -354,6 +354,10 @@ export class Model {
     return this.put('attempts', { workflowId, sessionTime, params })
   }
 
+  killAttempt (attemptId: string) {
+    return this.post(`attempts/${attemptId}/kill`)
+  }
+
   retrySessionWithLatestRevision (session: Session, attemptName: string) {
     const { lastAttempt, project, workflow } = session
     const model = this
@@ -444,6 +448,9 @@ export class Model {
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
+      }
+      if (response.status === 204) {
+        return null
       }
       return response.json()
     })
