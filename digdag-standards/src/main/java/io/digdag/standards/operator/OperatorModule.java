@@ -33,6 +33,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, MailOperatorFactory.class);
         addStandardOperatorFactory(binder, LoopOperatorFactory.class);
         addStandardOperatorFactory(binder, ForEachOperatorFactory.class);
+        addStandardOperatorFactory(binder, ForRangeOperatorFactory.class);
         addStandardOperatorFactory(binder, EmbulkOperatorFactory.class);
         addStandardOperatorFactory(binder, TdOperatorFactory.class);
         addStandardOperatorFactory(binder, TdForEachOperatorFactory.class);
