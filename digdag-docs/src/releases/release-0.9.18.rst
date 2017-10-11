@@ -4,8 +4,6 @@ Release 0.9.18
 Operator Changes
 ------------------
 
-* Added new ``for_range>`` operator. See documents for its usage.
-
 * ``pg>`` and ``redshift>`` operators support ``store_last_results`` option so that following tasks can use results of a query.
 
 
