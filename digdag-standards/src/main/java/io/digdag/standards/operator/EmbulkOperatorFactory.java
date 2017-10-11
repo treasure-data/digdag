@@ -110,6 +110,7 @@ public class EmbulkOperatorFactory
             }
 
             ProcessBuilder pb = new ProcessBuilder("embulk", "run", tempFile);
+            pb.redirectErrorStream(true);
             pb.directory(workspace.getPath().toFile());
 
             int ecode;
