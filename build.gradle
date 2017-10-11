@@ -451,7 +451,7 @@ task setVersion << {
                 "\n" +
                 "Contributors\n" +
                 "------------\n")
-        ["bash", "-c", "git shortlog -s \$(git tag --sort=-creatordate | head -n 1)..HEAD | awk '{print \"* \" \$2}' >> ${notePath}"].execute().waitFor()
+        ["bash", "-c", "git shortlog -s \$(git tag --sort=-creatordate | head -n 1)..HEAD | awk '{\$1=\"\";print \"*\" \$0}' >> ${notePath}"].execute().waitFor()
         "git add ${notePath}".execute().waitFor()
     }
 }
