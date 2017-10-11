@@ -438,8 +438,21 @@ task setVersion << {
         releases.write(releases.getText().replaceAll("# add new version here", "# add new version here\n    releases/release-${to}"))
 
         // release-<versionr>.rst
-        file("digdag-docs/src/releases/release-${to}.rst").append("")
-        "git add digdag-docs/src/releases/release-${to}.rst".execute().waitFor()
+        String notePath = "digdag-docs/src/releases/release-${to}.rst"
+        file(notePath).append(
+                "Release ${to}\n" +
+                "==============\n" +
+                "\n" +
+                "...\n" +
+                "\n" +
+                "Release Date\n" +
+                "------------\n" +
+                "${new Date().format('yyyy-MM-dd')}\n" +
+                "\n" +
+                "Contributors\n" +
+                "------------\n")
+        ["bash", "-c", "git shortlog -s \$(git tag --sort=-creatordate | head -n 1)..HEAD | awk '{\$1=\"\";print \"*\" \$0}' >> ${notePath}"].execute().waitFor()
+        "git add ${notePath}".execute().waitFor()
     }
 }
 
