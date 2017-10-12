@@ -298,10 +298,11 @@ export class Model {
   }
 
   fetchLogFile (attemptId: string, file: LogFileHandle) {
-    if (!file.direct) {
-      return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${encodeURIComponent(file.fileName)}`)
+    if (file.direct) {
+      return this.fetchArrayBuffer(file.direct, true)
+    } else {
+      return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${encodeURIComponent(file.fileName)}`, false)
     }
-    return this.fetchArrayBuffer(file.direct)
   }
 
   fetchProjectArchiveLatest (projectId: string): Promise<ProjectArchive> {
@@ -491,10 +492,17 @@ export class Model {
     })
   }
 
-  fetchArrayBuffer (url: string) {
-    return fetch(url, {
-      credentials: 'include'
-    }).then(response => {
+  fetchArrayBuffer (url: string, directUrl: boolean) {
+    let options = {}
+    if (!directUrl) {
+      // if the URL is the direct url given by the server, client shouldn't send credentials to the host
+      // because the host is not always trusted and might not have exact Access-Control-Allow-Origin
+      // (browser rejects "Access-Control-Allow-Origin: '*'" if "credentials: include" is set).
+      // Instead, the URL itself should include enough information to authenticate the client such as a
+      // pre-signed temporary token as a part of query string.
+      options['credentials'] = 'include'
+    }
+    return fetch(url, options).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
       }
