@@ -1279,11 +1279,21 @@ const ParamsView = ({params}:{params: Object}) =>
     ? null
     : <CodeViewer className='params-view' language='yaml' value={yaml.safeDump(params, {sortKeys: true})} />
 
-const TaskState = ({state}:{state: string}) => {
+const TaskState = ({state, cancelRequested}:{state: string, cancelRequested: boolean}) => {
+  if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(state) >= 0) {
+    // These state won't progress once cancelRequested is set. Planned tasks won't generate tasks.
+    return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
+  }
+
   switch (state) {
     // Pending
     case 'blocked':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
+      if (cancelRequested) {
+        return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
+      } else {
+        // Blocked tasks won't start once cancelRequested is set
+        return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      }
     case 'ready':
       return <span><span className='glyphicon glyphicon-refresh text-info' /> Ready</span>
     case 'retry_waiting':
@@ -1406,7 +1416,7 @@ class TaskListView extends React.Component {
                   <td>{task.parentId}</td>
                   <td><FullTimestamp showAgo={false} t={task.startedAt} /></td>
                   <td><FullTimestamp showAgo={false} t={task.updatedAt} /></td>
-                  <td><TaskState state={task.state} /></td>
+                  <td><TaskState state={task.state} cancelRequested={task.cancelRequested} /></td>
                   <td><Timestamp t={task.retryAt} /></td>
                   <td><ParamsView params={task.stateParams} /></td>
                   <td><ParamsView params={task.storeParams} /></td>

@@ -312,6 +312,7 @@ public final class RestModels
                     .collect(Collectors.toList()))
             .isGroup(task.getTaskType().isGroupingOnly())
             .state(task.getState().toString().toLowerCase())
+            .isCancelRequested(task.getStateFlags().isCancelRequested())
             .exportParams(task.getConfig().getExport().deepCopy().merge(task.getExportParams()))
             .storeParams(task.getStoreParams())
             .stateParams(task.getStateParams())
