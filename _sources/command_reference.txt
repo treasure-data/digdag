@@ -345,6 +345,7 @@ In the config file, following parameters are available
 * log-server.s3.endpoint (string, default: "s3.amazonaws.com")
 * log-server.s3.bucket (string)
 * log-server.s3.path (string)
+* log-server.s3.direct_download (boolean. default: false)
 * log-server.s3.credentials.access-key-id (string. default: instance profile)
 * log-server.s3.credentials.secret-access-key (string. default: instance profile)
 * log-server.s3.path-style-access (boolean. default: false)
