@@ -29,7 +29,7 @@ public interface RestTask
     // Because older versions don't contain cancelRequested field, default value is
     // necessary to avoid "cancelRequsted field doesn't exist" errors.
     @Value.Default
-    default boolean isCancelRequested()
+    default boolean getCancelRequested()
     {
         return false;
     }
