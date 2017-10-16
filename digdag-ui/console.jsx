@@ -1289,10 +1289,10 @@ const TaskState = ({state, cancelRequested}:{state: string, cancelRequested: boo
     // Pending
     case 'blocked':
       if (cancelRequested) {
-        return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
-      } else {
         // Blocked tasks won't start once cancelRequested is set
         return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      } else {
+        return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
       }
     case 'ready':
       return <span><span className='glyphicon glyphicon-refresh text-info' /> Ready</span>
@@ -1464,6 +1464,10 @@ class TaskTimelineRow extends React.Component {
   }
 
   progressBarClasses () {
+    if (this.props.task.cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(this.props.task.state) >= 0) {
+      return 'progress-bar-warning'
+    }
+
     switch (this.props.task.state) {
       // Pending
       case 'blocked':
