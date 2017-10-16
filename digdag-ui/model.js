@@ -73,6 +73,7 @@ export type Task = {
   upstreams: Array<string>;
   isGroup: boolean;
   state: string;
+  cancelRequested: boolean;
   exportParams: Object;
   storeParams: Object;
   stateParams: Object;
