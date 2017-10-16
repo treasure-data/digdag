@@ -25,7 +25,7 @@
         null_as: nULl
         escape: false
         addquotes: true
-        parallel: true
+        parallel: ON
 
 ## Secrets
 
