@@ -52,6 +52,7 @@ public class LogServerManager
         Storage storage = storageManager.create(type, systemConfig, "log-server.");
 
         String logPath = systemConfig.get("log-server." + type + ".path", String.class, "");
+        boolean directDownload = systemConfig.get("log-server." + type + ".direct_download", boolean.class, false);
         if (logPath.startsWith("/")) {
             logPath = logPath.substring(1);
         }
@@ -59,7 +60,7 @@ public class LogServerManager
             logPath = logPath + "/";
         }
 
-        return new StorageFileLogServer(storage, logPath);
+        return new StorageFileLogServer(storage, logPath, directDownload);
     }
 
     public LogServer getLogServer()
