@@ -16,6 +16,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
@@ -38,14 +39,16 @@ public class EmbulkOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(EmbulkOperatorFactory.class);
 
     private final CommandExecutor exec;
+    private final CommandLogger clog;
     private final TemplateEngine templateEngine;
     private final ObjectMapper mapper;
     private final YAMLFactory yaml;
 
     @Inject
-    public EmbulkOperatorFactory(CommandExecutor exec, TemplateEngine templateEngine, ObjectMapper mapper)
+    public EmbulkOperatorFactory(CommandExecutor exec, TemplateEngine templateEngine, CommandLogger clog, ObjectMapper mapper)
     {
         this.exec = exec;
+        this.clog = clog;
         this.templateEngine = templateEngine;
         this.mapper = mapper;
         this.yaml = new YAMLFactory()
@@ -111,26 +114,24 @@ public class EmbulkOperatorFactory
 
             ProcessBuilder pb = new ProcessBuilder("embulk", "run", tempFile);
             pb.directory(workspace.getPath().toFile());
+            pb.redirectErrorStream(true);
 
             int ecode;
-            String message;
-            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+            try {
                 Process p = exec.start(workspace.getPath(), request, pb);
                 p.getOutputStream().close();
-                try (InputStream stdout = p.getInputStream()) {
-                    ByteStreams.copy(stdout, buffer);
-                }
+
+                // copy stdout to System.out and logger
+                clog.copyStdout(p, System.out);
+
                 ecode = p.waitFor();
-                message = buffer.toString();
             }
             catch (IOException | InterruptedException ex) {
                 throw Throwables.propagate(ex);
             }
 
-            //logger.info("Shell command message ===\n{}", message);  // TODO include task name
-            System.out.println(message);
             if (ecode != 0) {
-                throw new RuntimeException("Command failed: "+message);
+                throw new RuntimeException("Command failed with code " + ecode);
             }
 
             return TaskResult.empty(request);
