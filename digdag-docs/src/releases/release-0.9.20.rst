@@ -12,7 +12,7 @@ Server Changes
 UI Changes
 ------------------
 
-* Fixed a regression existing in v0.9.19 and v0.9.19 where UI includes cookie in the requests of temporary pre-signed download URLs of log files and project archives. Now it doesn't include cookie. This fixes a problem where wildcard CORS header (``Access-Control-Allow-Origin: '*'``) doesn't work.
+* Fixed a regression existing in v0.9.18 and v0.9.19 where UI includes cookie in the requests of temporary pre-signed download URLs of log files and project archives. Now it doesn't include cookie. This fixes a problem where wildcard CORS header (``Access-Control-Allow-Origin: '*'``) doesn't work.
 
 * UI visualizes blocked tasks of a canceled attempt as CANCELED state.
 
