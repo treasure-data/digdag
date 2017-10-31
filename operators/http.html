@@ -284,10 +284,12 @@ content_type: application/xml
 </li>
 <li><p class="first"><strong>headers</strong>: LIST OF KEY-VALUE PAIRS</p>
 <p>Additional custom headers to send with the HTTP request.</p>
-<p>headers:
-- Accept: application/json
-- X-Foo: bar
-- Baz: quux</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="n">headers</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">Accept</span><span class="p">:</span> <span class="n">application</span><span class="o">/</span><span class="n">json</span>
+    <span class="o">-</span> <span class="n">X</span><span class="o">-</span><span class="n">Foo</span><span class="p">:</span> <span class="n">bar</span>
+    <span class="o">-</span> <span class="n">Baz</span><span class="p">:</span> <span class="n">quux</span>
+</pre></div>
+</div>
 </li>
 <li><p class="first"><strong>retry</strong>: BOOLEAN</p>
 <p>Whether to retry ephemeral errors. <em>Default:</em> <code class="docutils literal"><span class="pre">true</span></code> if the request method is <code class="docutils literal"><span class="pre">GET</span></code>, <code class="docutils literal"><span class="pre">HEAD</span></code>, <code class="docutils literal"><span class="pre">OPTIONS</span></code> or <code class="docutils literal"><span class="pre">TRACE</span></code>. Otherwise <code class="docutils literal"><span class="pre">false</span></code>.</p>
