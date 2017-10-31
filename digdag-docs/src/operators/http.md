@@ -142,10 +142,12 @@
 
   Additional custom headers to send with the HTTP request.
 
+  ```
     headers:
       - Accept: application/json
       - X-Foo: bar
       - Baz: quux
+  ```
 
 * **retry**: BOOLEAN
 
