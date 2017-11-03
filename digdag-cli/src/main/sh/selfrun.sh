@@ -54,7 +54,7 @@ set p2=%p2:"=%
 set arg=%p1%%arg:~1,-1%%p2%
 
 if "%status%" == "rest" (
-    set args=%args% %arg%
+    set args=%args% "%arg%"
 
 ) else if "%status%" == "read" (
     call :read_file %arg%
