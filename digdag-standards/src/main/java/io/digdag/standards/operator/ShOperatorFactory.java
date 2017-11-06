@@ -28,12 +28,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class ShOperatorFactory
@@ -88,7 +83,7 @@ public class ShOperatorFactory
             ProcessBuilder pb = new ProcessBuilder(shell);
             pb.directory(workspace.getPath().toFile());
 
-            final Map<String, String> env = pb.environment();
+            Map<String, String> env = new HashMap<>();
             params.getKeys()
                 .forEach(key -> {
                     if (isValidEnvKey(key)) {
@@ -123,7 +118,7 @@ public class ShOperatorFactory
 
             int ecode;
             try {
-                Process p = exec.start(workspace.getPath(), request, pb);
+                Process p = exec.start(workspace.getPath(), request, pb, env);
 
                 // feed command to stdin
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {

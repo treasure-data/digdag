@@ -44,20 +44,20 @@ public class DockerCommandExecutor
         this.simple = simple;
     }
 
-    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb, Map<String, String> environments)
         throws IOException
     {
         // TODO set TZ environment variable
         Config config = request.getConfig();
         if (config.has("docker")) {
-            return startWithDocker(projectPath, request, pb);
+            return startWithDocker(projectPath, request, pb, environments);
         }
         else {
-            return simple.start(projectPath.toAbsolutePath(), request, pb);
+            return simple.start(projectPath.toAbsolutePath(), request, pb, environments);
         }
     }
 
-    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb, Map<String, String> environments)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
@@ -93,23 +93,17 @@ public class DockerCommandExecutor
 
             logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
 
-            // env var
-            // TODO deleting temp file right after start() causes "no such file or directory." error
-            // because command execution is asynchronous. but using command-line is insecure.
-            //Path envFile = Files.createTempFile("docker-env-", ".list");
-            //tempFiles.add(envFile);
-            //try (BufferedWriter out = Files.newBufferedWriter(envFile)) {
-            //    for (Map.Entry<String, String> pair : pb.environment().entrySet()) {
-            //        out.write(pair.getKey());
-            //        out.write("=");
-            //        out.write(pair.getValue());
-            //        out.newLine();
-            //    }
-            //}
-            //command.add("--env-file").add(envFile.toAbsolutePath().toString());
-            for (Map.Entry<String, String> pair : pb.environment().entrySet()) {
-                command.add("-e").add(pair.getKey() + "=" + pair.getValue());
+            Path envFile = Files.createTempFile("docker-env-", ".list");
+
+            try (BufferedWriter out = Files.newBufferedWriter(envFile)) {
+                for (Map.Entry<String, String> pair : environments.entrySet()) {
+                    out.write(pair.getKey());
+                    out.write("=");
+                    out.write(pair.getValue());
+                    out.newLine();
+                }
             }
+            command.add("--env-file").add(envFile.toAbsolutePath().toString());
 
             // image name
             command.add(imageName);
@@ -124,7 +118,26 @@ public class DockerCommandExecutor
             docker.redirectOutput(pb.redirectOutput());
             docker.directory(projectPath.toFile());
 
-            return docker.start();
+            Process p = docker.start();
+
+            // delete tempFile
+            Thread t = new Thread(() -> {
+                    try {
+                        p.waitFor();
+                        logger.debug("tempFile is deleted");
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }finally {
+                        try {
+                            Files.deleteIfExists(envFile);
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+            });
+            t.start();
+
+            return p;
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);

@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import java.util.HashMap;
 import java.util.List;
 import java.io.Writer;
 import java.io.BufferedWriter;
@@ -141,10 +142,10 @@ public class RbOperatorFactory
             pb.redirectErrorStream(true);
 
             // Set up process environment according to env config. This can also refer to secrets.
-            Map<String, String> env = pb.environment();
+            Map<String, String> env = new HashMap<>();
             collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
-            Process p = exec.start(workspace.getPath(), request, pb);
+            Process p = exec.start(workspace.getPath(), request, pb, env);
 
             // feed script to stdin
             try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
