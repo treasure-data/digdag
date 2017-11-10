@@ -9,8 +9,8 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
     +step1:
       td_partial_delete>: my_table
       database: mydb
-      from: 2016-01-01T00:00:00+0800
-      to:   2016-02-01T00:00:00+0800
+      from: 2016-01-01T00:00:00+08:00
+      to:   2016-02-01T00:00:00+08:00
 
 ## Secrets
 
@@ -46,7 +46,7 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   Examples:
 
   ```
-  from: 2016-01-01T00:00:00+0800
+  from: 2016-01-01T00:00:00+08:00
   ```
 
 * **to**: yyyy-MM-ddTHH:mm:ss[Z]
@@ -56,7 +56,7 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   Examples:
 
   ```
-  to: 2016-02-01T00:00:00+0800
+  to: 2016-02-01T00:00:00+08:00
   ```
 
 * **endpoint**: ADDRESS
