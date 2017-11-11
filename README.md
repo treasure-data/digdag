@@ -57,7 +57,10 @@ $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 
 ```
 $ ./gradlew cli
+$ ./gradlew cli -PwithoutUi  # build without integrated UI
 ```
+
+(If the command fails during building UI due to errors from `node` command, you can try to add `-PwithoutUi` argument to exclude the UI from the package).
 
 It makes an executable in `pkg/`, e.g. `pkg/digdag-$VERSION.jar`.
 
