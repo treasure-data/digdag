@@ -341,10 +341,13 @@ project(':digdag-cli') {
             extendsFrom runtime
         }
     }
-    dependencies {
-        shadow project(':digdag-ui')
+
+    if (!project.hasProperty("withoutUi")) {
+        dependencies {
+            shadow project(':digdag-ui')
+        }
+        shadowJar.dependsOn(project(':digdag-ui').jar)
     }
-    shadowJar.dependsOn(project(':digdag-ui').jar)
 
     shadowJar {
         configurations = [project.configurations.shadow]
