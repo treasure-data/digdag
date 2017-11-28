@@ -228,6 +228,7 @@ public class ScheduleExecutor
         }
 
         try {
+            logger.info("Updating next schedule time: sched={}, next={}, lastSessionTime={}", sched, nextSchedule, successfulSessionTime);
             if (successfulSessionTime != null) {
                 lockedSched.updateNextScheduleTimeAndLastSessionTime(nextSchedule, successfulSessionTime);
             }
