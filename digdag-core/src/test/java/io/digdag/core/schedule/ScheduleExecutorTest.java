@@ -116,7 +116,7 @@ public class ScheduleExecutorTest
             ScheduleStoreManager.ScheduleAction func = invocation.getArgumentAt(1, ScheduleStoreManager.ScheduleAction.class);
             func.schedule(scs, schedule);
             return null;
-        }).when(scheduleStoreManager).lockReadySchedules(any(Instant.class), any(ScheduleStoreManager.ScheduleAction.class));
+        }).when(scheduleStoreManager).lockReadySchedules(any(Instant.class), 1, any(ScheduleStoreManager.ScheduleAction.class));
     }
 
     @Test

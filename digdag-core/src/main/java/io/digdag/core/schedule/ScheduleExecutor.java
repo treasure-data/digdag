@@ -135,12 +135,16 @@ public class ScheduleExecutor
     void runSchedules(Instant now)
     {
         try {
-            tm.begin(() -> {
-                sm.lockReadySchedules(now, (store, storedSchedule) -> {
-                    runSchedule(new ScheduleControl(store, storedSchedule));
+            int count;
+            do {
+                count = tm.begin(() -> {
+                    // here uses limit=1 because selecting multiple rows with FOR UPDATE
+                    // has risk of too often deadlock.
+                    return sm.lockReadySchedules(now, 1, (store, storedSchedule) -> {
+                        runSchedule(new ScheduleControl(store, storedSchedule));
+                    });
                 });
-                return null;
-            });
+            } while (count > 0);  // repeat while some schedules ready
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. Scheduling will be retried.", t);
