@@ -248,12 +248,12 @@ public class DatabaseScheduleStoreManager
     public interface PgDao
             extends Dao
     {
-        @SqlQuery("select schedules.*, wd.name as name from schedules schedules" +
-                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
-                " where schedules.next_run_time <= :currentTime" +
-                " and schedules.disabled_at is null" +
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " where s.next_run_time <= :currentTime" +
+                " and s.disabled_at is null" +
                 " limit :limit" +
-                " for update of schedules skip locked")
+                " for update of s skip locked")
         List<StoredSchedule> lockReadySchedulesSkipLocked(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
     }
 

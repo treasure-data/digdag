@@ -113,10 +113,10 @@ public class ScheduleExecutorTest
         when(projectStoreManager.getWorkflowDetailsById(WORKFLOW_DEFINITION_ID)).thenReturn(workflowDefinition);
 
         doAnswer(invocation -> {
-            ScheduleStoreManager.ScheduleAction func = invocation.getArgumentAt(1, ScheduleStoreManager.ScheduleAction.class);
+            ScheduleStoreManager.ScheduleAction func = invocation.getArgumentAt(2, ScheduleStoreManager.ScheduleAction.class);
             func.schedule(scs, schedule);
             return null;
-        }).when(scheduleStoreManager).lockReadySchedules(any(Instant.class), 1, any(ScheduleStoreManager.ScheduleAction.class));
+        }).when(scheduleStoreManager).lockReadySchedules(any(Instant.class), eq(1), any(ScheduleStoreManager.ScheduleAction.class));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ScheduleExecutorTest
                 .thenReturn(ImmutableList.of(attempt));
 
         // Run the schedule executor...
-        scheduleExecutor.runSchedules(now);
+        scheduleExecutor.runScheduleOnce(now);
 
         // Verify that another attempt was not started
         verify(scheduleExecutor, never()).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
@@ -155,7 +155,7 @@ public class ScheduleExecutorTest
                 .thenReturn(ImmutableList.of(attempt));
 
         // Run the schedule executor...
-        scheduleExecutor.runSchedules(now);
+        scheduleExecutor.runScheduleOnce(now);
 
         // Verify that another attempt was started
         verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
