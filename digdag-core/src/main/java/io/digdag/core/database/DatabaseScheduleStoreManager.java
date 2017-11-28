@@ -24,8 +24,10 @@ import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DatabaseScheduleStoreManager
         extends BasicDatabaseStoreManager<DatabaseScheduleStoreManager.Dao>
@@ -34,7 +36,19 @@ public class DatabaseScheduleStoreManager
     @Inject
     public DatabaseScheduleStoreManager(TransactionManager transactionManager, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, transactionManager, cfm);
+        super(config.getType(), dao(config.getType()), transactionManager, cfm);
+    }
+
+    private static Class<? extends Dao> dao(String type)
+    {
+        switch (type) {
+        case "postgresql":
+            return PgDao.class;
+        case "h2":
+            return H2Dao.class;
+        default:
+            throw new IllegalArgumentException("Unknown database type: " + type);
+        }
     }
 
     @Override
@@ -44,24 +58,32 @@ public class DatabaseScheduleStoreManager
     }
 
     @Override
-    public void lockReadySchedules(Instant currentTime, ScheduleAction func)
+    public int lockReadySchedules(Instant currentTime, int limit, ScheduleAction func)
     {
-        List<RuntimeException> exceptions = transaction((handle, dao) -> {
-            return dao.lockReadySchedules(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
-                .stream()
-                .map(schedId -> {
-                    // TODO JOIN + FOR UPDATE doesn't work with H2 database
-                    StoredSchedule sched = dao.getScheduleByIdInternal(schedId);
+        List<RuntimeException> exceptions = new ArrayList<>();
+
+        long count = transaction((handle, dao) -> {
+            Stream<StoredSchedule> schedStream;
+            if (dao instanceof PgDao) {
+                schedStream = ((PgDao) dao).lockReadySchedulesSkipLocked(currentTime.getEpochSecond(), limit)
+                    .stream();
+            }
+            else {
+                // H2 database doesn't support JOIN + FOR UPDATE OF
+                schedStream = dao.lockReadyScheduleIds(currentTime.getEpochSecond(), limit)
+                    .stream()
+                    .map(dao::getScheduleByIdInternal);
+            }
+            return schedStream.mapToInt(sched -> {
                     try {
                         func.schedule(new DatabaseScheduleControlStore(handle), sched);
-                        return null;
                     }
                     catch (RuntimeException ex) {
-                        return ex;
+                        exceptions.add(ex);
                     }
+                    return 1;
                 })
-                .filter(exception -> exception != null)
-                .collect(Collectors.toList());
+                .sum();
         });
 
         if (!exceptions.isEmpty()) {
@@ -71,6 +93,8 @@ public class DatabaseScheduleStoreManager
             }
             throw first;
         }
+
+        return (int) count;
     }
 
     private interface ScheduleCombinedLockAction <T, E extends Exception>
@@ -216,6 +240,23 @@ public class DatabaseScheduleStoreManager
         }
     }
 
+    public interface H2Dao
+            extends Dao
+    {
+    }
+
+    public interface PgDao
+            extends Dao
+    {
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " where s.next_run_time <= :currentTime" +
+                " and s.disabled_at is null" +
+                " limit :limit" +
+                " for update of s skip locked")
+        List<StoredSchedule> lockReadySchedulesSkipLocked(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
+    }
+
     public interface Dao
     {
         @SqlQuery("select s.*, wd.name as name from schedules s" +
@@ -274,7 +315,7 @@ public class DatabaseScheduleStoreManager
                 " and disabled_at is null" +
                 " limit :limit" +
                 " for update")
-        List<Integer> lockReadySchedules(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
+        List<Integer> lockReadyScheduleIds(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
 
         @SqlQuery("select * from schedules" +
                 " where id = :id" +

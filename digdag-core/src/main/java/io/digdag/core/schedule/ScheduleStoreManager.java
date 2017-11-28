@@ -16,5 +16,5 @@ public interface ScheduleStoreManager
         void schedule(ScheduleControlStore store, StoredSchedule schedule);
     }
 
-    void lockReadySchedules(Instant currentTime, ScheduleAction func);
+    int lockReadySchedules(Instant currentTime, int limit, ScheduleAction func);
 }
