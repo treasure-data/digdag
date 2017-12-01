@@ -511,6 +511,8 @@
 <li>log-server.s3.credentials.secret-access-key (string. default: instance profile)</li>
 <li>log-server.s3.path-style-access (boolean. default: false)</li>
 <li>digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)</li>
+<li>executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)</li>
+<li>executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)</li>
 </ul>
 <div class="section" id="secret-encryption-key">
 <h4><a class="toc-backref" href="#id9">Secret Encryption Key</a><a class="headerlink" href="#secret-encryption-key" title="Permalink to this headline">¶</a></h4>
