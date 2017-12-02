@@ -246,8 +246,7 @@ public class SecretsIT
         assertThat(listedKeys2, containsInAnyOrder(key4, key5, key6, key7, key8));
     }
 
-    @Test
-    public void testUseProjectSecret()
+    private void testUseProjectSecret(String baseValue)
             throws Exception
     {
         startServer();
@@ -264,8 +263,8 @@ public class SecretsIT
         String key1 = "key1";
         String key2 = "key2";
 
-        String value1 = "value1";
-        String value2 = "value2";
+        String value1 = baseValue + "1";
+        String value2 = baseValue + "2";
 
         // Set secrets
         {
@@ -328,7 +327,28 @@ public class SecretsIT
     }
 
     @Test
-    public void testUseLocalSecret()
+    public void useProjectSecretWithNormalValue()
+            throws Exception
+    {
+        testUseProjectSecret("value");
+    }
+
+    @Test
+    public void useProjectSecretWithSymbolValue()
+            throws Exception
+    {
+        testUseProjectSecret("!#$%*+-=?@^_$");
+    }
+
+    @Test
+    public void useProjectSecretWithSymbolValueConsideringCompatibility()
+            throws Exception
+    {
+        testUseProjectSecret("!#\\$%*+-=?@^_\\$");
+    }
+
+    @Test
+    public void testUseProjectSecret()
             throws Exception
     {
         addWorkflow(projectDir, "acceptance/secrets/echo_secret.dig");

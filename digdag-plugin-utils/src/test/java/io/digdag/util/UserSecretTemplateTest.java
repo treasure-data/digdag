@@ -17,6 +17,8 @@ public class UserSecretTemplateTest
         assertThat(UserSecretTemplate.of("${}").format(key -> Optional.of("bar")), is("${}"));
         assertThat(UserSecretTemplate.of("${foo}").format(key -> Optional.of("bar")), is("${foo}"));
         assertThat(UserSecretTemplate.of("${secret:foo}").format(key -> Optional.of("bar")), is("bar"));
+        assertThat(UserSecretTemplate.of("${secret:foo}").format(key -> Optional.of("$b$a$r$")), is("$b$a$r$"));
+        assertThat(UserSecretTemplate.of("${secret:foo}").format(key -> Optional.of("\\$b\\$a\\$r\\$")), is("\\$b\\$a\\$r\\$"));
         assertThat(UserSecretTemplate.of("hello ${secret:foo} world").format(key -> Optional.of("bar")), is("hello bar world"));
         assertThat(UserSecretTemplate.of("hello ${secret:foo} world ${secret:bar}").format(key -> {
             switch (key) {
