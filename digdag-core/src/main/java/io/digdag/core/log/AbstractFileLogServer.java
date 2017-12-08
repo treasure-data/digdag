@@ -85,7 +85,8 @@ public abstract class AbstractFileLogServer
         List<LogFileHandle> handles = new ArrayList<>();
 
         listFiles(dateDir, attemptDir, (name, size, direct) -> {
-            if (name.endsWith(LogFiles.LOG_GZ_FILE_SUFFIX) && (!taskName.isPresent() || name.startsWith(taskName.get()))) {
+            if ((name.endsWith(LogFiles.LOG_GZ_FILE_SUFFIX) || name.endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX)) &&
+                (!taskName.isPresent() || name.startsWith(taskName.get()))) {
                 LogFileHandle handle = LogFiles.buildLogFileHandleFromFileName(name, size);
                 if (handle != null) {
                     if (direct != null) {

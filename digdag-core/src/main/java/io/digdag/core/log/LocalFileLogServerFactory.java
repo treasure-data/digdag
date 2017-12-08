@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.nio.file.FileSystems;
@@ -39,6 +40,7 @@ public class LocalFileLogServerFactory
 
     private final Path logPath;
     private final AgentId agentId;
+    private final boolean enableCompress;
 
     @Inject
     public LocalFileLogServerFactory(Config systemConfig, AgentId agentId)
@@ -47,6 +49,7 @@ public class LocalFileLogServerFactory
             .toAbsolutePath()
             .normalize();
         this.agentId = agentId;
+        this.enableCompress = systemConfig.get("log-server.local.compress", boolean.class, true);
     }
 
     @Override
@@ -126,7 +129,24 @@ public class LocalFileLogServerFactory
         {
             Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
             try (InputStream in = Files.newInputStream(path)) {
-                return ByteStreams.toByteArray(in);
+                if (path.toString().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX)) {
+                    ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+                    GZIPOutputStream gzipOutput = new GZIPOutputStream(byteOutput);
+                    byte[] buffer = new byte[1024];
+                    while (true) {
+                        int len = in.read(buffer);
+                        if (len < 0) {
+                            break;
+                        }
+                        gzipOutput.write(buffer, 0, len);
+                    }
+                    byteOutput.close();
+                    gzipOutput.close();
+
+                    return byteOutput.toByteArray();
+                } else {
+                    return ByteStreams.toByteArray(in);
+                }
             }
             catch (FileNotFoundException ex) {
                 throw new StorageFileNotFoundException(ex);
@@ -161,13 +181,17 @@ public class LocalFileLogServerFactory
             {
                 String dateDir = LogFiles.formatDataDir(prefix);
                 String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
-                String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
 
+                String fileName = enableCompress ?
+                    LogFiles.formatFileName(taskName, Instant.now(), agentId.toString()) :
+                    LogFiles.formatPlainTextFileName(taskName, Instant.now(), agentId.toString());
                 Path dir = getPrefixDir(dateDir, attemptDir);
                 Files.createDirectories(dir);
                 Path path = dir.resolve(fileName);
 
-                this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024);
+                this.output = enableCompress ?
+                    new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024) :
+                    Files.newOutputStream(path, CREATE, APPEND);
             }
 
             @Override

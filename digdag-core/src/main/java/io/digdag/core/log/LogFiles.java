@@ -18,6 +18,7 @@ public class LogFiles
     { }
 
     public static final String LOG_GZ_FILE_SUFFIX = ".log.gz";
+    public static final String LOG_PLAIN_TEXT_FILE_SUFFIX = ".log";
 
     private static DateTimeFormatter CREATE_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd", ENGLISH)
@@ -60,6 +61,16 @@ public class LogFiles
                 firstLogTime.getEpochSecond(),
                 firstLogTime.getNano(),
                 agentId) + LOG_GZ_FILE_SUFFIX;
+    }
+
+    public static String formatPlainTextFileName(String taskName, Instant firstLogTime, String agentId)
+    {
+        return String.format(ENGLISH,
+                "%s@%08x%08x.%s",
+                taskName,
+                firstLogTime.getEpochSecond(),
+                firstLogTime.getNano(),
+                agentId) + LOG_PLAIN_TEXT_FILE_SUFFIX;
     }
 
     public static LogFileHandle buildLogFileHandleFromFileName(String fileName, long fileSize)
