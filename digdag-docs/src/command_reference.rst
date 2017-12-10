@@ -114,7 +114,7 @@ Options:
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 :command:`-d, --dry-run`
   Dry-run mode. This mode doesn't run tasks.
@@ -155,7 +155,7 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 
 scheduler
@@ -211,7 +211,7 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
@@ -431,7 +431,7 @@ Starts a new session. This command requires project name, workflow name, and ses
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 
 retry
