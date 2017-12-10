@@ -309,7 +309,7 @@
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.yml</span></code></p>
 </dd>
 <dt><strong class="command">-d, --dry-run</strong></dt>
 <dd><p class="first">Dry-run mode. This mode doesn&#8217;t run tasks.</p>
@@ -343,7 +343,7 @@
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.yml</span></code></p>
 </dd>
 </dl>
 </div>
@@ -389,7 +389,7 @@
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.yml</span></code></p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Configuration file to load. (default: ~/.config/digdag/config)</p>
@@ -460,6 +460,14 @@
 <dd><p class="first">Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.</p>
 <p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also <code class="docutils literal"><span class="pre">--disable-local-agent</span></code> option.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">--disable-executor-loop</span></code></p>
+</dd>
+<dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
+</dd>
+<dt><strong class="command">-P, --params-file PATH</strong></dt>
+<dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.yml</span></code></p>
 </dd>
 <dt><strong class="command">-c, --config PATH</strong></dt>
 <dd><p class="first">Server configuration property path. See the followings for details.</p>
@@ -574,7 +582,7 @@
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
 <dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
-<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.dig</span></code></p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-P</span> <span class="pre">params.yml</span></code></p>
 </dd>
 </dl>
 </div>
