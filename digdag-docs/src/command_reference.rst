@@ -307,7 +307,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 :command:`-c, --config PATH`
   Server configuration property path. See the followings for details.
