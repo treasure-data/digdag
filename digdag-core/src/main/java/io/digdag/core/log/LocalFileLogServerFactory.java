@@ -130,20 +130,13 @@ public class LocalFileLogServerFactory
             Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
             try (InputStream in = Files.newInputStream(path)) {
                 if (path.toString().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX)) {
-                    ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-                    GZIPOutputStream gzipOutput = new GZIPOutputStream(byteOutput);
-                    byte[] buffer = new byte[1024];
-                    while (true) {
-                        int len = in.read(buffer);
-                        if (len < 0) {
-                            break;
-                        }
-                        gzipOutput.write(buffer, 0, len);
-                    }
-                    byteOutput.close();
-                    gzipOutput.close();
+                    try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+                         GZIPOutputStream gzipOutput = new GZIPOutputStream(byteOutput)) {
+                        ByteStreams.copy(in, gzipOutput);
+                        gzipOutput.close();
 
-                    return byteOutput.toByteArray();
+                        return byteOutput.toByteArray();
+                    }
                 } else {
                     return ByteStreams.toByteArray(in);
                 }

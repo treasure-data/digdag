@@ -28,6 +28,15 @@ public class LogFiles
     private static DateTimeFormatter SESSION_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssxx", ENGLISH);
 
+    private static String formatFileNameWithSuffix(String taskName, Instant firstLogTime, String agentId, String suffix) {
+        return String.format(ENGLISH,
+                "%s@%08x%08x.%s",
+                taskName,
+                firstLogTime.getEpochSecond(),
+                firstLogTime.getNano(),
+                agentId) + suffix;
+    }
+
     public static String formatDataDir(LogFilePrefix prefix)
     {
         return CREATE_TIME_FORMATTER.format(prefix.getCreatedAt());
@@ -55,22 +64,12 @@ public class LogFiles
 
     public static String formatFileName(String taskName, Instant firstLogTime, String agentId)
     {
-        return String.format(ENGLISH,
-                "%s@%08x%08x.%s",
-                taskName,
-                firstLogTime.getEpochSecond(),
-                firstLogTime.getNano(),
-                agentId) + LOG_GZ_FILE_SUFFIX;
+        return formatFileNameWithSuffix(taskName, firstLogTime, agentId, LOG_GZ_FILE_SUFFIX);
     }
 
     public static String formatPlainTextFileName(String taskName, Instant firstLogTime, String agentId)
     {
-        return String.format(ENGLISH,
-                "%s@%08x%08x.%s",
-                taskName,
-                firstLogTime.getEpochSecond(),
-                firstLogTime.getNano(),
-                agentId) + LOG_PLAIN_TEXT_FILE_SUFFIX;
+        return formatFileNameWithSuffix(taskName, firstLogTime, agentId, LOG_PLAIN_TEXT_FILE_SUFFIX);
     }
 
     public static LogFileHandle buildLogFileHandleFromFileName(String fileName, long fileSize)
