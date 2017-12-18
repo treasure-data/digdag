@@ -28,7 +28,8 @@ public class LogFiles
     private static DateTimeFormatter SESSION_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssxx", ENGLISH);
 
-    private static String formatFileNameWithSuffix(String taskName, Instant firstLogTime, String agentId, String suffix) {
+    private static String formatFileNameWithSuffix(String taskName, Instant firstLogTime, String agentId, String suffix)
+    {
         return String.format(ENGLISH,
                 "%s@%08x%08x.%s",
                 taskName,
