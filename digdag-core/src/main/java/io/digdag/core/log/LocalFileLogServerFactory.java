@@ -133,7 +133,7 @@ public class LocalFileLogServerFactory
                     try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
                          GZIPOutputStream gzipOutput = new GZIPOutputStream(byteOutput)) {
                         ByteStreams.copy(in, gzipOutput);
-                        gzipOutput.close();
+                        gzipOutput.finish();
 
                         return byteOutput.toByteArray();
                     }
