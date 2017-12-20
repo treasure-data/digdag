@@ -197,7 +197,7 @@ public class Run
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
-        err.println("    --max-task-threads               Limit maxium number of task execution threads on the execution");
+        err.println("    --max-task-threads               Limit maximum number of task execution threads on the execution");
         Main.showCommonOptions(env, err);
         return systemExit(error);
     }
