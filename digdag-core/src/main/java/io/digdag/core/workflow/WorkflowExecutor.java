@@ -550,7 +550,7 @@ public class WorkflowExecutor
             anyChanged = parentIds
                     .stream()
                     .map(parentId -> tm.begin(() ->
-                            sm.lockTaskIfExists(parentId, (store) ->
+                            sm.lockTaskIfNotLocked(parentId, (store) ->
                                     store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0)).or(false))
                     .reduce(anyChanged, (a, b) -> a || b);
             lastParentId = parentIds.get(parentIds.size() - 1);
@@ -571,7 +571,7 @@ public class WorkflowExecutor
             anyChanged = taskIds
                     .stream()
                     .map(taskId -> tm.begin(() ->
-                            sm.lockTaskIfExists(taskId, (store, storedTask) ->
+                            sm.lockTaskIfNotLocked(taskId, (store, storedTask) ->
                                     setDoneFromDoneChildren(new TaskControl(store, storedTask)))).or(false))
                     .reduce(anyChanged, (a, b) -> a || b);
             lastTaskId = taskIds.get(taskIds.size() - 1);
@@ -903,7 +903,7 @@ public class WorkflowExecutor
 
     private void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
-        sm.lockTaskIfExists(taskId, (store, task) -> {
+        sm.lockTaskIfNotLocked(taskId, (store, task) -> {
             TaskControl lockedTask = new TaskControl(store, task);
             if (lockedTask.getState() != TaskStateCode.READY) {
                 return false;
