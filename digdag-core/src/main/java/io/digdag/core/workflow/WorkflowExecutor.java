@@ -489,7 +489,6 @@ public class WorkflowExecutor
             propagateAllPlannedToDone();
             propagateSessionArchive();
 
-            //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             final AtomicInteger waitMsec = new AtomicInteger(INITIAL_INTERVAL);
             while (true) {
                 if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
@@ -749,93 +748,6 @@ public class WorkflowExecutor
             lastTaskId = tasks.get(tasks.size() - 1).getId();
         }
         return anyChanged;
-    }
-
-    private class IncrementalStatusPropagator
-    {
-        private Instant updatedSince;
-
-        private Instant lastUpdatedAt;
-        private long lastUpdatedId;
-
-        public IncrementalStatusPropagator(Instant updatedSince)
-        {
-            this.updatedSince = updatedSince;
-        }
-
-        public boolean run()
-        {
-            return propagateStatus();
-        }
-
-        private synchronized boolean propagateStatus()
-        {
-            boolean anyChanged = false;
-            Set<Long> checkedParentIds = new HashSet<>();
-
-            Instant nextUpdatedSince = sm.getStoreTime();
-            lastUpdatedAt = updatedSince;
-            lastUpdatedId = 0;
-
-            while (true) {
-                List<TaskStateSummary> tasks = sm.findRecentlyChangedTasks(lastUpdatedAt, lastUpdatedId);
-                if (tasks.isEmpty()) {
-                    break;
-                }
-                anyChanged =
-                    tasks
-                    .stream()
-                    .map(task -> {
-                        boolean propagatedToChildren = false;
-                        boolean propagatedFromChildren = false;
-                        boolean propagatedToSelf = false;
-
-                        if (Tasks.isDone(task.getState()) || task.getState() == TaskStateCode.PLANNED) {
-                            // this parent became planned or done. may be transite from planned to done immediately
-                            propagatedToSelf = sm.lockTaskIfExists(task.getId(), (store, storedTask) -> {
-                                return setDoneFromDoneChildren(new TaskControl(store, storedTask));
-                            }).or(false);
-
-                            if (!propagatedToSelf) {
-                                // if this task is not done yet, transite children from blocked to ready
-                                propagatedToChildren = sm.lockTaskIfExists(task.getId(), (store) ->
-                                    // collect parameters and set them to ready tasks at the same time? no, because children's export_params/store_params are not propagated to parents
-                                    store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(task.getId()) > 0
-                                ).or(false);
-                            }
-                        }
-
-                        if (Tasks.isDone(task.getState())) {
-                            if (task.getParentId().isPresent()) {
-                                // this child became done. try to transite parent from planned to done.
-                                // and dependint siblings tasks may be able to start
-                                if (checkedParentIds.add(task.getParentId().get())) {
-                                    propagatedFromChildren = sm.lockTaskIfExists(task.getParentId().get(), (store, storedTask) -> {
-                                        boolean doneFromChildren = setDoneFromDoneChildren(new TaskControl(store, storedTask));
-                                        boolean siblingsToReady = store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(task.getId()) > 0;
-                                        return doneFromChildren || siblingsToReady;
-                                    }).or(false);
-                                }
-                            }
-                            else {
-                                // root task became done.
-                                // TODO return archiveSession(task.getid());
-                                //logger.info("Root task is done with state {}",
-                                //        task.getState());
-                            }
-                        }
-
-                        lastUpdatedAt = task.getUpdatedAt();
-                        lastUpdatedId = task.getId();
-
-                        return propagatedToChildren || propagatedFromChildren || propagatedToSelf;
-                    })
-                    .reduce(anyChanged, (a, b) -> a || b);
-            }
-            updatedSince = nextUpdatedSince;
-
-            return anyChanged;
-        }
     }
 
     private boolean retryRetryWaitingTasks()
