@@ -40,7 +40,6 @@ public class LocalFileLogServerFactory
 
     private final Path logPath;
     private final AgentId agentId;
-    private final boolean enableCompress;
 
     @Inject
     public LocalFileLogServerFactory(Config systemConfig, AgentId agentId)
@@ -49,7 +48,6 @@ public class LocalFileLogServerFactory
             .toAbsolutePath()
             .normalize();
         this.agentId = agentId;
-        this.enableCompress = systemConfig.get("log-server.local.compress", boolean.class, true);
     }
 
     @Override
@@ -167,24 +165,24 @@ public class LocalFileLogServerFactory
         class LocalFileDirectTaskLogger
             implements TaskLogger
         {
-            private final OutputStream output;
+            private final OutputStream temporaryOutput;
+            private final Path temporaryPath;
+            private final Path conclusivePath;
 
             public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName)
                 throws IOException
             {
                 String dateDir = LogFiles.formatDataDir(prefix);
                 String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
-
-                String fileName = enableCompress ?
-                    LogFiles.formatFileName(taskName, Instant.now(), agentId.toString()) :
-                    LogFiles.formatPlainTextFileName(taskName, Instant.now(), agentId.toString());
                 Path dir = getPrefixDir(dateDir, attemptDir);
                 Files.createDirectories(dir);
-                Path path = dir.resolve(fileName);
 
-                this.output = enableCompress ?
-                    new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024) :
-                    Files.newOutputStream(path, CREATE, APPEND);
+                String temporaryFileName = LogFiles.formatPlainTextFileName(taskName, Instant.now(), agentId.toString());
+                this.temporaryPath = dir.resolve(temporaryFileName);
+                this.temporaryOutput = Files.newOutputStream(temporaryPath, CREATE, APPEND);
+
+                String conclusiveFileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
+                this.conclusivePath = dir.resolve(conclusiveFileName);
             }
 
             @Override
@@ -198,7 +196,7 @@ public class LocalFileLogServerFactory
             public void log(byte[] data, int off, int len)
             {
                 try {
-                    output.write(data, off, len);
+                    temporaryOutput.write(data, off, len);
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
@@ -209,7 +207,14 @@ public class LocalFileLogServerFactory
             public void close()
             {
                 try {
-                    output.close();
+                    temporaryOutput.close();
+
+                    try (InputStream in = Files.newInputStream(temporaryPath);
+                         OutputStream conclusiveOutput = new GZIPOutputStream(Files.newOutputStream(conclusivePath, CREATE, APPEND), 16*1024)) {
+                        ByteStreams.copy(in, conclusiveOutput);
+                        conclusiveOutput.close();
+                        temporaryPath.toFile().delete();
+                    }
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
