@@ -53,7 +53,7 @@ public class ThreadLocalTransactionManagerTest
         Project proj1 = Project.of("proj1");
 
         factory.get().<Void, ResourceNotFoundException, ResourceConflictException>begin(() -> {
-            factory.get().beginOrReuse(() -> {
+            factory.get().autoCommit(() -> {
                 factory.getProjectStoreManager().getProjectStore(0)
                     .putAndLockProject(proj1, (store, stored) -> stored);
                 return null;
@@ -67,7 +67,7 @@ public class ThreadLocalTransactionManagerTest
             // Another transaction can't read it until committed
             try {
                 StoredProject proj3 = CompletableFuture.supplyAsync(() -> {
-                    return factory.get().beginOrReuse(() -> {
+                    return factory.get().autoCommit(() -> {
                         try {
                             return factory.getProjectStoreManager().getProjectStore(0)
                                 .getProjectByName("proj1");
@@ -89,7 +89,7 @@ public class ThreadLocalTransactionManagerTest
         // Another transaction can read after commit
         try {
             StoredProject proj4 = CompletableFuture.supplyAsync(() -> {
-                return factory.get().beginOrReuse(() -> {
+                return factory.get().autoCommit(() -> {
                     try {
                         return factory.getProjectStoreManager().getProjectStore(0)
                             .getProjectByName("proj1");
