@@ -30,11 +30,13 @@ public class RedshiftUnloadOperatorFactory
         implements OperatorFactory
 {
     private static final String OPERATOR_TYPE = "redshift_unload";
+    private final Config systemConfig;
     private final TemplateEngine templateEngine;
 
     @Inject
-    public RedshiftUnloadOperatorFactory(TemplateEngine templateEngine)
+    public RedshiftUnloadOperatorFactory(Config systemConfig, TemplateEngine templateEngine)
     {
+        this.systemConfig = systemConfig;
         this.templateEngine = templateEngine;
     }
 
@@ -47,7 +49,7 @@ public class RedshiftUnloadOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new RedshiftUnloadOperator(context, templateEngine);
+        return new RedshiftUnloadOperator(systemConfig, context, templateEngine);
     }
 
     @VisibleForTesting
@@ -57,9 +59,9 @@ public class RedshiftUnloadOperatorFactory
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         @VisibleForTesting
-        RedshiftUnloadOperator(OperatorContext context, TemplateEngine templateEngine)
+        RedshiftUnloadOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
         {
-            super(context, templateEngine);
+            super(systemConfig, context, templateEngine);
         }
 
         @Override
@@ -166,7 +168,7 @@ public class RedshiftUnloadOperatorFactory
                 });
             }
             catch (RetryExecutor.RetryGiveupException e) {
-                Throwables.propagate(e);
+                throw Throwables.propagate(e);
             }
         }
     }

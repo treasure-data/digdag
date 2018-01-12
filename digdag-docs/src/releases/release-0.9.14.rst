@@ -20,3 +20,15 @@ General Changes
 Release Date
 ------------
 2017-08-11
+
+Contributors
+------------------
+* Mitsuhiro Koga
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+* Saulius Grigaliunas
+* Takehiro Shiozaki
+* Toru Takahashi
+* alu
+* parroty
+

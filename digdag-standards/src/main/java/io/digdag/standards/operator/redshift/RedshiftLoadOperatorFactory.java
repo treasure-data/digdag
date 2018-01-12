@@ -34,10 +34,12 @@ public class RedshiftLoadOperatorFactory
 {
     private static final String OPERATOR_TYPE = "redshift_load";
     private final TemplateEngine templateEngine;
+    private final Config systemConfig;
 
     @Inject
-    public RedshiftLoadOperatorFactory(TemplateEngine templateEngine)
+    public RedshiftLoadOperatorFactory(Config systemConfig, TemplateEngine templateEngine)
     {
+        this.systemConfig = systemConfig;
         this.templateEngine = templateEngine;
     }
 
@@ -50,7 +52,7 @@ public class RedshiftLoadOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new RedshiftLoadOperator(context, templateEngine);
+        return new RedshiftLoadOperator(systemConfig, context, templateEngine);
     }
 
     @VisibleForTesting
@@ -60,9 +62,9 @@ public class RedshiftLoadOperatorFactory
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         @VisibleForTesting
-        RedshiftLoadOperator(OperatorContext context, TemplateEngine templateEngine)
+        RedshiftLoadOperator(Config systemConfig, OperatorContext context, TemplateEngine templateEngine)
         {
-            super(context, templateEngine);
+            super(systemConfig, context, templateEngine);
         }
 
         @Override
@@ -123,7 +125,7 @@ public class RedshiftLoadOperatorFactory
                                     value = objectMapper.readValue(in, new TypeReference<Map<String, Object>>() {});
                                 }
                                 catch (IOException e) {
-                                    Throwables.propagate(e);
+                                    throw Throwables.propagate(e);
                                 }
                                 @SuppressWarnings("unchecked")
                                 List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");

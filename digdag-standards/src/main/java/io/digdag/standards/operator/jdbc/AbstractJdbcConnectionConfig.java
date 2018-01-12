@@ -46,7 +46,7 @@ public abstract class AbstractJdbcConnectionConfig
             Class.forName(jdbcDriverName());
         }
         catch (ClassNotFoundException e) {
-            Throwables.propagate(e);
+            throw Throwables.propagate(e);
         }
 
         try {

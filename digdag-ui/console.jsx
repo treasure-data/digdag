@@ -327,6 +327,8 @@ const AttemptStatusView = ({attempt}) => {
   if (attempt.done) {
     if (attempt.success) {
       return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
+    } else if (attempt.cancelRequested) {
+      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
     } else {
       return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Failure</span>
     }
@@ -351,6 +353,13 @@ function attemptCanResume (attempt) {
     return false
   }
   return attempt.done && !attempt.success
+}
+
+function attemptCanBeKilled (attempt) {
+  if (!attempt) {
+    return false
+  }
+  return !attempt.done && !attempt.cancelRequested
 }
 
 const SessionStatusView = ({session}:{session: Session}) => {
@@ -1021,8 +1030,15 @@ class AttemptView extends React.Component {
     })
   }
 
+  killAttempt () {
+    model()
+        .killAttempt(this.props.attemptId)
+        .then(() => this.forceUpdate())
+  }
+
   render () {
     const attempt = this.state.attempt
+    const canKill = attemptCanBeKilled(attempt)
 
     if (!attempt) {
       return null
@@ -1030,7 +1046,17 @@ class AttemptView extends React.Component {
 
     return (
       <div className='row'>
-        <h2>Attempt</h2>
+        <h2>
+          Attempt
+          {canKill &&
+          <button
+            className='btn btn-danger pull-right'
+            onClick={this.killAttempt.bind(this)}
+          >
+            KILL
+          </button>
+          }
+        </h2>
         <table className='table table-condensed'>
           <tbody>
             <tr>
@@ -1253,11 +1279,21 @@ const ParamsView = ({params}:{params: Object}) =>
     ? null
     : <CodeViewer className='params-view' language='yaml' value={yaml.safeDump(params, {sortKeys: true})} />
 
-const TaskState = ({state}:{state: string}) => {
+const TaskState = ({state, cancelRequested}:{state: string, cancelRequested: boolean}) => {
+  if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(state) >= 0) {
+    // These state won't progress once cancelRequested is set. Planned tasks won't generate tasks.
+    return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
+  }
+
   switch (state) {
     // Pending
     case 'blocked':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
+      if (cancelRequested) {
+        // Blocked tasks won't start once cancelRequested is set
+        return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      } else {
+        return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
+      }
     case 'ready':
       return <span><span className='glyphicon glyphicon-refresh text-info' /> Ready</span>
     case 'retry_waiting':
@@ -1315,7 +1351,7 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
 
   // First, divide tasks into rootTasks and taskGroups.
   const rootTasks: Array<Task> = []
-  const taskGroups: Map<string, Array<Task>> = new Map();  // {parentId => Array<Task>}
+  const taskGroups: Map<string, Array<Task>> = new Map()  // {parentId => Array<Task>}
   tasks.forEach(t => {
     const parentId: ?string = t.parentId
     if (parentId != null) {
@@ -1380,7 +1416,7 @@ class TaskListView extends React.Component {
                   <td>{task.parentId}</td>
                   <td><FullTimestamp showAgo={false} t={task.startedAt} /></td>
                   <td><FullTimestamp showAgo={false} t={task.updatedAt} /></td>
-                  <td><TaskState state={task.state} /></td>
+                  <td><TaskState state={task.state} cancelRequested={task.cancelRequested} /></td>
                   <td><Timestamp t={task.retryAt} /></td>
                   <td><ParamsView params={task.stateParams} /></td>
                   <td><ParamsView params={task.storeParams} /></td>
@@ -1428,6 +1464,10 @@ class TaskTimelineRow extends React.Component {
   }
 
   progressBarClasses () {
+    if (this.props.task.cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(this.props.task.state) >= 0) {
+      return 'progress-bar-warning'
+    }
+
     switch (this.props.task.state) {
       // Pending
       case 'blocked':

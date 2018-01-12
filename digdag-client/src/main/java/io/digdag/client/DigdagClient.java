@@ -216,7 +216,18 @@ public class DigdagClient implements AutoCloseable
             }
         }
 
-        final Map<String, String> baseHeaders = builder.baseHeaders;
+        // Set "Accept-Encoding: gzip". This is necessary to override "Accept-Encoding: gzip, deflate"
+        // header set by org.apache.httpcomponents:httpclient automatically. If server returns response
+        // with deflate compression, this client throws an exception (JsonParseException). It's because
+        // response body parsing is parsed by RESTEasy's GZIPDecodingInterceptor and it apparently runs
+        // before httpclient's decompression. It means that this client actually doesn't support
+        // deflate compression.
+        ImmutableMap.Builder<String, String> baseHeadersBuilder = ImmutableMap.builder();
+        baseHeadersBuilder.put("Accept-Encoding", "gzip");
+        baseHeadersBuilder.putAll(builder.baseHeaders);
+
+        final Map<String, String> baseHeaders = baseHeadersBuilder.build();
+
         final Function<Map<String, String>, Map<String, String>> headerBuilder = builder.headerBuilder;
 
         if (headerBuilder != null) {

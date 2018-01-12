@@ -18,3 +18,8 @@ Server-mode changes
 Release Date
 ------------------
 2016-03-18
+
+Contributors
+------------------
+* Sadayuki Furuhashi
+

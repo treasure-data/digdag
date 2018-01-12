@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.sql.SQLException;
 import java.sql.ResultSet;
@@ -50,14 +51,25 @@ public abstract class AbstractJdbcResultSet
         }
     }
 
+    @Override
+    public boolean skip()
+    {
+        try {
+            return resultSet.next();
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to fetch next rows", ex);
+        }
+    }
+
     private List<Object> getObjects() throws SQLException
     {
-        Object[] results = new Object[columnNames.size()];
-        for (int i=0; i < results.length; i++) {
+        List<Object> results = new ArrayList<>(columnNames.size());
+        for (int i = 0; i < columnNames.size(); i++) {
             Object raw = resultSet.getObject(i + 1);  // JDBC column index begins from 1
-            results[i] = serializableObject(raw);
+            results.add(serializableObject(raw));
         }
-        return ImmutableList.copyOf(results);
+        return results;
     }
 
     protected abstract Object serializableObject(Object raw)

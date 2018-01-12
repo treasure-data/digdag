@@ -246,8 +246,7 @@ public class SecretsIT
         assertThat(listedKeys2, containsInAnyOrder(key4, key5, key6, key7, key8));
     }
 
-    @Test
-    public void testUseProjectSecret()
+    private void testUseProjectSecret(String baseValue)
             throws Exception
     {
         startServer();
@@ -264,8 +263,8 @@ public class SecretsIT
         String key1 = "key1";
         String key2 = "key2";
 
-        String value1 = "value1";
-        String value2 = "value2";
+        String value1 = baseValue + "1";
+        String value2 = baseValue + "2";
 
         // Set secrets
         {
@@ -328,7 +327,28 @@ public class SecretsIT
     }
 
     @Test
-    public void testUseLocalSecret()
+    public void useProjectSecretWithNormalValue()
+            throws Exception
+    {
+        testUseProjectSecret("value");
+    }
+
+    @Test
+    public void useProjectSecretWithSymbolValue()
+            throws Exception
+    {
+        testUseProjectSecret("!#$%*+-=?@^_$");
+    }
+
+    @Test
+    public void useProjectSecretWithSymbolValueConsideringCompatibility()
+            throws Exception
+    {
+        testUseProjectSecret("!#\\$%*+-=?@^_\\$");
+    }
+
+    @Test
+    public void testUseProjectSecret()
             throws Exception
     {
         addWorkflow(projectDir, "acceptance/secrets/echo_secret.dig");
@@ -337,6 +357,7 @@ public class SecretsIT
         String value1 = "value1";
         String key2 = "key2";
         String value2 = "value2";
+        String value3 = "123";
 
         Map<String, String> env = ImmutableMap.of("DIGDAG_CONFIG_HOME", folder.newFolder().toPath().toString());
 
@@ -361,6 +382,7 @@ public class SecretsIT
             assertThat(status.outUtf8(), containsString("key2"));
             assertThat(status.outUtf8(), not(containsString("value1")));
             assertThat(status.outUtf8(), not(containsString("value2")));
+            assertThat(status.outUtf8(), not(containsString("value3")));
         }
 
         // Run workflows using secrets
@@ -378,6 +400,30 @@ public class SecretsIT
 
             List<String> output = Files.readAllLines(outfile);
             assertThat(output, contains(value1));
+        }
+
+        // Set secrets existing key and run workflow
+        {
+            CommandStatus secretsStatus = main(env, "secrets",
+                    "-c", config.toString(),
+                    "--local",
+                    "--set", key1 + '=' + value3); // update key1 by value3
+            assertThat(secretsStatus.errUtf8(), secretsStatus.code(), is(0));
+            assertThat(secretsStatus.errUtf8(), containsString("Secret 'key1' set"));
+
+            Path outfile = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out");
+
+            CommandStatus runStatus = TestUtils.main(env, "run",
+                    "-c", config.toString(),
+                    "-o", folder.newFolder().toString(),
+                    "--project", projectDir.toString(),
+                    "-p", "OUTFILE=" + outfile.toString(),
+                    "echo_secret");
+
+            assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
+
+            List<String> output = Files.readAllLines(outfile);
+            assertThat(output, contains(value3));
         }
 
         // Delete a secret
@@ -400,6 +446,7 @@ public class SecretsIT
             assertThat(status.outUtf8(), containsString("key2"));
             assertThat(status.outUtf8(), not(containsString("value1")));
             assertThat(status.outUtf8(), not(containsString("value2")));
+            assertThat(status.outUtf8(), not(containsString("value3")));
         }
 
         // Attempt to run a workflow that uses the deleted secret

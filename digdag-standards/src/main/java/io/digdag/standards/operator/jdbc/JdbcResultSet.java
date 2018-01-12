@@ -7,4 +7,6 @@ public interface JdbcResultSet
     List<String> getColumnNames();
 
     List<Object> next();
+
+    boolean skip();
 }

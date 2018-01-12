@@ -27,3 +27,9 @@ Workflow changes
 Release Date
 ------------
 2016-05-27
+
+Contributors
+------------------
+* Daniel Norberg
+* Sadayuki Furuhashi
+

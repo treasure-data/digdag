@@ -56,6 +56,7 @@ public class S3StorageIT
                     "log-server.type = s3",
                     "log-server.s3.endpoint = " + TEST_S3_ENDPOINT,
                     "log-server.s3.bucket = " + logStorageBucket,
+                    "log-server.s3.direct_download = true",
                     "log-server.s3.path = storage-log-test",
                     "log-server.s3.credentials.access-key-id = " + TEST_S3_ACCESS_KEY_ID,
                     "log-server.s3.credentials.secret-access-key = " + TEST_S3_SECRET_ACCESS_KEY,

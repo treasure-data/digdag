@@ -1,0 +1,11 @@
+timezone: UTC
+
++run:
+  pg>: select_table.sql
+  host: localhost
+  database: ${pg_database}
+  user: digdag_test
+  store_last_results: first
+
++process:
+  sh>: echo ${pg.last_results.name} >> $outfile

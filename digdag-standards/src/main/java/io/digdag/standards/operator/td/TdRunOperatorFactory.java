@@ -67,6 +67,8 @@ public class TdRunOperatorFactory
             this.command = params.get("_command", JsonNode.class);
             this.sessionTime = params.get("session_time", Instant.class);
             this.downloadFile = params.getOptional("download_file", String.class);
+            // TODO store_last_results should be io.digdag.standards.operator.jdbc.StoreLastResultsOption
+            // instead of boolean to be consistent with pg> and redshift> operators but not implemented yet.
             this.storeLastResults = params.get("store_last_results", boolean.class, false);
             this.preview = params.get("preview", boolean.class, false);
         }

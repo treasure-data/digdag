@@ -5,6 +5,13 @@ Release Notes
     :maxdepth: 1
 
     # add new version here
+    releases/release-0.9.22
+    releases/release-0.9.21
+    releases/release-0.9.20
+    releases/release-0.9.19
+    releases/release-0.9.18
+    releases/release-0.9.17
+    releases/release-0.9.16
     releases/release-0.9.15
     releases/release-0.9.14
     releases/release-0.9.13

@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.util.Map;
 import java.util.UUID;
 
+import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
@@ -28,12 +29,12 @@ public class RedshiftUnloadOperatorFactoryTest
     private RedshiftUnloadOperatorFactory operatorFactory;
 
     @Rule
-    public ExpectedException thrown= ExpectedException.none();
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void setUp()
     {
-        operatorFactory = testHelper.injector().getInstance(RedshiftUnloadOperatorFactory.class);
+        operatorFactory = newOperatorFactory(RedshiftUnloadOperatorFactory.class);
     }
 
     @Test
@@ -134,6 +135,28 @@ public class RedshiftUnloadOperatorFactoryTest
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n" +
                         "GZIP\n"
+                ));
+    }
+
+    @Test
+    public void createUnloadConfigWithParallelOn()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "query", "select * from users",
+                "to", "s3://my-bucket/my-path",
+                "fixedwidth", "col1:11,col2:222,col3:333,col4:4444",
+                "gzip", true,
+                "parallel", "ON"
+        );
+        String queryId = UUID.randomUUID().toString();
+        String sql = getUnloadConfig(configInput, queryId);
+        assertThat(sql,
+                is("UNLOAD ('select * from users') TO 's3://my-bucket/my-path/" + queryId + "_'\n" +
+                        "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
+                        "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n" +
+                        "GZIP\n" +
+                        "PARALLEL ON\n"
                 ));
     }
 }

@@ -25,6 +25,15 @@ public interface RestTask
 
     String getState();
 
+    // Note: Only reason why here sets a default value is for backward compatibility.
+    // Because older versions don't contain cancelRequested field, default value is
+    // necessary to avoid "cancelRequsted field doesn't exist" errors.
+    @Value.Default
+    default boolean getCancelRequested()
+    {
+        return false;
+    }
+
     Config getExportParams();
 
     Config getStoreParams();

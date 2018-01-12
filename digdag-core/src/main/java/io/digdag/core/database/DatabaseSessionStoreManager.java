@@ -431,8 +431,19 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
+        return lockTask(taskId, func, false);
+    }
+
+    @Override
+    public <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockAction<T> func)
+    {
+        return lockTask(taskId, func, true);
+    }
+
+    private <T> Optional<T> lockTask(long taskId, TaskLockAction<T> func, boolean ifNotLocked)
+    {
         return transaction((handle, dao) -> {
-            Long locked = dao.lockTask(taskId);
+            Long locked = ifNotLocked ? dao.lockTaskIfNotLocked(taskId) : dao.lockTask(taskId);
             if (locked != null) {
                 T result = func.call(new DatabaseTaskControlStore(handle));
                 return Optional.of(result);
@@ -444,9 +455,21 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
+        return lockTaskWithDetails(taskId, func, false);
+    }
+
+    @Override
+    public <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockActionWithDetails<T> func)
+    {
+        return lockTaskWithDetails(taskId, func, true);
+    }
+
+    private <T> Optional<T> lockTaskWithDetails(long taskId, TaskLockActionWithDetails<T> func, boolean ifNotLocked)
+    {
         return transaction((handle, dao) -> {
-            // TODO JOIN + FOR UPDATE doesn't work with H2 database
-            Long locked = dao.lockTask(taskId);
+            // Here runs SELECT id ... FOR UPDATE first and then select details of them
+            // so that transaction doesn't abort when the id doesn't exist
+            Long locked = ifNotLocked ? dao.lockTaskIfNotLocked(taskId) : dao.lockTask(taskId);
             if (locked != null) {
                 try {
                     StoredTask task = getTaskById(handle, taskId);
@@ -1466,6 +1489,15 @@ public class DatabaseSessionStoreManager
     public interface H2Dao
             extends Dao
     {
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id in (select id from projects where site_id = :siteId)" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit")
+        List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
         // h2's MERGE doesn't reutrn generated id when conflicting row already exists
         @SqlUpdate("merge into sessions" +
                 " (project_id, workflow_name, session_time)" +
@@ -1481,11 +1513,27 @@ public class DatabaseSessionStoreManager
                 ")" +
                 " for update")
         long lockSessionByAttemptId(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select id from tasks" +
+                " where id = :id" +
+                " for update")
+        Long lockTaskIfNotLocked(@Bind("id") long taskId);
     }
 
     public interface PgDao
             extends Dao
     {
+        // This query uses "sessions.project_id = any(array(select ..))" instead of "in" (semi-join) so that
+        // PostgreSQL doesn't use a bad query plan which scans almost all records from sessions table.
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit")
+        List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
         @SqlQuery("insert into sessions" +
                 " (project_id, workflow_name, session_time)" +
                 " values (:projectId, :workflowName, :sessionTime)" +
@@ -1503,6 +1551,11 @@ public class DatabaseSessionStoreManager
                 " limit 1" +
                 " for update of s")
         StoredSessionAttemptWithSession lockSessionByAttemptId(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select id from tasks" +
+                " where id = :id" +
+                " for update skip locked")
+        Long lockTaskIfNotLocked(@Bind("id") long taskId);
     }
 
     public interface Dao
@@ -1510,13 +1563,6 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select now() as date")
         Instant now();
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-                " from sessions s" +
-                " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id in (select id from projects where site_id = :siteId)" +
-                " and s.id < :lastId" +
-                " order by s.id desc" +
-                " limit :limit")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
@@ -1826,6 +1872,8 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update")
         Long lockTask(@Bind("id") long taskId);
+
+        Long lockTaskIfNotLocked(@Bind("id") long taskId);
 
         @SqlQuery("select id from tasks" +
                 " where attempt_id = :attemptId" +  // TODO

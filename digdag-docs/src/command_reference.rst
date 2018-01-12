@@ -114,7 +114,7 @@ Options:
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 :command:`-d, --dry-run`
   Dry-run mode. This mode doesn't run tasks.
@@ -155,7 +155,7 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 
 scheduler
@@ -211,7 +211,7 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
@@ -230,7 +230,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.15
+    $ digdag selfupdate 0.9.22
 
 Server-mode commands
 ----------------------------------
@@ -299,6 +299,16 @@ Runs a digdag server. --memory or --database option is required. Examples:
 
   Example: ``--disable-executor-loop``
 
+:command:`-p, --param KEY=VALUE`
+  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+
+  Example: ``-p environment=staging``
+
+:command:`-P, --params-file PATH`
+  Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
+
+  Example: ``-P params.yml``
+
 :command:`-c, --config PATH`
   Server configuration property path. See the followings for details.
 
@@ -340,13 +350,18 @@ In the config file, following parameters are available
 * archive.s3.path (string)
 * archive.s3.credentials.access-key-id (string. default: instance profile)
 * archive.s3.credentials.secret-access-key (string. default: instance profile)
+* archive.s3.path-style-access (boolean. default: false)
 * log-server.type (type of log storage, "local" or "s3". default: "local")
 * log-server.s3.endpoint (string, default: "s3.amazonaws.com")
 * log-server.s3.bucket (string)
 * log-server.s3.path (string)
+* log-server.s3.direct_download (boolean. default: false)
 * log-server.s3.credentials.access-key-id (string. default: instance profile)
 * log-server.s3.credentials.secret-access-key (string. default: instance profile)
+* log-server.s3.path-style-access (boolean. default: false)
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
+* executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)
+* executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
 
 
 Secret Encryption Key
@@ -426,7 +441,7 @@ Starts a new session. This command requires project name, workflow name, and ses
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
-  Example: ``-P params.dig``
+  Example: ``-P params.yml``
 
 
 retry

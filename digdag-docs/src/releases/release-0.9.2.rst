@@ -12,3 +12,12 @@ Release Date
 ------------
 2017-01-10
 
+
+Contributors
+------------------
+* Daniel Norberg
+* Hiroyuki Sato
+* Kazuki Ohta
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+

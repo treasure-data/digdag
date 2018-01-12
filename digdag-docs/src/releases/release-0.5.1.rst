@@ -17,3 +17,9 @@ Operator changes
 Release Date
 ------------------
 2016-03-30
+
+Contributors
+------------------
+* Daniel Norberg
+* Sadayuki Furuhashi
+

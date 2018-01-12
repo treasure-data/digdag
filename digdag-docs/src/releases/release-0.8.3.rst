@@ -19,3 +19,12 @@ Server mode changes
 Release Date
 ------------
 2016-06-29
+
+Contributors
+------------------
+* Daniel Norberg
+* Hiroyuki Sato
+* Masahiro Nakagawa
+* Sadayuki Furuhashi
+* toyama0919
+

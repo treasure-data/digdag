@@ -28,3 +28,10 @@ Release Date
 ------------
 2017-01-17
 
+
+Contributors
+------------------
+* Daniel Norberg
+* Mitsunori Komatsu
+* Sadayuki Furuhashi
+

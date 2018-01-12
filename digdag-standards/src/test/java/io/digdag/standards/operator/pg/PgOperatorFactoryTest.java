@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
+import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -24,7 +25,7 @@ public class PgOperatorFactoryTest
     @Before
     public void setUp()
     {
-        operatorFactory = testHelper.injector().getInstance(PgOperatorFactory.class);
+        operatorFactory = newOperatorFactory(PgOperatorFactory.class);
     }
 
     @Test

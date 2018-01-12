@@ -61,7 +61,8 @@ public class UserSecretTemplate
 
         Matcher m = pattern.matcher(source);
         while (m.find()) {
-            m.appendReplacement(sb, converter.apply(m));
+            m.appendReplacement(sb,
+                    Matcher.quoteReplacement(converter.apply(m)));
         }
         m.appendTail(sb);
 

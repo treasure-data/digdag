@@ -18,11 +18,13 @@ public class StorageFileLogServer
 {
     private final Storage storage;
     private final String logPath;
+    private final boolean directDownloadEnabled;
 
-    public StorageFileLogServer(Storage storage, String logPath)
+    public StorageFileLogServer(Storage storage, String logPath, boolean directDownloadEnabled)
     {
         this.storage = storage;
         this.logPath = logPath;
+        this.directDownloadEnabled = directDownloadEnabled;
     }
 
     private String getPrefixDir(String dateDir, String attemptDir)
@@ -83,7 +85,7 @@ public class StorageFileLogServer
                     consumer.accept(
                             fileName,
                             meta.getContentLength(),
-                            storage.getDirectDownloadHandle(key).orNull());
+                            directDownloadEnabled ? storage.getDirectDownloadHandle(key).orNull() : null);
             });
         });
     }

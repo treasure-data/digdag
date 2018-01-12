@@ -1,0 +1,7 @@
++group:
+  +before:
+    echo>: before
+
+  +after:
+    _after: [+before]
+    echo>: background

@@ -40,3 +40,10 @@ Server-mode changes
 Release Date
 ------------------
 2016-03-28
+
+Contributors
+------------------
+* Daniel Norberg
+* Hiroshi Nakamura
+* Sadayuki Furuhashi
+

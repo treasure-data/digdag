@@ -58,7 +58,7 @@ public class WorkflowCompiler
         private final String name;
         private final String fullName;
         private final TaskType taskType;
-        private final Config config;
+        private Config config;
         private final List<TaskBuilder> children = new ArrayList<TaskBuilder>();
         private final List<TaskBuilder> upstreams = new ArrayList<TaskBuilder>();
 
@@ -90,6 +90,13 @@ public class WorkflowCompiler
         public Config getConfig()
         {
             return config;
+        }
+
+        public Config modifyConfig()
+        {
+            Config newConfig = config.deepCopy();  // keep the original config immutable
+            this.config = newConfig;
+            return newConfig;
         }
 
         private void addChild(TaskBuilder child)
@@ -229,7 +236,7 @@ public class WorkflowCompiler
                     Map<String, TaskBuilder> names = new HashMap<>();
                     for (TaskBuilder subtask : subtasks) {
                         if (subtask.getConfig().get("_background", boolean.class, false)) {
-                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) is its parent task has \"_parallel: true\" option");
+                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option");
                         }
                         for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
                             TaskBuilder up = names.get(upName);
@@ -238,6 +245,7 @@ public class WorkflowCompiler
                             }
                             subtask.addUpstream(up);
                         }
+                        subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
                         names.put(subtask.getName(), subtask);
                     }
                 }
@@ -245,7 +253,7 @@ public class WorkflowCompiler
                     List<TaskBuilder> beforeList = new ArrayList<>();
                     for (TaskBuilder subtask : subtasks) {
                         if (subtask.getConfig().has("_after")) {
-                            throw new ConfigException("Option \"_after\" is valid only if its parent task has \"_parallel: true\"");
+                            throw new ConfigException("Setting \"_after\" option is invalid if its parent task doesn't have \"_parallel: true\" option");
                         }
                         if (subtask.getConfig().get("_background", boolean.class, false)) {
                             beforeList.add(subtask);
@@ -257,6 +265,7 @@ public class WorkflowCompiler
                             beforeList.clear();
                             beforeList.add(subtask);
                         }
+                        subtask.modifyConfig().remove("_background");  // suppress "Parameter '_background' is not used" warning message
                     }
                 }
 
