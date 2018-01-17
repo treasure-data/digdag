@@ -81,8 +81,8 @@ public class InProcessTaskCallbackApi
         String taskName = request.getTaskName();
         LogFilePrefix prefix;
         try {
-            StoredSessionAttemptWithSession attempt =
-                    tm.begin(() -> sm.getSessionStore(request.getSiteId()) .getAttemptById(attemptId),
+            StoredSessionAttemptWithSession attempt = tm.autoCommit(
+                            () -> sm.getSessionStore(request.getSiteId()).getAttemptById(attemptId),
                             ResourceNotFoundException.class);
             prefix = logFilePrefixFromSessionAttempt(attempt);
         }
@@ -96,7 +96,10 @@ public class InProcessTaskCallbackApi
     public void taskHeartbeat(int siteId,
             List<String> lockedIds, AgentId agentId, int lockSeconds)
     {
-        tm.begin(() -> queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds));
+        // DatabaseTaskQueueServer.taskHeartbeat should do `tm.autoCommit` and it should not
+        // require caller to use tm.autoCommit because the method is a part of SPI.
+        // Similar to DatabaseSecretStore.getSecret. But that improvement is postponed.
+        tm.autoCommit(() -> queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds));
     }
 
     @Override

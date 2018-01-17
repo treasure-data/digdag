@@ -110,7 +110,8 @@ public class WorkflowTestingUtils
                 submitWorkflow(embed.getLocalSite(), projectPath, workflowName, config), Exception.class
             );
             embed.getLocalSite().runUntilDone(attempt.getId());
-            return tm.begin(() -> embed.getLocalSite().getSessionStore().getAttemptById(attempt.getId()),
+            return tm.autoCommit(
+                    () -> embed.getLocalSite().getSessionStore().getAttemptById(attempt.getId()),
                     ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {

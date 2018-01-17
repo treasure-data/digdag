@@ -33,7 +33,7 @@ class DatabaseSecretStore
     public Optional<String> getSecret(int projectId, String scope, String key)
     {
         EncryptedSecret secret =
-                tm.begin(() -> autoCommit((handle, dao) -> dao.getProjectSecret(siteId, projectId, scope, key)));
+                tm.autoCommit(() -> autoCommit((handle, dao) -> dao.getProjectSecret(siteId, projectId, scope, key)));
 
         if (secret == null) {
             return Optional.absent();

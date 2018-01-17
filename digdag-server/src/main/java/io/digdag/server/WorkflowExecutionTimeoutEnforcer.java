@@ -123,7 +123,7 @@ public class WorkflowExecutionTimeoutEnforcer
 
     private void enforceAttemptTTLs()
     {
-        List<StoredSessionAttempt> expiredAttempts = tm.begin(() -> {
+        List<StoredSessionAttempt> expiredAttempts = tm.autoCommit(() -> {
             Instant creationDeadline = ssm.getStoreTime().minus(attemptTTL);
             return ssm.findActiveAttemptsCreatedBefore(creationDeadline, (long) 0, 100);
         });
@@ -162,7 +162,7 @@ public class WorkflowExecutionTimeoutEnforcer
 
     private void enforceTaskTTLs()
     {
-        List<TaskAttemptSummary> expiredTasks = tm.begin(() -> {
+        List<TaskAttemptSummary> expiredTasks = tm.autoCommit(() -> {
             Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
             return ssm.findTasksStartedBeforeWithState(TASK_TTL_ENFORCED_STATE_CODES, startDeadline, (long) 0, 100);
         });
