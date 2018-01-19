@@ -232,6 +232,8 @@ public class WorkflowExecutionTimeoutEnforcer
                 .build();
 
         try {
+            // Assuming this method creates a new database transaction if needed. So this method call
+            // is in outside of tm.begin block.
             notifier.sendNotification(notification);
         }
         catch (NotificationException e) {
