@@ -172,7 +172,7 @@ public class WorkflowExecutionTimeoutEnforcer
         for (Map.Entry<Long, List<TaskAttemptSummary>> entry : attempts.entrySet()) {
             long attemptId = entry.getKey();
             try {
-                tm.begin(() -> {
+                boolean canceled = tm.begin(() -> {
                     logger.info("Task(s) timed out, canceling Session Attempt: {}, tasks={}", attemptId, entry.getValue());
                     return ssm.requestCancelAttempt(attemptId);
                 });
@@ -199,9 +199,10 @@ public class WorkflowExecutionTimeoutEnforcer
             return;
         }
 
+        int projectId = attempt.getSession().getProjectId();
         StoredProject project;
         try {
-            project = tm.begin(() -> psm.getProjectByIdInternal(attempt.getSession().getProjectId()));
+            project = tm.begin(() -> psm.getProjectByIdInternal(projectId), ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException e) {
             logger.error("Project not found, ignoring: {}", attemptId);
