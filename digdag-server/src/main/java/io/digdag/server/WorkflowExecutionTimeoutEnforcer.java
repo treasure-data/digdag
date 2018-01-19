@@ -195,7 +195,7 @@ public class WorkflowExecutionTimeoutEnforcer
             attempt = tm.begin(() -> ssm.getAttemptWithSessionById(attemptId), ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException e) {
-            logger.error("Session Attempt not found, ignoring: {}", attemptId);
+            logger.error("Session attempt not found, ignoring: {}", attemptId);
             return;
         }
 
@@ -204,7 +204,7 @@ public class WorkflowExecutionTimeoutEnforcer
             project = tm.begin(() -> psm.getProjectByIdInternal(attempt.getSession().getProjectId()));
         }
         catch (ResourceNotFoundException e) {
-            logger.error("Session Attempt not found, ignoring: {}", attemptId);
+            logger.error("Project not found, ignoring: {}", attemptId);
             return;
         }
 
