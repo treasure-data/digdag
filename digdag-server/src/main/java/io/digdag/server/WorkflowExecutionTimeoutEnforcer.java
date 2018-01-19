@@ -130,7 +130,7 @@ public class WorkflowExecutionTimeoutEnforcer
 
         for (StoredSessionAttempt attempt : expiredAttempts) {
             try {
-                tm.begin(() -> {
+                boolean canceled = tm.begin(() -> {
                     AttemptStateFlags stateFlags;
                     try {
                         stateFlags = ssm.getAttemptStateFlags(attempt.getId());
@@ -146,13 +146,12 @@ public class WorkflowExecutionTimeoutEnforcer
                     }
 
                     logger.info("Session Attempt timed out, canceling: {}", attempt);
-                    boolean canceled = ssm.requestCancelAttempt(attempt.getId());
-                    if (canceled) {
-                        sendTimeoutNotification("Workflow execution timeout", attempt.getId());
-                    }
-
-                    return null;
+                    return ssm.requestCancelAttempt(attempt.getId());
                 });
+
+                if (canceled) {
+                    sendTimeoutNotification("Workflow execution timeout", attempt.getId());
+                }
             }
             catch (Throwable t) {
                 logger.error("Uncaught exception when enforcing attempt TTLs of attempt {}. Ignoring. Loop continues.", attempt.getId(), t);
@@ -175,14 +174,13 @@ public class WorkflowExecutionTimeoutEnforcer
             try {
                 tm.begin(() -> {
                     logger.info("Task(s) timed out, canceling Session Attempt: {}, tasks={}", attemptId, entry.getValue());
-                    boolean canceled = ssm.requestCancelAttempt(attemptId);
-                    String taskIds = entry.getValue().stream().mapToLong(TaskAttemptSummary::getId).mapToObj(Long::toString).collect(joining(","));
-                    if (canceled) {
-                        sendTimeoutNotification("Task execution timeout: " + taskIds, attemptId);
-                    }
-
-                    return null;
+                    return ssm.requestCancelAttempt(attemptId);
                 });
+
+                if (canceled) {
+                    String taskIds = entry.getValue().stream().mapToLong(TaskAttemptSummary::getId).mapToObj(Long::toString).collect(joining(","));
+                    sendTimeoutNotification("Task execution timeout: " + taskIds, attemptId);
+                }
             }
             catch (Throwable t) {
                 logger.error("Uncaught exception when enforcing task TTLs of attempt {}. Ignoring. Loop continues.", entry.getKey(), t);
@@ -194,17 +192,16 @@ public class WorkflowExecutionTimeoutEnforcer
     {
         StoredSessionAttemptWithSession attempt;
         try {
-            attempt = ssm.getAttemptWithSessionById(attemptId);
+            attempt = tm.begin(() -> ssm.getAttemptWithSessionById(attemptId), ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException e) {
             logger.error("Session Attempt not found, ignoring: {}", attemptId);
             return;
         }
 
-        int projectId = attempt.getSession().getProjectId();
         StoredProject project;
         try {
-            project = psm.getProjectByIdInternal(projectId);
+            project = tm.begin(() -> psm.getProjectByIdInternal(attempt.getSession().getProjectId()));
         }
         catch (ResourceNotFoundException e) {
             logger.error("Session Attempt not found, ignoring: {}", attemptId);
