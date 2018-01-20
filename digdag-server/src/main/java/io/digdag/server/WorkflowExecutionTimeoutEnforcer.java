@@ -214,7 +214,7 @@ public class WorkflowExecutionTimeoutEnforcer
         Optional<StoredWorkflowDefinitionWithProject> workflow = Optional.absent();
         if (wfId.isPresent()) {
             try {
-                workflow = Optional.of(psm.getWorkflowDetailsById(wfId.get()));
+                workflow = Optional.of(tm.begin(() -> psm.getWorkflowDetailsById(wfId.get()), ResourceNotFoundException.class));
             }
             catch (ResourceNotFoundException e) {
                 workflow = Optional.absent();
