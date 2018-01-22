@@ -7,12 +7,17 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.io.BaseEncoding;
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.StoredRevision;
@@ -65,19 +70,36 @@ public class ArchiveManager
     }
 
     private final StorageManager storageManager;
+    private final LoadingCache<ArchiveType, Storage> storageCache;
     private final ArchiveType uploadArchiveType;
     private final Config systemConfig;
     private final String pathPrefix;
     private final boolean directDownloadEnabled;
 
+
     @Inject
     public ArchiveManager(StorageManager storageManager, Config systemConfig)
     {
         this.storageManager = storageManager;
+        this.storageCache = CacheBuilder.newBuilder()
+            .maximumSize(2)
+            .build(
+                    new CacheLoader<ArchiveType, Storage>()
+                    {
+                        public Storage load(ArchiveType key)
+                        {
+                            return openStorage(key);
+                        }
+                    });
         this.systemConfig = systemConfig;
         this.uploadArchiveType = systemConfig.get("archive.type", ArchiveType.class, ArchiveType.DB);
         this.pathPrefix = getArchivePathPrefix(systemConfig, uploadArchiveType);
         this.directDownloadEnabled = systemConfig.get("archive." + uploadArchiveType + ".direct_download", Boolean.class, false);
+    }
+
+    Storage openStorage(ArchiveType type)
+    {
+        return storageManager.create(type.getName(), systemConfig, "archive.");
     }
 
     private String getArchivePathPrefix(Config systemConfig, ArchiveType type)
@@ -106,7 +128,7 @@ public class ArchiveManager
 
     public Storage getStorage(ArchiveType type)
     {
-        return storageManager.create(type.getName(), systemConfig, "archive.");
+        return storageCache.getUnchecked(type);
     }
 
     private static final DateTimeFormatter DATE_TIME_SUFFIX_FORMAT =
