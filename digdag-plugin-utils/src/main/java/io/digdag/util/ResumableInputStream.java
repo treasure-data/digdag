@@ -1,5 +1,6 @@
 package io.digdag.util;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -14,17 +15,29 @@ public class ResumableInputStream
     private final Reopener reopener;
     protected InputStream in;
     private long offset;
+    private final long length;
 
-    public ResumableInputStream(InputStream initialInputStream, Reopener reopener)
+    public ResumableInputStream(InputStream initialInputStream, Reopener reopener, long length)
     {
         this.reopener = reopener;
         this.in = initialInputStream;
         this.offset = 0L;
+        this.length = length;
+    }
+
+    public ResumableInputStream(InputStream initialInputStream, Reopener reopener)
+    {
+        this(initialInputStream, reopener, -1L);
+    }
+
+    public ResumableInputStream(Reopener reopener, long length) throws IOException
+    {
+        this(reopener.reopen(0, null), reopener, length);
     }
 
     public ResumableInputStream(Reopener reopener) throws IOException
     {
-        this(reopener.reopen(0, null), reopener);
+        this(reopener, -1L);
     }
 
     private synchronized void reopen(Exception closedCause) throws IOException
@@ -45,6 +58,10 @@ public class ResumableInputStream
                 if (v >= 0) {
                     offset += 1;
                 }
+                else if (length >= 0L && offset < length) {
+                    reopen(new EOFException());
+                    continue;
+                }
                 return v;
             }
             catch (IOException | RuntimeException ex) {
@@ -59,8 +76,12 @@ public class ResumableInputStream
         while (true) {
             try {
                 int r = in.read(b);
-                if (r > 0) {
+                if (r >= 0) {
                     offset += r;
+                }
+                else if (length >= 0L && offset < length) {
+                    reopen(new EOFException());
+                    continue;
                 }
                 return r;
             }
@@ -76,8 +97,12 @@ public class ResumableInputStream
         while (true) {
             try {
                 int r = in.read(b, off, len);
-                if (r > 0) {
+                if (r >= 0) {
                     offset += r;
+                }
+                else if (length >= 0L && offset < length) {
+                    reopen(new EOFException());
+                    continue;
                 }
                 return r;
             }
@@ -95,6 +120,10 @@ public class ResumableInputStream
                 long r = in.skip(n);
                 if (r > 0) {
                     offset += r;
+                }
+                else if (length >= 0L && offset < length) {
+                    reopen(new EOFException());
+                    continue;
                 }
                 return r;
             }
