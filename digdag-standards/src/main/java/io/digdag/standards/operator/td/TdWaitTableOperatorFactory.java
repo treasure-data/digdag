@@ -78,6 +78,7 @@ public class TdWaitTableOperatorFactory
         private final int rows;
         private final String engine;
         private final int priority;
+        private final Optional<String> poolName;
         private final int jobRetry;
         private final TaskState state;
 
@@ -96,6 +97,7 @@ public class TdWaitTableOperatorFactory
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
+            this.poolName = params.getOptional("pool_name", String.class);
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
         }
@@ -193,6 +195,7 @@ public class TdWaitTableOperatorFactory
                     .setQuery(query)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
+                    .setPoolName(poolName.orNull())
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
 

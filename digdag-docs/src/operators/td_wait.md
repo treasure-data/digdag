@@ -72,6 +72,16 @@ Example queries:
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
+* **pool_name**: NAME
+
+  Name of a resource pool to run the queries in.
+
+  Examples:
+
+  ```
+  engine: poc
+  ```
+
 ## Output parameters
 
 * **td.last_job_id**

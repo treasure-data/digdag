@@ -183,6 +183,16 @@
     path: /endpoint
   ```
 
+* **pool_name**: NAME
+
+  Name of a resource pool to run the query in.
+
+  Examples:
+
+  ```
+  engine: poc
+  ```
+
 
 ## Output parameters
 

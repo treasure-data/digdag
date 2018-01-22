@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.td;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
@@ -67,6 +68,7 @@ public class TdForEachOperatorFactory
         private final int priority;
         private final int jobRetry;
         private final String engine;
+        private final Optional<String> poolName;
 
         private final Config doConfig;
 
@@ -80,6 +82,7 @@ public class TdForEachOperatorFactory
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.engine = params.get("engine", String.class, "presto");
+            this.poolName = params.getOptional("pool_name", String.class);
             this.doConfig = request.getConfig().getNested("_do");
         }
 
@@ -121,6 +124,7 @@ public class TdForEachOperatorFactory
                     .setQuery(query)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
+                    .setPoolName(poolName.orNull())
                     .setDomainKey(domainkey)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
