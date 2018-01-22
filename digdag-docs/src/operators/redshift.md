@@ -199,3 +199,23 @@ _export:
   ```
   status_table: customized_status_table
   ```
+
+* **connect_timeout**: NAME
+
+  The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the connection is broken. *Default*: `30`.
+
+  Examples:
+
+  ```
+  connect_timeout: 30
+  ```
+  
+* **socket_timeout**: NAME
+
+  The timeout value used for socket read operations. If reading from the server takes longer than this value, the connection is closed. *Default*: `1800`.
+
+  Examples:
+
+  ```
+  socket_timeout: 1800
+  ```
