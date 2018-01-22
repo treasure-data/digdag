@@ -2,6 +2,7 @@ package io.digdag.util;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.ConfigException;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayDeque;
@@ -235,6 +236,19 @@ public class ResumableInputStreamTest
         assertThat(in.read(new byte[1]), is(-1));
         assertThat(reopener.getLastOffset(), is(1L));
         assertThat(reopener.getReopenCount(), is(6));
+    }
+
+    @Test
+    public void tooEarlyEofResumesWithEOFException() throws Exception
+    {
+        TestingInputStream next = new TestingInputStream(0, 1, -1, 2, -1);
+        SimpleReopener reopener = new SimpleReopener(next);
+        ResumableInputStream in = new ResumableInputStream(next, reopener, 3);
+        assertThat(in.read(new byte[1], 0, 1), is(0));
+        assertThat(in.read(new byte[1], 0, 1), is(1));
+        assertThat(in.read(new byte[1], 0, 1), is(2));
+        assertThat(reopener.getLastClosedCause(), instanceOf(EOFException.class));
+        assertThat(in.read(new byte[1], 0, 1), is(-1));
     }
 
     @Test

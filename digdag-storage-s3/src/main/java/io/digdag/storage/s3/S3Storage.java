@@ -105,7 +105,7 @@ public class S3Storage
                 catch (StorageFileNotFoundException ex) {
                     throw new IOException(ex);
                 }
-            });
+            }, actualSize);
 
         return new StorageObject(resumable, actualSize);
     }
