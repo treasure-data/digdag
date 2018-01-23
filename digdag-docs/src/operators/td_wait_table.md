@@ -83,5 +83,5 @@
   Examples:
 
   ```
-  engine: poc
+  pool_name: poc
   ```

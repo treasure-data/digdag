@@ -79,7 +79,7 @@ Example queries:
   Examples:
 
   ```
-  engine: poc
+  pool_name: poc
   ```
 
 ## Output parameters

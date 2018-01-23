@@ -77,7 +77,7 @@ For example, if you run a query `select email, name from users` and the query re
   Examples:
 
   ```
-  engine: poc
+  pool_name: poc
   ```
 
 ## Output parameters
