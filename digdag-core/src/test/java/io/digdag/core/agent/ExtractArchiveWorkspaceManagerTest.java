@@ -81,6 +81,7 @@ public class ExtractArchiveWorkspaceManagerTest
 
         AtomicInteger funcCounter = new AtomicInteger();
         extractArchiveWorkspaceManager.withExtractedArchive(taskRequest, archiveProvider, (path) -> funcCounter.incrementAndGet());
+        verify(archiveProvider, times(1)).open();
         assertThat(funcCounter.get(), is(1));
 
         assertEmptyWorkspace();
@@ -99,6 +100,22 @@ public class ExtractArchiveWorkspaceManagerTest
         AtomicInteger funcCounter = new AtomicInteger();
         extractArchiveWorkspaceManager.withExtractedArchive(taskRequest, archiveProvider, (path) -> funcCounter.incrementAndGet());
         verify(archiveProvider, times(3)).open();
+        assertThat(funcCounter.get(), is(1));
+
+        assertEmptyWorkspace();
+    }
+
+    @Test
+    public void withoutExtractedArchive()
+            throws Exception
+    {
+        WorkspaceManager.ArchiveProvider archiveProvider = mock(WorkspaceManager.ArchiveProvider.class);
+
+        when(archiveProvider.open()).thenReturn(Optional.absent());
+
+        AtomicInteger funcCounter = new AtomicInteger();
+        extractArchiveWorkspaceManager.withExtractedArchive(taskRequest, archiveProvider, (path) -> funcCounter.incrementAndGet());
+        verify(archiveProvider, times(1)).open();
         assertThat(funcCounter.get(), is(1));
 
         assertEmptyWorkspace();
