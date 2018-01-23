@@ -86,9 +86,9 @@ public class ArchiveManager
             .build(
                     new CacheLoader<ArchiveType, Storage>()
                     {
-                        public Storage load(ArchiveType key)
+                        public Storage load(ArchiveType type)
                         {
-                            return openStorage(key);
+                            return openStorage(type);
                         }
                     });
         this.systemConfig = systemConfig;
