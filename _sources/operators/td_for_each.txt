@@ -70,6 +70,16 @@ For example, if you run a query `select email, name from users` and the query re
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
+* **pool_name**: NAME
+
+  Name of a resource pool to run the query in.
+
+  Examples:
+
+  ```
+  pool_name: poc
+  ```
+
 ## Output parameters
 
 * **td.last_job_id**
