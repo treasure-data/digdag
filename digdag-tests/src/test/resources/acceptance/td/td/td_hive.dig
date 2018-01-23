@@ -3,7 +3,7 @@ timezone: UTC
 +run:
   td>: query.sql
   engine: hive
-  pool_name: hadoop2
+  hive_pool_name: hadoop2
   database: sample_datasets
 
 +post:

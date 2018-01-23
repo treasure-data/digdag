@@ -183,16 +183,28 @@
     path: /endpoint
   ```
 
-* **pool_name**: NAME
+* **presto_pool_name**: NAME
 
   Name of a resource pool to run the query in.
+  Applicable only when ``engine`` is ``presto``.
 
   Examples:
 
   ```
-  pool_name: poc
+  presto_pool_name: poc
   ```
 
+* **hive_pool_name**: NAME
+
+  Name of a resource pool to run the query in.
+  Applicable only when ``engine`` is ``hive``.
+
+  Examples:
+
+  ```
+  engine: hive
+  hive_pool_name: poc
+  ```
 
 ## Output parameters
 

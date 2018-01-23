@@ -123,7 +123,7 @@ public class TdOperatorFactory
             this.jobRetry = params.get("job_retry", int.class, 0);
 
             this.engine = params.get("engine", String.class, "presto");
-            this.poolName = params.getOptional("pool_name", String.class);
+            this.poolName = poolNameOfEngine(params, engine);
 
             this.downloadFile = params.getOptional("download_file", String.class);
             if (downloadFile.isPresent() && (insertInto.isPresent() || createTable.isPresent())) {

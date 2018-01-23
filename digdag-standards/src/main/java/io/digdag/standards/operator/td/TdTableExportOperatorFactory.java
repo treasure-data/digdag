@@ -88,7 +88,7 @@ public class TdTableExportOperatorFactory
                     .secretAccessKey(s3Secrets.getSecretOptional("secret_access_key").or(() -> awsSecrets.getSecret("secret_access_key")))
                     .bucketName(params.get("s3_bucket", String.class))
                     .filePrefix(params.get("s3_path_prefix", String.class))
-                    .poolName(params.getOptional("pool_name", String.class))
+                    .poolName(poolNameOfEngine(params, "hive"))
                     .build();
 
             String jobId = op.submitNewJobWithRetry(client -> client.submitExportJob(req));

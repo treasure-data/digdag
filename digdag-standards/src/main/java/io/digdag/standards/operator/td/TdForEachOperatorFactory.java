@@ -82,7 +82,7 @@ public class TdForEachOperatorFactory
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.engine = params.get("engine", String.class, "presto");
-            this.poolName = params.getOptional("pool_name", String.class);
+            this.poolName = poolNameOfEngine(params, engine);
             this.doConfig = request.getConfig().getNested("_do");
         }
 

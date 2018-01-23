@@ -70,6 +70,11 @@ abstract class BaseTdJobOperator
         }
     }
 
+    protected static Optional<String> poolNameOfEngine(Config params, String engine)
+    {
+        return params.getOptional(engine + "_pool_name", String.class);
+    }
+
     protected static TaskExecutionException propagateTDClientException(TDClientException ex)
     {
         return new TaskExecutionException(ex);
