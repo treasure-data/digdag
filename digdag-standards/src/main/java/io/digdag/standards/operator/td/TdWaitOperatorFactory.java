@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.td.BaseTdJobOperator.poolNameOfEngine;
 import static io.digdag.standards.operator.td.BaseTdJobOperator.propagateTDClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -91,7 +92,7 @@ public class TdWaitOperatorFactory
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
-            this.poolName = params.getOptional("pool_name", String.class);
+            this.poolName = poolNameOfEngine(params, engine);
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
         }

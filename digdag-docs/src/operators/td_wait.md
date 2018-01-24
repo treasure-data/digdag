@@ -72,14 +72,27 @@ Example queries:
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
-* **pool_name**: NAME
+* **presto_pool_name**: NAME
 
   Name of a resource pool to run the queries in.
+  Applicable only when ``engine`` is ``presto``.
 
   Examples:
 
   ```
-  pool_name: poc
+  presto_pool_name: poc
+  ```
+
+* **hive_pool_name**: NAME
+
+  Name of a resource pool to run the queries in.
+  Applicable only when ``engine`` is ``hive``.
+
+  Examples:
+
+  ```
+  engine: hive
+  hive_pool_name: poc
   ```
 
 ## Output parameters
