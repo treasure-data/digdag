@@ -233,10 +233,20 @@
 <li><p class="first"><strong>priority</strong>: 0</p>
 <p>Set Priority (From <code class="docutils literal"><span class="pre">-2</span></code> (VERY LOW) to <code class="docutils literal"><span class="pre">2</span></code> (VERY HIGH) , default: 0 (NORMAL)).</p>
 </li>
-<li><p class="first"><strong>pool_name</strong>: NAME</p>
-<p>Name of a resource pool to run the query in.</p>
+<li><p class="first"><strong>presto_pool_name</strong>: NAME</p>
+<p>Name of a resource pool to run the query in.
+Applicable only when <code class="docutils literal"><span class="pre">engine</span></code> is <code class="docutils literal"><span class="pre">presto</span></code>.</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pool_name</span><span class="p">:</span> <span class="n">poc</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">presto_pool_name</span><span class="p">:</span> <span class="n">poc</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>hive_pool_name</strong>: NAME</p>
+<p>Name of a resource pool to run the query in.
+Applicable only when <code class="docutils literal"><span class="pre">engine</span></code> is <code class="docutils literal"><span class="pre">hive</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="p">:</span> <span class="n">hive</span>
+<span class="n">pool_name</span><span class="p">:</span> <span class="n">poc</span>
 </pre></div>
 </div>
 </li>

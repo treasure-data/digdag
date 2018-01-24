@@ -70,13 +70,26 @@ For example, if you run a query `select email, name from users` and the query re
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
-* **pool_name**: NAME
+* **presto_pool_name**: NAME
 
   Name of a resource pool to run the query in.
+  Applicable only when ``engine`` is ``presto``.
 
   Examples:
 
   ```
+  presto_pool_name: poc
+  ```
+
+* **hive_pool_name**: NAME
+
+  Name of a resource pool to run the query in.
+  Applicable only when ``engine`` is ``hive``.
+
+  Examples:
+
+  ```
+  engine: hive
   pool_name: poc
   ```
 
