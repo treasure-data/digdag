@@ -68,7 +68,7 @@ public class ExtractArchiveWorkspaceManager
                         });
             }
             catch (RetryExecutor.RetryGiveupException e) {
-                Throwables.propagate(e);
+                throw Throwables.propagate(e.getCause());
             }
             return func.run(workspacePath.get());
         }
