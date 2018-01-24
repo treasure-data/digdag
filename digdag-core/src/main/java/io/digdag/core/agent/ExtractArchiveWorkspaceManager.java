@@ -31,7 +31,6 @@ public class ExtractArchiveWorkspaceManager
     public ExtractArchiveWorkspaceManager(TempFileManager tempFiles)
     {
         this.tempFiles = tempFiles;
-
     }
 
     @Override
