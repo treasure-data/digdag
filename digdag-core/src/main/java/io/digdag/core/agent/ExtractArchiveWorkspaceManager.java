@@ -40,8 +40,12 @@ public class ExtractArchiveWorkspaceManager
         TempDir workspacePath = null;
         try {
             try {
-                // A temporary workspace should be created for each try
-                // And always close the temporary workspace
+                // Here has retrying because there were some observations that downloading of S3 caused too early EOF.
+                // S3Storage uses ResumableInputStream but it can't rescue from too early end of streams.
+                // Because ProjectResource.putProject validates the file, getting IOException here is always unexpected.
+                //
+                // A temporary workspace should be created for each try.
+                // And the created temporary workspace should be closed finally.
                 workspacePath = RetryExecutor.retryExecutor()
                         .retryIf(exception -> true)
                         .withInitialRetryWait(EXTRACT_MIN_RETRY_WAIT_MS)
