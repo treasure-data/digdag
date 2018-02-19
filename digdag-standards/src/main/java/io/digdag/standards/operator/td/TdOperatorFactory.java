@@ -95,6 +95,7 @@ public class TdOperatorFactory
         private final Optional<UserSecretTemplate> resultUrl;
         private final int jobRetry;
         private final String engine;
+        private final Optional<String> poolName;
         private final Optional<String> downloadFile;
         private final Optional<String> resultConnection;
         private final Optional<Config> resultSettings;
@@ -122,6 +123,7 @@ public class TdOperatorFactory
             this.jobRetry = params.get("job_retry", int.class, 0);
 
             this.engine = params.get("engine", String.class, "presto");
+            this.poolName = poolNameOfEngine(params, engine);
 
             this.downloadFile = params.getOptional("download_file", String.class);
             if (downloadFile.isPresent() && (insertInto.isPresent() || createTable.isPresent())) {
@@ -217,6 +219,7 @@ public class TdOperatorFactory
                     .setQuery(stmt)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
+                    .setPoolName(poolName.orNull())
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .setResultConnectionId(resultConnection.transform(name -> getResultConnectionId(name, op)))
                     .setResultConnectionSettings(resultSettings.transform(Config::toString))

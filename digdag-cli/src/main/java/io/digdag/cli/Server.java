@@ -107,7 +107,7 @@ public class Server
         err.println("    -o, --database DIR               store status to this database");
         err.println("    -O, --task-log DIR               store task logs to this path");
         err.println("    -A, --access-log DIR             store access logs files to this path");
-        err.println("        --max-task-threads N         limit maxium number of task execution threads");
+        err.println("        --max-task-threads N         limit maximum number of task execution threads");
         err.println("        --disable-executor-loop      disable workflow executor loop");
         err.println("        --disable-local-agent        disable local task execution");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");

@@ -23,6 +23,7 @@ public class ThreadLocalTransactionManager
     private static final Logger logger = LoggerFactory.getLogger(TransactionManager.class);
 
     private final ThreadLocal<Transaction> threadLocalTransaction = new ThreadLocal<>();
+    private final ThreadLocal<Transaction> threadLocalAutoCommitTransaction = new ThreadLocal<>();
     private final DataSource ds;
 
     private static class LazyTransaction
@@ -46,9 +47,6 @@ public class ThreadLocalTransactionManager
             this(ds, false);
         }
 
-        //
-        // DO NOT USE autoAutoCommit IN main CODE.
-        //
         LazyTransaction(DataSource ds, boolean autoAutoCommit)
         {
             this.ds = checkNotNull(ds);
@@ -209,7 +207,10 @@ public class ThreadLocalTransactionManager
     {
         Transaction transaction = threadLocalTransaction.get();
         if (transaction == null) {
-            throw new IllegalStateException("Not in transaction");
+            transaction = threadLocalAutoCommitTransaction.get();
+            if (transaction == null) {
+                throw new IllegalStateException("Not in transaction");
+            }
         }
         return transaction.getHandle(configMapper);
     }
@@ -272,6 +273,56 @@ public class ThreadLocalTransactionManager
     }
 
     @Override
+    public <T> T autoCommit(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException> func)
+    {
+        return autoCommit(func, RuntimeException.class, RuntimeException.class, RuntimeException.class);
+    }
+
+    @Override
+    public <T, E1 extends Exception> T autoCommit(SupplierInTransaction<T, E1, RuntimeException, RuntimeException> func, Class<E1> e1)
+            throws E1
+    {
+        return autoCommit(func, e1, RuntimeException.class, RuntimeException.class);
+    }
+
+    @Override
+    public <T, E1 extends Exception, E2 extends Exception>
+    T autoCommit(SupplierInTransaction<T, E1, E2, RuntimeException> func, Class<E1> e1, Class<E2> e2)
+            throws E1, E2
+    {
+        return autoCommit(func, e1, e2, RuntimeException.class);
+    }
+
+    @Override
+    public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception>
+    T autoCommit(SupplierInTransaction<T, E1, E2, E3> func, Class<E1> e1, Class<E2> e2, Class<E3> e3)
+            throws E1, E2, E3
+    {
+        try {
+            if (threadLocalTransaction.get() != null) {
+                return func.get();
+            }
+            else {
+                LazyTransaction transaction = new LazyTransaction(ds, true);
+                threadLocalAutoCommitTransaction.set(transaction);
+                try {
+                    return func.get();
+                }
+                finally {
+                    threadLocalAutoCommitTransaction.set(null);
+                    transaction.close();
+                }
+            }
+        }
+        catch (Exception e) {
+            Throwables.propagateIfInstanceOf(e, e1);
+            Throwables.propagateIfInstanceOf(e, e2);
+            Throwables.propagateIfInstanceOf(e, e3);
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
     public void reset()
     {
         Transaction transaction = threadLocalTransaction.get();
@@ -279,36 +330,5 @@ public class ThreadLocalTransactionManager
             throw new IllegalStateException("Not in transaction");
         }
         transaction.reset();
-    }
-
-    @Override
-    public <T> T autoCommit(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException> func)
-    {
-        return autoCommit(func, RuntimeException.class);
-    }
-
-    @Override
-    public <T, E1 extends Exception> T autoCommit(SupplierInTransaction<T, E1, RuntimeException, RuntimeException> func, Class<E1> e1)
-            throws E1
-    {
-        if (threadLocalTransaction.get() != null) {
-            throw new IllegalStateException("Nested transaction is not allowed: " + threadLocalTransaction.get());
-        }
-
-        try {
-            LazyTransaction transaction = new LazyTransaction(ds, true);
-            threadLocalTransaction.set(transaction);
-            try {
-                return func.get();
-            }
-            finally {
-                threadLocalTransaction.set(null);
-                transaction.close();
-            }
-        }
-        catch (Exception e) {
-            Throwables.propagateIfInstanceOf(e, e1);
-            throw Throwables.propagate(e);
-        }
     }
 }

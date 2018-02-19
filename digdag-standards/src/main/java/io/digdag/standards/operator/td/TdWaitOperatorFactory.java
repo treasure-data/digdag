@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.td.BaseTdJobOperator.poolNameOfEngine;
 import static io.digdag.standards.operator.td.BaseTdJobOperator.propagateTDClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -73,6 +74,7 @@ public class TdWaitOperatorFactory
         private final String query;
         private final int queryPollInterval;
         private final String engine;
+        private final Optional<String> poolName;
         private final int priority;
         private final int jobRetry;
         private final TaskState state;
@@ -90,6 +92,7 @@ public class TdWaitOperatorFactory
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
+            this.poolName = poolNameOfEngine(params, engine);
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
         }
@@ -129,6 +132,7 @@ public class TdWaitOperatorFactory
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
+                    .setPoolName(poolName.orNull())
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
 

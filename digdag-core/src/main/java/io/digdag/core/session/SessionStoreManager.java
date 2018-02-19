@@ -69,11 +69,13 @@ public interface SessionStoreManager
         T call(TaskControlStore lockedTask, StoredTask storedTask);
     }
 
-    // overload for polling
     <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func);
 
-    // overload for taskFinished
+    <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockAction<T> func);
+
     <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func);
+
+    <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockActionWithDetails<T> func);
 
     interface SessionMonitorAction
     {

@@ -431,8 +431,19 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
+        return lockTask(taskId, func, false);
+    }
+
+    @Override
+    public <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockAction<T> func)
+    {
+        return lockTask(taskId, func, true);
+    }
+
+    private <T> Optional<T> lockTask(long taskId, TaskLockAction<T> func, boolean ifNotLocked)
+    {
         return transaction((handle, dao) -> {
-            Long locked = dao.lockTask(taskId);
+            Long locked = ifNotLocked ? dao.lockTaskIfNotLocked(taskId) : dao.lockTask(taskId);
             if (locked != null) {
                 T result = func.call(new DatabaseTaskControlStore(handle));
                 return Optional.of(result);
@@ -444,9 +455,21 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
+        return lockTaskWithDetails(taskId, func, false);
+    }
+
+    @Override
+    public <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockActionWithDetails<T> func)
+    {
+        return lockTaskWithDetails(taskId, func, true);
+    }
+
+    private <T> Optional<T> lockTaskWithDetails(long taskId, TaskLockActionWithDetails<T> func, boolean ifNotLocked)
+    {
         return transaction((handle, dao) -> {
-            // TODO JOIN + FOR UPDATE doesn't work with H2 database
-            Long locked = dao.lockTask(taskId);
+            // Here runs SELECT id ... FOR UPDATE first and then select details of them
+            // so that transaction doesn't abort when the id doesn't exist
+            Long locked = ifNotLocked ? dao.lockTaskIfNotLocked(taskId) : dao.lockTask(taskId);
             if (locked != null) {
                 try {
                     StoredTask task = getTaskById(handle, taskId);
@@ -1490,6 +1513,11 @@ public class DatabaseSessionStoreManager
                 ")" +
                 " for update")
         long lockSessionByAttemptId(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select id from tasks" +
+                " where id = :id" +
+                " for update")
+        Long lockTaskIfNotLocked(@Bind("id") long taskId);
     }
 
     public interface PgDao
@@ -1523,6 +1551,11 @@ public class DatabaseSessionStoreManager
                 " limit 1" +
                 " for update of s")
         StoredSessionAttemptWithSession lockSessionByAttemptId(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select id from tasks" +
+                " where id = :id" +
+                " for update skip locked")
+        Long lockTaskIfNotLocked(@Bind("id") long taskId);
     }
 
     public interface Dao
@@ -1839,6 +1872,8 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update")
         Long lockTask(@Bind("id") long taskId);
+
+        Long lockTaskIfNotLocked(@Bind("id") long taskId);
 
         @SqlQuery("select id from tasks" +
                 " where attempt_id = :attemptId" +  // TODO

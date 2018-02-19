@@ -156,6 +156,15 @@ public class TdIT
     }
 
     @Test
+    public void testRunQueryWithHiveAndResourcePool()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_hive.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        assertWorkflowRunsSuccessfully();
+    }
+
+    @Test
     public void testStoreLastResult()
             throws Exception
     {
