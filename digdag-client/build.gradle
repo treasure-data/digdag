@@ -5,7 +5,11 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-annotations:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-core:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${project.ext.jacksonVersion}"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${project.ext.jacksonVersion}"
+    // io.digdag.client.config.Config#getOptional(java.lang.String, java.lang.Class<E>) doesn't work with
+    // jackson-datatype-guava 2.7 or later due to https://github.com/FasterXML/jackson-datatypes-collections/issues/28
+    // So, the version of jackson-datatype-guava:2.6.7 needs to be fixed at 2.6.7
+    // compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${project.ext.jacksonVersion}"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:2.6.7"
 
     compile("com.github.rholder:guava-retrying:2.0.0") {
         // guava-retrying depends on guava:[10.+,). Gradle solves it to the latest
