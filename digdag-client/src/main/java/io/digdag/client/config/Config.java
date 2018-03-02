@@ -283,7 +283,7 @@ public class Config
     @SuppressWarnings("unchecked")
     public <E> Optional<E> getOptional(String key, Class<E> type)
     {
-        return (Optional<E>) get(key, mapper.getTypeFactory().constructParametrizedType(Optional.class, Optional.class, type), Optional.<E>absent());
+        return (Optional<E>) get(key, mapper.getTypeFactory().constructType(new TypeReference<Optional<E>>() {}), Optional.<E>absent());
     }
 
     @SuppressWarnings("unchecked")
