@@ -1,5 +1,6 @@
 package io.digdag.core.database;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -293,7 +294,11 @@ public class DatabaseTaskQueueServer
     @Override
     public List<TaskQueueLock> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis)
     {
-        for (int siteId : autoCommit((handle, dao) -> dao.getActiveSiteIdList())) {
+        List<Integer> siteIds = autoCommit((handle, dao) -> dao.getActiveSiteIdList());
+        // Here shuffles siteIds to iterate in random order so that scheduling becomes slightly more fair across sites.
+        // It also improves overhead when smaller siteIds tend to have more tasks than its siteMaxConcurrency.
+        Collections.shuffle(siteIds);
+        for (int siteId : siteIds) {
             List<Long> taskLockIds = tryLockSharedAgentTasks(siteId, count, agentId, lockSeconds);
             if (!taskLockIds.isEmpty()) {
                 ImmutableList.Builder<TaskQueueLock> builder = ImmutableList.builder();
@@ -463,6 +468,7 @@ public class DatabaseTaskQueueServer
         //   select distinct site_id as id from queued_task_locks
         //   where lock_expire_time is null
         //   and site_id is not null
+        //   order by site_id asc
         @SqlQuery(
                 "with recursive t (site_id) as (" +
                     "(" +
