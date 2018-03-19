@@ -882,7 +882,7 @@ public class DatabaseSessionStoreManager
             }
 
             DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle);
-            boolean firstTask = true;
+            Map<Long, Long> oldIdToNewId = new HashMap<>();
             for (StoredTask task : tasks) {
                 Task newTask = Task.taskBuilder()
                     .from(task)
@@ -891,11 +891,12 @@ public class DatabaseSessionStoreManager
                     .build();
                 long newTaskId = addSubtask(tasks.get(0).getAttemptId(), newTask);
 
-                if (!firstTask && !task.getUpstreams().isEmpty()) {
-                    // Add the just before task as the dependent task of `newTask`.
-                    store.addDependencies(newTaskId, Arrays.asList(newTaskId - 1));
+                // addSubtask doesn't copy fields of StoredTask because its second argument is Task.
+                // Copy StoredTask::getUpstreams here
+                oldIdToNewId.put(task.getId(), newTaskId);
+                for (long oldUpstreamId : task.getUpstreams()) {
+                    dao.insertTaskDependency(newTaskId, oldIdToNewId.get(oldUpstreamId));
                 }
-                firstTask = false;
             }
             return true;
         }
