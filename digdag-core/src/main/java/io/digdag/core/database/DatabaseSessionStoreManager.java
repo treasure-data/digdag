@@ -892,7 +892,9 @@ public class DatabaseSessionStoreManager
                 long newTaskId = addSubtask(tasks.get(0).getAttemptId(), newTask);
 
                 // addSubtask doesn't copy fields of StoredTask because its second argument is Task.
-                // Copy StoredTask::getUpstreams here
+                // Copy StoredTask::getUpstreams here.
+                // Here doesn't have to prebuilt oldIdToNewId because tasks is sorted by "order by t.id asc".
+                // Dependency is possible only from a later task (bigger id) to former tasks (smaller id).
                 oldIdToNewId.put(task.getId(), newTaskId);
                 for (long oldUpstreamId : task.getUpstreams()) {
                     dao.insertTaskDependency(newTaskId, oldIdToNewId.get(oldUpstreamId));
