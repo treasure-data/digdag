@@ -73,6 +73,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -871,20 +872,33 @@ public class DatabaseSessionStoreManager
         {
             List<StoredTask> tasks = handle.createQuery(
                     selectTaskDetailsQuery() + " where t.id " + inLargeIdListExpression(recursiveChildrenIdList) +
-                    " and " + bitAnd("t.state_flags", Integer.toString(TaskStateFlags.INITIAL_TASK)) + " != 0"  // only initial tasks
+                    " and " + bitAnd("t.state_flags", Integer.toString(TaskStateFlags.INITIAL_TASK)) + " != 0" + // only initial tasks
+                    " order by t.id asc" // to ensure that tasks are sorted in the newest order
                 )
                 .map(stm)
                 .list();
             if (tasks.isEmpty()) {
                 return false;
             }
+
+            DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle);
+            Map<Long, Long> oldIdToNewId = new HashMap<>();
             for (StoredTask task : tasks) {
                 Task newTask = Task.taskBuilder()
                     .from(task)
                     .state(TaskStateCode.BLOCKED)
                     .stateFlags(TaskStateFlags.empty())
                     .build();
-                addSubtask(tasks.get(0).getAttemptId(), newTask);
+                long newTaskId = addSubtask(tasks.get(0).getAttemptId(), newTask);
+
+                // addSubtask doesn't copy fields of StoredTask because its second argument is Task.
+                // Copy StoredTask::getUpstreams here.
+                // Here doesn't have to prebuilt oldIdToNewId because tasks is sorted by "order by t.id asc".
+                // Dependency is possible only from a later task (bigger id) to former tasks (smaller id).
+                oldIdToNewId.put(task.getId(), newTaskId);
+                for (long oldUpstreamId : task.getUpstreams()) {
+                    dao.insertTaskDependency(newTaskId, oldIdToNewId.get(oldUpstreamId));
+                }
             }
             return true;
         }
