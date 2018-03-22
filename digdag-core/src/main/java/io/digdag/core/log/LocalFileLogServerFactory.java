@@ -39,6 +39,7 @@ public class LocalFileLogServerFactory
     private static final String LOG_GZ_FILE_SUFFIX = ".log.gz";
 
     private final Path logPath;
+    private final boolean realtimeFollow;
     private final AgentId agentId;
 
     @Inject
@@ -47,6 +48,7 @@ public class LocalFileLogServerFactory
         this.logPath = FileSystems.getDefault().getPath(systemConfig.get("log-server.local.path", String.class, "digdag.log"))
             .toAbsolutePath()
             .normalize();
+        this.realtimeFollow = systemConfig.get("log-server.realtime_follow", boolean.class, false);
         this.agentId = agentId;
     }
 
@@ -126,6 +128,7 @@ public class LocalFileLogServerFactory
             throws StorageFileNotFoundException
         {
             Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
+            System.out.println("fllowing => " + path);
             try (InputStream in = Files.newInputStream(path)) {
                 if (path.toString().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX)) {
                     try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
@@ -165,9 +168,9 @@ public class LocalFileLogServerFactory
         class LocalFileDirectTaskLogger
             implements TaskLogger
         {
-            private final OutputStream temporaryOutput;
+            private final OutputStream output;
+            private final Path path;
             private final Path temporaryPath;
-            private final Path conclusivePath;
 
             public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName)
                 throws IOException
@@ -177,12 +180,17 @@ public class LocalFileLogServerFactory
                 Path dir = getPrefixDir(dateDir, attemptDir);
                 Files.createDirectories(dir);
 
+                String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
+                this.path = dir.resolve(fileName);
+
                 String temporaryFileName = LogFiles.formatPlainTextFileName(taskName, Instant.now(), agentId.toString());
                 this.temporaryPath = dir.resolve(temporaryFileName);
-                this.temporaryOutput = Files.newOutputStream(temporaryPath, CREATE, APPEND);
 
-                String conclusiveFileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
-                this.conclusivePath = dir.resolve(conclusiveFileName);
+                if (realtimeFollow) {
+                    this.output = Files.newOutputStream(temporaryPath, CREATE, APPEND);
+                } else {
+                    this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024);
+                }
             }
 
             @Override
@@ -196,7 +204,7 @@ public class LocalFileLogServerFactory
             public void log(byte[] data, int off, int len)
             {
                 try {
-                    temporaryOutput.write(data, off, len);
+                    output.write(data, off, len);
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
@@ -207,13 +215,19 @@ public class LocalFileLogServerFactory
             public void close()
             {
                 try {
-                    temporaryOutput.close();
+                    output.close();
 
-                    try (InputStream in = Files.newInputStream(temporaryPath);
-                         OutputStream conclusiveOutput = new GZIPOutputStream(Files.newOutputStream(conclusivePath, CREATE, APPEND), 16*1024)) {
-                        ByteStreams.copy(in, conclusiveOutput);
-                        conclusiveOutput.close();
-                        temporaryPath.toFile().delete();
+                    if (realtimeFollow) {
+                        // Delaying for deterrence duplicate output in digdag log --follow
+                        try { Thread.sleep(1000); }
+                        catch (InterruptedException ex) {}
+
+                        try (InputStream in = Files.newInputStream(temporaryPath);
+                             OutputStream out = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024)) {
+                            ByteStreams.copy(in, out);
+                        } finally {
+                            temporaryPath.toFile().delete();
+                        }
                     }
                 }
                 catch (IOException ex) {
