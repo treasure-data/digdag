@@ -128,7 +128,6 @@ public class LocalFileLogServerFactory
             throws StorageFileNotFoundException
         {
             Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
-            System.out.println("fllowing => " + path);
             try (InputStream in = Files.newInputStream(path)) {
                 if (path.toString().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX)) {
                     try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
