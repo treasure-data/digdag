@@ -137,7 +137,8 @@ public class LocalFileLogServerFactory
 
                         return byteOutput.toByteArray();
                     }
-                } else {
+                }
+                else {
                     return ByteStreams.toByteArray(in);
                 }
             }
@@ -187,7 +188,8 @@ public class LocalFileLogServerFactory
 
                 if (realtimeFollow) {
                     this.output = Files.newOutputStream(temporaryPath, CREATE, APPEND);
-                } else {
+                }
+                else {
                     this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024);
                 }
             }
@@ -218,13 +220,18 @@ public class LocalFileLogServerFactory
 
                     if (realtimeFollow) {
                         // Delaying for deterrence duplicate output in digdag log --follow
-                        try { Thread.sleep(1000); }
-                        catch (InterruptedException ex) {}
+                        try {
+                            Thread.sleep(1000);
+                        }
+                        catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
 
                         try (InputStream in = Files.newInputStream(temporaryPath);
                              OutputStream out = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024)) {
                             ByteStreams.copy(in, out);
-                        } finally {
+                        }
+                        finally {
                             temporaryPath.toFile().delete();
                         }
                     }
