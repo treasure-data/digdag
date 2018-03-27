@@ -2223,7 +2223,8 @@ class ProjectEditor extends React.Component {
     projectName: 'new-project',
     revisionName: uuid.v4(),
     projectArchive: null,
-    saveMessage: ''
+    saveMessage: '',
+    alertType: ''
   };
 
   componentDidMount () {
