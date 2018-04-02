@@ -18,7 +18,7 @@ import pako from 'pako'
 import path from 'path'
 import yaml from 'js-yaml'
 import Duration from 'duration'
-import uuid from 'node-uuid'
+import uuidv4 from 'uuid/v4'
 import jQuery from 'jquery'
 import ReactInterval from 'react-interval'
 import { Buffer } from 'buffer/'
@@ -1109,7 +1109,7 @@ class SessionView extends React.Component {
     const { lastAttempt } = session
     if (lastAttempt) {
       model()
-        .resumeSessionWithLatestRevision(session, uuid.v4(), lastAttempt.id)
+        .resumeSessionWithLatestRevision(session, uuidv4(), lastAttempt.id)
         .then(() => this.forceUpdate())
     }
   }
@@ -1117,7 +1117,7 @@ class SessionView extends React.Component {
   retryAll () {
     const { session } = this.props
     model()
-      .retrySessionWithLatestRevision(session, uuid.v4())
+      .retrySessionWithLatestRevision(session, uuidv4())
       .then(() => this.forceUpdate())
   }
 
@@ -2146,7 +2146,7 @@ class ProjectArchiveEditor extends React.Component {
   }
 
   handleAddFile () {
-    const key = uuid.v4()
+    const key = uuidv4()
     const entries = [
       {
         newFile: true,
@@ -2221,7 +2221,7 @@ class ProjectEditor extends React.Component {
     projectId: null,
     project: null,
     projectName: 'new-project',
-    revisionName: uuid.v4(),
+    revisionName: uuidv4(),
     projectArchive: null,
     saveMessage: ''
   };
@@ -2343,7 +2343,7 @@ class ProjectEditor extends React.Component {
       this.setState({
         projectId: project.id,
         project: project,
-        revisionName: uuid.v4(),  // generate new revision name
+        revisionName: uuidv4(),  // generate new revision name
         alertType: 'success',
         saveMessage: `Revision ${this.state.revisionName} is saved.`
       })
