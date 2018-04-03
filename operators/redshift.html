@@ -324,16 +324,16 @@ This operator creates and uses a status table in the database to make an operati
 </div>
 </li>
 <li><p class="first"><strong>connect_timeout</strong>: NAME</p>
-<p>The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the connection is broken. <em>Default</em>: <code class="docutils literal"><span class="pre">30</span></code>.</p>
+<p>The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the connection is broken. <em>Default</em>: <code class="docutils literal"><span class="pre">30s</span></code>(30 seconds).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">connect_timeout</span><span class="p">:</span> <span class="mi">30</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">connect_timeout</span><span class="p">:</span> <span class="mi">30</span><span class="n">s</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>socket_timeout</strong>: NAME</p>
-<p>The timeout value used for socket read operations. If reading from the server takes longer than this value, the connection is closed. <em>Default</em>: <code class="docutils literal"><span class="pre">1800</span></code>.</p>
+<p>The timeout value used for socket read operations. If reading from the server takes longer than this value, the connection is closed. <em>Default</em>: <code class="docutils literal"><span class="pre">1800s</span></code>(1800 seconds).</p>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">socket_timeout</span><span class="p">:</span> <span class="mi">1800</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">socket_timeout</span><span class="p">:</span> <span class="mi">1800</span><span class="n">s</span>
 </pre></div>
 </div>
 </li>
