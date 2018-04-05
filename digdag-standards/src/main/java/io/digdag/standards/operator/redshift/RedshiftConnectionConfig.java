@@ -27,8 +27,8 @@ public abstract class RedshiftConnectionConfig
                 .password(secrets.getSecretOptional("password"))
                 .database(secrets.getSecretOptional("database").or(() -> params.get("database", String.class)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(() -> params.get("ssl", boolean.class, false)))
-                .connectTimeout(params.get("connect_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(30))))
-                .socketTimeout(params.get("socket_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(1800))))
+                .connectTimeout(DurationParam.of(Duration.ofSeconds(params.get("connect_timeout", int.class, 30))))
+                .socketTimeout(DurationParam.of(Duration.ofSeconds(params.get("socket_timeout", int.class, 1800))))
                 .schema(secrets.getSecretOptional("schema").or(params.getOptional("schema", String.class)))
                 .build();
     }
