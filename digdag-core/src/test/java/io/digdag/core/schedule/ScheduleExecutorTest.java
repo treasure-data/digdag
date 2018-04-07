@@ -163,4 +163,73 @@ public class ScheduleExecutorTest
         // Verify that the schedule progressed to the next time
         verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
     }
+
+    @Test
+    public void testDisableBackfill()
+            throws Exception
+    {
+        // set disable_backfill true
+        workflowConfig.getNestedOrSetEmpty("schedule")
+                .set("disable_backfill", true)
+                .set("daily>", "12:00:00");
+
+        // Indicate that there is no active attempt for this workflow
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
+                .thenReturn(ImmutableList.of());
+
+        // Run the schedule executor at now + 2
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(2));
+
+        // Verify the task was not started since disable_backfill
+        verify(scheduleExecutor, never()).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
+
+        // Verify that the schedule skipped to the next time
+        verify(scs).updateNextScheduleTime(SCHEDULE_ID, nextScheduleTime);
+    }
+
+    @Test
+    public void testRunEvenIfDisableBackfill()
+            throws Exception
+    {
+        // set disable_backfill true
+        workflowConfig.getNestedOrSetEmpty("schedule")
+                .set("disable_backfill", true)
+                .set("daily>", "12:00:00");
+
+        // Indicate that there is no active attempt for this workflow
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
+                .thenReturn(ImmutableList.of());
+
+        // Run the schedule executor at just now.
+        scheduleExecutor.runScheduleOnce(now);
+
+        // Verify that task was started.
+        verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
+
+        // Verify that the schedule progressed to the next time
+        verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
+    }
+
+    @Test
+    public void testDefaultBackfill()
+            throws Exception
+    {
+        // there is no disable_backfill. default = false.
+        workflowConfig.getNestedOrSetEmpty("schedule")
+                .set("daily>", "12:00:00");
+
+        // Indicate that there is no active attempt for this workflow
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
+                .thenReturn(ImmutableList.of());
+
+        // Run the schedule executor at now + 2
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(2));
+
+        // Verify the task was started.
+        verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
+
+        // Verify that the schedule progressed to the next time
+        verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
+    }
+
 }
