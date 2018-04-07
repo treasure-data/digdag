@@ -86,6 +86,6 @@ public class ExtractArchiveWorkspaceManager
     private TempDir createNewWorkspace(TaskRequest request)
         throws IOException
     {
-        return tempFiles.createTempDir("workspace", request.getTaskName());
+        return tempFiles.createTempDir("workspace", request.getWorkflowName());
     }
 }
