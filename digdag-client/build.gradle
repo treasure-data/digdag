@@ -14,7 +14,7 @@ dependencies {
     }
     compile "com.google.guava:guava:19.0"
 
-    compile 'org.jboss.resteasy:resteasy-client:3.0.13.Final'
+    compile 'org.jboss.resteasy:resteasy-client:3.0.23.Final'
     compile 'org.apache.commons:commons-compress:1.10'
     compile 'io.jsonwebtoken:jjwt:0.6.0'
 
