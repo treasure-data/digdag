@@ -78,7 +78,13 @@ public class LogServerManager
             return ((LocalFileLogServer) logServer).newDirectTaskLogger(prefix, taskName);
         }
         else {
-            return new BufferedRemoteTaskLogger(tempFiles, taskName,
+            // temp file prefix: {projectId}_{workflowName}_{sessionTime}
+            final String tempFilePrefix = new StringBuilder()
+                    .append(prefix.getProjectId()).append("_")
+                    .append(prefix.getWorkflowName()).append("_")
+                    .append(prefix.getSessionTime().toString()) // ISO-8601
+                    .toString();
+            return new BufferedRemoteTaskLogger(tempFiles, tempFilePrefix,
                     (firstLogTime, gzData) -> {
                         logServer.putFile(prefix, taskName, firstLogTime, agentId.toString(), gzData);
                     });
