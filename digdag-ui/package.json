@@ -70,6 +70,7 @@
     "less-loader": "2.2.3",
     "node-fs-extra": "^0.8.1",
     "node-sass": "^3.10.0",
+    "resolve": "^1.6.0",
     "resolve-url-loader": "2.0.2",
     "rimraf": "^2.5.4",
     "sass-loader": "^6.0.3",
