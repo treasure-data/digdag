@@ -248,18 +248,20 @@ subprojects {
     }
 
     // Generate maven manifests for sub-modules
-    task pom << {
-        pom {
-            project {
-                parent {
-                    groupId project.group
-                    artifactId 'digdag'
-                    version project.version
+    task pom {
+        doLast {
+            pom {
+                project {
+                    parent {
+                        groupId project.group
+                        artifactId 'digdag'
+                        version project.version
+                    }
                 }
             }
+            .withXml(pomXmlModifier)
+            .writeTo("${delegate.project.projectDir}/pom.xml")
         }
-        .withXml(pomXmlModifier)
-        .writeTo("${delegate.project.projectDir}/pom.xml")
     }
 
     publishing {
@@ -382,17 +384,22 @@ project(':digdag-cli') {
 
 def cliBuildFile = file("pkg/digdag-${project.version}.jar")
 
-task cli(dependsOn: ':digdag-cli:shadowJar') << {
-    file('pkg').mkdirs()
-    cliBuildFile.write("")
-    cliBuildFile.append(file("digdag-cli/src/main/sh/selfrun.sh").readBytes())
-    cliBuildFile.append(file("digdag-cli/build/libs/digdag-cli-${project.version}-all.jar").readBytes())
-    cliBuildFile.setExecutable(true)
+task cli(dependsOn: ':digdag-cli:shadowJar') {
+    doLast {
+        file('pkg').mkdirs()
+        cliBuildFile.write("")
+        cliBuildFile.append(file("digdag-cli/src/main/sh/selfrun.sh").readBytes())
+        cliBuildFile.append(file("digdag-cli/build/libs/digdag-cli-${project.version}-all.jar").readBytes())
+        cliBuildFile.setExecutable(true)
+    }
 }
 
 bintrayUpload.dependsOn('cli')
 
-task classpath(dependsOn: [':digdag-cli:classpath']) << { }
+task classpath(dependsOn: [':digdag-cli:classpath']){
+    doLast {
+    }
+}
 
 clean {
     delete 'classpath'
@@ -408,77 +415,81 @@ task release() {
 }
 check.dependsOn('releaseCheck')
 
-task setVersion << {
-    if (!project.hasProperty("to")) {
-        throw new GradleException("Usage: ./gradlew setVersion -Pto=VERSION")
-    }
+task setVersion {
+    doLast {
+        if (!project.hasProperty("to")) {
+            throw new GradleException("Usage: ./gradlew setVersion -Pto=VERSION")
+        }
 
-    File gradle_ver = file('build.gradle')
-    gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
+        File gradle_ver = file('build.gradle')
+        gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
 
-    List<String> files = [
-        'digdag-client/src/main/resources/io/digdag/client/version.txt',
-        'digdag-cli/src/main/java/io/digdag/cli/Main.java',
-        'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
-    ]
+        List<String> files = [
+            'digdag-client/src/main/resources/io/digdag/client/version.txt',
+            'digdag-cli/src/main/java/io/digdag/cli/Main.java',
+            'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
+        ]
 
-    files.each() { path ->
-        File doc = file(path)
-        doc.write(doc.getText().replaceAll("0\\.[1-9][0-9]*\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
-    }
-
-    if (!to.endsWith('-SNAPSHOT')) {
-        // update docs
-        [
-            'digdag-docs/src/command_reference.rst',
-        ].each() { path ->
+        files.each() { path ->
             File doc = file(path)
             doc.write(doc.getText().replaceAll("0\\.[1-9][0-9]*\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
         }
 
-        // releases.rst
-        File releases = file("digdag-docs/src/releases.rst")
-        releases.write(releases.getText().replaceAll("# add new version here", "# add new version here\n    releases/release-${to}"))
+        if (!to.endsWith('-SNAPSHOT')) {
+            // update docs
+            [
+                'digdag-docs/src/command_reference.rst',
+            ].each() { path ->
+                File doc = file(path)
+                doc.write(doc.getText().replaceAll("0\\.[1-9][0-9]*\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
+            }
 
-        // release-<versionr>.rst
-        String notePath = "digdag-docs/src/releases/release-${to}.rst"
-        file(notePath).append(
-                "Release ${to}\n" +
-                "==============\n" +
-                "\n" +
-                "...\n" +
-                "\n" +
-                "Release Date\n" +
-                "------------\n" +
-                "${new Date().format('yyyy-MM-dd')}\n" +
-                "\n" +
-                "Contributors\n" +
-                "------------\n")
-        ["bash", "-c", "git shortlog -s \$(git tag --sort=-creatordate | head -n 1)..HEAD | awk '{\$1=\"\";print \"*\" \$0}' >> ${notePath}"].execute().waitFor()
-        "git add ${notePath}".execute().waitFor()
+            // releases.rst
+            File releases = file("digdag-docs/src/releases.rst")
+            releases.write(releases.getText().replaceAll("# add new version here", "# add new version here\n    releases/release-${to}"))
+
+            // release-<versionr>.rst
+            String notePath = "digdag-docs/src/releases/release-${to}.rst"
+            file(notePath).append(
+                    "Release ${to}\n" +
+                    "==============\n" +
+                    "\n" +
+                    "...\n" +
+                    "\n" +
+                    "Release Date\n" +
+                    "------------\n" +
+                    "${new Date().format('yyyy-MM-dd')}\n" +
+                    "\n" +
+                    "Contributors\n" +
+                    "------------\n")
+            ["bash", "-c", "git shortlog -s \$(git tag --sort=-creatordate | head -n 1)..HEAD | awk '{\$1=\"\";print \"*\" \$0}' >> ${notePath}"].execute().waitFor()
+            "git add ${notePath}".execute().waitFor()
+        }
     }
 }
 
-task releaseCheck << {
-    if (project.ext.isSnapshotRelease) {
-        println "Releasing a SNAPSHOT version."
-    }
-    else {
-        if (!file("digdag-client/src/main/resources/io/digdag/client/version.txt").getText().contains("${project.version}")) {
-            throw new GradleException("digdag-client/src/main/resources/io/digdag/client/version.txt doesn't include ${project.version}")
+task releaseCheck {
+    doLast {
+        if (project.ext.isSnapshotRelease) {
+            println "Releasing a SNAPSHOT version."
         }
-        if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
-            throw new GradleException("Release note for ${project.version} doesn't exist")
+        else {
+            if (!file("digdag-client/src/main/resources/io/digdag/client/version.txt").getText().contains("${project.version}")) {
+                throw new GradleException("digdag-client/src/main/resources/io/digdag/client/version.txt doesn't include ${project.version}")
+            }
+            if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
+                throw new GradleException("Release note for ${project.version} doesn't exist")
+            }
+            if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
+                throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
+            }
+            String date = new Date().format("yyyy-MM-dd")
+            if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
+                throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
+            }
+            // TODO check git-ls-files includes release-<version>.rst file
+            println "Ready. Run 'release' task."
         }
-        if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
-            throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
-        }
-        String date = new Date().format("yyyy-MM-dd")
-        if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
-            throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
-        }
-        // TODO check git-ls-files includes release-<version>.rst file
-        println "Ready. Run 'release' task."
     }
 }
 
@@ -489,68 +500,70 @@ task releaseSnapshot(type: Exec) {
 }
 
 // Generate parent maven manifest
-task pom << {
-    pom {
-        project {
-            packaging 'pom'
-            properties {
-                project {
-                    build {
-                        sourceEncoding 'UTF-8'
+task pom {
+    doLast {
+        pom {
+            project {
+                packaging 'pom'
+                properties {
+                    project {
+                        build {
+                            sourceEncoding 'UTF-8'
+                        }
+                    }
+                }
+                repositories {
+                    repository {
+                        id 'jcenter'
+                        url 'http://jcenter.bintray.com'
+                        releases {
+                            enabled 'true'
+                        }
+                    }
+                }
+                modules {
+                    subprojects.each {
+                        module it.name
                     }
                 }
             }
-            repositories {
-                repository {
-                    id 'jcenter'
-                    url 'http://jcenter.bintray.com'
-                    releases {
-                        enabled 'true'
-                    }
-                }
-            }
-            modules {
-                subprojects.each {
-                    module it.name
-                }
-            }
-        }
-    }.withXml {
-        // XXX (dano): http://stackoverflow.com/a/27978130
-        def build = asNode().appendNode('build', '')
-        def plugins = build.appendNode('plugins', '')
+        }.withXml {
+            // XXX (dano): http://stackoverflow.com/a/27978130
+            def build = asNode().appendNode('build', '')
+            def plugins = build.appendNode('plugins', '')
 
-        def compiler = plugins.appendNode('plugin', '')
-        compiler.appendNode('groupId', 'org.apache.maven.plugins')
-        compiler.appendNode('artifactId', 'maven-compiler-plugin')
-        compiler.appendNode('version', '3.5.1')
-        def compiler_configuration = compiler.appendNode('configuration', '')
-        compiler_configuration.appendNode('source', sourceCompatibility)
-        compiler_configuration.appendNode('target', targetCompatibility)
+            def compiler = plugins.appendNode('plugin', '')
+            compiler.appendNode('groupId', 'org.apache.maven.plugins')
+            compiler.appendNode('artifactId', 'maven-compiler-plugin')
+            compiler.appendNode('version', '3.5.1')
+            def compiler_configuration = compiler.appendNode('configuration', '')
+            compiler_configuration.appendNode('source', sourceCompatibility)
+            compiler_configuration.appendNode('target', targetCompatibility)
 
-        def enforcer = plugins.appendNode('plugin', '')
-        enforcer.appendNode('groupId', 'org.apache.maven.plugins')
-        enforcer.appendNode('artifactId', 'maven-enforcer-plugin')
-        enforcer.appendNode('version', '1.4.1')
-        def enforcer_executions = enforcer.appendNode('executions', '')
-        def enforcer_execution = enforcer_executions.appendNode('execution', '')
-        enforcer_execution.appendNode('id', 'enforce')
-        def enforcer_goals = enforcer_execution.appendNode('goals', '')
-        enforcer_goals.appendNode('goal', 'enforce')
+            def enforcer = plugins.appendNode('plugin', '')
+            enforcer.appendNode('groupId', 'org.apache.maven.plugins')
+            enforcer.appendNode('artifactId', 'maven-enforcer-plugin')
+            enforcer.appendNode('version', '1.4.1')
+            def enforcer_executions = enforcer.appendNode('executions', '')
+            def enforcer_execution = enforcer_executions.appendNode('execution', '')
+            enforcer_execution.appendNode('id', 'enforce')
+            def enforcer_goals = enforcer_execution.appendNode('goals', '')
+            enforcer_goals.appendNode('goal', 'enforce')
 
-        def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
-        def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
-        enforcer_rules.appendNode('requireUpperBoundDeps', '')
+            def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
+            def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
+            enforcer_rules.appendNode('requireUpperBoundDeps', '')
 
-        def jar = plugins.appendNode('plugin', '')
-        jar.appendNode('groupId', 'org.apache.maven.plugins')
-        jar.appendNode('artifactId', 'maven-jar-plugin')
-        jar.appendNode('version', '3.0.2')
-        def jar_executions = jar.appendNode('executions', '')
-        def jar_execution = jar_executions.appendNode('execution', '')
-        def jar_execution_goals = jar_execution.appendNode('goals', '')
-        jar_execution_goals.appendNode('goal', 'test-jar')
-    }.writeTo("pom.xml")
+            def jar = plugins.appendNode('plugin', '')
+            jar.appendNode('groupId', 'org.apache.maven.plugins')
+            jar.appendNode('artifactId', 'maven-jar-plugin')
+            jar.appendNode('version', '3.0.2')
+            def jar_executions = jar.appendNode('executions', '')
+            def jar_execution = jar_executions.appendNode('execution', '')
+            def jar_execution_goals = jar_execution.appendNode('goals', '')
+            jar_execution_goals.appendNode('goal', 'test-jar')
+        }.writeTo("pom.xml")
+    }
 }
 
 task runServer(type: JavaExec) {
