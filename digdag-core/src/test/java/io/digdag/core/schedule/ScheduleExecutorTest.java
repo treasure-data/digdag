@@ -165,22 +165,22 @@ public class ScheduleExecutorTest
     }
 
     @Test
-    public void testDisableBackfill()
+    public void testBackfillLimit()
             throws Exception
     {
-        // set disable_backfill true
+        // set backfill_limit 30
         workflowConfig.getNestedOrSetEmpty("schedule")
-                .set("disable_backfill", true)
+                .set("backfill_limit", 30)
                 .set("daily>", "12:00:00");
 
         // Indicate that there is no active attempt for this workflow
         when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
                 .thenReturn(ImmutableList.of());
 
-        // Run the schedule executor at now + 2
-        scheduleExecutor.runScheduleOnce(now.plusSeconds(2));
+        // Run the schedule executor at now + 31
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(31));
 
-        // Verify the task was not started since disable_backfill
+        // Verify the task was not started because it's over backfill_limit
         verify(scheduleExecutor, never()).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
 
         // Verify that the schedule skipped to the next time
@@ -188,20 +188,20 @@ public class ScheduleExecutorTest
     }
 
     @Test
-    public void testRunEvenIfDisableBackfill()
+    public void testRunWithinBackfillLimit()
             throws Exception
     {
-        // set disable_backfill true
+        // set backfill_limit 30
         workflowConfig.getNestedOrSetEmpty("schedule")
-                .set("disable_backfill", true)
+                .set("backfill_limit", 30)
                 .set("daily>", "12:00:00");
 
         // Indicate that there is no active attempt for this workflow
         when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
                 .thenReturn(ImmutableList.of());
 
-        // Run the schedule executor at just now.
-        scheduleExecutor.runScheduleOnce(now);
+        // Run the schedule executor at now + 29
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(29));
 
         // Verify that task was started.
         verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
@@ -211,10 +211,10 @@ public class ScheduleExecutorTest
     }
 
     @Test
-    public void testDefaultBackfill()
+    public void testNoBackfillLimit()
             throws Exception
     {
-        // there is no disable_backfill. default = false.
+        // there is no backfill_limit. default = -1.
         workflowConfig.getNestedOrSetEmpty("schedule")
                 .set("daily>", "12:00:00");
 
@@ -222,8 +222,8 @@ public class ScheduleExecutorTest
         when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
                 .thenReturn(ImmutableList.of());
 
-        // Run the schedule executor at now + 2
-        scheduleExecutor.runScheduleOnce(now.plusSeconds(2));
+        // Run the schedule executor at now + 1
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(1));
 
         // Verify the task was started.
         verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
