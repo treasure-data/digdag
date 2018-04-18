@@ -170,7 +170,7 @@ public class ScheduleExecutorTest
     {
         // set skip_delayed_by 30
         workflowConfig.getNestedOrSetEmpty("schedule")
-                .set("skip_delayed_by", 30)
+                .set("skip_delayed_by", "30s")
                 .set("daily>", "12:00:00");
 
         // Indicate that there is no active attempt for this workflow
@@ -193,7 +193,7 @@ public class ScheduleExecutorTest
     {
         // set skip_delayed_by 30
         workflowConfig.getNestedOrSetEmpty("schedule")
-                .set("skip_delayed_by", 30)
+                .set("skip_delayed_by", "30s")
                 .set("daily>", "12:00:00");
 
         // Indicate that there is no active attempt for this workflow

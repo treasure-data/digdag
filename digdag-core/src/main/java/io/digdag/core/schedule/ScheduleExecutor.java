@@ -36,6 +36,7 @@ import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,10 +200,10 @@ public class ScheduleExecutor
 
             Config scheduleConfig = SchedulerManager.getScheduleConfig(def);
             boolean skipOnOvertime = scheduleConfig.get("skip_on_overtime", boolean.class, false);
-            Optional<Integer> skipDelay = scheduleConfig.getOptional("skip_delayed_by", Integer.class);
+            Optional<DurationParam> skipDelay = scheduleConfig.getOptional("skip_delayed_by", DurationParam.class);
 
             // task should run at scheduled time within skipDelay.
-            if (skipDelay.isPresent() && now.isAfter(sched.getNextRunTime().plusSeconds(skipDelay.get()))) {
+            if (skipDelay.isPresent() && now.isAfter(sched.getNextRunTime().plusSeconds(skipDelay.get().getDuration().getSeconds()))) {
                 logger.info("Now={} is too late from scheduled time={}. It's over skip_delayed_by={}. Skipping this schedule: {}", now, sched.getNextScheduleTime(), skipDelay.get(), sched);
                 nextSchedule = sr.nextScheduleTime(sched.getNextScheduleTime());
             }
