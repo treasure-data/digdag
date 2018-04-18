@@ -199,11 +199,11 @@ public class ScheduleExecutor
 
             Config scheduleConfig = SchedulerManager.getScheduleConfig(def);
             boolean skipOnOvertime = scheduleConfig.get("skip_on_overtime", boolean.class, false);
-            int backfillLimit = scheduleConfig.get("backfill_limit", int.class, -1);
+            Optional<Integer> skipDelay = scheduleConfig.getOptional("skip_delayed_by", Integer.class);
 
-            // task should run at scheduled time within backfill_limit delay.
-            if (backfillLimit >= 0 && now.isAfter(sched.getNextRunTime().plusSeconds(backfillLimit))) {
-                logger.info("Now={} is too late from scheduled time={}. It's over backfill_limit={}. Skipping this schedule: {}", now, sched.getNextScheduleTime(), backfillLimit, sched);
+            // task should run at scheduled time within skipDelay.
+            if (skipDelay.isPresent() && now.isAfter(sched.getNextRunTime().plusSeconds(skipDelay.get()))) {
+                logger.info("Now={} is too late from scheduled time={}. It's over skip_delayed_by={}. Skipping this schedule: {}", now, sched.getNextScheduleTime(), skipDelay.get(), sched);
                 nextSchedule = sr.nextScheduleTime(sched.getNextScheduleTime());
             }
             else if (!activeAttempts.isEmpty() && skipOnOvertime) {

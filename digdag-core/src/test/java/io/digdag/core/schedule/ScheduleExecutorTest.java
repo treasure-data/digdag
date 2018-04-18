@@ -165,12 +165,12 @@ public class ScheduleExecutorTest
     }
 
     @Test
-    public void testBackfillLimit()
+    public void TestskipDelayedBy()
             throws Exception
     {
-        // set backfill_limit 30
+        // set skip_delayed_by 30
         workflowConfig.getNestedOrSetEmpty("schedule")
-                .set("backfill_limit", 30)
+                .set("skip_delayed_by", 30)
                 .set("daily>", "12:00:00");
 
         // Indicate that there is no active attempt for this workflow
@@ -188,12 +188,12 @@ public class ScheduleExecutorTest
     }
 
     @Test
-    public void testRunWithinBackfillLimit()
+    public void testRunWithinSkipDelayedBy()
             throws Exception
     {
-        // set backfill_limit 30
+        // set skip_delayed_by 30
         workflowConfig.getNestedOrSetEmpty("schedule")
-                .set("backfill_limit", 30)
+                .set("skip_delayed_by", 30)
                 .set("daily>", "12:00:00");
 
         // Indicate that there is no active attempt for this workflow
@@ -211,10 +211,10 @@ public class ScheduleExecutorTest
     }
 
     @Test
-    public void testNoBackfillLimit()
+    public void testNoSkipDelayedBy()
             throws Exception
     {
-        // there is no backfill_limit. default = -1.
+        // there is no skip_delayed_by.
         workflowConfig.getNestedOrSetEmpty("schedule")
                 .set("daily>", "12:00:00");
 
