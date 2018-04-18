@@ -163,4 +163,73 @@ public class ScheduleExecutorTest
         // Verify that the schedule progressed to the next time
         verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
     }
+
+    @Test
+    public void TestskipDelayedBy()
+            throws Exception
+    {
+        // set skip_delayed_by 30
+        workflowConfig.getNestedOrSetEmpty("schedule")
+                .set("skip_delayed_by", "30s")
+                .set("daily>", "12:00:00");
+
+        // Indicate that there is no active attempt for this workflow
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
+                .thenReturn(ImmutableList.of());
+
+        // Run the schedule executor at now + 31
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(31));
+
+        // Verify the task was not started because it's over backfill_limit
+        verify(scheduleExecutor, never()).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
+
+        // Verify that the schedule skipped to the next time
+        verify(scs).updateNextScheduleTime(SCHEDULE_ID, nextScheduleTime);
+    }
+
+    @Test
+    public void testRunWithinSkipDelayedBy()
+            throws Exception
+    {
+        // set skip_delayed_by 30
+        workflowConfig.getNestedOrSetEmpty("schedule")
+                .set("skip_delayed_by", "30s")
+                .set("daily>", "12:00:00");
+
+        // Indicate that there is no active attempt for this workflow
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
+                .thenReturn(ImmutableList.of());
+
+        // Run the schedule executor at now + 29
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(29));
+
+        // Verify that task was started.
+        verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
+
+        // Verify that the schedule progressed to the next time
+        verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
+    }
+
+    @Test
+    public void testNoSkipDelayedBy()
+            throws Exception
+    {
+        // there is no skip_delayed_by.
+        workflowConfig.getNestedOrSetEmpty("schedule")
+                .set("daily>", "12:00:00");
+
+        // Indicate that there is no active attempt for this workflow
+        when(sessionStore.getActiveAttemptsOfWorkflow(eq(PROJECT_ID), eq(WORKFLOW_NAME), anyInt(), any(Optional.class)))
+                .thenReturn(ImmutableList.of());
+
+        // Run the schedule executor at now + 1
+        scheduleExecutor.runScheduleOnce(now.plusSeconds(1));
+
+        // Verify the task was started.
+        verify(scheduleExecutor).startSchedule(any(StoredSchedule.class), any(Scheduler.class), any(StoredWorkflowDefinitionWithProject.class));
+
+        // Verify that the schedule progressed to the next time
+        verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
+    }
+
 }
