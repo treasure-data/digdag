@@ -81,6 +81,7 @@ public class ProjectArchives
                 }
             }
             if (!Files.isSymbolicLink(path) && isPosixCompliant()) {
+		// Files.setPosixFilePermissions doesn't work on Windows: java.lang.UnsupportedOperationException
                 Files.setPosixFilePermissions(path, getPosixFilePermissions(entry));
             }
         }
