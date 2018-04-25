@@ -405,7 +405,7 @@ start
 
 .. code-block:: console
 
-    $ digdag start <project-name> <workflow-name> --session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">
+    $ digdag start <project-name> <name> --session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">
 
 Starts a new session. This command requires project name, workflow name, and session_time. Examples:
 
@@ -529,7 +529,7 @@ workflows
 
 .. code-block:: console
 
-    $ digdag workflows [project-name] [workflow-name]
+    $ digdag workflows [project-name] [name]
 
 Shows list of workflows or details of a workflow. Examples:
 
@@ -555,7 +555,7 @@ backfill
 
 .. code-block:: console
 
-    $ digdag backfill <project-name> <workflow-name>
+    $ digdag backfill <project-name> <name>
 
 Starts sessions of a schedule for past session times.
 
@@ -605,7 +605,7 @@ sessions
 
 .. code-block:: console
 
-    $ digdag sessions [project-name] [workflow-name]
+    $ digdag sessions [project-name] [name]
 
 Shows list of sessions. This command shows only the latest attempts of sessions (doesn't include attempts retried by another attempt). To show all attempts, use ``digdag attempts``. Examples:
 
