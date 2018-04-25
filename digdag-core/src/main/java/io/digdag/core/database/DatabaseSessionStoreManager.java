@@ -948,8 +948,10 @@ public class DatabaseSessionStoreManager
         {
             return handle.createQuery(
                     "select parent_id from tasks" +
-                    " where parent_id = :parentId" +
-                    " and (" +
+                    " where id in (" +
+                      "select max(t.id) from tasks t join task_details td on t.id=td.id" +
+                      " where parent_id = :parentId group by td.full_name" +
+                    ") and (" +
                       // a child task is progressing now
                       "state = " + TaskStateCode.ERROR.get() +
                       " or state = " + TaskStateCode.GROUP_ERROR.get() +
