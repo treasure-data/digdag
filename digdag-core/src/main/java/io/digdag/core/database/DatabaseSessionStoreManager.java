@@ -886,6 +886,7 @@ public class DatabaseSessionStoreManager
             for (StoredTask task : tasks) {
                 Task newTask = Task.taskBuilder()
                     .from(task)
+                    .parentId(task.getParentId().transform(it -> oldIdToNewId.containsKey(it) ? oldIdToNewId.get(it) : it))
                     .state(TaskStateCode.BLOCKED)
                     .stateFlags(TaskStateFlags.empty())
                     .build();
