@@ -9,6 +9,7 @@ dependencies {
     testCompile('org.littleshoot:littleproxy:1.1.0') {
         // littleproxy depends on guava:18 and it conflicts with digdag-client
         exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'commons-io', module: 'commons-io'
     }
     testCompile "com.amazonaws:aws-java-sdk-dynamodb:${project.ext.awsJavaSdkVersion}"
     testCompile('org.apache.avro:avro:1.8.1') {
