@@ -297,13 +297,13 @@ public class Config
     @SuppressWarnings("unchecked")
     public <E> List<E> getList(String key, Class<E> elementType)
     {
-        return (List<E>) get(key, mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType));
+        return (List<E>) get(key, mapper.getTypeFactory().constructCollectionType(List.class, elementType));
     }
 
     @SuppressWarnings("unchecked")
     public <E> List<E> getListOrEmpty(String key, Class<E> elementType)
     {
-        return (List<E>) get(key, mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType), ImmutableList.<E>of());
+        return (List<E>) get(key, mapper.getTypeFactory().constructCollectionType(List.class, elementType), ImmutableList.<E>of());
     }
 
     @SuppressWarnings("unchecked")
@@ -314,7 +314,7 @@ public class Config
             return getList(key, elementType);
         }
         else {
-            return (List<E>) readObject(mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType), parsed, key);
+            return (List<E>) readObject(mapper.getTypeFactory().constructCollectionType(List.class, elementType), parsed, key);
         }
     }
 
@@ -326,7 +326,7 @@ public class Config
             return getListOrEmpty(key, elementType);
         }
         else {
-            return (List<E>) readObject(mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType), parsed, key);
+            return (List<E>) readObject(mapper.getTypeFactory().constructCollectionType(List.class, elementType), parsed, key);
         }
     }
 

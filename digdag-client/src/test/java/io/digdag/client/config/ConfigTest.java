@@ -1,12 +1,13 @@
 package io.digdag.client.config;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.List;
-import org.hamcrest.BaseMatcher;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertThat;
@@ -161,6 +162,15 @@ public class ConfigTest
         assertThat(config.parseNestedOrGetEmpty("null_value"), is(newConfig()));
         assertConfigException(() -> config.getNested("null_value"), "Parameter 'null_value' must be an object");
         assertConfigException(() -> config.parseNested("null_value"), "Parameter 'null_value' must be an object");
+    }
+
+    @Test
+    public void testGetOptional()
+    {
+        config.set("str", "s");
+
+        // For migration of jackson-databind from 2.6 -> 2.8
+        assertThat(config.getOptional("str", JsonNode.class).transform(JsonNode::deepCopy), is(Optional.of(TextNode.valueOf("s"))));
     }
 
     private void assertConfigException(Runnable func)
