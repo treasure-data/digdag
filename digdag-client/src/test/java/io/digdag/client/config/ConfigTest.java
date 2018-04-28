@@ -8,6 +8,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertThat;
@@ -106,9 +109,20 @@ public class ConfigTest
         List<String> nested = Arrays.asList("a", "b");
         config.set("nested", nested);
         assertThat(config.deepCopy().getList("nested", String.class), is(nested));
+        assertThat(config.deepCopy().getList("nested", JsonNode.class),
+                is(nested.stream().map(TextNode::valueOf).collect(Collectors.toList())));
+
         assertThat(config.deepCopy().getListOrEmpty("nested", String.class), is(nested));
+        assertThat(config.deepCopy().getListOrEmpty("nested", JsonNode.class),
+                is(nested.stream().map(TextNode::valueOf).collect(Collectors.toList())));
+
         assertThat(config.deepCopy().parseList("nested", String.class), is(nested));
+        assertThat(config.deepCopy().parseList("nested", JsonNode.class),
+                is(nested.stream().map(TextNode::valueOf).collect(Collectors.toList())));
+
         assertThat(config.deepCopy().parseListOrGetEmpty("nested", String.class), is(nested));
+        assertThat(config.deepCopy().parseListOrGetEmpty("nested", JsonNode.class),
+                is(nested.stream().map(TextNode::valueOf).collect(Collectors.toList())));
     }
 
     @Test
@@ -116,8 +130,11 @@ public class ConfigTest
     {
         List<String> empty = Arrays.asList();
         assertConfigException(() -> config.deepCopy().getList("nested", String.class));
+        assertConfigException(() -> config.deepCopy().getList("nested", JsonNode.class));
         assertThat(config.deepCopy().getListOrEmpty("nested", String.class), is(empty));
+
         assertConfigException(() -> config.deepCopy().parseList("nested", String.class));
+        assertConfigException(() -> config.deepCopy().parseList("nested", JsonNode.class));
         assertThat(config.deepCopy().parseListOrGetEmpty("nested", String.class), is(empty));
     }
 
@@ -127,9 +144,18 @@ public class ConfigTest
         List<String> nested = Arrays.asList("a", "b");
         config.set("nested", "[\"a\", \"b\"]");
         assertConfigException(() -> config.deepCopy().getList("nested", String.class));
+        assertConfigException(() -> config.deepCopy().getList("nested", JsonNode.class));
+
         assertConfigException(() -> config.deepCopy().getListOrEmpty("nested", String.class));
+        assertConfigException(() -> config.deepCopy().getListOrEmpty("nested", JsonNode.class));
+
         assertThat(config.deepCopy().parseList("nested", String.class), is(nested));
+        assertThat(config.deepCopy().parseList("nested", JsonNode.class),
+                is(nested.stream().map(TextNode::valueOf).collect(Collectors.toList())));
+
         assertThat(config.deepCopy().parseListOrGetEmpty("nested", String.class), is(nested));
+        assertThat(config.deepCopy().parseListOrGetEmpty("nested", JsonNode.class),
+                is(nested.stream().map(TextNode::valueOf).collect(Collectors.toList())));
     }
 
     @Test
@@ -170,7 +196,8 @@ public class ConfigTest
         config.set("str", "s");
 
         // For migration of jackson-databind from 2.6 -> 2.8
-        assertThat(config.getOptional("str", JsonNode.class).transform(JsonNode::deepCopy), is(Optional.of(TextNode.valueOf("s"))));
+        assertThat(config.getOptional("str", JsonNode.class).transform(JsonNode::deepCopy),
+                is(Optional.of(TextNode.valueOf("s"))));
     }
 
     private void assertConfigException(Runnable func)
