@@ -405,16 +405,16 @@ start
 
 .. code-block:: console
 
-    $ digdag start <project-name> <+name> --session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">
+    $ digdag start <project-name> <name> --session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">
 
 Starts a new session. This command requires project name, workflow name, and session_time. Examples:
 
 .. code-block:: console
 
-    $ digdag start myproj +main --dry-run --session hourly
-    $ digdag start myproj +main --session daily
-    $ digdag start myproj +main --session "2016-01-01 00:00:00"
-    $ digdag start myproj +main --session "2016-01-01" -p environment=staging -p user=frsyuki
+    $ digdag start myproj main --dry-run --session hourly
+    $ digdag start myproj main --session daily
+    $ digdag start myproj main --session "2016-01-01 00:00:00"
+    $ digdag start myproj main --session "2016-01-01" -p environment=staging -p user=frsyuki
 
 :command:`--session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">`
   Use this time as session_time.
@@ -529,7 +529,7 @@ workflows
 
 .. code-block:: console
 
-    $ digdag workflows [project-name] [+name]
+    $ digdag workflows [project-name] [name]
 
 Shows list of workflows or details of a workflow. Examples:
 
@@ -537,8 +537,7 @@ Shows list of workflows or details of a workflow. Examples:
 
     $ digdag workflows
     $ digdag workflows myproj
-    $ digdag workflows +main
-    $ digdag workflows myproj +main
+    $ digdag workflows myproj main
 
 
 schedules
@@ -556,7 +555,7 @@ backfill
 
 .. code-block:: console
 
-    $ digdag backfill <project-name> <workflow-name>
+    $ digdag backfill <project-name> <name>
 
 Starts sessions of a schedule for past session times.
 
@@ -606,7 +605,7 @@ sessions
 
 .. code-block:: console
 
-    $ digdag sessions [project-name] [+name]
+    $ digdag sessions [project-name] [name]
 
 Shows list of sessions. This command shows only the latest attempts of sessions (doesn't include attempts retried by another attempt). To show all attempts, use ``digdag attempts``. Examples:
 
@@ -614,7 +613,7 @@ Shows list of sessions. This command shows only the latest attempts of sessions 
 
     $ digdag sessions
     $ digdag sessions myproj
-    $ digdag sessions myproj +main
+    $ digdag sessions myproj main
 
 :command:`-i, --last-id ID`
   Shows more sessions older than this id.
