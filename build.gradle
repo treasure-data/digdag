@@ -109,7 +109,7 @@ subprojects {
     }
 
     ext {
-        jacksonVersion = "2.6.7"
+        jacksonVersion = "2.8.11"
         awsJavaSdkVersion = "1.11.63"
         guavaVersion = "19.0"
     }
