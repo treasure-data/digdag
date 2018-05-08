@@ -555,7 +555,7 @@ backfill
 
 .. code-block:: console
 
-    $ digdag backfill <project-name> <name>
+    $ digdag backfill <project-name> <workflow-name>
 
 Starts sessions of a schedule for past session times.
 
