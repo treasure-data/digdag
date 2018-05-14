@@ -81,7 +81,7 @@ public class LogServerManager
             // temp file prefix: {projectId}_{workflowName}_{sessionTime}
             final String tempFilePrefix = new StringBuilder()
                     .append(prefix.getProjectId()).append("_")
-                    .append(prefix.getWorkflowName()).append("_")
+                    .append(prefix.getWorkflowName()).append("_") // workflow name is normalized before it's submitted.
                     .append(prefix.getSessionTime().toString()) // ISO-8601
                     .toString();
             return new BufferedRemoteTaskLogger(tempFiles, tempFilePrefix,
