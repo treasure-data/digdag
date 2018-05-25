@@ -231,13 +231,15 @@ public class LocalFileLogServerFactory
                              OutputStream out = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024)) {
                             ByteStreams.copy(in, out);
                         }
-                        finally {
-                            temporaryPath.toFile().delete();
-                        }
                     }
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
+                }
+                finally {
+                    if (realtimeFollow) {
+                        temporaryPath.toFile().delete();
+                    }
                 }
             }
         }
