@@ -29,6 +29,7 @@ import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogModule;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -140,6 +141,9 @@ public class Run
     @Parameter(names = {"--max-task-threads"})
     int maxTaskThreads = 0;
 
+    @Parameter(names = {"-O", "--task-log"})
+    String taskLogPath = null;
+
     private Path resumeStatePath;
 
     @Override
@@ -198,6 +202,7 @@ public class Run
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
         err.println("    --max-task-threads               Limit maximum number of task execution threads on the execution");
+        err.println("    -O, --task-log DIR               store task logs to this path");
         Main.showCommonOptions(env, err);
         return systemExit(error);
     }
@@ -223,6 +228,11 @@ public class Run
             systemProps.setProperty("agent.max-task-threads", String.valueOf(maxTaskThreads));
         }
 
+        if (taskLogPath != null) {
+            systemProps.setProperty("log-server.type", "local");
+            systemProps.setProperty("log-server.local.path", taskLogPath);
+        }
+
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
                 .setEnvironment(env)
                 .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
@@ -232,6 +242,7 @@ public class Run
                     binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
                     binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
+                    binder.bind(LogModule.class).in(Scopes.SINGLETON);
                     binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
                 })
                 .overrideModulesWith((binder) -> {
