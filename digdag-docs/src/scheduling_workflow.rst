@@ -101,3 +101,23 @@ It’s this case it’s best to skip the next hour’s workflow session, and ins
 
 * Added a `skip_on_overtime: true | false` schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.
 * Scheduled workflow sessions now have a `last_executed_session_time` variable which contains the previously executed session time. It is usually same with `last_session_time` but has different value when `skip_on_overtime: true` is set or the session is the first execution.
+
+Skipping backfill.
+------------------
+
+When Digdag restart after stopped for a while, it creates past session automatically(called backfill).
+By default, It creates past session until the next of `last_session_time`.
+The `skip_delayed_by` option skip creating it.
+
+For example, If Digdag restart at 20:00:00 and workflow scheduled as below, Digdag create three sessions(19:59:00, 19:58:00 and 19:57:00).
+And Digdag doesn't create sessions which are before 19:56:00.
+
+
+.. code-block:: yaml
+
+    schedule:
+      minutes_interval>: 1
+      skip_delayed_by: 3m
+
+    +setup:
+      sh>: echo ${session_time}
