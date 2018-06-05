@@ -2,12 +2,12 @@ Release 0.5.5
 ==================================
 
 Client-mode changes
-------------------
+-------------------
 
 * ``digdag log`` tries to download task log files directly from a shared remote storage without accessing to a digdag server if the server sets direct download URL.
 
 Server-mode changes
-------------------
+-------------------
 
 * Parameter name ``log-server.path`` is changed to ``log-server.local.path``.
 

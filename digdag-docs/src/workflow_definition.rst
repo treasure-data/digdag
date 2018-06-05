@@ -4,7 +4,7 @@ Workflow definition
 .. contents::
    :local:
 
-Workflow definition: *.dig files
+Workflow definition: \*.dig files
 ----------------------------------
 
 A digdag workflow is defined in a file named with ``.dig`` suffix. Name of the file is name of the workflow.
@@ -246,7 +246,7 @@ If ``_background: true`` parameter is set to a task or group, the task or group 
         sh>: tasks/analyze_prepared_data_sets.sh
 
 Retrying failed tasks automatically
-----------------------------------
+-----------------------------------
 
 If ``_retry: N`` (N is an integer: 1, 2, 3, ...) parameter is set to a group, it retires the group from the beginning when one or more children failed.
 

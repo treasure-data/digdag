@@ -12,7 +12,7 @@ Local-line changes
 
 
 Server-mode changes
-------------------
+-------------------
 
 * Added support for PostgreSQL database backend. Tested with PostgreSQL >= 9.4. PostgreSQL >= 9.5 is preferred (because SELECT ... FOR UPDATE SKIP RECORD statement is available).
 

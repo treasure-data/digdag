@@ -2,7 +2,7 @@ Release 0.3.0
 ==================================
 
 Command-line Changes
-------------------
+--------------------
 
 * **IMPORTANT**: arguments of ``run`` command changed:
 

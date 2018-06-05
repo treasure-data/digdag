@@ -2,7 +2,7 @@ Release 0.5.4
 ==================================
 
 Server-mode changes
-------------------
+-------------------
 
 * Return 400 Bad Request instead of Internal Server Error if required query parameter is not set.
 

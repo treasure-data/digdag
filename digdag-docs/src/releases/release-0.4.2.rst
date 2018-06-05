@@ -2,7 +2,7 @@ Release 0.4.2
 ==================================
 
 Server-mode changes
-------------------
+-------------------
 
 * Changed /api/sessions to /api/attempts. No backward compatibility is provided.
 
