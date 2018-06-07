@@ -37,7 +37,7 @@ public class ServerJmxIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .inProcess(false)
             .configuration(
-                    "server.jmx.port=0")
+                    "server.jmx.port=19321")
             .build();
 
     private static JMXConnector connectJmx(TemporaryDigdagServer server)
