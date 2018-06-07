@@ -1,5 +1,5 @@
 
 dependencies {
     compile project(':digdag-client')
-    compile 'com.google.inject.extensions:guice-multibindings:4.0'
+    compile 'com.google.inject.extensions:guice-multibindings:4.2.0'
 }
