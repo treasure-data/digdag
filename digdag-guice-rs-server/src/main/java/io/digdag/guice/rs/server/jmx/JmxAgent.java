@@ -2,8 +2,6 @@ package io.digdag.guice.rs.server.jmx;
 
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import com.sun.tools.attach.AttachNotSupportedException;
-import com.sun.tools.attach.VirtualMachine;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -75,19 +73,23 @@ public class JmxAgent
             // Here attaches to this VM. This is prohibited by default since JDK 9 due to
             // sun.tools.attach.HotSpotVirtualMachine.ALLOW_ATTACH_SELF flag. To bypass this
             // problem, jdk.attach.allowAttachSelf=true system property is necessary.
-            VirtualMachine virtualMachine = VirtualMachine.attach(Long.toString(pid));
+            // Here doesn't use "import com.sun.tools.attach.VirtualMachine" because compile
+            // fails with JDK 8.
+            Object virtualMachine = invokeStaticMethod("com.sun.tools.attach.VirtualMachine", "attach",
+                    String.class, Long.toString(pid));
             try {
-                virtualMachine.startLocalManagementAgent();
-                virtualMachine.startManagementAgent(props);
+                invokeMethod(virtualMachine, "startLocalManagementAgent");
+                invokeMethod(virtualMachine, "startManagementAgent", Properties.class, props);
             }
             finally {
-                virtualMachine.detach();
+                invokeMethod(virtualMachine, "detach");
             }
         }
-        catch (IOException e) {
-            throw new RuntimeException("Failed to start JMX agent. Please make sure that you add '-Djdk.attach.allowAttachSelf=true' to the command line options of java or to JDK_JAVA_OPTIONS environment variable.", e);
-        }
         catch (Exception e) {
+            if (e.getCause() instanceof IOException) {
+                // VirtualMachine throws IOException
+                throw new RuntimeException("Failed to start JMX agent. Please make sure that you add '-Djdk.attach.allowAttachSelf=true' to the command line options of java or to JDK_JAVA_OPTIONS environment variable.", e.getCause());
+            }
             throw Throwables.propagate(e);
         }
 
