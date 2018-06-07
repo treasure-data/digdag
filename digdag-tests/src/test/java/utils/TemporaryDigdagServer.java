@@ -351,6 +351,7 @@ public class TemporaryDigdagServer
             processArgs.addAll(asList(
                     "-cp", classPath,
                     "-XX:TieredStopAtLevel=1", "-Xverify:none",  // for faster startup and less memory consumption on CI
+                    "-Djdk.attach.allowAttachSelf=true", // for io.digdag.guice.rs.server.jmx.JmxAgent
                     "-Xms128m", "-Xmx128m"));
             if (version.isPresent()) {
                 processArgs.add("-D" + VERSION_PROPERTY + "=" + version.get());

@@ -32,9 +32,9 @@ if "%overwrite_optimize%" == "true" (
 )
 
 if "%optimize%" == "true" (
-    set java_args=-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC %java_args%
+    set java_args=-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC -Djdk.attach.allowAttachSelf=true %java_args%
 ) else (
-    set java_args=-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none %java_args%
+    set java_args=-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none -Djdk.attach.allowAttachSelf=true %java_args%
 )
 
 java -Dio.digdag.cli.launcher=selfrun %java_args% -jar "%this%" %args%
@@ -130,9 +130,9 @@ while true; do
 done
 
 if test "$overwrite_optimize" = "true" -o "$default_optimize" -a "$overwrite_optimize" != "false"; then
-    java_args="-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC $java_args"
+    java_args="-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC -Djdk.attach.allowAttachSelf=true $java_args"
 else
-    java_args="-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none $java_args"
+    java_args="-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none -Djdk.attach.allowAttachSelf=true $java_args"
 fi
 
 exec java -Dio.digdag.cli.launcher=selfrun $java_args -jar "$0" "$@"
