@@ -350,7 +350,7 @@ In the config file, following parameters are available
 * server.http.io-idle-timeout (maximum allowed idle time of reading HTTP request and writing HTTP response in seconds. default: 300)
 * server.http.enable-http2 (enable HTTP/2. default: false)
 * server.http.headers.KEY = VALUE (HTTP header to set on API responses)
-* server.jmx.port (port to listen JMX in integer. default: JMX is disabled)
+* server.jmx.port (port to listen JMX in integer. default: JMX is disabled) Since Java 9, to use this option, you need to set '-Djdk.attach.allowAttachSelf=true' to command line option of java or to JDK_JAVA_OPTIONS environment variable.
 * server.authenticator-class (string) The FQCN of the ``io.digdag.spi.Authenticator`` implementation to use. The implementation is to be provided by a system plugin. The auth plugin configuration is implementation specific. Default: ``io.digdag.standards.auth.jwt.JwtAuthenticator``
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
