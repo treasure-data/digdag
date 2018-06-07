@@ -2,6 +2,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '2.0.3'
     id 'com.jfrog.bintray' version '1.7.3'
     id 'com.github.kt3k.coveralls' version '2.6.3'
+    id 'com.github.spotbugs' version '1.6.2'
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -42,7 +43,7 @@ allprojects {
     }
 
     jacoco {
-        toolVersion = "0.7.7.201606060606"
+        toolVersion = '0.8.1'
     }
 
     bintray {
@@ -84,7 +85,7 @@ allprojects {
 
 subprojects {
     apply plugin: 'maven'
-    apply plugin: 'findbugs'
+    apply plugin: 'com.github.spotbugs'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -116,14 +117,15 @@ subprojects {
         options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }
 
-    findbugs {
+    spotbugs {
+        toolVersion = '3.1.3'
         effort = 'max'
         reportLevel = 'high'
         ignoreFailures = true
         excludeFilter = file("${rootProject.projectDir}/config/findbugs-exclude.xml")
     }
 
-    tasks.withType(FindBugs) {
+    tasks.withType(com.github.spotbugs.SpotBugsTask) {
         reports {
             xml.enabled = false
             html.enabled = true
@@ -306,6 +308,7 @@ coveralls {
 }
 
 wrapper {
+    // Find the latest version at https://gradle.org/releases/
     gradleVersion = '4.8'
 }
 
