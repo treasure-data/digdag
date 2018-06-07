@@ -1,6 +1,6 @@
 
 dependencies {
-    compile 'com.google.inject:guice:4.0'
+    compile 'com.google.inject:guice:4.2.0'
     compile 'javax.servlet:javax.servlet-api:3.1.0'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.0.13.Final'
     compile 'org.jboss.resteasy:async-http-servlet-3.0:3.0.13.Final'
