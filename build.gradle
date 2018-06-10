@@ -269,11 +269,13 @@ subprojects {
             if (![project(":digdag-docs")].contains(project)) {
                 mavenJava(MavenPublication) {
                     from components.java
-                    artifact testsJar
-                    artifact sourcesJar
-                    artifact javadocJar
+                    afterEvaluate {
+                        artifact testsJar
+                        artifact sourcesJar
+                        artifact javadocJar
 
-                    pom.withXml(pomXmlModifier)
+                        pom.withXml(pomXmlModifier)
+                    }
                 }
             }
         }
