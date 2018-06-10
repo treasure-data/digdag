@@ -305,8 +305,8 @@ coveralls {
     sourceDirs += jacocoTestReport.sourceDirectories.toList()
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.0.1'
+wrapper {
+    gradleVersion = '4.8'
 }
 
 project(':digdag-ui') {
