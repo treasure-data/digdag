@@ -313,7 +313,7 @@ wrapper {
 
 project(':digdag-ui') {
     task buildUi {
-        inputs.file fileTree(dir: ".", include: ["*.js", "*.jsx", "config/*"])
+        inputs.files fileTree(dir: ".", include: ["*.js", "*.jsx", "config/*"])
         outputs.dir "public"
 
         doFirst {
