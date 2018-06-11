@@ -2,7 +2,6 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '2.0.3'
     id 'com.jfrog.bintray' version '1.7.3'
     id 'com.github.kt3k.coveralls' version '2.6.3'
-    id 'net.ltgt.apt' version '0.9'
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -30,7 +29,6 @@ allprojects {
     apply plugin: 'jacoco'
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'maven-publish'
-    apply plugin: 'net.ltgt.apt'
 
     repositories {
         mavenCentral()
@@ -99,8 +97,8 @@ subprojects {
 
         compileOnly "org.immutables:value:2.3.9:annotations"
         testCompileOnly "org.immutables:value:2.3.9:annotations"
-        apt "org.immutables:value:2.3.9"
-        testApt "org.immutables:value:2.3.9"
+        annotationProcessor "org.immutables:value:2.3.9"
+        testAnnotationProcessor "org.immutables:value:2.3.9"
 
         testCompile 'junit:junit:4.12'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
