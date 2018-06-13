@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -24,6 +25,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TaskRequest;
 import io.digdag.client.config.Config;
 import org.slf4j.Logger;
@@ -32,20 +34,31 @@ import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class DockerCommandExecutor
-    implements CommandExecutor
+        extends ProcessCommandExecutor
 {
     private final SimpleCommandExecutor simple;
 
     private static Logger logger = LoggerFactory.getLogger(DockerCommandExecutor.class);
 
     @Inject
-    public DockerCommandExecutor(SimpleCommandExecutor simple)
+    public DockerCommandExecutor(final CommandLogger clog, final SimpleCommandExecutor simple)
     {
+        super(clog);
         this.simple = simple;
     }
 
+    @Override
+    @Deprecated
     public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-        throws IOException
+            throws IOException
+    {
+        logger.warn(getClass().getName() + "#start method is deprecated and will be removed.");
+        return startProcess(projectPath, request, pb);
+    }
+
+    @Override
+    public Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
+            throws IOException
     {
         // TODO set TZ environment variable
         Config config = request.getConfig();
@@ -53,11 +66,12 @@ public class DockerCommandExecutor
             return startWithDocker(projectPath, request, pb);
         }
         else {
-            return simple.start(projectPath.toAbsolutePath(), request, pb);
+            return simple.startProcess(projectPath.toAbsolutePath(), request, pb);
         }
     }
 
     private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
+            throws IOException
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
