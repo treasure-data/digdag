@@ -50,7 +50,7 @@ public class TaskDependenciesTest {
     }
 
     @Test
-    public void TaskDependenciesTest()
+    public void testTaskDependencies()
             throws Exception {
         StoredSessionAttemptWithSession attempt =
                 runWorkflow(embed, projectPath, "basic", loadYamlResource("/io/digdag/core/workflow/basic.dig"));
@@ -99,7 +99,7 @@ public class TaskDependenciesTest {
     }
 
     @Test
-    public void GroupRetryTaskDependenciesTest()
+    public void testGroupRetryTaskDependencies()
             throws Exception {
         StoredSessionAttemptWithSession attempt =
                 runWorkflow(embed, projectPath, "retry_on_group", loadYamlResource("/io/digdag/core/workflow/retry_on_group.dig"));
