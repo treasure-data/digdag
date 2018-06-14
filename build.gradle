@@ -404,6 +404,7 @@ task classpath(dependsOn: [':digdag-cli:classpath']){
 clean {
     delete 'classpath'
     delete 'pkg'
+    delete 'digdag-ui/public'
 }
 
 task release() {
