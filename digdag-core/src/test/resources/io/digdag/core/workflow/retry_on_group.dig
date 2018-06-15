@@ -4,10 +4,14 @@
 +doit:
   _retry: 3
   +task1:
-    echo>: "try"
+    echo>: "try1"
     append_file: out
   +task2:
-    fail>: task failed expectedly
+    +task2_nested:
+      echo>: "try2"
+      append_file: out
   +task3:
+    fail>: task failed expectedly
+  +task4:
     echo>: "skipped"
     append_file: out
