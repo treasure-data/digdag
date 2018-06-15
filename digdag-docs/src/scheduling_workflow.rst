@@ -105,12 +105,9 @@ It’s this case it’s best to skip the next hour’s workflow session, and ins
 Skipping backfill.
 ------------------
 
-When Digdag restart after stopped for a while, it creates past session automatically(called backfill).
-By default, It creates past session until the next of `last_session_time`.
-The `skip_delayed_by` option skip creating it.
+The `skip_delayed_by` option enables `backfill <https://docs.digdag.io/command_reference.html#backfill>`_ command to skip creating sessions delayed by the specified time. When Digdag restarts, sessions of a schedule are automatically created until the next of `last_session_time`.
 
-For example, If Digdag restart at 20:00:00 and workflow scheduled as below, Digdag create three sessions(19:59:00, 19:58:00 and 19:57:00).
-And Digdag doesn't create sessions which are before 19:56:00.
+For example, If Digdag restarts at 20:00:00 and a workflow scheduled as below, it creates three sessions (19:59:00, 19:58:00 and 19:57:00). And then, Digdag doesn't create sessions which are before 19:56:00 by the option.
 
 
 .. code-block:: yaml
