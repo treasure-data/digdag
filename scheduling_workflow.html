@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#checking-scheduling-status">Checking scheduling status</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time">Setting an alert if a workflow doesn&#8217;t finish within expected time</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#skipping-a-next-workflow-session">Skipping a next workflow session</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#skipping-backfill">Skipping backfill.</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
@@ -159,6 +160,7 @@
 <li><a class="reference internal" href="#checking-scheduling-status" id="id3">Checking scheduling status</a></li>
 <li><a class="reference internal" href="#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time" id="id4">Setting an alert if a workflow doesn&#8217;t finish within expected time</a></li>
 <li><a class="reference internal" href="#skipping-a-next-workflow-session" id="id5">Skipping a next workflow session</a></li>
+<li><a class="reference internal" href="#skipping-backfill" id="id6">Skipping backfill.</a></li>
 </ul>
 </div>
 <div class="section" id="setting-up-a-schedule">
@@ -272,6 +274,19 @@
 <li>Added a <cite>skip_on_overtime: true | false</cite> schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.</li>
 <li>Scheduled workflow sessions now have a <cite>last_executed_session_time</cite> variable which contains the previously executed session time. It is usually same with <cite>last_session_time</cite> but has different value when <cite>skip_on_overtime: true</cite> is set or the session is the first execution.</li>
 </ul>
+</div>
+<div class="section" id="skipping-backfill">
+<h2><a class="toc-backref" href="#id6">Skipping backfill.</a><a class="headerlink" href="#skipping-backfill" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>skip_delayed_by</cite> option enables <a class="reference external" href="https://docs.digdag.io/command_reference.html#backfill">backfill</a> command to skip creating sessions delayed by the specified time. When Digdag restarts, sessions of a schedule are automatically created until the next of <cite>last_session_time</cite>.</p>
+<p>For example, If Digdag restarts at 20:00:00 and a workflow scheduled as below, it creates three sessions (19:59:00, 19:58:00 and 19:57:00). And then, Digdag doesn&#8217;t create sessions which are before 19:56:00 by the option.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">schedule</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">minutes_interval&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+  <span class="l l-Scalar l-Scalar-Plain">skip_delayed_by</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3m</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+setup</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${session_time}</span>
+</pre></div>
+</div>
 </div>
 </div>
 
