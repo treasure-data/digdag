@@ -269,11 +269,13 @@ subprojects {
             if (![project(":digdag-docs")].contains(project)) {
                 mavenJava(MavenPublication) {
                     from components.java
-                    artifact testsJar
-                    artifact sourcesJar
-                    artifact javadocJar
+                    afterEvaluate {
+                        artifact testsJar
+                        artifact sourcesJar
+                        artifact javadocJar
 
-                    pom.withXml(pomXmlModifier)
+                        pom.withXml(pomXmlModifier)
+                    }
                 }
             }
         }
@@ -305,13 +307,13 @@ coveralls {
     sourceDirs += jacocoTestReport.sourceDirectories.toList()
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.0.1'
+wrapper {
+    gradleVersion = '4.8'
 }
 
 project(':digdag-ui') {
     task buildUi {
-        inputs.file fileTree(dir: ".", include: ["*.js", "*.jsx", "config/*"])
+        inputs.files fileTree(dir: ".", include: ["*.js", "*.jsx", "config/*"])
         outputs.dir "public"
 
         doFirst {
