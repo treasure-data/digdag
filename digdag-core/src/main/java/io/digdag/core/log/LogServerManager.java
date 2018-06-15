@@ -1,5 +1,8 @@
 package io.digdag.core.log;
 
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Set;
 import com.google.inject.Inject;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -18,6 +21,10 @@ import io.digdag.core.TempFileManager;
 
 public class LogServerManager
 {
+    private static final DateTimeFormatter ISO8601_SHORT = DateTimeFormatter
+            .ofPattern("yyyyMMdd'T'HHmmssX", Locale.ENGLISH)
+            .withZone(ZoneOffset.UTC);
+
     private final LogServer logServer;
     private final TempFileManager tempFiles;
 
@@ -78,7 +85,13 @@ public class LogServerManager
             return ((LocalFileLogServer) logServer).newDirectTaskLogger(prefix, taskName);
         }
         else {
-            return new BufferedRemoteTaskLogger(tempFiles, taskName,
+            // temp file prefix: {projectId}_{workflowName}_{sessionTime}
+            final String tempFilePrefix = new StringBuilder()
+                    .append(prefix.getProjectId()).append("_")
+                    .append(prefix.getWorkflowName()).append("_") // workflow name is normalized before it's submitted.
+                    .append(ISO8601_SHORT.format(prefix.getSessionTime())) // yyyyMMdd'T'HHmmss'Z'
+                    .toString();
+            return new BufferedRemoteTaskLogger(tempFiles, tempFilePrefix,
                     (firstLogTime, gzData) -> {
                         logServer.putFile(prefix, taskName, firstLogTime, agentId.toString(), gzData);
                     });
