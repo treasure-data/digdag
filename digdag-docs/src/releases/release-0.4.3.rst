@@ -19,12 +19,12 @@ CLI changes
 * Added ``backfill``, ``reschedule``, and ``log`` to usage message.
 
 Client-mode changes
-------------------
+-------------------
 
 * Added ``DigdagClient.getRevisions``.
 
 Server-mode changes
-------------------
+-------------------
 
 * Added ``/api/repositories/{id}/revisions`` REST API.
 

@@ -8,7 +8,7 @@ CLI Changes
 * Version checking become less restricted. CLI checks there is a recommended upgrade or not using Digdag server's REST API and upgrades only if one exists. If CLI is executed as a batch command (STDOUT is not TTY), force upgrade won't be required.
 
 Operator Changes
----------------
+----------------
 
 * ``td_run`` operator accepts ID of a bulk loading in addition to name.
 
