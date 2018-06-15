@@ -2,7 +2,7 @@ Release 0.5.7
 ==================================
 
 Server-mode changes
-------------------
+-------------------
 
 * Workspace extraced from an repository archive preserves UNIX file permissions and symbolic links.
 
@@ -10,7 +10,7 @@ Server-mode changes
 
 
 Client-mode changes
-------------------
+-------------------
 
 * ``digdag push`` and ``digdag archive`` preserves UNIX file permissions and symbolic linkes.
 

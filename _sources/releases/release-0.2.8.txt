@@ -2,7 +2,7 @@ Release 0.2.8
 ==================================
 
 Command-line Changes
-------------------
+--------------------
 
 (this release includes broken changes about command line).
 

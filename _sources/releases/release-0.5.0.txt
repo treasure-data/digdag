@@ -7,7 +7,7 @@ CLI changes
 * Setting parameters in command line (``-p KEY=VALUE``) accepts dot-separated keys to set a nested value. For example, ``-p td.apikey=value`` sets ``{td: {apikey: value}}``.
 
 Client-mode changes
-------------------
+-------------------
 
 * ``start`` command requires ``--session`` argument instead of ``--now`` or zoned timestamp.
 
@@ -22,7 +22,7 @@ Client-mode changes
 * Added ``attempts`` command. ``session`` command no longer accepts ``--with-retry`` (use ``attempts`` command instead).
 
 Server-mode changes
-------------------
+-------------------
 
 * ``PUT /api/attempts`` endpoint requires workflow id instead of a combination of repository name, revision name, and workflow name. This makes the request idempotent and deterministic.
 

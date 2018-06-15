@@ -2,7 +2,7 @@ Release 0.5.8
 ==================================
 
 Server-mode changes
-------------------
+-------------------
 
 * Log REST API endpoints return fileSize field in addition to fileName.
 
@@ -10,7 +10,7 @@ Server-mode changes
 
 
 Client-mode changes
-------------------
+-------------------
 
 * ``digdag log`` filters out DEBUG logs, TRACE logs, and lines following those logs by default.
 

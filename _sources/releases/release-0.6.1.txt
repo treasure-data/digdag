@@ -31,7 +31,7 @@ CLI changes
 * Built-in authentication mechanism is removed. ``genapikey`` command is removed. ``-a, --apikey`` option is removed.
 
 Server mode changes
-------------------
+-------------------
 
 * Added access logging. Disabled by default. ``-A, --access-log DIR`` parameter enables it.
 
