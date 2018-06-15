@@ -118,7 +118,7 @@ subprojects {
     }
 
     spotbugs {
-        toolVersion = '3.1.3'
+        toolVersion = '3.1.5'
         effort = 'max'
         reportLevel = 'high'
         ignoreFailures = true
