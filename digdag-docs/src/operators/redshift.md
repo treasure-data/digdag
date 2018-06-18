@@ -91,7 +91,7 @@ _export:
   download_file: output.csv
   ```
 
-* **store_last_results**: BOOLEAN
+* **store_last_results**: false | first | all
 
   Whether to store the query results to ``redshift.last_results`` parameter. *Default:* `false`.
 
