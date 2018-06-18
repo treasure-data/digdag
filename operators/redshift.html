@@ -247,7 +247,7 @@
 </pre></div>
 </div>
 </li>
-<li><p class="first"><strong>store_last_results</strong>: BOOLEAN</p>
+<li><p class="first"><strong>store_last_results</strong>: false | first | all</p>
 <p>Whether to store the query results to <code class="docutils literal"><span class="pre">redshift.last_results</span></code> parameter. <em>Default:</em> <code class="docutils literal"><span class="pre">false</span></code>.</p>
 <p>Setting <code class="docutils literal"><span class="pre">first</span></code> stores the first row to the parameter as an object (e.g. <code class="docutils literal"><span class="pre">${redshift.last_results.count}</span></code>).</p>
 <p>Setting <code class="docutils literal"><span class="pre">all</span></code> stores all rows to the parameter as an array of objects (e.g. <code class="docutils literal"><span class="pre">${redshift.last_results[0].name}</span></code>). If number of rows exceeds limit, task fails.</p>

@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Release 0.9.26 &mdash; Digdag 0.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Digdag 0.9.5 documentation" href="../index.html"/>
+        <link rel="up" title="Release Notes" href="../releases.html"/>
+        <link rel="next" title="Release 0.9.25" href="release-0.9.25.html"/>
+        <link rel="prev" title="Release Notes" href="../releases.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../internal.html">Internal architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../releases.html">Release Notes</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Release 0.9.26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-changes">General Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#release-date">Release Date</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contributors">Contributors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.25.html">Release 0.9.25</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.24.html">Release 0.9.24</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.23.html">Release 0.9.23</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.22.html">Release 0.9.22</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.21.html">Release 0.9.21</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.20.html">Release 0.9.20</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.19.html">Release 0.9.19</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.18.html">Release 0.9.18</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.17.html">Release 0.9.17</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.16.html">Release 0.9.16</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.15.html">Release 0.9.15</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.14.html">Release 0.9.14</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.13.html">Release 0.9.13</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.12.html">Release 0.9.12</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.11.html">Release 0.9.11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.10.html">Release 0.9.10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.9.html">Release 0.9.9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.8.html">Release 0.9.8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.7.html">Release 0.9.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.6.html">Release 0.9.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.5.html">Release 0.9.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.4.html">Release 0.9.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.3.html">Release 0.9.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.2.html">Release 0.9.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.1.html">Release 0.9.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.9.0.html">Release 0.9.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.22.html">Release 0.8.22</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.21.html">Release 0.8.21</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.20.html">Release 0.8.20</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.19.html">Release 0.8.19</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.18.html">Release 0.8.18</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.17.html">Release 0.8.17</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.16.html">Release 0.8.16</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.15.html">Release 0.8.15</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.14.html">Release 0.8.14</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.13.html">Release 0.8.13</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.12.html">Release 0.8.12</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.11.html">Release 0.8.11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.10.html">Release 0.8.10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.9.html">Release 0.8.9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.8.html">Release 0.8.8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.7.html">Release 0.8.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.6.html">Release 0.8.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.5.html">Release 0.8.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.4.html">Release 0.8.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.3.html">Release 0.8.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.2.html">Release 0.8.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.1.html">Release 0.8.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.8.0.html">Release 0.8.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.7.1.html">Release 0.7.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.7.0.html">Release 0.7.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.6.1.html">Release 0.6.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.6.0.html">Release 0.6.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.9.html">Release 0.5.9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.8.html">Release 0.5.8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.7.html">Release 0.5.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.6.html">Release 0.5.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.5.html">Release 0.5.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.4.html">Release 0.5.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.3.html">Release 0.5.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.2.html">Release 0.5.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.1.html">Release 0.5.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.5.0.html">Release 0.5.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.4.3.html">Release 0.4.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.4.2.html">Release 0.4.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.4.1.html">Release 0.4.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.4.0.html">Release 0.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.6.html">Release 0.3.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.5.html">Release 0.3.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.4.html">Release 0.3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.3.html">Release 0.3.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.2.html">Release 0.3.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.1.html">Release 0.3.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.3.0.html">Release 0.3.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.8.html">Release 0.2.8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.7.html">Release 0.2.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.6.html">Release 0.2.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.5.html">Release 0.2.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.4.html">Release 0.2.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.3.html">Release 0.2.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.2.html">Release 0.2.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.1.html">Release 0.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-0.2.0.html">Release 0.2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../logo.html">Logo</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../releases.html">Release Notes</a> &raquo;</li>
+      
+    <li>Release 0.9.26</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/releases/release-0.9.26.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="release-0-9-26">
+<h1>Release 0.9.26<a class="headerlink" href="#release-0-9-26" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="general-changes">
+<h2>General Changes<a class="headerlink" href="#general-changes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Group Task Retry including nested tasks does not update parent id of copied tasks [#770]</li>
+<li>Change temp file prefix used by BufferedRemoteTaskLogger [#757]</li>
+<li>Change workspace prefix not to use task name to avoid failing workspace creation [#751]</li>
+<li>Upgraded resteasy-client to 3.0.24.Final [#772, #779, #798]</li>
+<li>Upgraded Gradle to 4.8 and the plugins [#789, #793, #794, #795, #800, #803]</li>
+</ul>
+</div>
+<div class="section" id="release-date">
+<h2>Release Date<a class="headerlink" href="#release-date" title="Permalink to this headline">¶</a></h2>
+<p>2018-06-18</p>
+</div>
+<div class="section" id="contributors">
+<h2>Contributors<a class="headerlink" href="#contributors" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>&#64;nak-tera</li>
+<li>&#64;wreulicke</li>
+<li>Hiroyuki Sato (&#64;hiroyuki-sato)</li>
+<li>Muga Nishizawa (&#64;muga)</li>
+<li>Sadayuki Furuhashi (&#64;frsyuki)</li>
+<li>Takahiro Kiso (&#64;takanamito)</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="release-0.9.25.html" class="btn btn-neutral float-right" title="Release 0.9.25" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../releases.html" class="btn btn-neutral" title="Release Notes" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br/>
+    <br/>
+    <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a> under the Apache 2.0 Licence.</p>
+     
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
