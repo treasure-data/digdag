@@ -12,11 +12,11 @@ General Changes
 
 * Upgraded resteasy-client to 3.0.24.Final [#772, #779, #798]
 
-* Upgraded Gradle to 4.8 and the plugins [#789, #793, #794, #795, #800]
+* Upgraded Gradle to 4.8 and the plugins [#789, #793, #794, #795, #800, #803]
 
 Release Date
 ------------
-2018-06-15
+2018-06-18
 
 Contributors
 ------------
