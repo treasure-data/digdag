@@ -17,6 +17,7 @@ import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.standards.command.ProcessCommandExecutor;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.UserSecretTemplate;
 import org.slf4j.Logger;
@@ -40,8 +41,6 @@ public class ShOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ShOperatorFactory.class);
-
-    private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
 
     private final CommandExecutor exec;
     private final CommandLogger clog;
@@ -91,7 +90,7 @@ public class ShOperatorFactory
             final Map<String, String> env = pb.environment();
             params.getKeys()
                 .forEach(key -> {
-                    if (isValidEnvKey(key)) {
+                    if (ProcessCommandExecutor.isValidEnvKey(key)) {
                         JsonNode value = params.get(key, JsonNode.class);
                         String string;
                         if (value.isTextual()) {
@@ -108,7 +107,7 @@ public class ShOperatorFactory
                 });
 
             // Set up process environment according to env config. This can also refer to secrets.
-            collectEnvironmentVariables(env, context.getPrivilegedVariables());
+            ProcessCommandExecutor.collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");
@@ -145,20 +144,5 @@ public class ShOperatorFactory
 
             return TaskResult.empty(request);
         }
-    }
-
-    static void collectEnvironmentVariables(Map<String, String> env, PrivilegedVariables variables)
-    {
-        for (String name : variables.getKeys()) {
-            if (!VALID_ENV_KEY.matcher(name).matches()) {
-                throw new ConfigException("Invalid _env key name: " + name);
-            }
-            env.put(name, variables.get(name));
-        }
-    }
-
-    private static boolean isValidEnvKey(String key)
-    {
-        return VALID_ENV_KEY.matcher(key).matches();
     }
 }
