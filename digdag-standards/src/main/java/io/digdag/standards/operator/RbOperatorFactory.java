@@ -18,6 +18,7 @@ import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
+import io.digdag.standards.command.ProcessCommandExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
@@ -28,7 +29,6 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 import io.digdag.util.BaseOperator;
-import static io.digdag.standards.operator.ShOperatorFactory.collectEnvironmentVariables;
 
 public class RbOperatorFactory
         implements OperatorFactory
@@ -143,7 +143,7 @@ public class RbOperatorFactory
 
             // Set up process environment according to env config. This can also refer to secrets.
             Map<String, String> env = pb.environment();
-            collectEnvironmentVariables(env, context.getPrivilegedVariables());
+            ProcessCommandExecutor.collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
             Process p = exec.start(workspace.getPath(), request, pb);
 
