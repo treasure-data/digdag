@@ -2,11 +2,14 @@ package io.digdag.core.workflow;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+
 import com.google.inject.Inject;
-import io.digdag.spi.CommandContext;
+import io.digdag.client.config.Config;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandExecutorContent;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.CommandState;
 import io.digdag.spi.TaskRequest;
 
 public class MockCommandExecutor
@@ -25,15 +28,18 @@ public class MockCommandExecutor
     }
 
     @Override
-    public CommandStatus start(CommandContext context)
-            throws IOException
+    public CommandStatus run(Path projectPath, Path workspacePath, TaskRequest request,
+            Map<String, String> environments, List<String> cmdline,
+            Map<String, CommandExecutorContent> inputContents,
+            CommandExecutorContent outputContent)
+            throws IOException, InterruptedException
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CommandStatus get(CommandState state)
-            throws IOException
+    public CommandStatus poll(Path projectPath, TaskRequest request,
+            String commandId, Config executorState)
     {
         throw new UnsupportedOperationException();
     }
