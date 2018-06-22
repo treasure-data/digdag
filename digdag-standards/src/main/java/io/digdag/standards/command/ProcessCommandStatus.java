@@ -1,52 +1,55 @@
 package io.digdag.standards.command;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
+import io.digdag.spi.CommandExecutorContent;
 import io.digdag.spi.CommandStatus;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 
 public class ProcessCommandStatus
         implements CommandStatus
 {
-    private final Process p;
-    private final Path outFilePath;
-
-    ProcessCommandStatus(final Process p, final Path outFilePath)
+    static CommandStatus of(final int statusCode, final CommandExecutorContent outputContent)
     {
-        this.p = p;
-        this.outFilePath = outFilePath;
+        return new ProcessCommandStatus(statusCode, outputContent);
+    }
+
+    private final int statusCode;
+    private final CommandExecutorContent outputContent;
+
+    private ProcessCommandStatus(final int statusCode, final CommandExecutorContent outputContent)
+    {
+        this.statusCode = statusCode;
+        this.outputContent = outputContent;
     }
 
     @Override
     public boolean isFinished()
             throws InterruptedException
     {
-        p.waitFor();
         return true;
     }
 
     @Override
-    public Optional<String> getCommandId()
+    public int getStatusCode()
     {
-        return Optional.absent();
+        return statusCode;
+
+    }
+    @Override
+    public String getCommandId()
+    {
+        throw new UnsupportedOperationException("this method is never called.");
     }
 
     @Override
-    public int getExitCode()
+    public Config getExecutorState()
     {
-        return p.exitValue();
+        throw new UnsupportedOperationException("this method is never called.");
     }
 
     @Override
-    public Config getTaskResultData(final ObjectMapper mapper, Class<Config> dataType)
-            throws IOException
+    public CommandExecutorContent getOutputContent()  // {content}
     {
-        final File outFile = outFilePath.toFile();
-        return mapper.readValue(outFile, dataType);
+        return outputContent;
     }
 
 }

@@ -1,20 +1,17 @@
 package io.digdag.spi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-
-import java.io.IOException;
 
 public interface CommandStatus
 {
     boolean isFinished()
             throws InterruptedException;
 
-    Optional<String> getCommandId();
+    int getStatusCode();
 
-    int getExitCode();
+    String getCommandId();
 
-    Config getTaskResultData(ObjectMapper mapper, Class<Config> dataType)
-            throws IOException;
+    Config getExecutorState(); // used for storing the command executor status like logger pagination
+
+    CommandExecutorContent getOutputContent(); // {content}
 }

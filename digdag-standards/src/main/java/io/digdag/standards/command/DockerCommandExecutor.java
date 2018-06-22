@@ -94,7 +94,6 @@ public class DockerCommandExecutor
 
         try {
             // misc
-            command.add("-i");  // enable stdin
             command.add("--rm");  // remove container when exits
 
             // mount
