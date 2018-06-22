@@ -1,33 +1,32 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
-import java.io.Writer;
 import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.file.Path;
+import java.util.List;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import com.google.common.base.Optional;
+
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import io.digdag.spi.CommandContext;
-import io.digdag.spi.CommandState;
+import io.digdag.client.config.ConfigElement;
+import io.digdag.spi.CommandExecutorContent;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.TaskExecutionException;
+import io.digdag.standards.command.ProcessCommandExecutor;
 import io.digdag.util.AbstractWaitOperatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.CommandLogger;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.CommandResult;
-import io.digdag.standards.command.DefaultCommandContext;
+import io.digdag.spi.CommandStatus;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -113,70 +112,84 @@ public class PyOperatorFactory
                 .build();
         }
 
-        private Config runCode(Config params)
+        private Config runCode(final Config params)
                 throws IOException, InterruptedException
         {
-            final CommandResult result = runCode(params, "polling_command");
+            //ClogProxyOutputStream cmdout = new ClogProxyOutputStream(clog); // TODO
+            final Config stateParams = state.params().getNestedOrGetEmpty("polling_code");
+            final Path projectPath = workspace.getProjectPath();
+            final CommandStatus status;
+            if (!stateParams.has("commandId")) {
+                final String inFile = workspace.createTempFile("digdag-py-in-", ".tmp"); // relative path
+                final String outFile = workspace.createTempFile("digdag-py-out-", ".tmp"); // relative path
+                final String runnerFile = workspace.createTempFile("digdag-py-runner-", ".py"); // relative path
 
-            final boolean done = result.isFinished();
-            // Remove the poll command state after fetching the result so that the result fetch can be retried without
-            // resubmitting the command.
-            state.params().remove("polling_command");
-
-            // If the query condition was not fulfilled, go back to sleep.
-            if (!done) {
-                throw state.pollingTaskExecutionException(scriptPollInterval);
-            }
-
-            // The code condition was fulfilled, we're done.
-            final int ecode = result.getExitCode();
-            if (ecode != 0) {
-                throw new RuntimeException("Python command failed with code " + ecode);
-            }
-            return result.getTaskResultData(mapper, Config.class);
-        }
-
-        private CommandResult runCode(final Config params, final String key)
-                throws IOException, InterruptedException
-        {
-            final CommandState commandState = state.params().get(key, CommandState.class, CommandState.empty());
-            final Optional<String> commandId = commandState.commandId();
-
-            final CommandResult result;
-            if (!commandId.isPresent()) {
-                String script;
-                List<String> args;
+                final String script;
+                final List<String> cmdline;
 
                 if (params.has("_command")) {
                     String command = params.get("_command", String.class);
                     script = runnerScript;
-                    args = ImmutableList.of(command);
+                    cmdline = ImmutableList.<String>builder()
+                            .add("bash")
+                            .add("-c")
+                            .add(String.format("cat %s | python - %s %s %s", runnerFile, command, inFile, outFile))
+                            .build();
                 }
                 else {
                     script = params.get("script", String.class);
-                    args = ImmutableList.of();
+                    cmdline = ImmutableList.<String>builder()
+                            .add("bash")
+                            .add("-c")
+                            .add(String.format("cat %s | python - %s %s %s", runnerFile, inFile, outFile))
+                            .build();
                 }
 
-                List<String> cmdline = ImmutableList.<String>builder()
-                        .add("python").add("-")  // script is fed from stdin
-                        .addAll(args)
-                        .build();
+                // Write params to inFile
+                try (final OutputStream out = workspace.newOutputStream(inFile)) {
+                    mapper.writeValue(out, ImmutableMap.of("params", params));
+                }
 
-                final CommandContext commandContext = new DefaultCommandContext(params, script, cmdline, context, workspace);
-                result = exec.start(commandContext); // TODO error handling like job duplicated?
+                // Write script content to runnerFile
+                try (final Writer writer = new BufferedWriter(new OutputStreamWriter(workspace.newOutputStream(runnerFile)))) {
+                    writer.write(script);
+                }
 
-                state.params().set("polling_command", commandState.withCommandId(result.getCommandId()));
+                Map<String, String> environments = System.getenv();
+                ProcessCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
+
+                final Path workspacePath = workspace.getPath();
+                status = exec.run(projectPath, workspacePath, request,
+                        environments,
+                        cmdline,
+                        ImmutableMap.<String, CommandExecutorContent>builder()
+                                .put("in_content", CommandExecutorContent.create(workspacePath, inFile))
+                                .put("runner_content", CommandExecutorContent.create(workspacePath, runnerFile))
+                                .build(),
+                        CommandExecutorContent.create(workspacePath, outFile) // out_content
+                );
 
                 // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
                 // command executor. Because they will be bounded by the _instance_ where the command was executed
                 // first.
             }
             else {
-                // non-blocking task polling
-                result = exec.get(commandState);
+                // Poll tasks by non-blocking
+                final String commandId = stateParams.get("commandId", String.class);
+                final Config executorState = stateParams.getNestedOrGetEmpty("executorState");
+                status = exec.poll(projectPath, request, commandId, executorState);
             }
 
-            return result;
+            //status.getCommandOutput().writeTo(clog); // TODO
+            if (status.isFinished()) {
+                CommandExecutorContent outputContent = status.getOutputContent();
+                return mapper.readValue(workspace.getFile(outputContent.getName()), Config.class); // TODO stop this
+            }
+            else {
+                stateParams.set("commandId", status.getCommandId());
+                stateParams.set("executorState", status.getExecutorState());
+                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
+            }
         }
     }
 }
