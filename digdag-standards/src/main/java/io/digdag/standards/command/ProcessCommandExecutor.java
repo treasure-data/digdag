@@ -1,6 +1,5 @@
 package io.digdag.standards.command;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -54,6 +53,8 @@ public abstract class ProcessCommandExecutor
         // copy stdout to System.out and logger
         clog.copyStdout(p, System.out);
 
+        // Need waiting and blocking. Because the process is running on a single instance.
+        // The command task could not be taken by other digdag-servers on other instances.
         final int statusCode = p.waitFor();
         if (statusCode != 0) {
             throw new RuntimeException("Python command failed with code " + statusCode);
@@ -64,10 +65,8 @@ public abstract class ProcessCommandExecutor
     }
 
     @Override
-    public CommandStatus poll(Path projectPath,
-            TaskRequest request,
-            String commandId,
-            Config executorState)
+    public CommandStatus poll(final Path projectPath, final Path workspacePath, final TaskRequest request,
+            final String commandId, final Config executorState)
     {
         throw new UnsupportedOperationException("this method is never called.");
     }

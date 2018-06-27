@@ -1,19 +1,13 @@
 package io.digdag.spi;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public class CommandExecutorContent // Scalable immutable byte array with
 {
     public static CommandExecutorContent create(final Path workspacePath, final String relativePath)
     {
-        final Path path = workspacePath.resolve(relativePath);
-        final File file = path.toFile();
+        final File file = workspacePath.resolve(relativePath).toFile();
         final long contentLength = file.length();
         return new CommandExecutorContent(relativePath, contentLength);
     }
@@ -36,4 +30,6 @@ public class CommandExecutorContent // Scalable immutable byte array with
     {
         return name;
     }
+
+    // TODO more SPI
 }

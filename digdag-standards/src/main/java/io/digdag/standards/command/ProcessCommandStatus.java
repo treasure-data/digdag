@@ -1,5 +1,6 @@
 package io.digdag.standards.command;
 
+import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.CommandExecutorContent;
 import io.digdag.spi.CommandStatus;
@@ -12,12 +13,12 @@ public class ProcessCommandStatus
         return new ProcessCommandStatus(statusCode, outputContent);
     }
 
-    private final int statusCode;
+    private final Optional<Integer> statusCode;
     private final CommandExecutorContent outputContent;
 
     private ProcessCommandStatus(final int statusCode, final CommandExecutorContent outputContent)
     {
-        this.statusCode = statusCode;
+        this.statusCode = Optional.of(statusCode);
         this.outputContent = outputContent;
     }
 
@@ -29,7 +30,7 @@ public class ProcessCommandStatus
     }
 
     @Override
-    public int getStatusCode()
+    public Optional<Integer> getStatusCode()
     {
         return statusCode;
 
@@ -47,9 +48,8 @@ public class ProcessCommandStatus
     }
 
     @Override
-    public CommandExecutorContent getOutputContent()  // {content}
+    public CommandExecutorContent getOutputContent()
     {
         return outputContent;
     }
-
 }

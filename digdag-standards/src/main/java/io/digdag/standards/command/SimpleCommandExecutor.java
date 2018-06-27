@@ -24,6 +24,12 @@ public class SimpleCommandExecutor
     }
 
     @Override
+    public boolean test(TaskRequest request)
+    {
+        return true;
+    }
+
+    @Override
     public Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
             throws IOException
     {
