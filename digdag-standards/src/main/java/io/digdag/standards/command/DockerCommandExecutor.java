@@ -57,6 +57,12 @@ public class DockerCommandExecutor
     }
 
     @Override
+    public boolean test(TaskRequest request)
+    {
+        return request.getConfig().has("docker");
+    }
+
+    @Override
     public Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
             throws IOException
     {
