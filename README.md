@@ -4,13 +4,9 @@
 
 [![Travis CI](https://travis-ci.org/treasure-data/digdag.svg?branch=master)](https://travis-ci.org/treasure-data/digdag)
 
-## [Documentation](http://digdag.io)
+## [Documentation](http://docs.digdag.io)
 
-Please check [digdag.io](http://digdag.io) for installation & user manual.
-
-### Getting started
-
-http://docs.digdag.io/getting_started.html
+Please check [digdag.io](http://digdag.io) and [docs.digdag.io](http://docs.digdag.io) for installation & user manual.
 
 ## Development
 
