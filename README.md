@@ -8,6 +8,10 @@
 
 Please check [digdag.io](http://digdag.io) for installation & user manual.
 
+### Getting started
+
+http://docs.digdag.io/getting_started.html
+
 ## Development
 
 ### Prerequirements
