@@ -16,6 +16,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
+import io.digdag.util.AbstractWaitOperatorFactory;
 import io.digdag.util.BaseOperator;
 import org.msgpack.core.MessageTypeCastException;
 import org.msgpack.value.ArrayValue;
@@ -35,6 +36,8 @@ public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
+    private static final int TABLE_EXISTENCE_API_POLL_INTERVAL = 30;
+
     private static Logger logger = LoggerFactory.getLogger(TdWaitTableOperatorFactory.class);
 
     private static final String EXISTS = "exists";
@@ -51,7 +54,7 @@ public class TdWaitTableOperatorFactory
     @Inject
     public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
     {
-        super(systemConfig);
+        super("td.wait", systemConfig);
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
         this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);

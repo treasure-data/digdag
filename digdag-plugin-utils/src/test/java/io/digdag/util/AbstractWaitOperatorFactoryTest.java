@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.td;
+package io.digdag.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.util.AbstractWaitOperatorFactory;
 import org.junit.Test;
 
 import java.util.Map;
@@ -88,8 +89,8 @@ public class AbstractWaitOperatorFactoryTest
                     "config.td.wait.max_poll_interval", "5s"
             ));
             assertThat(f.getPollInterval(CONFIG_FACTORY.create()), is(5));
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3s")))), ConfigException.class);
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "7s")))), ConfigException.class);
+            Utils.assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3s")))), ConfigException.class);
+            Utils.assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "7s")))), ConfigException.class);
         }
 
         {
@@ -99,8 +100,8 @@ public class AbstractWaitOperatorFactoryTest
                     "config.td.wait.max_poll_interval", "15s"
             ));
             assertThat(f.getPollInterval(CONFIG_FACTORY.create()), is(10));
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3s")))), ConfigException.class);
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "30s")))), ConfigException.class);
+            Utils.assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3s")))), ConfigException.class);
+            Utils.assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "30s")))), ConfigException.class);
         }
 
         {
@@ -110,15 +111,15 @@ public class AbstractWaitOperatorFactoryTest
                     "config.td.wait.max_poll_interval", "2h"
             ));
             assertThat(f.getPollInterval(CONFIG_FACTORY.create()), is(5 * 60));
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "5s")))), ConfigException.class);
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3h")))), ConfigException.class);
+            Utils.assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "5s")))), ConfigException.class);
+            Utils.assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3h")))), ConfigException.class);
         }
     }
 
     private void assertConfigurationFailsValidation(Map<String, Object> config)
             throws JsonProcessingException
     {
-        assertThrows(() -> new AbstractWaitOperatorFactory(cfg(config)) {}, ConfigException.class);
+        Utils.assertThrows(() -> new AbstractWaitOperatorFactory(cfg(config)) {}, ConfigException.class);
     }
 
     private Config cfg(Map<String, Object> config)
