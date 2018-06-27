@@ -116,13 +116,15 @@ public class PyOperatorFactory
                 throws IOException, InterruptedException
         {
             //ClogProxyOutputStream cmdout = new ClogProxyOutputStream(clog); // TODO
-            final Config stateParams = state.params().getNestedOrGetEmpty("polling_code");
+            final Config stateParams = state.params();
             final Path projectPath = workspace.getProjectPath();
+            final Path workspacePath = workspace.getPath();
+
             final CommandStatus status;
             if (!stateParams.has("commandId")) {
-                final String inFile = workspace.createTempFile("digdag-py-in-", ".tmp"); // relative path
-                final String outFile = workspace.createTempFile("digdag-py-out-", ".tmp"); // relative path
-                final String runnerFile = workspace.createTempFile("digdag-py-runner-", ".py"); // relative path
+                final String inputFile = workspace.createTempFile("digdag-py-in-", ".tmp");
+                final String outputFile = workspace.createTempFile("digdag-py-out-", ".tmp");
+                final String runnerFile = workspace.createTempFile("digdag-py-runner-", ".py");
 
                 final String script;
                 final List<String> cmdline;
@@ -131,9 +133,9 @@ public class PyOperatorFactory
                     String command = params.get("_command", String.class);
                     script = runnerScript;
                     cmdline = ImmutableList.<String>builder()
-                            .add("bash")
-                            .add("-c")
-                            .add(String.format("cat %s | python - %s %s %s", runnerFile, command, inFile, outFile))
+                            //.add("bash")
+                            //.add("-c")
+                            .add(String.format("/bin/cat %s | python - %s %s %s", runnerFile, command, inputFile, outputFile))
                             .build();
                 }
                 else {
@@ -141,12 +143,12 @@ public class PyOperatorFactory
                     cmdline = ImmutableList.<String>builder()
                             .add("bash")
                             .add("-c")
-                            .add(String.format("cat %s | python - %s %s %s", runnerFile, inFile, outFile))
+                            .add(String.format("cat %s | python - %s %s", runnerFile, inputFile, outputFile))
                             .build();
                 }
 
                 // Write params to inFile
-                try (final OutputStream out = workspace.newOutputStream(inFile)) {
+                try (final OutputStream out = workspace.newOutputStream(inputFile)) {
                     mapper.writeValue(out, ImmutableMap.of("params", params));
                 }
 
@@ -158,15 +160,14 @@ public class PyOperatorFactory
                 Map<String, String> environments = System.getenv();
                 ProcessCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-                final Path workspacePath = workspace.getPath();
                 status = exec.run(projectPath, workspacePath, request,
                         environments,
                         cmdline,
                         ImmutableMap.<String, CommandExecutorContent>builder()
-                                .put("in_content", CommandExecutorContent.create(workspacePath, inFile))
+                                .put("input_content", CommandExecutorContent.create(workspacePath, inputFile))
                                 .put("runner_content", CommandExecutorContent.create(workspacePath, runnerFile))
                                 .build(),
-                        CommandExecutorContent.create(workspacePath, outFile) // out_content
+                        CommandExecutorContent.create(workspacePath, outputFile) // out_content
                 );
 
                 // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
@@ -177,18 +178,20 @@ public class PyOperatorFactory
                 // Poll tasks by non-blocking
                 final String commandId = stateParams.get("commandId", String.class);
                 final Config executorState = stateParams.getNestedOrGetEmpty("executorState");
-                status = exec.poll(projectPath, request, commandId, executorState);
+                status = exec.poll(projectPath, workspacePath, request, commandId, executorState);
             }
 
             //status.getCommandOutput().writeTo(clog); // TODO
             if (status.isFinished()) {
                 CommandExecutorContent outputContent = status.getOutputContent();
-                return mapper.readValue(workspace.getFile(outputContent.getName()), Config.class); // TODO stop this
+                //return mapper.readValue(workspace.getFile(outputContent.getName()), Config.class); // TODO stop this
+                return stateParams;
             }
             else {
                 stateParams.set("commandId", status.getCommandId());
                 stateParams.set("executorState", status.getExecutorState());
-                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
+                //throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
+                throw TaskExecutionException.ofNextPolling(3, ConfigElement.copyOf(stateParams));
             }
         }
     }

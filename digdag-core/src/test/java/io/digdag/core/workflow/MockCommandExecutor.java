@@ -28,6 +28,12 @@ public class MockCommandExecutor
     }
 
     @Override
+    public boolean test(TaskRequest request)
+    {
+        return false;
+    }
+
+    @Override
     public CommandStatus run(Path projectPath, Path workspacePath, TaskRequest request,
             Map<String, String> environments, List<String> cmdline,
             Map<String, CommandExecutorContent> inputContents,
@@ -38,7 +44,7 @@ public class MockCommandExecutor
     }
 
     @Override
-    public CommandStatus poll(Path projectPath, TaskRequest request,
+    public CommandStatus poll(Path projectPath, Path workspacePath, TaskRequest request,
             String commandId, Config executorState)
     {
         throw new UnsupportedOperationException();

@@ -1,5 +1,6 @@
 package io.digdag.spi;
 
+import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 
 public interface CommandStatus
@@ -7,7 +8,7 @@ public interface CommandStatus
     boolean isFinished()
             throws InterruptedException;
 
-    int getStatusCode();
+    Optional<Integer> getStatusCode();
 
     String getCommandId();
 
