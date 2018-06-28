@@ -8,7 +8,9 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.DigdagEmbed;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -22,13 +24,27 @@ import static org.hamcrest.Matchers.is;
 
 public class WorkflowExecutorTest
 {
+    private static DigdagEmbed embed;
+
+    @BeforeClass
+    public static void createDigdagEmbed()
+    {
+        embed = WorkflowTestingUtils.setupEmbed();
+    }
+
+    @AfterClass
+    public static void destroyDigdagEmbed()
+            throws Exception
+    {
+        embed.close();
+    }
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    private DigdagEmbed embed;
     private LocalSite localSite;
     private TransactionManager tm;
 
@@ -36,16 +52,8 @@ public class WorkflowExecutorTest
     public void setUp()
         throws Exception
     {
-        this.embed = setupEmbed();
         this.localSite = embed.getLocalSite();
         this.tm = embed.getTransactionManager();
-    }
-
-    @After
-    public void destroy()
-        throws Exception
-    {
-        embed.close();
     }
 
     @Test
