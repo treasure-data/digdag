@@ -81,8 +81,6 @@ public class TemporaryDigdagServer
 
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
 
-    private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
     private final Optional<Version> version;
 
     private final String host;
@@ -91,15 +89,15 @@ public class TemporaryDigdagServer
     private final ExecutorService executor;
     private final List<String> configuration;
 
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-    private final ByteArrayOutputStream err = new ByteArrayOutputStream();
-
     private final boolean inProcess;
     private final Map<String, String> environment;
     private final Properties properties;
 
     private Path workdir;
     private Process serverProcess;
+    private TemporaryFolder temporaryFolder;
+    private ByteArrayOutputStream out;
+    private ByteArrayOutputStream err;
 
     private Path configDirectory;
     private Path config;
@@ -259,8 +257,12 @@ public class TemporaryDigdagServer
             throws Exception
     {
         started = true;
+        closed = false;
 
+        temporaryFolder = new TemporaryFolder();
         temporaryFolder.create();
+        out = new ByteArrayOutputStream();
+        err = new ByteArrayOutputStream();
 
         setupDatabase();
 
@@ -566,9 +568,11 @@ public class TemporaryDigdagServer
     public void close()
     {
         closed = true;
+        started = false;
 
         if (serverProcess != null) {
             kill(serverProcess);
+            serverProcess = null;
         }
 
         executor.shutdownNow();
