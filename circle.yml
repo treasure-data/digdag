@@ -21,6 +21,7 @@ dependencies:
       -v ~/.gradle:/root/.gradle \
       $BUILD_IMAGE \
       ./gradlew testClasses --no-daemon
+        timeout: 3600
 
 test:
   pre:
