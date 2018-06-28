@@ -14,13 +14,8 @@ dependencies:
     - "~/.gradle"
     - "~/.m2"
   override:
-    - | # download and cache dependencies
-      docker run \
-      -w /digdag \
-      -v `pwd`/:/digdag \
-      -v ~/.gradle:/root/.gradle \
-      $BUILD_IMAGE \
-      ./gradlew testClasses --no-daemon
+    # download and cache dependencies
+    - "docker run -w /digdag -v `pwd`/:/digdag -v ~/.gradle:/root/.gradle $BUILD_IMAGE ./gradlew testClasses --no-daemon":
         timeout: 3600
 
 test:
