@@ -72,6 +72,11 @@ jobs:
       TERM: dumb
       BUILD_IMAGE: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
 
+    # executor type https://circleci.com/docs/2.0/executor-types/
+    docker:
+    - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
+      command: /sbin/init
+
     steps:
     # Checks out the code to the working directory
     - checkout
@@ -82,7 +87,7 @@ workflows:
   build_and_deploy:
     jobs:
       - build
-      - deploy_docs
+      - deploy_docs:
           filters:
             branches:
               only:
