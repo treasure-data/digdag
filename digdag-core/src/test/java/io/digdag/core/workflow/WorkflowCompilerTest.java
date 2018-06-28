@@ -7,38 +7,45 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.YamlConfigLoader;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
-import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class WorkflowCompilerTest
 {
+    private static DigdagEmbed embed;
+
     @Rule public ExpectedException exception = ExpectedException.none();
 
-    private DigdagEmbed embed;
-
     private WorkflowCompiler compiler;
+
+    @BeforeClass
+    public static void createDigdagEmbed()
+            throws Exception
+    {
+        embed = WorkflowTestingUtils.setupEmbed();
+    }
+
+    @AfterClass
+    public static void destroyDigdagEmbed()
+            throws Exception
+    {
+        embed.close();
+    }
 
     @Before
     public void setUp()
             throws Exception
     {
-        embed = setupEmbed();
         compiler = new WorkflowCompiler();
-    }
-
-    @After
-    public void destroy()
-        throws Exception
-    {
-        embed.close();
     }
 
     private Config loadYamlResource(String name)
