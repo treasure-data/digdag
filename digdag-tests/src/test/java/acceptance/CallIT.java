@@ -2,7 +2,9 @@ package acceptance;
 
 import com.google.common.io.Resources;
 import io.digdag.client.api.Id;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -25,11 +27,11 @@ import static utils.TestUtils.main;
 
 public class CallIT
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    @ClassRule
+    public static TemporaryDigdagServer server = TemporaryDigdagServer.of();
 
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    public TemporaryFolder folder = new TemporaryFolder();
 
     private Path config;
     private Path projectDir;
@@ -45,6 +47,14 @@ public class CallIT
     {
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
+    }
+
+    @After
+    public void tearDown()
+    {
+        if (folder != null) {
+            folder.delete();
+        }
     }
 
     private void initCallProject()

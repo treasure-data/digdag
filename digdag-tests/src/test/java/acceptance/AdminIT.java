@@ -4,7 +4,9 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.config.Config;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -23,13 +25,13 @@ import static org.junit.Assert.assertThat;
 
 public class AdminIT
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+    @ClassRule
+    public static TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration("server.admin.port = 0")
             .build();
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
 
     private Path config;
     private Path projectDir;
@@ -51,6 +53,24 @@ public class AdminIT
                 .host(server.host())
                 .port(server.adminPort())
                 .build();
+    }
+
+    @After
+    public void tearDown()
+    {
+        if (adminClient != null) {
+            adminClient.close();
+            adminClient = null;
+        }
+
+        if (client != null) {
+            client.close();
+            client = null;
+        }
+
+        if (folder != null) {
+            folder.delete();
+        }
     }
 
     @Test

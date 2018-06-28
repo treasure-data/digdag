@@ -4,7 +4,9 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -33,13 +35,13 @@ public class ErrorServerMailIT
     private static final String SMTP_USER = "mail-user";
     private static final String SMTP_PASS = "mail-pass";
 
-    private final Wiser mailServer = startMailServer(HOSTNAME, SMTP_USER, SMTP_PASS);
+    private static final Wiser mailServer = startMailServer(HOSTNAME, SMTP_USER, SMTP_PASS);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+    @ClassRule
+    public static TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "config.mail.host=" + HOSTNAME,
                     "config.mail.port=" + mailServer.getServer().getPort(),
@@ -67,8 +69,8 @@ public class ErrorServerMailIT
         copyResource("acceptance/error_server_mail/alert.txt", projectDir.resolve("alert.txt"));
     }
 
-    @After
-    public void tearDown()
+    @AfterClass
+    public static void tearDown()
             throws Exception
     {
         mailServer.stop();

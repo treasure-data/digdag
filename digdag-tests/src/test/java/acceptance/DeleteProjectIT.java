@@ -2,7 +2,9 @@ package acceptance;
 
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -25,11 +27,11 @@ import static org.junit.Assert.assertThat;
 
 public class DeleteProjectIT
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    @ClassRule
+    public static TemporaryDigdagServer server = TemporaryDigdagServer.of();
 
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    public TemporaryFolder folder = new TemporaryFolder();
 
     private Path config;
     private Path projectDir;
@@ -46,6 +48,15 @@ public class DeleteProjectIT
                 .host(server.host())
                 .port(server.port())
                 .build();
+    }
+
+    @After
+    public void tearDown()
+    {
+        if (client != null) {
+            client.close();
+            client = null;
+        }
     }
 
     @Test

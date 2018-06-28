@@ -3,7 +3,7 @@ package acceptance;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import utils.TemporaryDigdagServer;
 
@@ -12,8 +12,8 @@ import static org.junit.Assert.assertThat;
 
 public class CustomServerHeadersIT
 {
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+    @ClassRule
+    public static TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "server.http.headers.Foo-Bar-1 = Baz-1",
                     "server.http.headers.Foo-Bar-2 = Baz-2")

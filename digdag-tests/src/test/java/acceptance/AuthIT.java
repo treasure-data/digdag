@@ -9,6 +9,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -23,13 +24,13 @@ public class AuthIT
 {
     private static final RestApiKey apikey = RestApiKey.randomGenerate();
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+    @ClassRule
+    public static TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration("server.apikey = " + apikey)
             .build();
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     private HttpClient httpClient;
 
@@ -47,6 +48,7 @@ public class AuthIT
     {
         if (httpClient != null) {
             httpClient.stop();
+            httpClient = null;
         }
     }
 
