@@ -17,6 +17,7 @@ import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
+import io.digdag.util.AbstractWaitOperatorFactory;
 import io.digdag.util.BaseOperator;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
@@ -48,7 +49,7 @@ public class TdWaitOperatorFactory
     @Inject
     public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig, @Environment Map<String, String> env)
     {
-        super(systemConfig);
+        super("td.wait", systemConfig);
         this.templateEngine = templateEngine;
         this.env = env;
         this.pollInterval = TDOperator.pollInterval(systemConfig);
