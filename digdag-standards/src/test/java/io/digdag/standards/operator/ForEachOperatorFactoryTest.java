@@ -1,7 +1,10 @@
 package io.digdag.standards.operator;
 
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.workflow.WorkflowTestingUtils;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -25,11 +28,24 @@ import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
-import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
-import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
 
 public class ForEachOperatorFactoryTest
 {
+    public static DigdagEmbed embed;
+
+    @BeforeClass
+    public static void createDigdagEmbed()
+    {
+        embed = WorkflowTestingUtils.setupEmbed();
+    }
+
+    @AfterClass
+    public static void destroyDigdagEmbed()
+            throws Exception
+    {
+        embed.close();
+    }
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -55,13 +71,10 @@ public class ForEachOperatorFactoryTest
         Config subtasks = result.getSubtaskConfig();
         assertThat(subtasks, is(loadYamlResource(expectedResource)));
 
-        try (DigdagEmbed embed = setupEmbed()) {
-            assertTrue(
-                    runWorkflow(embed, tempPath, "test", subtasks)
-                            .getStateFlags()
-                            .isSuccess()
-            );
-        }
+        assertTrue(WorkflowTestingUtils.runWorkflow(embed, tempPath, "test", subtasks)
+                .getStateFlags()
+                .isSuccess()
+        );
     }
 
     @Test
