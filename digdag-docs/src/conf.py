@@ -17,6 +17,7 @@ import os
 import shlex
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -64,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Digdag'
-copyright = u'2016, 2016, Digdag Project'
+copyright = u'2016-' + datetime.now().strftime("%Y") + ', Digdag Project'
 author = u'2016, Digdag Project'
 
 # The version info for the project you're documenting, acts as replacement for
