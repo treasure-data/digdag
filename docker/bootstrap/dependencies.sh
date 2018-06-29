@@ -8,7 +8,7 @@ apt-get -y install maven
 
 # npm
 apt-get -y install curl
-curl -sL https://deb.nodesource.com/setup_6.x | bash -
+curl -sL https://deb.nodesource.com/setup_8.x | bash -
 apt-get -y install nodejs
 
 # Postgres
