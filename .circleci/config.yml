@@ -12,6 +12,7 @@ jobs:
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       TERM: dumb
       BUILD_IMAGE: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
+      TZ: 'UTC'
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
@@ -22,10 +23,6 @@ jobs:
     - checkout
     - run:
         command: 'mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS'
-    - run:
-        command: 'echo ''UTC'' | sudo tee -a /etc/timezone; sudo dpkg-reconfigure
-          -f noninteractive tzdata; sudo service mysql restart; sudo service postgresql
-          restart; '
     - run:
         command: 'sudo update-alternatives --set java /usr/lib/jvm/jdk1.8.0/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/jdk1.8.0/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/jdk1.8.0" >> $BASH_ENV'
     - run:
