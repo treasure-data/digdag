@@ -15,8 +15,7 @@ jobs:
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-    - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-      command: /sbin/init
+    - image: circleci/openjdk:8-jdk-node-browsers
 
     steps:
     # Checks out the code to the working directory
@@ -74,8 +73,7 @@ jobs:
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-    - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-      command: /sbin/init
+    - image: circleci/openjdk:8-jdk-node-browsers
 
     steps:
     # Checks out the code to the working directory
