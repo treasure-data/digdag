@@ -16,14 +16,14 @@ dependencies:
   override:
     # download and cache dependencies
     - "docker run -w /digdag -v `pwd`/:/digdag -v ~/.gradle:/root/.gradle $BUILD_IMAGE ./gradlew testClasses --no-daemon":
-        timeout: 3600
+        timeout: 7200
 
 test:
   pre:
   override:
     - CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_td_tests.sh:
         parallel: true
-        timeout: 3600
+        timeout: 7200
   post:
     - ci/circle_gather_test_reports.sh:
         parallel: true
