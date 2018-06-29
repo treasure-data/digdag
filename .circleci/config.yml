@@ -1,10 +1,7 @@
 version: 2
 jobs:
   build:
-    # directory where steps will run
-    working_directory: ~/treasure-data/digdag
     parallelism: 4
-    shell: /bin/bash --login
 
     # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
     environment:
@@ -23,23 +20,13 @@ jobs:
     - checkout
     - run:
         command: 'mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS'
-    - run:
-        command: 'sudo update-alternatives --set java /usr/lib/jvm/jdk1.8.0/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/jdk1.8.0/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/jdk1.8.0" >> $BASH_ENV'
-    - run:
-        command: 'sudo docker info >/dev/null 2>&1 || sudo service docker start; '
     # Restore the dependency cache
     - restore_cache:
         keys:
         - v1-dep-{{ .Branch }}-
         - v1-dep-master-
         - v1-dep-
-    - run: |
-        docker run \
-        -w /digdag \
-        -v `pwd`/:/digdag \
-        -v ~/.gradle:/root/.gradle \
-        $BUILD_IMAGE \
-        ./gradlew testClasses
+    - run: ./gradlew testClasses -PwithoutUi --no-daemon
     # Save dependency cache
     - save_cache:
         key: v1-dep-{{ .Branch }}-{{ epoch }}
@@ -60,13 +47,10 @@ jobs:
         path: /tmp/circleci-test-results
 
   deploy_docs:
-    # directory where steps will run
-    working_directory: ~/treasure-data/digdag
-    shell: /bin/bash --login
-
     environment:
       TERM: dumb
       BUILD_IMAGE: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
+      TZ: 'UTC'
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
