@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -22,31 +24,22 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
-        <link rel="index" title="Index"
-              href="../genindex.html"/>
-        <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="Digdag 0.9.5 documentation" href="../index.html"/>
-        <link rel="up" title="Amazon Web Services operators" href="aws.html"/>
-        <link rel="next" title="redshift_unload&gt;: Redshift unload operations" href="redshift_unload.html"/>
-        <link rel="prev" title="redshift&gt;: Redshift operations" href="redshift.html"/> 
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="redshift_unload&gt;: Redshift unload operations" href="redshift_unload.html" />
+    <link rel="prev" title="redshift&gt;: Redshift operations" href="redshift.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -87,7 +80,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../concepts.html">Concepts</a></li>
@@ -131,38 +127,58 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">Digdag</a>
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Digdag</a>
+        
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../operators.html">Operators</a> &raquo;</li>
-      
+        
           <li><a href="aws.html">Amazon Web Services operators</a> &raquo;</li>
-      
-    <li>redshift_load&gt;: Redshift load operations</li>
+        
+      <li>redshift_load&gt;: Redshift load operations</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
             <a href="../_sources/operators/redshift_load.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -612,15 +628,16 @@ This option isn&#8217;t used when disabling <code class="docutils literal"><span
 
 
            </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="redshift_unload.html" class="btn btn-neutral float-right" title="redshift_unload&gt;: Redshift unload operations" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="redshift_unload.html" class="btn btn-neutral float-right" title="redshift_unload&gt;: Redshift unload operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="redshift.html" class="btn btn-neutral" title="redshift&gt;: Redshift operations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="redshift.html" class="btn btn-neutral" title="redshift&gt;: Redshift operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -633,7 +650,7 @@ This option isn&#8217;t used when disabling <code class="docutils literal"><span
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
     <br/>
     <br/>
     <p><a href="http://digdag.io/">Digdag</a> is an open source project, invented and sponsored by <a href="https://www.treasuredata.com/">Treasure Data, Inc.</a> under the Apache 2.0 Licence.</p>
@@ -657,9 +674,11 @@ This option isn&#8217;t used when disabling <code class="docutils literal"><span
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'0.9.5',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: ''
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
@@ -668,19 +687,13 @@ This option isn&#8217;t used when disabling <code class="docutils literal"><span
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>
