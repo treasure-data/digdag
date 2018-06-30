@@ -15,10 +15,10 @@ jobs:
     - image: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
 
     steps:
-    # Checks out the code to the working directory
     - checkout
-    - run:
-        command: 'mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS'
+
+    - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+
     # Restore the dependency cache
     - restore_cache:
         keys:
@@ -33,7 +33,8 @@ jobs:
         - ~/docker
         - ~/.gradle
         - ~/.m2
-    # Test
+
+    # Run tests
     - run: CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_td_tests.sh
     - run: ci/circle_gather_test_reports.sh
 
@@ -56,13 +57,14 @@ jobs:
     - image: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
 
     steps:
-    # Checks out the code to the working directory
     - checkout
+
+    # Build and deploy documents
     - run: ci/run_deployment.sh
 
 workflows:
   version: 2
-  build_and_deploy:
+  build_and_deploy_docs:
     jobs:
       - build
       - deploy_docs:
