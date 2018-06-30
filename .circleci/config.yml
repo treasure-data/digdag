@@ -8,12 +8,11 @@ jobs:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       TERM: dumb
-      BUILD_IMAGE: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
       TZ: 'UTC'
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-    - image: circleci/openjdk:8-jdk-node-browsers
+    - image: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
 
     steps:
     # Checks out the code to the working directory
@@ -37,6 +36,7 @@ jobs:
     # Test
     - run: CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_td_tests.sh
     - run: ci/circle_gather_test_reports.sh
+
     # Save test results
     - store_test_results:
         path: /tmp/circleci-test-results
@@ -49,12 +49,11 @@ jobs:
   deploy_docs:
     environment:
       TERM: dumb
-      BUILD_IMAGE: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
       TZ: 'UTC'
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-    - image: circleci/openjdk:8-jdk-node-browsers
+    - image: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
 
     steps:
     # Checks out the code to the working directory
