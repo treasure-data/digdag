@@ -11,4 +11,8 @@ idleTimeout = 10
 minimumPoolSize = 0
 "
 
-$BASEDIR/run_test_docker.sh
+if [ ${CIRCLECI} ]; then
+    $BASEDIR/run_test_simple.sh
+else
+    $BASEDIR/run_test_docker.sh
+fi
