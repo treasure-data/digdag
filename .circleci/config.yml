@@ -17,22 +17,26 @@ jobs:
     steps:
     - checkout
 
+    # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
+    - setup_remote_docker:
+        docker_layer_caching: true
+
     - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
 
-    # Restore the dependency cache
-    - restore_cache:
-        keys:
-        - v1-dep-{{ .Branch }}-
-        - v1-dep-master-
-        - v1-dep-
-    - run: ./gradlew testClasses -PwithoutUi --no-daemon
-    # Save dependency cache
-    - save_cache:
-        key: v1-dep-{{ .Branch }}-{{ epoch }}
-        paths:
-        - ~/docker
-        - ~/.gradle
-        - ~/.m2
+    # Compile with dependencies cache
+    - type: cache-restore # Restore ~/.gradle cache
+      key: gradle-{{ checksum "build.gradle" }}
+    - type: cache-restore # Restore ~/.m2 cache
+      key: m2-{{ checksum "build.gradle" }}
+    - run: ./gradlew testClasses --no-daemon
+    - type: cache-save # Save ~/.gradle
+      key: gradle-{{ checksum "build.gradle" }}
+      paths:
+      - ~/.gradle
+    - type: cache-save # Save ~/.m2
+      key: m2-{{ checksum "build.gradle" }}
+      paths:
+      - ~/.m2
 
     # Run tests
     - run: CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_td_tests.sh
