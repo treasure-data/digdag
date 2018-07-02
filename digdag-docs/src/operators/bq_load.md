@@ -237,9 +237,10 @@
     bq_load>: gs://<bucket>/path/to_file
     ...
     schema:
-      - name: "name",
-        type: "string"
-      ...
+      fields:
+        - name: "name",
+          type: "string"
+        ...
   ```
 
   Or you can write it as external file.
