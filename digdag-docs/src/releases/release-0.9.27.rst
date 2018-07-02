@@ -12,7 +12,7 @@ General Changes
 
 Release Date
 ------------
-2018-06-30
+2018-07-02
 
 Contributors
 ------------
