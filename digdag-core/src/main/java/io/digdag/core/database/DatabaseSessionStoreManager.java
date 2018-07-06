@@ -947,6 +947,18 @@ public class DatabaseSessionStoreManager
         @Override
         public boolean isAnyErrorChild(long taskId)
         {
+            // It only has to check if one of children tasks for last group-retry is ERROR or GROUP_ERROR. Since the old
+            // tasks for previous group-retry are also stored in 'tasks' table. Since task_details.full_name is a task name,
+            // it groups tasks by same task name first. Then, it takes a task with maximum id in ids of the same named
+            // tasks by max function. The current implementation will cause the query performance degradation when the size
+            // of tasks table will increase. As one reason, 'full_name' column doesn't have the index in 'tasks' table.
+            // Please see more details: https://github.com/treasure-data/digdag/pull/769
+            //
+            // TODO
+            // As one idea to improve the query performance degradation, we could introduce new task state flag GROUP_RETRIED
+            // or something. Tasks for previous group-retries have the flag but, tasks for last group-retry don't have it.
+            // It can extract children tasks for last group-retry only without combination of max function and group-by
+            // statement by 'full_name'.
             return handle.createQuery(
                     "select parent_id from tasks" +
                     " where id in (" +
