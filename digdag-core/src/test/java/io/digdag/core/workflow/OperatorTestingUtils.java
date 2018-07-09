@@ -1,7 +1,6 @@
 package io.digdag.core.workflow;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -10,7 +9,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Environment;
@@ -45,7 +43,7 @@ public class OperatorTestingUtils
     public static <T extends OperatorFactory> T newOperatorFactory(Class<T> factoryClass)
     {
         Injector initInjector = Guice.createInjector((Module) (binder) -> {
-            binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
+            binder.bind(CommandExecutor.class).to(MockCommandExecutor.class).in(Scopes.SINGLETON);
             binder.bind(CommandLogger.class).to(TaskContextCommandLogger.class).in(Scopes.SINGLETON);
             binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
             binder.bind(ConfigFactory.class).toInstance(ConfigUtils.configFactory);
