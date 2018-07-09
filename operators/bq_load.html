@@ -366,38 +366,38 @@ The character encoding of the data in the files to import. <em>Default</em>: <co
 <p>A table schema. It can accept object, json or yml file path.</p>
 <p>Example:</p>
 <p>You can write schema within .dag file directly.</p>
-<div class="highlight-yml"><div class="highlight"><pre><span></span>+step:
-  bq_load&gt;: gs://&lt;bucket&gt;/path/to_file
-  ...
-  schema:
-    fields:
-      - name: &quot;name&quot;,
-        type: &quot;string&quot;
-      ...
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">bq_load&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">gs://&lt;bucket&gt;/path/to_file</span>
+  <span class="l l-Scalar l-Scalar-Plain">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">schema</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">fields</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;name&quot;</span>
+        <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="s">&quot;string&quot;</span>
+      <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 </div>
 <p>Or you can write it as external file.</p>
-<div class="highlight-json"><div class="highlight"><pre><span></span>{
-  &quot;fields&quot;: [
-    {&quot;name&quot;: &quot;name&quot;, &quot;type&quot;: &quot;STRING&quot;},
-    ...
-  ]
-}
+<div class="highlight-java"><div class="highlight"><pre><span></span><span class="o">{</span>
+  <span class="s">&quot;fields&quot;</span><span class="o">:</span> <span class="o">[</span>
+    <span class="o">{</span><span class="s">&quot;name&quot;</span><span class="o">:</span> <span class="s">&quot;name&quot;</span><span class="o">,</span> <span class="s">&quot;type&quot;</span><span class="o">:</span> <span class="s">&quot;STRING&quot;</span><span class="o">},</span>
+    <span class="o">...</span>
+  <span class="o">]</span>
+<span class="o">}</span>
 </pre></div>
 </div>
-<div class="highlight-yml"><div class="highlight"><pre><span></span>fields:
-  - name: &quot;name&quot;,
-    type: &quot;string&quot;
-  ...
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">fields</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;name&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="s">&quot;string&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 </div>
 <p>And specify the file path. Supported formats are YAML and JSON. If an extension of the path is <code class="docutils literal"><span class="pre">.json</span></code> bq_load try parse as JSON, otherwise YAML.</p>
-<div class="highlight-yml"><div class="highlight"><pre><span></span>+step:
-  bq_load&gt;: gs://&lt;bucket&gt;/path/to_file
-  ...
-  schema: path/to/schema.json
-  # or
-  # schema: path/to/schema.yml
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">bq_load&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">gs://&lt;bucket&gt;/path/to_file</span>
+  <span class="l l-Scalar l-Scalar-Plain">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">schema</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">path/to/schema.json</span>
+  <span class="c1"># or</span>
+  <span class="c1"># schema: path/to/schema.yml</span>
 </pre></div>
 </div>
 </li>
