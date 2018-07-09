@@ -232,20 +232,20 @@
 
   You can write schema within .dag file directly.
 
-  ```yml
+  ```yaml
   +step:
     bq_load>: gs://<bucket>/path/to_file
     ...
     schema:
       fields:
-        - name: "name",
+        - name: "name"
           type: "string"
         ...
   ```
 
   Or you can write it as external file.
 
-  ```json
+  ```java
   {
     "fields": [
       {"name": "name", "type": "STRING"},
@@ -253,16 +253,16 @@
     ]
   }
   ```
-  ```yml
+  ```yaml
   fields:
-    - name: "name",
+    - name: "name"
       type: "string"
     ...
   ```
 
   And specify the file path. Supported formats are YAML and JSON. If an extension of the path is `.json` bq_load try parse as JSON, otherwise YAML.
 
-  ```yml
+  ```yaml
   +step:
     bq_load>: gs://<bucket>/path/to_file
     ...
