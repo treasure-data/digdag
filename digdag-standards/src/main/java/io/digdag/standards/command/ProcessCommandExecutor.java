@@ -1,7 +1,8 @@
 package io.digdag.standards.command;
 
+import com.google.api.client.util.Maps;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandExecutorContent;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public abstract class ProcessCommandExecutor
-    implements CommandExecutor
+        implements CommandExecutor
 {
     private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
 
@@ -37,13 +38,18 @@ public abstract class ProcessCommandExecutor
             throws IOException;
 
     @Override
-    public CommandStatus run(final Path projectPath, final Path workspacePath, final TaskRequest request,
-            final Map<String, String> environments, final List<String> cmdline,
-            final Map<String, CommandExecutorContent> inputContents,
-            final CommandExecutorContent outputContent)
+    public CommandStatus run(final Path projectPath,
+            final Path workspacePath,
+            final TaskRequest request,
+            final Map<String, String> environments,
+            final List<String> commandArguments,
+            final String commandId)
             throws IOException, InterruptedException
     {
-        final ProcessBuilder pb = new ProcessBuilder(cmdline);
+        final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
+        commands.addAll(commandArguments);
+
+        final ProcessBuilder pb = new ProcessBuilder(commands);
         pb.directory(projectPath.toFile());
         pb.redirectErrorStream(true);
         pb.environment().putAll(environments);
@@ -55,20 +61,28 @@ public abstract class ProcessCommandExecutor
 
         // Need waiting and blocking. Because the process is running on a single instance.
         // The command task could not be taken by other digdag-servers on other instances.
-        final int statusCode = p.waitFor();
-        if (statusCode != 0) {
-            throw new RuntimeException("Python command failed with code " + statusCode);
-        }
+        p.waitFor();
 
-        final CommandExecutorContent newOutputContent = CommandExecutorContent.create(workspacePath, outputContent.getName());
-        return ProcessCommandStatus.of(statusCode, newOutputContent);
+        return createCommandStatus(workspacePath, commandId, p);
+    }
+
+    private CommandStatus createCommandStatus(final Path workspacePath, final String commandId, final Process p)
+            throws IOException
+    {
+        final int exitValue = p.exitValue();
+        final String outputFile = ".digdag/tmp/" + commandId + "/output";
+        final CommandExecutorContent outputContent = ProcessCommandExecutorContent.create(workspacePath, outputFile);
+        final Map<String, CommandExecutorContent> outputContents = Maps.newHashMap();
+        outputContents.put("output", outputContent);
+        return ProcessCommandStatus.createByCommandExecutor(exitValue, outputContents);
     }
 
     @Override
     public CommandStatus poll(final Path projectPath, final Path workspacePath, final TaskRequest request,
-            final String commandId, final Config executorState)
+            final CommandStatus previousCommandStatus)
+            throws IOException, InterruptedException
     {
-        throw new UnsupportedOperationException("this method is never called.");
+        throw new UnsupportedOperationException("This method is never called.");
     }
 
     public static void collectEnvironmentVariables(final Map<String, String> env, final PrivilegedVariables variables)

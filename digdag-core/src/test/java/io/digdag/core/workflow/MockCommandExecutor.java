@@ -28,24 +28,16 @@ public class MockCommandExecutor
     }
 
     @Override
-    public boolean test(TaskRequest request)
-    {
-        return false;
-    }
-
-    @Override
-    public CommandStatus run(Path projectPath, Path workspacePath, TaskRequest request,
-            Map<String, String> environments, List<String> cmdline,
-            Map<String, CommandExecutorContent> inputContents,
-            CommandExecutorContent outputContent)
+    public CommandStatus run(Path projectPath, Path workspacePath, TaskRequest request, Map<String, String> environments, List<String> cmdline, String commandId)
             throws IOException, InterruptedException
     {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public CommandStatus poll(Path projectPath, Path workspacePath, TaskRequest request,
             String commandId, Config executorState)
+            throws IOException, InterruptedException
     {
         throw new UnsupportedOperationException();
     }

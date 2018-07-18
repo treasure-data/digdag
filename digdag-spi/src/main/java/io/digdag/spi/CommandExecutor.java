@@ -1,6 +1,5 @@
 package io.digdag.spi;
 
-import io.digdag.client.config.Config;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -14,14 +13,6 @@ public interface CommandExecutor
             throws IOException;
 
     /**
-     * Test if the command executor is available or not.
-     *
-     * @param request
-     * @return
-     */
-    boolean test(TaskRequest request);
-
-    /**
      * Run command.
      *
      * @param projectPath
@@ -29,8 +20,7 @@ public interface CommandExecutor
      * @param request
      * @param environments
      * @param cmdline
-     * @param inputContents
-     * @param outputContent
+     * @param commandId
      * @return
      * @throws IOException
      * @throws InterruptedException
@@ -40,8 +30,7 @@ public interface CommandExecutor
             TaskRequest request,
             Map<String, String> environments,
             List<String> cmdline,
-            Map<String, CommandExecutorContent> inputContents,   // {path => content}
-            CommandExecutorContent outputContent)                // {content}
+            String commandId)
             throws IOException, InterruptedException;
 
     /**
@@ -50,13 +39,14 @@ public interface CommandExecutor
      * @param projectPath
      * @param workspacePath
      * @param request
-     * @param commandId
-     * @param executorState
+     * @param previousCommandStatus
      * @return
+     * @throws IOException
+     * @throws InterruptedException
      */
     CommandStatus poll(Path projectPath,
             Path workspacePath,
             TaskRequest request,
-            String commandId,
-            Config executorState);
+            CommandStatus previousCommandStatus)
+            throws IOException, InterruptedException;
 }
