@@ -189,7 +189,7 @@ $ echo &#39;export PATH=&quot;$HOME/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc
 <div class="section" id="on-windows">
 <span id="on-windows"></span><h3>On Windows?<a class="headerlink" href="#on-windows" title="Permalink to this headline">¶</a></h3>
 <p>On Windows, please open cmd.exe or PowerShell.exe and type following command exactly:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PowerShell</span> <span class="o">-</span><span class="n">Command</span> <span class="s2">&quot;&amp; {mkdir -Force $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in\digdag.bat}&quot;</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PowerShell</span> <span class="o">-</span><span class="n">Command</span> <span class="s2">&quot;&amp; {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::TLS12; mkdir -Force $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile $env:USERPROFILE</span><span class="se">\b</span><span class="s2">in\digdag.bat}&quot;</span>
 </pre></div>
 </div>
 <p>Above command downloads a file named <code class="docutils literal"><span class="pre">digdag.bat</span></code> to a folder named <code class="docutils literal"><span class="pre">bin</span></code> at your home folder (<code class="docutils literal"><span class="pre">C:\Users\YOUR_NAME\bin</span></code>).</p>
