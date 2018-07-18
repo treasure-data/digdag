@@ -13,10 +13,11 @@ public class ProcessCommandStatus
     private static final JsonNodeFactory FACTORY = JsonNodeFactory.instance;
 
     // called from ProcessCommandExecutor
-    static ProcessCommandStatus createByCommandExecutor(final int statusCode,
+    static ProcessCommandStatus of(final int statusCode,
             final Map<String, CommandExecutorContent> outputContents)
     {
         final ObjectNode object = FACTORY.objectNode();
+        // "is_finished" key is not necessary because isFinished method is overridden and always returns "true".
         object.set("status_code", FACTORY.numberNode(statusCode));
         return new ProcessCommandStatus(object, outputContents);
     }

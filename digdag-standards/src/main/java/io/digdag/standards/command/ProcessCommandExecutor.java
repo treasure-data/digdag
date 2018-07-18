@@ -43,7 +43,7 @@ public abstract class ProcessCommandExecutor
             final TaskRequest request,
             final Map<String, String> environments,
             final List<String> commandArguments,
-            final String commandId)
+            final String uniqueCommandId)
             throws IOException, InterruptedException
     {
         final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
@@ -63,20 +63,31 @@ public abstract class ProcessCommandExecutor
         // The command task could not be taken by other digdag-servers on other instances.
         p.waitFor();
 
-        return createCommandStatus(workspacePath, commandId, p);
+        return createCommandStatus(workspacePath, uniqueCommandId, p);
     }
 
-    private CommandStatus createCommandStatus(final Path workspacePath, final String commandId, final Process p)
+    private CommandStatus createCommandStatus(final Path workspacePath, final String uniqueCommandId, final Process p)
             throws IOException
     {
         final int exitValue = p.exitValue();
-        final String outputFile = ".digdag/tmp/" + commandId + "/output";
-        final CommandExecutorContent outputContent = ProcessCommandExecutorContent.create(workspacePath, outputFile);
-        final Map<String, CommandExecutorContent> outputContents = Maps.newHashMap();
-        outputContents.put("output", outputContent);
-        return ProcessCommandStatus.createByCommandExecutor(exitValue, outputContents);
+        final Map<String, CommandExecutorContent> outputContents = createOutputContents(workspacePath, uniqueCommandId); // IOException
+        return ProcessCommandStatus.of(exitValue, outputContents);
     }
 
+    private Map<String, CommandExecutorContent> createOutputContents(final Path workspacePath, final String uniqueCommandId)
+            throws IOException
+    {
+        final String outputFile = ".digdag/tmp/" + uniqueCommandId + "/output";
+        final CommandExecutorContent outputContent = ProcessCommandExecutorContent.create(workspacePath, outputFile); // IOException
+        final Map<String, CommandExecutorContent> outputContents = Maps.newHashMap();
+        outputContents.put("output", outputContent);
+        return outputContents;
+    }
+
+    /**
+     * This method could not be used for ProcessCommandExecutor. The status of the task that is executed by the executor
+     * cannot be polled by non-blocking.
+     */
     @Override
     public CommandStatus poll(final Path projectPath, final Path workspacePath, final TaskRequest request,
             final CommandStatus previousCommandStatus)
