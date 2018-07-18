@@ -16,9 +16,9 @@ import io.digdag.spi.CommandStatus;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.standards.command.AbstractCommandWaitOperatorFactory;
 import io.digdag.standards.command.ProcessCommandExecutor;
 import io.digdag.standards.operator.state.TaskState;
-import io.digdag.util.AbstractWaitOperatorFactory;
 import io.digdag.util.BaseOperator;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -29,7 +29,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -37,13 +36,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PyOperatorFactory
-        extends AbstractWaitOperatorFactory
+        extends AbstractCommandWaitOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(PyOperatorFactory.class);
-    private static final Duration DEFAULT_MIN_POLL_INTERVAL = Duration.ofSeconds(3);
-    private static final Duration DEFAULT_MAX_POLL_INTERVAL = Duration.ofHours(24);
-    private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMinutes(10);
 
     private final String runnerScript;
 
@@ -67,21 +63,6 @@ public class PyOperatorFactory
         super("py", systemConfig);
         this.exec = exec;
         this.mapper = mapper;
-    }
-
-    protected Duration getDefaultMinPollInterval()
-    {
-        return DEFAULT_MIN_POLL_INTERVAL;
-    }
-
-    protected Duration getDefaultMaxPollInterval()
-    {
-        return DEFAULT_MAX_POLL_INTERVAL;
-    }
-
-    protected Duration getDefaultPollInterval()
-    {
-        return DEFAULT_POLL_INTERVAL;
     }
 
     public String getType()
