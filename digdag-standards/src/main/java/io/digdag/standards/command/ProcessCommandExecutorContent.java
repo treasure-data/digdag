@@ -37,6 +37,7 @@ public class ProcessCommandExecutorContent
     public InputStream newInputStream()
             throws IOException
     {
+
         return new ByteArrayInputStream(bytes);
     }
 }

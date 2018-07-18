@@ -13,7 +13,7 @@ public interface CommandExecutor
             throws IOException;
 
     /**
-     * Run command.
+     * Run a command.
      *
      * @param projectPath
      * @param workspacePath
@@ -34,7 +34,7 @@ public interface CommandExecutor
             throws IOException, InterruptedException;
 
     /**
-     * Poll command task runnin and the status by non-blocking.
+     * Poll the command status by non-blocking.
      *
      * @param projectPath
      * @param workspacePath
