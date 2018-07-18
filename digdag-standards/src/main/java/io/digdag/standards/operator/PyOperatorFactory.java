@@ -1,44 +1,49 @@
 package io.digdag.standards.operator;
 
-import java.io.BufferedWriter;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.file.Path;
-import java.util.List;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.CommandExecutorContent;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.standards.command.ProcessCommandExecutor;
-import io.digdag.util.AbstractWaitOperatorFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandStatus;
-import io.digdag.standards.operator.state.TaskState;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.client.config.Config;
+import io.digdag.standards.command.ProcessCommandExecutor;
+import io.digdag.standards.operator.state.TaskState;
+import io.digdag.util.AbstractWaitOperatorFactory;
 import io.digdag.util.BaseOperator;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PyOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(PyOperatorFactory.class);
+    private static final Duration DEFAULT_MIN_POLL_INTERVAL = Duration.ofSeconds(3);
+    private static final Duration DEFAULT_MAX_POLL_INTERVAL = Duration.ofHours(24);
+    private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMinutes(10);
 
     private final String runnerScript;
 
@@ -62,6 +67,21 @@ public class PyOperatorFactory
         super("py", systemConfig);
         this.exec = exec;
         this.mapper = mapper;
+    }
+
+    protected Duration getDefaultMinPollInterval()
+    {
+        return DEFAULT_MIN_POLL_INTERVAL;
+    }
+
+    protected Duration getDefaultMaxPollInterval()
+    {
+        return DEFAULT_MAX_POLL_INTERVAL;
+    }
+
+    protected Duration getDefaultPollInterval()
+    {
+        return DEFAULT_POLL_INTERVAL;
     }
 
     public String getType()
@@ -115,84 +135,113 @@ public class PyOperatorFactory
         private Config runCode(final Config params)
                 throws IOException, InterruptedException
         {
-            //ClogProxyOutputStream cmdout = new ClogProxyOutputStream(clog); // TODO
             final Config stateParams = state.params();
             final Path projectPath = workspace.getProjectPath();
             final Path workspacePath = workspace.getPath();
 
             final CommandStatus status;
-            if (!stateParams.has("commandId")) {
-                final String inputFile = workspace.createTempFile("digdag-py-in-", ".tmp");
-                final String outputFile = workspace.createTempFile("digdag-py-out-", ".tmp");
-                final String runnerFile = workspace.createTempFile("digdag-py-runner-", ".py");
-
-                final String script;
-                final List<String> cmdline;
-
-                if (params.has("_command")) {
-                    String command = params.get("_command", String.class);
-                    script = runnerScript;
-                    cmdline = ImmutableList.<String>builder()
-                            //.add("bash")
-                            //.add("-c")
-                            .add(String.format("/bin/cat %s | python - %s %s %s", runnerFile, command, inputFile, outputFile))
-                            .build();
-                }
-                else {
-                    script = params.get("script", String.class);
-                    cmdline = ImmutableList.<String>builder()
-                            .add("bash")
-                            .add("-c")
-                            .add(String.format("cat %s | python - %s %s", runnerFile, inputFile, outputFile))
-                            .build();
-                }
-
-                // Write params to inFile
-                try (final OutputStream out = workspace.newOutputStream(inputFile)) {
-                    mapper.writeValue(out, ImmutableMap.of("params", params));
-                }
-
-                // Write script content to runnerFile
-                try (final Writer writer = new BufferedWriter(new OutputStreamWriter(workspace.newOutputStream(runnerFile)))) {
-                    writer.write(script);
-                }
-
-                Map<String, String> environments = System.getenv();
-                ProcessCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
-
-                status = exec.run(projectPath, workspacePath, request,
-                        environments,
-                        cmdline,
-                        ImmutableMap.<String, CommandExecutorContent>builder()
-                                .put("input_content", CommandExecutorContent.create(workspacePath, inputFile))
-                                .put("runner_content", CommandExecutorContent.create(workspacePath, runnerFile))
-                                .build(),
-                        CommandExecutorContent.create(workspacePath, outputFile) // out_content
-                );
-
-                // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
-                // command executor. Because they will be bounded by the _instance_ where the command was executed
-                // first.
+            if (!stateParams.has("command_status")) {
+                // Run the code since command state doesn't exist
+                status = runCode(params, projectPath, workspacePath);
             }
             else {
-                // Poll tasks by non-blocking
-                final String commandId = stateParams.get("commandId", String.class);
-                final Config executorState = stateParams.getNestedOrGetEmpty("executorState");
-                status = exec.poll(projectPath, workspacePath, request, commandId, executorState);
+                // Check the status of the code running
+                final CommandStatus previousCommandStatus = stateParams.get("command_status", CommandStatus.class);
+                status = checkCodeState(params, projectPath, workspacePath, previousCommandStatus);
             }
 
-            //status.getCommandOutput().writeTo(clog); // TODO
             if (status.isFinished()) {
-                CommandExecutorContent outputContent = status.getOutputContent();
-                //return mapper.readValue(workspace.getFile(outputContent.getName()), Config.class); // TODO stop this
-                return stateParams;
+                if (!status.getStatusCode().isPresent()) {
+                    throw new RuntimeException("Cannot get status code even though the code completed.");
+                }
+
+                final int statusCode = status.getStatusCode().get();
+                if (statusCode != 0) {
+                    throw new RuntimeException("Python command failed with code " + statusCode);
+                }
+
+                final CommandExecutorContent outputContent = status.getOutputContent("output");
+                try (final InputStream in = outputContent.newInputStream()) {
+                    return mapper.readValue(in, Config.class);
+                }
+                finally {
+                    // Remove the polling state after fetching the result so that the result fetch can be retried
+                    // without resubmitting the code.
+                    stateParams.remove("command_status");
+                }
             }
             else {
-                stateParams.set("commandId", status.getCommandId());
-                stateParams.set("executorState", status.getExecutorState());
-                //throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
-                throw TaskExecutionException.ofNextPolling(3, ConfigElement.copyOf(stateParams));
+                stateParams.set("command_status", status);
+                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
             }
+        }
+
+        private CommandStatus runCode(final Config params,
+                final Path projectPath,
+                final Path workspacePath)
+                throws IOException, InterruptedException
+        {
+            // Make unique id for a task attempt
+            final String commandId = workspace.createTempDir(createCommandIdPrefix()).substring(".digdag/tmp/".length());
+            final String inputFile = createTempFileWithSpecificName(workspacePath, commandId + "/input");
+            final String outputFile = createTempFileWithSpecificName(workspacePath, commandId + "/output");
+            final String runnerFile = createTempFileWithSpecificName(workspacePath, commandId + "/runner");
+
+            final String script;
+            final List<String> cmdline;
+            if (params.has("_command")) {
+                String command = params.get("_command", String.class);
+                script = runnerScript;
+                cmdline = ImmutableList.<String>builder()
+                        .add(String.format("cat %s | python - %s %s %s", runnerFile, command, inputFile, outputFile))
+                        .build();
+            }
+            else {
+                script = params.get("script", String.class);
+                cmdline = ImmutableList.<String>builder()
+                        .add(String.format("cat %s | python - %s %s", runnerFile, inputFile, outputFile))
+                        .build();
+            }
+
+            // Write params to inFile
+            try (final OutputStream out = workspace.newOutputStream(inputFile)) {
+                mapper.writeValue(out, ImmutableMap.of("params", params));
+            }
+
+            // Write script content to runnerFile
+            try (final Writer writer = new BufferedWriter(new OutputStreamWriter(workspace.newOutputStream(runnerFile)))) {
+                writer.write(script);
+            }
+
+            final Map<String, String> environments = System.getenv();
+            ProcessCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
+
+            return exec.run(projectPath, workspacePath, request, environments, cmdline, commandId);
+
+            // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
+            // command executor. Because they will be bounded by the _instance_ where the command was executed
+            // first.
+        }
+
+        private String createCommandIdPrefix()
+        {
+            return String.format("digdag-py-%d-", request.getTaskId());
+        }
+
+        private String createTempFileWithSpecificName(final Path workspacePath, final String fileName)
+                throws IOException
+        {
+            final String name = workspacePath.relativize(workspacePath.resolve(fileName)).toString();
+            return workspace.createTempFileWithSpecificName(name);
+        }
+
+        private CommandStatus checkCodeState(final Config params,
+                final Path projectPath,
+                final Path workspacePath,
+                final CommandStatus previousCommandStatus)
+                throws IOException, InterruptedException
+        {
+            return exec.poll(projectPath, workspacePath, request, previousCommandStatus);
         }
     }
 }

@@ -1,55 +1,44 @@
 package io.digdag.standards.command;
 
-import com.google.common.base.Optional;
-import io.digdag.client.config.Config;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.digdag.spi.CommandExecutorContent;
 import io.digdag.spi.CommandStatus;
 
+import java.util.Map;
+
 public class ProcessCommandStatus
-        implements CommandStatus
+        extends CommandStatus
 {
-    static CommandStatus of(final int statusCode, final CommandExecutorContent outputContent)
+    private static final JsonNodeFactory FACTORY = JsonNodeFactory.instance;
+
+    // called from ProcessCommandExecutor
+    static ProcessCommandStatus createByCommandExecutor(final int statusCode,
+            final Map<String, CommandExecutorContent> outputContents)
     {
-        return new ProcessCommandStatus(statusCode, outputContent);
+        final ObjectNode object = FACTORY.objectNode();
+        object.set("status_code", FACTORY.numberNode(statusCode));
+        return new ProcessCommandStatus(object, outputContents);
     }
 
-    private final Optional<Integer> statusCode;
-    private final CommandExecutorContent outputContent;
+    private final Map<String, CommandExecutorContent> outputContents;
 
-    private ProcessCommandStatus(final int statusCode, final CommandExecutorContent outputContent)
+    private ProcessCommandStatus(final ObjectNode object,
+            final Map<String, CommandExecutorContent> outputContents)
     {
-        this.statusCode = Optional.of(statusCode);
-        this.outputContent = outputContent;
+        super(object);
+        this.outputContents = outputContents;
     }
 
     @Override
     public boolean isFinished()
-            throws InterruptedException
     {
         return true;
     }
 
     @Override
-    public Optional<Integer> getStatusCode()
+    public CommandExecutorContent getOutputContent(String path)
     {
-        return statusCode;
-
-    }
-    @Override
-    public String getCommandId()
-    {
-        throw new UnsupportedOperationException("this method is never called.");
-    }
-
-    @Override
-    public Config getExecutorState()
-    {
-        throw new UnsupportedOperationException("this method is never called.");
-    }
-
-    @Override
-    public CommandExecutorContent getOutputContent()
-    {
-        return outputContent;
+        return outputContents.get(path);
     }
 }
