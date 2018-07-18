@@ -7,9 +7,9 @@ import com.google.common.base.Optional;
 
 public class CommandStatus
 {
-    // called from operators
+    // This method is used to deserialize from state params in operators.
     @JsonCreator
-    public static CommandStatus createByOperator(final ObjectNode object)
+    public static CommandStatus deserializeFromObjectNode(final ObjectNode object)
     {
         return new CommandStatus(object);
     }
@@ -18,7 +18,7 @@ public class CommandStatus
 
     protected CommandStatus(final ObjectNode object)
     {
-        this.object = object;
+        this.object = object.deepCopy();
     }
 
     public boolean isFinished()
@@ -69,6 +69,6 @@ public class CommandStatus
 
     public CommandExecutorContent getOutputContent(String path) // {path => content}
     {
-        throw new UnsupportedOperationException("This method is never called.");
+        throw new UnsupportedOperationException("This method must be overridden by sub-classes.");
     }
 }

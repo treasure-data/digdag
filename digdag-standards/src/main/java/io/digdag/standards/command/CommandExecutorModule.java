@@ -4,8 +4,6 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.standards.command.SimpleCommandExecutor;
-import io.digdag.standards.command.DockerCommandExecutor;
 
 public class CommandExecutorModule
     implements Module
