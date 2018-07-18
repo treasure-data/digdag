@@ -59,11 +59,17 @@ public class ProjectArchive
         listFiles(projectPath, consumer);
     }
 
+    public void listAllFiles(PathConsumer consumer)
+        throws IOException
+    {
+        listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>(), path -> true);
+    }
+
     // reused by ProjectArchiveLoader.load
     static void listFiles(Path projectPath, PathConsumer consumer)
         throws IOException
     {
-        listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>());
+        listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>(), ProjectArchive::rejectDotFiles);
     }
 
     public String pathToResourceName(Path path)
@@ -90,16 +96,17 @@ public class ProjectArchive
         return relative.toString().replace(File.separatorChar, '/');
     }
 
-    private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, Set<String> listed)
+    private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, Set<String> listed,
+            DirectoryStream.Filter<Path> filter)
         throws IOException
     {
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(targetDir, ProjectArchive::rejectDotFiles)) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(targetDir, filter)) {
             for (Path path : ds) {
                 String resourceName = realPathToResourceName(projectPath, path);
                 if (listed.add(resourceName)) {
                     consumer.accept(resourceName, path);
                     if (Files.isDirectory(path)) {
-                        listFilesRecursively(projectPath, path, consumer, listed);
+                        listFilesRecursively(projectPath, path, consumer, listed, filter);
                     }
                 }
             }

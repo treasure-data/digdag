@@ -81,8 +81,24 @@ public class Workspace
         return getPath(relative).toFile();
     }
 
-    public String createTempFile(String prefix, String suffix)
+    public String createTempDir(String prefix)
         throws IOException
+    {
+        final Path dir = Files.createTempDirectory(getTempDir(), prefix);
+        return workspacePath.relativize(dir).toString();
+    }
+
+    public String createTempFileWithSpecificName(String name)
+            throws IOException
+    {
+        // file will be deleted by WorkspaceManager
+        final Path file = Files.createFile(getTempDir().resolve(name));
+        tempFilePaths.add(file);
+        return workspacePath.relativize(file).toString();
+    }
+
+    public String createTempFile(String prefix, String suffix)
+            throws IOException
     {
         // file will be deleted by WorkspaceManager
         Path file = Files.createTempFile(getTempDir(), prefix, suffix);
