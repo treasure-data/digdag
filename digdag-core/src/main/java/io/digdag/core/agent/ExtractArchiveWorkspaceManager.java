@@ -86,12 +86,12 @@ public class ExtractArchiveWorkspaceManager
     private TempDir createNewWorkspace(TaskRequest request)
         throws IOException
     {
-        // prefix: {projectId}_{workflowName}_{sessionId}_{attemptId}
+        // prefix: {projectId}_{workflowName}_{attemptId}_{taskId}
         final String workspacePrefix = new StringBuilder()
                 .append(request.getProjectId()).append("_")
                 .append(request.getWorkflowName()).append("_") // workflow name is normalized before it's submitted.
-                .append(request.getSessionId()).append("_")
-                .append(request.getAttemptId())
+                .append(request.getAttemptId()).append("_")
+                .append(request.getTaskId())
                 .toString();
         return tempFiles.createTempDir("workspace", workspacePrefix);
     }
