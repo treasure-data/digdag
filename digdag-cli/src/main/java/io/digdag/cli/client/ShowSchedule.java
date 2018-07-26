@@ -56,6 +56,6 @@ public class ShowSchedule
             count++;
         }
         ln("%d entries.", count);
-        err.println("Use `" + programName + " workflows [project-name] [workflow-name]` to show workflow details.");
+        err.println("Use `" + programName + " workflows [project-name] [name]` to show workflow details.");
     }
 }

@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -79,10 +80,20 @@ public class ProjectArchives
                     ByteStreams.copy(archive, out);
                 }
             }
-            if (!Files.isSymbolicLink(path)) {
+            if (!Files.isSymbolicLink(path) && isPosixCompliant()) {
+		// Files.setPosixFilePermissions doesn't work on Windows: java.lang.UnsupportedOperationException
                 Files.setPosixFilePermissions(path, getPosixFilePermissions(entry));
             }
         }
+    }
+
+    private static boolean isPosixCompliant()
+    {
+        final String osName = System.getProperty("os.name");
+        if (osName != null) {
+            return !osName.toLowerCase(Locale.ENGLISH).contains("windows");
+        }
+        return true;
     }
 
     private static Set<PosixFilePermission> getPosixFilePermissions(TarArchiveEntry entry)

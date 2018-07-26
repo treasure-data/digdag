@@ -53,7 +53,7 @@ public class Backfill
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " backfill <project-name> <workflow-name>");
+        err.println("Usage: " + programName + " backfill <project-name> <name>");
         err.println("  Options:");
         err.println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
         err.println("        --name NAME                  retry attempt name");

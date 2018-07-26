@@ -8,4 +8,6 @@
     append_file: out
   +task2:
     fail>: task failed expectedly
-
+  +task3:
+    echo>: "skipped"
+    append_file: out

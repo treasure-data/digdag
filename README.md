@@ -68,10 +68,11 @@ It makes an executable in `pkg/`, e.g. `pkg/digdag-$VERSION.jar`.
 
 You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY` environment variables.
 
-1. run `./gradlew setVersion -Pto=<version>` command.
-2. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
-3. run `./gradlew clean cli site check releaseCheck`.
-4. if it succeeded, run `./gradlew release`.
+1. run `git pull origin --tags`.
+2. run `./gradlew setVersion -Pto=<version>` command.
+3. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
+4. run `./gradlew clean cli site check releaseCheck`.
+5. if it succeeded, run `./gradlew release`.
 
 If major version is incremented, also update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
 
