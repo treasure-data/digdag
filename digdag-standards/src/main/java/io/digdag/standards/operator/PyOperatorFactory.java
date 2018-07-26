@@ -1,6 +1,7 @@
 package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.util.Maps;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -8,26 +9,30 @@ import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.spi.CommandExecutorContent;
-import io.digdag.spi.OperatorContext;
-import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.CommandExecutorContext;
+import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.TaskResult;
+import io.digdag.spi.ImmutableCommandExecutorContext;
+import io.digdag.spi.ImmutableCommandExecutorRequest;
+import io.digdag.spi.ImmutableCommandStatus;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.standards.command.AbstractCommandWaitOperatorFactory;
 import io.digdag.standards.command.ProcessCommandExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -126,22 +131,20 @@ public class PyOperatorFactory
             }
             else {
                 // Check the status of the code running
-                final CommandStatus previousCommandStatus = stateParams.get("command_status", CommandStatus.class);
-                status = checkCodeState(params, projectPath, workspacePath, previousCommandStatus);
+                final CommandStatus previousStatus = ImmutableCommandStatus.builder()
+                        .json(stateParams.getNested("command_status").getInternalObjectNode())
+                        .build();
+                status = checkCodeState(params, projectPath, workspacePath, previousStatus);
             }
 
             if (status.isFinished()) {
-                if (!status.getStatusCode().isPresent()) {
-                    throw new RuntimeException("Cannot get status code even though the code completed.");
-                }
-
-                final int statusCode = status.getStatusCode().get();
+                final int statusCode = status.statusCode();
                 if (statusCode != 0) {
                     throw new RuntimeException("Python command failed with code " + statusCode);
                 }
 
-                final CommandExecutorContent outputContent = status.getOutputContent("output");
-                try (final InputStream in = outputContent.newInputStream()) {
+                final Path outputPath = workspacePath.resolve(status.ioDirectory()).resolve("output.json");
+                try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
                 }
                 finally {
@@ -161,69 +164,85 @@ public class PyOperatorFactory
                 final Path workspacePath)
                 throws IOException, InterruptedException
         {
-            // Make unique command ID for a task
-            final String uniqueCommandId = createUniqueCommandId();
-            final String inputFile = createTempFileWithSpecificName(workspacePath, uniqueCommandId + "/input");
-            final String outputFile = createTempFileWithSpecificName(workspacePath, uniqueCommandId + "/output");
-            final String runnerFile = createTempFileWithSpecificName(workspacePath, uniqueCommandId + "/runner");
+            final Path tempDir = workspace.createTempDir(String.format("digdag-py-%d-", request.getTaskId()));
+            final Path inputPath = tempDir.resolve("input.json"); // absolute
+            final Path outputPath = tempDir.resolve("output.json"); // absolute
+            final Path runnerPath = tempDir.resolve("runner.py"); // absolute
 
             final String script;
             final List<String> cmdline;
+            final Path cwd = workspace.getPath(); // absolute
+
             if (params.has("_command")) {
                 final String command = params.get("_command", String.class);
                 script = runnerScript;
-                cmdline = ImmutableList.of(String.format("cat %s | python - %s %s %s", runnerFile, command, inputFile, outputFile));
+                cmdline = ImmutableList.of(String.format("cat %s | python - %s %s %s",
+                        cwd.relativize(runnerPath).toString(), // relative
+                        command,
+                        cwd.relativize(inputPath).toString(), // relative
+                        cwd.relativize(outputPath).toString())); // relative
             }
             else {
                 script = params.get("script", String.class);
-                cmdline = ImmutableList.of(String.format("cat %s | python - %s %s", runnerFile, inputFile, outputFile));
+                cmdline = ImmutableList.of(String.format("cat %s | python - %s %s",
+                        cwd.relativize(runnerPath).toString(), // relative
+                        cwd.relativize(inputPath).toString(), // relative
+                        cwd.relativize(outputPath).toString())); // relative
             }
 
-            // Write params in inputFile
-            try (final OutputStream out = workspace.newOutputStream(inputFile)) {
+            // Write params in inputPath
+            try (final OutputStream out = Files.newOutputStream(inputPath)) {
                 mapper.writeValue(out, ImmutableMap.of("params", params));
             }
 
-            // Write script content to runnerFile
-            try (final Writer writer = new BufferedWriter(new OutputStreamWriter(workspace.newOutputStream(runnerFile)))) {
+            // Write script content to runnerPath
+            try (final Writer writer = Files.newBufferedWriter(runnerPath)) {
                 writer.write(script);
             }
 
-            final Map<String, String> environments = System.getenv();
+            final Map<String, String> environments = Maps.newHashMap();
+            environments.putAll(System.getenv());
             ProcessCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-            return exec.run(projectPath, workspacePath, request, environments, cmdline, uniqueCommandId);
+            final CommandExecutorContext context = buildCommandExecutorContext(projectPath, workspacePath);
+            final CommandExecutorRequest request = buildCommandExecutorRequest(cwd, tempDir, environments, cmdline);
+            return exec.run(context, request);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
             // command executor. Because they will be bounded by the _instance_ where the command was executed
             // first.
         }
 
-        private String createUniqueCommandId()
-                throws IOException
-        {
-            // Generate unique command ID and create the temp directory named with same name of the ID. The ID includes
-            // random string that is generated by SecureRandom.
-            //
-            // Id format: digdag-py-{taskId}-{random string}
-            String prefix = String.format("digdag-py-%d-", request.getTaskId());
-            return workspace.createTempDir(prefix).substring(".digdag/tmp/".length());
-        }
-
-        private String createTempFileWithSpecificName(final Path workspacePath, final String fileName)
-                throws IOException
-        {
-            String name = workspacePath.relativize(workspacePath.resolve(fileName)).toString();
-            return workspace.createTempFileWithSpecificName(name);
-        }
-
         private CommandStatus checkCodeState(final Config params,
                 final Path projectPath,
                 final Path workspacePath,
-                final CommandStatus previousCommandStatus)
+                final CommandStatus previousStatus)
                 throws IOException, InterruptedException
         {
-            return exec.poll(projectPath, workspacePath, request, previousCommandStatus);
+            final CommandExecutorContext context = buildCommandExecutorContext(projectPath, workspacePath);
+            return exec.poll(context, previousStatus);
+        }
+
+        private CommandExecutorContext buildCommandExecutorContext(final Path projectPath, final Path workspacePath)
+        {
+            return ImmutableCommandExecutorContext.builder()
+                    .localProjectPath(projectPath)
+                    .workspacePath(workspacePath)
+                    .taskRequest(this.request)
+                    .build();
+        }
+
+        private CommandExecutorRequest buildCommandExecutorRequest(final Path cwd, final Path tempDir,
+                final Map<String, String> environments, final List<String> cmdline)
+        {
+            final Path directory = workspace.getProjectPath().relativize(cwd);
+            final Path ioDirectory = workspace.getProjectPath().relativize(tempDir);
+            return ImmutableCommandExecutorRequest.builder()
+                    .directory(directory)
+                    .environments(environments)
+                    .command(cmdline)
+                    .ioDirectory(ioDirectory)
+                    .build();
         }
     }
 }
