@@ -80,7 +80,8 @@ public class EmbulkOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("embulk"));
 
-            String tempFile;
+            final Path cwd = workspace.getPath(); // absolute path
+            final Path tempFile;
             try {
                 tempFile = workspace.createTempFile("digdag-embulk-", ".tmp.yml");
 
@@ -98,12 +99,12 @@ public class EmbulkOperatorFactory
                     }
 
                     Files.write(
-                            workspace.getPath(tempFile),
+                            cwd.relativize(tempFile),
                             mapper.writeValueAsBytes(resolveSecrets(embulkConfig, context.getSecrets())));
                 }
                 else {
                     Config embulkConfig = params.getNested("config");
-                    try (YAMLGenerator out = yaml.createGenerator(workspace.newOutputStream(tempFile), JsonEncoding.UTF8)) {
+                    try (YAMLGenerator out = yaml.createGenerator(Files.newOutputStream(tempFile), JsonEncoding.UTF8)) {
                         mapper.writeValue(out, embulkConfig);
                     }
                 }
@@ -112,8 +113,8 @@ public class EmbulkOperatorFactory
                 throw Throwables.propagate(ex);
             }
 
-            ProcessBuilder pb = new ProcessBuilder("embulk", "run", tempFile);
-            pb.directory(workspace.getPath().toFile());
+            ProcessBuilder pb = new ProcessBuilder("embulk", "run", cwd.relativize(tempFile).toString());
+            pb.directory(cwd.toFile());
             pb.redirectErrorStream(true);
 
             int ecode;

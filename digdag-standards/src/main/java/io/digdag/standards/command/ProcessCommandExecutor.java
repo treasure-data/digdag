@@ -1,13 +1,17 @@
 package io.digdag.standards.command;
 
-import com.google.api.client.util.Maps;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.CommandExecutorContent;
+import io.digdag.spi.CommandExecutorContext;
+import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
+import io.digdag.spi.ImmutableCommandStatus;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.TaskRequest;
 import java.io.IOException;
@@ -38,50 +42,44 @@ public abstract class ProcessCommandExecutor
             throws IOException;
 
     @Override
-    public CommandStatus run(final Path projectPath,
-            final Path workspacePath,
-            final TaskRequest request,
-            final Map<String, String> environments,
-            final List<String> commandArguments,
-            final String uniqueCommandId)
-            throws IOException, InterruptedException
+    public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
+            throws IOException
     {
         final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
-        commands.addAll(commandArguments);
+        commands.addAll(request.command());
 
         final ProcessBuilder pb = new ProcessBuilder(commands);
-        pb.directory(projectPath.toFile());
+        pb.directory(context.localProjectPath().toFile());
         pb.redirectErrorStream(true);
-        pb.environment().putAll(environments);
+        pb.environment().putAll(request.environments());
 
-        final Process p = startProcess(projectPath, request, pb);
+        final Process p = startProcess(context.localProjectPath(), context.taskRequest(), pb);
 
         // copy stdout to System.out and logger
         clog.copyStdout(p, System.out);
 
         // Need waiting and blocking. Because the process is running on a single instance.
         // The command task could not be taken by other digdag-servers on other instances.
-        p.waitFor();
+        try {
+            p.waitFor();
+        }
+        catch (InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
 
-        return createCommandStatus(workspacePath, uniqueCommandId, p);
+        return createCommandStatus(request.ioDirectory(), p);
     }
 
-    private CommandStatus createCommandStatus(final Path workspacePath, final String uniqueCommandId, final Process p)
+    private CommandStatus createCommandStatus(final Path ioDirectory, final Process p)
             throws IOException
     {
-        final int exitValue = p.exitValue();
-        final Map<String, CommandExecutorContent> outputContents = createOutputContents(workspacePath, uniqueCommandId); // IOException
-        return ProcessCommandStatus.of(exitValue, outputContents);
-    }
-
-    private Map<String, CommandExecutorContent> createOutputContents(final Path workspacePath, final String uniqueCommandId)
-            throws IOException
-    {
-        final String outputFile = ".digdag/tmp/" + uniqueCommandId + "/output";
-        final CommandExecutorContent outputContent = ProcessCommandExecutorContent.create(workspacePath, outputFile); // IOException
-        final Map<String, CommandExecutorContent> outputContents = Maps.newHashMap();
-        outputContents.put("output", outputContent);
-        return outputContents;
+        final CommandStatus status = ImmutableCommandStatus.builder()
+                .isFinished(true)
+                .statusCode(p.exitValue())
+                .ioDirectory(ioDirectory)
+                .json(JsonNodeFactory.instance.objectNode()) // empty object node
+                .build();
+        return status;
     }
 
     /**
@@ -89,9 +87,8 @@ public abstract class ProcessCommandExecutor
      * cannot be polled by non-blocking.
      */
     @Override
-    public CommandStatus poll(final Path projectPath, final Path workspacePath, final TaskRequest request,
-            final CommandStatus previousCommandStatus)
-            throws IOException, InterruptedException
+    public CommandStatus poll(final CommandExecutorContext context, final CommandStatus previousStatus)
+            throws IOException
     {
         throw new UnsupportedOperationException("This method is never called.");
     }

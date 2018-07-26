@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import java.nio.file.Files;
 import java.util.List;
 import java.io.Writer;
 import java.io.BufferedWriter;
@@ -105,25 +106,30 @@ public class RbOperatorFactory
         private Config runCode(Config params)
                 throws IOException, InterruptedException
         {
-            String inFile = workspace.createTempFile("digdag-rb-in-", ".tmp");
-            String outFile = workspace.createTempFile("digdag-rb-out-", ".tmp");
+            final Path inFile = workspace.createTempFile("digdag-rb-in-", ".tmp"); // absolute
+            final Path outFile = workspace.createTempFile("digdag-rb-out-", ".tmp"); // absolute
 
-            String script;
-            List<String> args;
+            final String script;
+            final List<String> args;
+            final Path cwd = workspace.getPath();
 
             if (params.has("_command")) {
                 String command = params.get("_command", String.class);
                 script = runnerScript;
-                args = ImmutableList.of(command, inFile, outFile);
+                args = ImmutableList.of(command,
+                        cwd.relativize(inFile).toString(), // relative
+                        cwd.relativize(outFile).toString()); // relative
             }
             else {
                 script = params.get("script", String.class);
-                args = ImmutableList.of(inFile, outFile);
+                args = ImmutableList.of(
+                        cwd.relativize(inFile).toString(), // relative
+                        cwd.relativize(outFile).toString()); // relative
             }
 
             Optional<String> feature = params.getOptional("require", String.class);
 
-            try (OutputStream fo = workspace.newOutputStream(inFile)) {
+            try (final OutputStream fo = Files.newOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
@@ -137,7 +143,7 @@ public class RbOperatorFactory
             cmdline.addAll(args);
 
             ProcessBuilder pb = new ProcessBuilder(cmdline.build());
-            pb.directory(workspace.getPath().toFile());
+            pb.directory(cwd.toFile());
             pb.redirectErrorStream(true);
 
             // Set up process environment according to env config. This can also refer to secrets.
@@ -160,7 +166,7 @@ public class RbOperatorFactory
                 throw new RuntimeException("Ruby command failed with code " + ecode);
             }
 
-            return mapper.readValue(workspace.getFile(outFile), Config.class);
+            return mapper.readValue(outFile.toFile(), Config.class);
         }
     }
 }
