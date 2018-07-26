@@ -2,8 +2,6 @@ package io.digdag.spi;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 public interface CommandExecutor
 {
@@ -15,38 +13,23 @@ public interface CommandExecutor
     /**
      * Run a command.
      *
-     * @param projectPath
-     * @param workspacePath
+     * @param context
      * @param request
-     * @param environments
-     * @param cmdline
-     * @param commandId
      * @return
      * @throws IOException
-     * @throws InterruptedException
      */
-    CommandStatus run(Path projectPath,
-            Path workspacePath,
-            TaskRequest request,
-            Map<String, String> environments,
-            List<String> cmdline,
-            String commandId)
-            throws IOException, InterruptedException;
+    CommandStatus run(CommandExecutorContext context,
+            CommandExecutorRequest request)
+            throws IOException;
 
     /**
-     * Poll the command status by non-blocking.
-     *
-     * @param projectPath
-     * @param workspacePath
-     * @param request
-     * @param previousCommandStatus
+     * Poll the command status by non-blocking
+     * @param context
+     * @param previousStatus
      * @return
      * @throws IOException
-     * @throws InterruptedException
      */
-    CommandStatus poll(Path projectPath,
-            Path workspacePath,
-            TaskRequest request,
-            CommandStatus previousCommandStatus)
-            throws IOException, InterruptedException;
+    CommandStatus poll(CommandExecutorContext context,
+            CommandStatus previousStatus)
+            throws IOException;
 }
