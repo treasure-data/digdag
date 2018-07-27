@@ -1,0 +1,4 @@
+_command: true
+_do:
+  echo>: do called.
+

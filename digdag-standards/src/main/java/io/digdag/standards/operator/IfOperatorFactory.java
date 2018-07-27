@@ -22,12 +22,12 @@ public class IfOperatorFactory
     }
 
     @Override
-    public Operator newOperator(OperatorContext context)
+    public IfOperator newOperator(OperatorContext context)
     {
         return new IfOperator(context);
     }
 
-    private static class IfOperator
+    static class IfOperator
             implements Operator
     {
         private final TaskRequest request;

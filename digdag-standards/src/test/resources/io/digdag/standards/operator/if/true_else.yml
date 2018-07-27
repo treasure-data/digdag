@@ -1,4 +1,0 @@
-_command: true
-_else_do:
-  echo>: Condition is true
-

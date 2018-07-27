@@ -1,0 +1,6 @@
+_command: false
+_do:
+  echo>: do called
+_else_do:
+  echo>: else_do called
+
