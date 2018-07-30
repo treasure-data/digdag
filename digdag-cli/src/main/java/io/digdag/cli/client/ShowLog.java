@@ -56,7 +56,7 @@ public class ShowLog
         DigdagClient client = buildClient();
 
         LogLevel level = verbose ? null : LogLevel.INFO;
-        TaskLogWatcher watcher = new TaskLogWatcher(client, attemptId, level, out);
+        TaskLogWatcher watcher = new TaskLogWatcher(client, attemptId, level, out, isFinished(client, attemptId, taskName));
 
         update(client, watcher, attemptId, taskName);
 

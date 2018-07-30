@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.Collections;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -21,6 +22,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.core.log.LogFiles;
 import io.digdag.core.log.LogLevel;
 import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -35,21 +37,29 @@ class TaskLogWatcher
     private final Map<String, TaskLogState> stateMap;
     private final LogLevel levelFilter;
     private final PrintStream out;
+    private final boolean isFinished;
 
-    TaskLogWatcher(DigdagClient client, Id attemptId, LogLevel levelFilterOrNull, PrintStream out)
+    TaskLogWatcher(DigdagClient client, Id attemptId, LogLevel levelFilterOrNull, PrintStream out, boolean isFinished)
     {
         this.client = client;
         this.attemptId = attemptId;
         this.levelFilter = levelFilterOrNull;
         this.out = out;
         this.stateMap = new HashMap<>();
+        this.isFinished = isFinished;
     }
 
     boolean update(List<RestLogFileHandle> handles)
         throws IOException
     {
-        boolean updatedAtLeastOne = false;
+        if (!isFinished) {
+            handles = handles
+                .stream()
+                .filter(handle -> handle.getFileName().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX))
+                .collect(Collectors.toList());
+        }
 
+        boolean updatedAtLeastOne = false;
         for (Map.Entry<String, List<RestLogFileHandle>> pair : sortHandles(handles).entrySet()) {
             TaskLogState state = stateMap.get(pair.getKey());
             if (state == null) {
