@@ -220,12 +220,12 @@ public class LocalFileLogServerFactory
 
                     if (realtimeFollow) {
                         // Delaying for deterrence duplicate output in digdag log --follow
-                        try {
-                            Thread.sleep(1000);
-                        }
-                        catch (InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                        }
+                        // try {
+                        //     Thread.sleep(1000);
+                        // }
+                        // catch (InterruptedException ex) {
+                        //     Thread.currentThread().interrupt();
+                        // }
 
                         try (InputStream in = Files.newInputStream(temporaryPath);
                              OutputStream out = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024)) {
