@@ -81,23 +81,18 @@ public class PyOperatorFactory
             extends BaseOperator
     {
         private final Config params;
-        private final TaskState state;
-        private final int scriptPollInterval;
 
         public PyOperator(OperatorContext context)
         {
             super(context);
             this.params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(getType()));
-            this.state = TaskState.of(request);
-            this.scriptPollInterval = PyOperatorFactory.this.getPollInterval(params);
         }
 
         @Override
         public TaskResult runTask()
         {
             Config params = request.getConfig()
-                .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"))
-                .merge(request.getLastStateParams());  // merge state parameters in addition to regular config
+                .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"));
 
             Config data;
             try {
@@ -117,24 +112,27 @@ public class PyOperatorFactory
         private Config runCode(final Config params)
                 throws IOException, InterruptedException
         {
-            final Config stateParams = state.params();
+            final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath();
             final Path workspacePath = workspace.getPath();
 
             final CommandStatus status;
-            if (!stateParams.has("command_status")) {
+            if (!stateParams.has("commandStatus")) {
                 // Run the code since command state doesn't exist
                 status = runCode(params, projectPath, workspacePath);
             }
             else {
                 // Check the status of the code running
-                final ObjectNode previousStatusJson = stateParams.get("command_status", ObjectNode.class);
+                final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
                 status = checkCodeState(params, projectPath, workspacePath, previousStatusJson);
             }
 
             if (status.isFinished()) {
                 final int statusCode = status.getStatusCode();
                 if (statusCode != 0) {
+                    // Remove the polling state after fetching the result so that the result fetch can be retried
+                    // without resubmitting the code.
+                    stateParams.remove("commandStatus");
                     throw new RuntimeException("Python command failed with code " + statusCode);
                 }
 
@@ -142,14 +140,10 @@ public class PyOperatorFactory
                 try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
                 }
-                finally {
-                    // Remove the polling state after fetching the result so that the result fetch can be retried
-                    // without resubmitting the code.
-                    stateParams.remove("command_status");
-                }
             }
             else {
-                stateParams.set("command_status", status);
+                stateParams.set("commandStatus", status);
+                int scriptPollInterval = PyOperatorFactory.this.getPollInterval(params);
                 throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
             }
         }
