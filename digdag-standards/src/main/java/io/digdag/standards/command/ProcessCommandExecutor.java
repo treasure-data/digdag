@@ -67,17 +67,7 @@ public abstract class ProcessCommandExecutor
             throw Throwables.propagate(e);
         }
 
-        return createCommandStatus(request.getIoDirectory().toString(), p);
-    }
-
-    private CommandStatus createCommandStatus(final String ioDirectory, final Process p)
-            throws IOException
-    {
-        final ObjectNode object = JsonNodeFactory.instance.objectNode();
-        object.set("finished", JSON_NODE_FACTORY.booleanNode(true));
-        object.set("status_code", JSON_NODE_FACTORY.numberNode(p.exitValue()));
-        object.set("io_directory", JSON_NODE_FACTORY.textNode(ioDirectory));
-        return DefaultCommandStatus.fromObjectNode(object);
+        return ProcessCommandStatus.of(request.getIoDirectory().toString(), p);
     }
 
     /**
