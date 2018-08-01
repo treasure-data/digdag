@@ -1,5 +1,6 @@
 package io.digdag.core.workflow;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandExecutorContext;
@@ -32,7 +33,7 @@ public class MockCommandExecutor
     }
 
     @Override
-    public CommandStatus poll(CommandExecutorContext context, CommandStatus previousStatus)
+    public CommandStatus poll(CommandExecutorContext context, ObjectNode previousStatusJson)
             throws IOException
     {
         throw new UnsupportedOperationException();
