@@ -6,9 +6,14 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface CommandExecutorContext
 {
-    Path localProjectPath();
+    Path getLocalProjectPath();
 
-    Path workspacePath();
+    Path getWorkspacePath();
 
-    TaskRequest taskRequest();
+    TaskRequest getTaskRequest();
+
+    static ImmutableCommandExecutorContext.Builder builder()
+    {
+        return ImmutableCommandExecutorContext.builder();
+    }
 }

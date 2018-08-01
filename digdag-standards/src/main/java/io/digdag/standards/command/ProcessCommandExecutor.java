@@ -11,7 +11,6 @@ import io.digdag.spi.CommandExecutorContext;
 import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.ImmutableCommandStatus;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.TaskRequest;
 import java.io.IOException;
@@ -23,6 +22,7 @@ import java.util.regex.Pattern;
 public abstract class ProcessCommandExecutor
         implements CommandExecutor
 {
+    private final static JsonNodeFactory JSON_NODE_FACTORY = JsonNodeFactory.instance;
     private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
 
     private final CommandLogger clog;
@@ -46,14 +46,14 @@ public abstract class ProcessCommandExecutor
             throws IOException
     {
         final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
-        commands.addAll(request.command());
+        commands.addAll(request.getCommand());
 
         final ProcessBuilder pb = new ProcessBuilder(commands);
-        pb.directory(context.localProjectPath().toFile());
+        pb.directory(context.getLocalProjectPath().toFile());
         pb.redirectErrorStream(true);
-        pb.environment().putAll(request.environments());
+        pb.environment().putAll(request.getEnvironments());
 
-        final Process p = startProcess(context.localProjectPath(), context.taskRequest(), pb);
+        final Process p = startProcess(context.getLocalProjectPath(), context.getTaskRequest(), pb);
 
         // copy stdout to System.out and logger
         clog.copyStdout(p, System.out);
@@ -67,19 +67,17 @@ public abstract class ProcessCommandExecutor
             throw Throwables.propagate(e);
         }
 
-        return createCommandStatus(request.ioDirectory(), p);
+        return createCommandStatus(request.getIoDirectory().toString(), p);
     }
 
-    private CommandStatus createCommandStatus(final Path ioDirectory, final Process p)
+    private CommandStatus createCommandStatus(final String ioDirectory, final Process p)
             throws IOException
     {
-        final CommandStatus status = ImmutableCommandStatus.builder()
-                .isFinished(true)
-                .statusCode(p.exitValue())
-                .ioDirectory(ioDirectory)
-                .json(JsonNodeFactory.instance.objectNode()) // empty object node
-                .build();
-        return status;
+        final ObjectNode object = JsonNodeFactory.instance.objectNode();
+        object.set("finished", JSON_NODE_FACTORY.booleanNode(true));
+        object.set("status_code", JSON_NODE_FACTORY.numberNode(p.exitValue()));
+        object.set("io_directory", JSON_NODE_FACTORY.textNode(ioDirectory));
+        return DefaultCommandStatus.fromObjectNode(object);
     }
 
     /**
@@ -87,7 +85,7 @@ public abstract class ProcessCommandExecutor
      * cannot be polled by non-blocking.
      */
     @Override
-    public CommandStatus poll(final CommandExecutorContext context, final CommandStatus previousStatus)
+    public CommandStatus poll(final CommandExecutorContext context, final ObjectNode previousStatusJson)
             throws IOException
     {
         throw new UnsupportedOperationException("This method is never called.");

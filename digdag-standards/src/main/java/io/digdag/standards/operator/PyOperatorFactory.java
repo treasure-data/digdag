@@ -1,6 +1,7 @@
 package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.Maps;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -13,14 +14,10 @@ import io.digdag.spi.CommandExecutorContext;
 import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.ImmutableCommandExecutorContext;
-import io.digdag.spi.ImmutableCommandExecutorRequest;
-import io.digdag.spi.ImmutableCommandStatus;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.command.AbstractCommandWaitOperatorFactory;
 import io.digdag.standards.command.ProcessCommandExecutor;
@@ -131,19 +128,17 @@ public class PyOperatorFactory
             }
             else {
                 // Check the status of the code running
-                final CommandStatus previousStatus = ImmutableCommandStatus.builder()
-                        .json(stateParams.getNested("command_status").getInternalObjectNode())
-                        .build();
-                status = checkCodeState(params, projectPath, workspacePath, previousStatus);
+                final ObjectNode previousStatusJson = stateParams.get("command_status", ObjectNode.class);
+                status = checkCodeState(params, projectPath, workspacePath, previousStatusJson);
             }
 
             if (status.isFinished()) {
-                final int statusCode = status.statusCode();
+                final int statusCode = status.getStatusCode();
                 if (statusCode != 0) {
                     throw new RuntimeException("Python command failed with code " + statusCode);
                 }
 
-                final Path outputPath = workspacePath.resolve(status.ioDirectory()).resolve("output.json");
+                final Path outputPath = workspacePath.resolve(status.getIoDirectory()).resolve("output.json");
                 try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
                 }
@@ -208,7 +203,7 @@ public class PyOperatorFactory
             ProcessCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
             final CommandExecutorContext context = buildCommandExecutorContext(projectPath, workspacePath);
-            final CommandExecutorRequest request = buildCommandExecutorRequest(cwd, tempDir, environments, cmdline);
+            final CommandExecutorRequest request = buildCommandExecutorRequest(context, cwd, tempDir, environments, cmdline);
             return exec.run(context, request);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
@@ -219,28 +214,31 @@ public class PyOperatorFactory
         private CommandStatus checkCodeState(final Config params,
                 final Path projectPath,
                 final Path workspacePath,
-                final CommandStatus previousStatus)
+                final ObjectNode previousStatusJson)
                 throws IOException, InterruptedException
         {
             final CommandExecutorContext context = buildCommandExecutorContext(projectPath, workspacePath);
-            return exec.poll(context, previousStatus);
+            return exec.poll(context, previousStatusJson);
         }
 
         private CommandExecutorContext buildCommandExecutorContext(final Path projectPath, final Path workspacePath)
         {
-            return ImmutableCommandExecutorContext.builder()
+            return CommandExecutorContext.builder()
                     .localProjectPath(projectPath)
                     .workspacePath(workspacePath)
                     .taskRequest(this.request)
                     .build();
         }
 
-        private CommandExecutorRequest buildCommandExecutorRequest(final Path cwd, final Path tempDir,
-                final Map<String, String> environments, final List<String> cmdline)
+        private CommandExecutorRequest buildCommandExecutorRequest(final CommandExecutorContext context,
+                final Path cwd,
+                final Path tempDir,
+                final Map<String, String> environments,
+                final List<String> cmdline)
         {
-            final Path directory = workspace.getProjectPath().relativize(cwd);
-            final Path ioDirectory = workspace.getProjectPath().relativize(tempDir);
-            return ImmutableCommandExecutorRequest.builder()
+            final Path directory = context.getLocalProjectPath().relativize(cwd); // relative
+            final Path ioDirectory = context.getLocalProjectPath().relativize(tempDir); // relative
+            return CommandExecutorRequest.builder()
                     .directory(directory)
                     .environments(environments)
                     .command(cmdline)

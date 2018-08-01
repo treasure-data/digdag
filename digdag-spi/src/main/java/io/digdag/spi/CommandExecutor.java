@@ -1,5 +1,7 @@
 package io.digdag.spi;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -25,11 +27,13 @@ public interface CommandExecutor
     /**
      * Poll the command status by non-blocking
      * @param context
-     * @param previousStatus
+     * @param previousStatusJson
      * @return
      * @throws IOException
      */
     CommandStatus poll(CommandExecutorContext context,
-            CommandStatus previousStatus)
+            ObjectNode previousStatusJson)
             throws IOException;
+
+
 }
