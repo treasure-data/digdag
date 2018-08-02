@@ -1,23 +1,16 @@
 package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
-import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.command.ProcessCommandExecutor;
+import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.UserSecretTemplate;
 import org.slf4j.Logger;
@@ -28,14 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 public class ShOperatorFactory
         implements OperatorFactory
@@ -90,7 +77,7 @@ public class ShOperatorFactory
             final Map<String, String> env = pb.environment();
             params.getKeys()
                 .forEach(key -> {
-                    if (ProcessCommandExecutor.isValidEnvKey(key)) {
+                    if (SimpleCommandExecutor.isValidEnvKey(key)) {
                         JsonNode value = params.get(key, JsonNode.class);
                         String string;
                         if (value.isTextual()) {
@@ -107,7 +94,7 @@ public class ShOperatorFactory
                 });
 
             // Set up process environment according to env config. This can also refer to secrets.
-            ProcessCommandExecutor.collectEnvironmentVariables(env, context.getPrivilegedVariables());
+            SimpleCommandExecutor.collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");

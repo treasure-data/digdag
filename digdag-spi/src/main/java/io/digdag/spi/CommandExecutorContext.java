@@ -8,8 +8,6 @@ public interface CommandExecutorContext
 {
     Path getLocalProjectPath();
 
-    Path getWorkspacePath();
-
     TaskRequest getTaskRequest();
 
     static ImmutableCommandExecutorContext.Builder builder()

@@ -1,15 +1,11 @@
 package io.digdag.standards.command;
 
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-import java.io.File;
-import java.io.OutputStreamWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.BufferedWriter;
@@ -17,15 +13,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandExecutorContext;
+import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandLogger;
+import io.digdag.spi.CommandStatus;
 import io.digdag.spi.TaskRequest;
 import io.digdag.client.config.Config;
 import org.slf4j.Logger;
@@ -34,16 +33,17 @@ import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class DockerCommandExecutor
-        extends ProcessCommandExecutor
+        implements CommandExecutor
 {
-    private final SimpleCommandExecutor simple;
-
     private static Logger logger = LoggerFactory.getLogger(DockerCommandExecutor.class);
+
+    private final CommandLogger clog;
+    private final SimpleCommandExecutor simple;
 
     @Inject
     public DockerCommandExecutor(final CommandLogger clog, final SimpleCommandExecutor simple)
     {
-        super(clog);
+        this.clog = clog;
         this.simple = simple;
     }
 
@@ -56,18 +56,59 @@ public class DockerCommandExecutor
         return startProcess(projectPath, request, pb);
     }
 
-    @Override
-    public Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    private Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
             throws IOException
     {
         // TODO set TZ environment variable
-        Config config = request.getConfig();
+        final Config config = request.getConfig();
         if (config.has("docker")) {
             return startWithDocker(projectPath, request, pb);
         }
         else {
             return simple.startProcess(projectPath.toAbsolutePath(), request, pb);
         }
+    }
+
+    @Override
+    public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
+            throws IOException
+    {
+        final Config config = context.getTaskRequest().getConfig();
+        if (config.has("docker")) {
+            return runWithDocker(context, request);
+        }
+        else {
+            return simple.run(context, request);
+        }
+    }
+
+    private CommandStatus runWithDocker(final CommandExecutorContext context, final CommandExecutorRequest request)
+            throws IOException
+    {
+        final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
+        commands.addAll(request.getCommand());
+
+        final ProcessBuilder pb = new ProcessBuilder(commands);
+        pb.directory(context.getLocalProjectPath().toFile());
+        pb.redirectErrorStream(true);
+        pb.environment().putAll(request.getEnvironments());
+
+        // TODO set TZ environment variable
+        final Process p = startWithDocker(context.getLocalProjectPath(), context.getTaskRequest(), pb);
+
+        // copy stdout to System.out and logger
+        clog.copyStdout(p, System.out);
+
+        // Need waiting and blocking. Because the process is running on a single instance.
+        // The command task could not be taken by other digdag-servers on other instances.
+        try {
+            p.waitFor();
+        }
+        catch (InterruptedException e) {
+            throw com.google.api.client.repackaged.com.google.common.base.Throwables.propagate(e);
+        }
+
+        return SimpleCommandStatus.of(request.getIoDirectory().toString(), p);
     }
 
     private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
@@ -270,5 +311,16 @@ public class DockerCommandExecutor
         catch (IOException | InterruptedException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    /**
+     * This method is never called. The status of the task that is executed by the executor cannot be
+     * polled by non-blocking.
+     */
+    @Override
+    public CommandStatus poll(final CommandExecutorContext context, final ObjectNode previousStatusJson)
+            throws IOException
+    {
+        throw new UnsupportedOperationException("This method is never called.");
     }
 }
