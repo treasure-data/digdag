@@ -9,7 +9,7 @@ import org.immutables.value.Value;
 public interface CommandExecutorRequest
 {
     // This Path must be a relative path from CommandExecutorContent.getLocalProjectPath()
-    Path getDirectory();  // => cmd/
+    Path getWorkingDirectory();  // => cmd/
 
     Map<String, String> getEnvironments();
 

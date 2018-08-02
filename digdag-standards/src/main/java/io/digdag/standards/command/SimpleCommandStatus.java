@@ -3,18 +3,18 @@ package io.digdag.standards.command;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.digdag.spi.CommandStatus;
 
-public class ProcessCommandStatus
+class SimpleCommandStatus
         implements CommandStatus
 {
     static CommandStatus of(final String ioDirectory, final Process p)
     {
-        return new ProcessCommandStatus(p.exitValue(), ioDirectory);
+        return new SimpleCommandStatus(p.exitValue(), ioDirectory);
     }
 
     private final int statusCode;
     private final String ioDirectory;
 
-    private ProcessCommandStatus(final int statusCode, final String ioDirectory)
+    private SimpleCommandStatus(final int statusCode, final String ioDirectory)
     {
         this.statusCode = statusCode;
         this.ioDirectory = ioDirectory;
