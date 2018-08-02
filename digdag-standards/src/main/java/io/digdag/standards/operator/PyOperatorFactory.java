@@ -19,7 +19,6 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.command.AbstractCommandWaitOperatorFactory;
 import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
@@ -31,13 +30,13 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PyOperatorFactory
-        extends AbstractCommandWaitOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(PyOperatorFactory.class);
@@ -61,7 +60,6 @@ public class PyOperatorFactory
     @Inject
     public PyOperatorFactory(Config systemConfig, CommandExecutor exec, ObjectMapper mapper)
     {
-        super("py", systemConfig);
         this.exec = exec;
         this.mapper = mapper;
     }
@@ -80,6 +78,9 @@ public class PyOperatorFactory
     private class PyOperator
             extends BaseOperator
     {
+        // TODO extract as config params.
+        final int scriptPollInterval = (int) Duration.ofSeconds(3).getSeconds();
+
         public PyOperator(OperatorContext context)
         {
             super(context);
@@ -140,7 +141,6 @@ public class PyOperatorFactory
             }
             else {
                 stateParams.set("commandStatus", status);
-                int scriptPollInterval = PyOperatorFactory.this.getPollInterval(params);
                 throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
             }
         }
@@ -213,7 +213,6 @@ public class PyOperatorFactory
         {
             return CommandExecutorContext.builder()
                     .localProjectPath(projectPath)
-                    .workspacePath(workspacePath)
                     .taskRequest(this.request)
                     .build();
         }
@@ -227,7 +226,7 @@ public class PyOperatorFactory
             final Path directory = context.getLocalProjectPath().relativize(cwd); // relative
             final Path ioDirectory = context.getLocalProjectPath().relativize(tempDir); // relative
             return CommandExecutorRequest.builder()
-                    .directory(directory)
+                    .workingDirectory(directory)
                     .environments(environments)
                     .command(cmdline)
                     .ioDirectory(ioDirectory)
