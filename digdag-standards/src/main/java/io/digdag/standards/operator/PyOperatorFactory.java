@@ -80,12 +80,9 @@ public class PyOperatorFactory
     private class PyOperator
             extends BaseOperator
     {
-        private final Config params;
-
         public PyOperator(OperatorContext context)
         {
             super(context);
-            this.params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(getType()));
         }
 
         @Override
