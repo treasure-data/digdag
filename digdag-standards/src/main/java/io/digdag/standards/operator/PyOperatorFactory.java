@@ -148,6 +148,7 @@ public class PyOperatorFactory
                 throws IOException, InterruptedException
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-py-%d-", request.getTaskId()));
+            final Path workingDirectory = workspace.getPath(); // absolute
             final Path inputPath = tempDir.resolve("input.json"); // absolute
             final Path outputPath = tempDir.resolve("output.json"); // absolute
             final Path runnerPath = tempDir.resolve("runner.py"); // absolute
@@ -155,25 +156,22 @@ public class PyOperatorFactory
             final String script;
             final List<String> cmdline;
             final String python = params.get("python", String.class, "python");
-            final Path workingDirectory = workspace.getPath(); // absolute
 
             if (params.has("_command")) {
                 final String command = params.get("_command", String.class);
                 script = runnerScript;
-                cmdline = ImmutableList.of(String.format("cat %s | %s - %s %s %s",
+                cmdline = ImmutableList.of(python,
                         workingDirectory.relativize(runnerPath).toString(), // relative
-                        python,
                         command,
                         workingDirectory.relativize(inputPath).toString(), // relative
-                        workingDirectory.relativize(outputPath).toString())); // relative
+                        workingDirectory.relativize(outputPath).toString()); // relative
             }
             else {
                 script = params.get("script", String.class);
-                cmdline = ImmutableList.of(String.format("cat %s | %s - %s %s",
+                cmdline = ImmutableList.of(python,
                         workingDirectory.relativize(runnerPath).toString(), // relative
-                        python,
                         workingDirectory.relativize(inputPath).toString(), // relative
-                        workingDirectory.relativize(outputPath).toString())); // relative
+                        workingDirectory.relativize(outputPath).toString()); // relative
             }
 
             // Write params in inputPath
