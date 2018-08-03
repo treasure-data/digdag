@@ -36,30 +36,20 @@ public class SimpleCommandExecutor
     public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
             throws IOException
     {
-        return startProcess(projectPath, request, pb);
-    }
-
-    Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
-            throws IOException
-    {
-        // TODO set TZ environment variable
-        return pb.start();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
             throws IOException
     {
-        final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
-        commands.addAll(request.getCommand());
-
-        final ProcessBuilder pb = new ProcessBuilder(commands);
+        final ProcessBuilder pb = new ProcessBuilder(request.getCommand());
         pb.directory(context.getLocalProjectPath().toFile());
         pb.redirectErrorStream(true);
         pb.environment().putAll(request.getEnvironments());
 
         // TODO set TZ environment variable
-        final Process p = startProcess(context.getLocalProjectPath(), context.getTaskRequest(), pb);
+        final Process p = pb.start();
 
         // copy stdout to System.out and logger
         clog.copyStdout(p, System.out);

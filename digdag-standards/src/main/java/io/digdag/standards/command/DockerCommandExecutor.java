@@ -11,10 +11,8 @@ import java.io.InputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.Files;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.hash.Hashing;
@@ -52,21 +50,7 @@ public class DockerCommandExecutor
     public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
             throws IOException
     {
-        logger.warn(getClass().getName() + "#start method is deprecated and will be removed.");
-        return startProcess(projectPath, request, pb);
-    }
-
-    private Process startProcess(Path projectPath, TaskRequest request, ProcessBuilder pb)
-            throws IOException
-    {
-        // TODO set TZ environment variable
-        final Config config = request.getConfig();
-        if (config.has("docker")) {
-            return startWithDocker(projectPath, request, pb);
-        }
-        else {
-            return simple.startProcess(projectPath.toAbsolutePath(), request, pb);
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -85,16 +69,11 @@ public class DockerCommandExecutor
     private CommandStatus runWithDocker(final CommandExecutorContext context, final CommandExecutorRequest request)
             throws IOException
     {
-        final List<String> commands = Lists.newArrayList("/bin/bash", "-c");
-        commands.addAll(request.getCommand());
-
-        final ProcessBuilder pb = new ProcessBuilder(commands);
-        pb.directory(context.getLocalProjectPath().toFile());
-        pb.redirectErrorStream(true);
-        pb.environment().putAll(request.getEnvironments());
-
         // TODO set TZ environment variable
-        final Process p = startWithDocker(context.getLocalProjectPath(), context.getTaskRequest(), pb);
+        final Process p = startDockerProcess(context.getLocalProjectPath(),
+                context.getTaskRequest(),
+                request.getCommand(),
+                request.getEnvironments());
 
         // copy stdout to System.out and logger
         clog.copyStdout(p, System.out);
@@ -105,13 +84,16 @@ public class DockerCommandExecutor
             p.waitFor();
         }
         catch (InterruptedException e) {
-            throw com.google.api.client.repackaged.com.google.common.base.Throwables.propagate(e);
+            throw Throwables.propagate(e);
         }
 
         return SimpleCommandStatus.of(request.getIoDirectory().toString(), p);
     }
 
-    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    private Process startDockerProcess(final Path projectPath,
+            final TaskRequest request,
+            final List<String> cmdline,
+            final Map<String, String> environments)
             throws IOException
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
@@ -141,9 +123,8 @@ public class DockerCommandExecutor
             command.add("-v").add(String.format(ENGLISH,
                         "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
-            // workdir
-            Path workdir = (pb.directory() == null) ? Paths.get("") : pb.directory().toPath();
-            command.add("-w").add(workdir.normalize().toAbsolutePath().toString());
+            // working directory
+            command.add("-w").add(projectPath.normalize().toAbsolutePath().toString());
 
             logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
 
@@ -161,7 +142,7 @@ public class DockerCommandExecutor
             //    }
             //}
             //command.add("--env-file").add(envFile.toAbsolutePath().toString());
-            for (Map.Entry<String, String> pair : pb.environment().entrySet()) {
+            for (Map.Entry<String, String> pair : environments.entrySet()) {
                 command.add("-e").add(pair.getKey() + "=" + pair.getValue());
             }
 
@@ -169,16 +150,13 @@ public class DockerCommandExecutor
             command.add(imageName);
 
             // command and args
-            command.addAll(pb.command());
+            command.addAll(cmdline);
 
-            ProcessBuilder docker = new ProcessBuilder(command.build());
-            docker.redirectError(pb.redirectError());
-            docker.redirectErrorStream(pb.redirectErrorStream());
-            docker.redirectInput(pb.redirectInput());
-            docker.redirectOutput(pb.redirectOutput());
-            docker.directory(projectPath.toFile());
+            final ProcessBuilder pb = new ProcessBuilder(command.build());
+            pb.directory(projectPath.toFile());
+            pb.redirectErrorStream(true);
 
-            return docker.start();
+            return pb.start();
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
