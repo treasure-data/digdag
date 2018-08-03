@@ -89,12 +89,9 @@ public class PyOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig()
-                .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"));
-
-            Config data;
+            final Config data;
             try {
-                data = runCode(params);
+                data = runCode();
             }
             catch (IOException | InterruptedException ex) {
                 throw Throwables.propagate(ex);
@@ -107,22 +104,23 @@ public class PyOperatorFactory
                 .build();
         }
 
-        private Config runCode(final Config params)
+        private Config runCode()
                 throws IOException, InterruptedException
         {
+            final Config params = request.getConfig()
+                    .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"));
             final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath();
-            final Path workspacePath = workspace.getPath();
 
             final CommandStatus status;
             if (!stateParams.has("commandStatus")) {
                 // Run the code since command state doesn't exist
-                status = runCode(params, projectPath, workspacePath);
+                status = runCode(params, projectPath);
             }
             else {
                 // Check the status of the code running
                 final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
-                status = checkCodeState(params, projectPath, workspacePath, previousStatusJson);
+                status = checkCodeState(params, projectPath, previousStatusJson);
             }
 
             if (status.isFinished()) {
@@ -134,6 +132,7 @@ public class PyOperatorFactory
                     throw new RuntimeException("Python command failed with code " + statusCode);
                 }
 
+                final Path workspacePath = workspace.getPath();
                 final Path outputPath = workspacePath.resolve(status.getIoDirectory()).resolve("output.json");
                 try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
@@ -145,9 +144,7 @@ public class PyOperatorFactory
             }
         }
 
-        private CommandStatus runCode(final Config params,
-                final Path projectPath,
-                final Path workspacePath)
+        private CommandStatus runCode(final Config params, final Path projectPath)
                 throws IOException, InterruptedException
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-py-%d-", request.getTaskId()));
@@ -157,23 +154,23 @@ public class PyOperatorFactory
 
             final String script;
             final List<String> cmdline;
-            final Path cwd = workspace.getPath(); // absolute
+            final Path workingDirectory = workspace.getPath(); // absolute
 
             if (params.has("_command")) {
                 final String command = params.get("_command", String.class);
                 script = runnerScript;
                 cmdline = ImmutableList.of(String.format("cat %s | python - %s %s %s",
-                        cwd.relativize(runnerPath).toString(), // relative
+                        workingDirectory.relativize(runnerPath).toString(), // relative
                         command,
-                        cwd.relativize(inputPath).toString(), // relative
-                        cwd.relativize(outputPath).toString())); // relative
+                        workingDirectory.relativize(inputPath).toString(), // relative
+                        workingDirectory.relativize(outputPath).toString())); // relative
             }
             else {
                 script = params.get("script", String.class);
                 cmdline = ImmutableList.of(String.format("cat %s | python - %s %s",
-                        cwd.relativize(runnerPath).toString(), // relative
-                        cwd.relativize(inputPath).toString(), // relative
-                        cwd.relativize(outputPath).toString())); // relative
+                        workingDirectory.relativize(runnerPath).toString(), // relative
+                        workingDirectory.relativize(inputPath).toString(), // relative
+                        workingDirectory.relativize(outputPath).toString())); // relative
             }
 
             // Write params in inputPath
@@ -190,8 +187,8 @@ public class PyOperatorFactory
             environments.putAll(System.getenv());
             SimpleCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-            final CommandExecutorContext context = buildCommandExecutorContext(projectPath, workspacePath);
-            final CommandExecutorRequest request = buildCommandExecutorRequest(context, cwd, tempDir, environments, cmdline);
+            final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
+            final CommandExecutorRequest request = buildCommandExecutorRequest(context, workingDirectory, tempDir, environments, cmdline);
             return exec.run(context, request);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
@@ -201,15 +198,14 @@ public class PyOperatorFactory
 
         private CommandStatus checkCodeState(final Config params,
                 final Path projectPath,
-                final Path workspacePath,
                 final ObjectNode previousStatusJson)
                 throws IOException, InterruptedException
         {
-            final CommandExecutorContext context = buildCommandExecutorContext(projectPath, workspacePath);
+            final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
             return exec.poll(context, previousStatusJson);
         }
 
-        private CommandExecutorContext buildCommandExecutorContext(final Path projectPath, final Path workspacePath)
+        private CommandExecutorContext buildCommandExecutorContext(final Path projectPath)
         {
             return CommandExecutorContext.builder()
                     .localProjectPath(projectPath)
@@ -218,15 +214,16 @@ public class PyOperatorFactory
         }
 
         private CommandExecutorRequest buildCommandExecutorRequest(final CommandExecutorContext context,
-                final Path cwd,
+                final Path workingDirectory,
                 final Path tempDir,
                 final Map<String, String> environments,
                 final List<String> cmdline)
         {
-            final Path directory = context.getLocalProjectPath().relativize(cwd); // relative
-            final Path ioDirectory = context.getLocalProjectPath().relativize(tempDir); // relative
+            final Path projectPath = context.getLocalProjectPath();
+            final Path relativeWorkingDirectory = projectPath.relativize(workingDirectory); // relative
+            final Path ioDirectory = projectPath.relativize(tempDir); // relative
             return CommandExecutorRequest.builder()
-                    .workingDirectory(directory)
+                    .workingDirectory(relativeWorkingDirectory)
                     .environments(environments)
                     .command(cmdline)
                     .ioDirectory(ioDirectory)
