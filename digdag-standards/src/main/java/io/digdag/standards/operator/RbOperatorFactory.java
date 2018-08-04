@@ -1,34 +1,42 @@
 package io.digdag.standards.operator;
 
-import java.nio.file.Files;
-import java.util.List;
-import java.io.Writer;
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.io.OutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.client.util.Maps;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import io.digdag.spi.OperatorContext;
-import io.digdag.standards.command.SimpleCommandExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
+import io.digdag.spi.CommandExecutorContext;
+import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
+import io.digdag.spi.CommandStatus;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.client.config.Config;
+import io.digdag.standards.command.SimpleCommandExecutor;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RbOperatorFactory
         implements OperatorFactory
@@ -49,15 +57,12 @@ public class RbOperatorFactory
     }
 
     private final CommandExecutor exec;
-    private final CommandLogger clog;
     private final ObjectMapper mapper;
 
     @Inject
-    public RbOperatorFactory(CommandExecutor exec, CommandLogger clog,
-            ObjectMapper mapper)
+    public RbOperatorFactory(CommandExecutor exec, ObjectMapper mapper)
     {
         this.exec = exec;
-        this.clog = clog;
         this.mapper = mapper;
     }
 
@@ -75,6 +80,9 @@ public class RbOperatorFactory
     private class RbOperator
             extends BaseOperator
     {
+        // TODO extract as config params.
+        final int scriptPollInterval = (int) Duration.ofSeconds(3).getSeconds();
+
         public RbOperator(OperatorContext context)
         {
             super(context);
@@ -83,16 +91,12 @@ public class RbOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig()
-                .mergeDefault(request.getConfig().getNestedOrGetEmpty("rb"))
-                .merge(request.getLastStateParams());  // merge state parameters in addition to regular config
-
             Config data;
             try {
-                data = runCode(params);
+                data = runCode();
             }
-            catch (IOException | InterruptedException ex) {
-                throw Throwables.propagate(ex);
+            catch (IOException | InterruptedException e) {
+                throw Throwables.propagate(e);
             }
 
             return TaskResult.defaultBuilder(request)
@@ -102,70 +106,142 @@ public class RbOperatorFactory
                 .build();
         }
 
-        private Config runCode(Config params)
+        private Config runCode()
                 throws IOException, InterruptedException
         {
-            final Path inFile = workspace.createTempFile("digdag-rb-in-", ".tmp"); // absolute
-            final Path outFile = workspace.createTempFile("digdag-rb-out-", ".tmp"); // absolute
+            final Config params = request.getConfig()
+                    .mergeDefault(request.getConfig().getNestedOrGetEmpty("rb"));
+            final Config stateParams = TaskState.of(request).params();
+            final Path projectPath = workspace.getProjectPath();
+
+            final CommandStatus status;
+            if (!stateParams.has("commandStatus")) {
+                // Run the code since command state doesn't exist
+                status = runCode(params, projectPath);
+            }
+            else {
+                // Check the status of the code running
+                final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
+                status = checkCodeState(params, projectPath, previousStatusJson);
+            }
+
+            if (status.isFinished()) {
+                final int statusCode = status.getStatusCode();
+                if (statusCode != 0) {
+                    // Remove the polling state after fetching the result so that the result fetch can be retried
+                    // without resubmitting the code.
+                    stateParams.remove("commandStatus");
+                    throw new RuntimeException("Ruby command failed with code " + statusCode);
+                }
+
+                final Path workspacePath = workspace.getPath();
+                final Path outputPath = workspacePath.resolve(status.getIoDirectory()).resolve("output.json");
+                try (final InputStream in = Files.newInputStream(outputPath)) {
+                    return mapper.readValue(in, Config.class);
+                }
+            }
+            else {
+                stateParams.set("commandStatus", status);
+                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
+            }
+        }
+
+        private CommandStatus runCode(final Config params, final Path projectPath)
+                throws IOException, InterruptedException
+        {
+            final Path tempDir = workspace.createTempDir(String.format("digdag-rb-%d-", request.getTaskId()));
+            final Path workingDirectory = workspace.getPath(); // absolute
+            final Path inputPath = tempDir.resolve("input.json"); // absolute
+            final Path outputPath = tempDir.resolve("output.json"); // absolute
+            final Path runnerPath = tempDir.resolve("runner.rb"); // absolute
 
             final String script;
             final List<String> args;
-            final Path cwd = workspace.getPath();
 
             if (params.has("_command")) {
                 String command = params.get("_command", String.class);
                 script = runnerScript;
                 args = ImmutableList.of(command,
-                        cwd.relativize(inFile).toString(), // relative
-                        cwd.relativize(outFile).toString()); // relative
+                        workingDirectory.relativize(inputPath).toString(), // relative
+                        workingDirectory.relativize(outputPath).toString()); // relative
             }
             else {
                 script = params.get("script", String.class);
                 args = ImmutableList.of(
-                        cwd.relativize(inFile).toString(), // relative
-                        cwd.relativize(outFile).toString()); // relative
+                        workingDirectory.relativize(inputPath).toString(), // relative
+                        workingDirectory.relativize(outputPath).toString()); // relative
             }
 
-            Optional<String> feature = params.getOptional("require", String.class);
-
-            try (final OutputStream fo = Files.newOutputStream(inFile)) {
+            try (final OutputStream fo = Files.newOutputStream(inputPath)) {
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
-            ImmutableList.Builder<String> cmdline = ImmutableList.builder();
+            final ImmutableList.Builder<String> cmdline = ImmutableList.builder();
             cmdline.add("ruby");
             cmdline.add("-I").add(workspace.getPath().toString());
+
+            final Optional<String> feature = params.getOptional("require", String.class);
             if (feature.isPresent()) {
                 cmdline.add("-r").add(feature.get());
             }
-            cmdline.add("--").add("-");  // script is fed from stdin  TODO: this doesn't work with jruby
+            //  TODO: this doesn't work with jruby
+            cmdline.add("--").add(workingDirectory.relativize(runnerPath).toString());  // script is fed from stdin
             cmdline.addAll(args);
 
-            ProcessBuilder pb = new ProcessBuilder(cmdline.build());
-            pb.directory(cwd.toFile());
-            pb.redirectErrorStream(true);
+            // Write params in inputPath
+            try (final OutputStream out = Files.newOutputStream(inputPath)) {
+                mapper.writeValue(out, ImmutableMap.of("params", params));
+            }
 
-            // Set up process environment according to env config. This can also refer to secrets.
-            Map<String, String> env = pb.environment();
-            SimpleCommandExecutor.collectEnvironmentVariables(env, context.getPrivilegedVariables());
-
-            Process p = exec.start(workspace.getPath(), request, pb);
-
-            // feed script to stdin
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+            // Write script content to runnerPath
+            try (final Writer writer = Files.newBufferedWriter(runnerPath)) {
                 writer.write(script);
             }
 
-            // read stdout to stdout
-            clog.copyStdout(p, System.out);
+            final Map<String, String> environments = Maps.newHashMap();
+            environments.putAll(System.getenv());
+            SimpleCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-            int ecode = p.waitFor();
+            final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
+            final CommandExecutorRequest request = buildCommandExecutorRequest(context, workingDirectory, tempDir, environments, cmdline.build());
+            return exec.run(context, request);
 
-            if (ecode != 0) {
-                throw new RuntimeException("Ruby command failed with code " + ecode);
-            }
+            // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
+            // command executor. Because they will be bounded by the _instance_ where the command was executed
+            // first.
+        }
+        private CommandStatus checkCodeState(final Config params,
+                final Path projectPath,
+                final ObjectNode previousStatusJson)
+                throws IOException, InterruptedException
+        {
+            final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
+            return exec.poll(context, previousStatusJson);
+        }
 
-            return mapper.readValue(outFile.toFile(), Config.class);
+        private CommandExecutorContext buildCommandExecutorContext(final Path projectPath)
+        {
+            return CommandExecutorContext.builder()
+                    .localProjectPath(projectPath)
+                    .taskRequest(this.request)
+                    .build();
+        }
+
+        private CommandExecutorRequest buildCommandExecutorRequest(final CommandExecutorContext context,
+                final Path workingDirectory,
+                final Path tempDir,
+                final Map<String, String> environments,
+                final List<String> cmdline)
+        {
+            final Path projectPath = context.getLocalProjectPath();
+            final Path relativeWorkingDirectory = projectPath.relativize(workingDirectory); // relative
+            final Path ioDirectory = projectPath.relativize(tempDir); // relative
+            return CommandExecutorRequest.builder()
+                    .workingDirectory(relativeWorkingDirectory)
+                    .environments(environments)
+                    .command(cmdline)
+                    .ioDirectory(ioDirectory)
+                    .build();
         }
     }
 }
