@@ -58,7 +58,7 @@ public class PyOperatorFactory
     private final ObjectMapper mapper;
 
     @Inject
-    public PyOperatorFactory(Config systemConfig, CommandExecutor exec, ObjectMapper mapper)
+    public PyOperatorFactory(CommandExecutor exec, ObjectMapper mapper)
     {
         this.exec = exec;
         this.mapper = mapper;
@@ -93,8 +93,8 @@ public class PyOperatorFactory
             try {
                 data = runCode();
             }
-            catch (IOException | InterruptedException ex) {
-                throw Throwables.propagate(ex);
+            catch (IOException | InterruptedException e) {
+                throw Throwables.propagate(e);
             }
 
             return TaskResult.defaultBuilder(request)
