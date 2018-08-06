@@ -46,14 +46,6 @@ public class DockerCommandExecutor
     }
 
     @Override
-    @Deprecated
-    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-            throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
             throws IOException
     {
