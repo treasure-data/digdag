@@ -2,7 +2,6 @@ package io.digdag.standards.command;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
@@ -11,10 +10,7 @@ import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
 import io.digdag.spi.PrivilegedVariables;
-import io.digdag.spi.TaskRequest;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -29,14 +25,6 @@ public class SimpleCommandExecutor
     public SimpleCommandExecutor(final CommandLogger clog)
     {
         this.clog = clog;
-    }
-
-    @Override
-    @Deprecated
-    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-            throws IOException
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override

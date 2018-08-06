@@ -3,15 +3,9 @@ package io.digdag.spi;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 public interface CommandExecutor
 {
-    // TODO Will be removed before 0.10.x 'rb' and 'sh' operator are still using it.
-    @Deprecated
-    Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-            throws IOException;
-
     /**
      * Run a command.
      *

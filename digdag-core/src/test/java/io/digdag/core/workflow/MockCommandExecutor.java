@@ -1,14 +1,13 @@
 package io.digdag.core.workflow;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandExecutorContext;
 import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.TaskRequest;
 import java.io.IOException;
-import java.nio.file.Path;
 
 public class MockCommandExecutor
     implements CommandExecutor
@@ -18,18 +17,51 @@ public class MockCommandExecutor
     { }
 
     @Override
-    @Deprecated
-    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-        throws IOException
-    {
-        return pb.start();
-    }
-
-    @Override
     public CommandStatus run(CommandExecutorContext context, CommandExecutorRequest request)
             throws IOException
     {
-        throw new UnsupportedOperationException();
+        final ProcessBuilder pb = new ProcessBuilder(request.getCommand());
+        pb.directory(context.getLocalProjectPath().toFile());
+        pb.redirectErrorStream(true);
+        pb.environment().putAll(request.getEnvironments());
+
+        // TODO set TZ environment variable
+        final Process p = pb.start();
+
+        // Need waiting and blocking. Because the process is running on a single instance.
+        // The command task could not be taken by other digdag-servers on other instances.
+        try {
+            p.waitFor();
+        }
+        catch (InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
+
+        return new CommandStatus() {
+            @Override
+            public boolean isFinished()
+            {
+                return true;
+            }
+
+            @Override
+            public int getStatusCode()
+            {
+                return p.exitValue();
+            }
+
+            @Override
+            public String getIoDirectory()
+            {
+                return request.getIoDirectory().toString();
+            }
+
+            @Override
+            public ObjectNode toJson()
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     @Override
