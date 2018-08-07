@@ -19,9 +19,9 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.CommandOperators;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -186,7 +186,7 @@ public class PyOperatorFactory
 
             final Map<String, String> environments = Maps.newHashMap();
             environments.putAll(System.getenv());
-            SimpleCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
+            CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
             final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
             final CommandExecutorRequest request = buildCommandExecutorRequest(context, workingDirectory, tempDir, environments, cmdline);

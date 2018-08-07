@@ -24,17 +24,16 @@ import io.digdag.spi.TemplateException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.standards.operator.td.YamlLoader;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.CommandOperators;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +165,7 @@ public class EmbulkOperatorFactory
 
             final Map<String, String> environments = Maps.newHashMap();
             environments.putAll(System.getenv());
-            SimpleCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
+            CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
             final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
             final CommandExecutorRequest request = buildCommandExecutorRequest(context, workingDirectory, tempDir, environments, cmdline);
