@@ -11,6 +11,9 @@ import static io.digdag.util.Durations.formatDuration;
 
 public abstract class AbstractWaitOperatorFactory
 {
+    // TODO: exponential backoff
+    static final int JOB_STATUS_API_POLL_INTERVAL = 5;
+
     private static final Duration DEFAULT_MIN_POLL_INTERVAL = Duration.ofSeconds(30);
     private static final Duration DEFAULT_MAX_POLL_INTERVAL = Duration.ofDays(2);
     private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMinutes(10);
@@ -31,39 +34,24 @@ public abstract class AbstractWaitOperatorFactory
 
         this.minPollInterval = systemConfig.getOptional(minPollIntervalKey, DurationParam.class)
                 .transform(DurationParam::getDuration)
-                .or(getDefaultMinPollInterval());
+                .or(DEFAULT_MIN_POLL_INTERVAL);
         if (minPollInterval.getSeconds() < 0 || minPollInterval.getSeconds() > Integer.MAX_VALUE) {
             throw new ConfigException("invalid configuration value: " + minPollIntervalKey);
         }
 
         this.maxPollInterval = systemConfig.getOptional(maxPollIntervalKey, DurationParam.class)
                 .transform(DurationParam::getDuration)
-                .or(getDefaultMaxPollInterval());
+                .or(DEFAULT_MAX_POLL_INTERVAL);
         if (maxPollInterval.getSeconds() < minPollInterval.getSeconds() || maxPollInterval.getSeconds() > Integer.MAX_VALUE) {
             throw new ConfigException("invalid configuration value: " + maxPollIntervalKey);
         }
 
         this.pollInterval = systemConfig.getOptional(pollIntervalKey, DurationParam.class)
                 .transform(DurationParam::getDuration)
-                .or(max(minPollInterval, getDefaultPollInterval()));
+                .or(max(minPollInterval, DEFAULT_POLL_INTERVAL));
         if (pollInterval.getSeconds() < minPollInterval.getSeconds() || pollInterval.getSeconds() > maxPollInterval.getSeconds()) {
             throw new ConfigException("invalid configuration value: " + pollIntervalKey);
         }
-    }
-
-    protected Duration getDefaultMinPollInterval()
-    {
-        return DEFAULT_MIN_POLL_INTERVAL;
-    }
-
-    protected Duration getDefaultMaxPollInterval()
-    {
-        return DEFAULT_MAX_POLL_INTERVAL;
-    }
-
-    protected Duration getDefaultPollInterval()
-    {
-        return DEFAULT_POLL_INTERVAL;
     }
 
     private Duration max(Duration a, Duration b)
