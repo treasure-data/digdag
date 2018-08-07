@@ -8,18 +8,24 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface CommandExecutorRequest
 {
-    // This Path must be a relative path from CommandExecutorContent.getLocalProjectPath()
-    Path getWorkingDirectory();  // => cmd/
+    /**
+     * Returns a relative path of working dir from CommandExecutorContent.getLocalProjectPath().
+     *
+     * @return
+     */
+    Path getWorkingDirectory();
 
     Map<String, String> getEnvironments();
 
     List<String> getCommand();
 
-    // Files in this dir in the local workspace will be uploaded to
-    // the process container when the process starts.
-    // Files in this dir in the process container will be downloaded
-    // to the local workspace when the process finishes (meaning that
-    // CommandExecutor.poll or .run returned CommandStatus with isFinished=true).
+
+    /**
+     * Returns a dir where scripts files are located. It must be a relative path from
+     * CommandExecutorContent.getLocalProjectPath().
+     *
+     * @return
+     */
     Path getIoDirectory();  // => .digdag/tmp/random/
 
     static ImmutableCommandExecutorRequest.Builder builder()
