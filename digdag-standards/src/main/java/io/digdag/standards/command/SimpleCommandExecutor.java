@@ -3,22 +3,16 @@ package io.digdag.standards.command;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import io.digdag.client.config.ConfigException;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandExecutorContext;
 import io.digdag.spi.CommandExecutorRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.PrivilegedVariables;
 import java.io.IOException;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class SimpleCommandExecutor
         implements CommandExecutor
 {
-    private final static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
-
     private final CommandLogger clog;
 
     @Inject
@@ -63,20 +57,5 @@ public class SimpleCommandExecutor
             throws IOException
     {
         throw new UnsupportedOperationException("This method should not be called.");
-    }
-
-    public static void collectEnvironmentVariables(final Map<String, String> env, final PrivilegedVariables variables)
-    {
-        for (String name : variables.getKeys()) {
-            if (!VALID_ENV_KEY.matcher(name).matches()) {
-                throw new ConfigException("Invalid _env key name: " + name);
-            }
-            env.put(name, variables.get(name));
-        }
-    }
-
-    public static boolean isValidEnvKey(String key)
-    {
-        return VALID_ENV_KEY.matcher(key).matches();
     }
 }

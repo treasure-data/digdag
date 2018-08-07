@@ -16,9 +16,9 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.CommandOperators;
 import io.digdag.util.UserSecretTemplate;
 import java.io.File;
 import java.io.IOException;
@@ -144,7 +144,7 @@ public class ShOperatorFactory
             environments.putAll(System.getenv());
             params.getKeys()
                 .forEach(key -> {
-                    if (SimpleCommandExecutor.isValidEnvKey(key)) {
+                    if (CommandOperators.isValidEnvKey(key)) {
                         JsonNode value = params.get(key, JsonNode.class);
                         String string;
                         if (value.isTextual()) {
@@ -161,7 +161,7 @@ public class ShOperatorFactory
                 });
 
             // Set up process environment according to env config. This can also refer to secrets.
-            SimpleCommandExecutor.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
+            CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");
