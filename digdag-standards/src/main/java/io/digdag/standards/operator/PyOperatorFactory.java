@@ -110,7 +110,7 @@ public class PyOperatorFactory
             final Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"));
             final Config stateParams = TaskState.of(request).params();
-            final Path projectPath = workspace.getProjectPath();
+            final Path projectPath = workspace.getProjectPath(); // absolute
 
             final CommandStatus status;
             if (!stateParams.has("commandStatus")) {

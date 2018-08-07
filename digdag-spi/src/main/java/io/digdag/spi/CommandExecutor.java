@@ -1,7 +1,6 @@
 package io.digdag.spi;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.io.IOException;
 
 public interface CommandExecutor
@@ -28,6 +27,4 @@ public interface CommandExecutor
     CommandStatus poll(CommandExecutorContext context,
             ObjectNode previousStatusJson)
             throws IOException;
-
-
 }
