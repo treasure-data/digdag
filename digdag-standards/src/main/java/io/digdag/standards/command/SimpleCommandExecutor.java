@@ -62,7 +62,7 @@ public class SimpleCommandExecutor
     public CommandStatus poll(final CommandExecutorContext context, final ObjectNode previousStatusJson)
             throws IOException
     {
-        throw new UnsupportedOperationException("This method is never called.");
+        throw new UnsupportedOperationException("This method should not be called.");
     }
 
     public static void collectEnvironmentVariables(final Map<String, String> env, final PrivilegedVariables variables)
