@@ -26,7 +26,7 @@ public class SimpleCommandExecutor
             throws IOException
     {
         final ProcessBuilder pb = new ProcessBuilder(request.getCommandLine());
-        pb.directory(context.getLocalProjectPath().toFile());
+        pb.directory(request.getWorkingDirectory().normalize().toAbsolutePath().toFile());
         pb.redirectErrorStream(true);
         pb.environment().putAll(request.getEnvironments());
 
