@@ -102,7 +102,7 @@ public class DatabaseSecretStoreTest
         factory.begin(() -> secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1));
 
         AtomicReference<Optional<String>> blockedGetValue = new AtomicReference<>(null);
-        AtomicBoolean comitting = new AtomicBoolean(false);
+        AtomicBoolean committing = new AtomicBoolean(false);
         AtomicBoolean blockedCheckComitting = new AtomicBoolean(false);
 
         Thread thread = factory.begin(() -> secretControlStore.lockProjectSecret(projectId, SecretScopes.PROJECT, KEY1, (control, value) -> {
@@ -118,7 +118,7 @@ public class DatabaseSecretStoreTest
                     catch (Exception ex) {
                         throw new RuntimeException(ex);
                     }
-                    blockedCheckComitting.set(comitting.get());
+                    blockedCheckComitting.set(committing.get());
                 });
                 t.setDaemon(true);
                 t.start();
@@ -132,7 +132,7 @@ public class DatabaseSecretStoreTest
 
                 control.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, VALUE1 + ".changed");
 
-                comitting.set(true);
+                committing.set(true);
                 return t;
             }
             catch (InterruptedException ex) {

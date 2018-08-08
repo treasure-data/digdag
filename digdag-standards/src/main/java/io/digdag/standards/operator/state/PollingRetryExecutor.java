@@ -23,7 +23,7 @@ public class PollingRetryExecutor
 
     private static final String DEFAULT_ERROR_MESSAGE = "Operation failed";
     private static final Object[] DEFAULT_ERROR_MESSAGE_PARAMETERS = {};
-    private static final List<Predicate<Exception>> DEAFULT_RETRY_PREDICATES = ImmutableList.of();
+    private static final List<Predicate<Exception>> DEFAULT_RETRY_PREDICATES = ImmutableList.of();
 
     private static final String RESULT = "result";
     private static final String DONE = "done";
@@ -62,7 +62,7 @@ public class PollingRetryExecutor
                 state,
                 stateKey,
                 DEFAULT_RETRY_INTERVAL,
-                DEAFULT_RETRY_PREDICATES,
+                DEFAULT_RETRY_PREDICATES,
                 DEFAULT_ERROR_MESSAGE,
                 DEFAULT_ERROR_MESSAGE_PARAMETERS);
     }

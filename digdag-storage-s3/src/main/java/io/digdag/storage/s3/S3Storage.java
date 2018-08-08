@@ -60,7 +60,7 @@ public class S3Storage
                     .setNameFormat("storage-s3-upload-transfer-%d")
                     .build());
         this.transferManager = new TransferManager(client, uploadExecutor);
-        // TODO check existance of the bucket so that following
+        // TODO check the existence of the bucket so that following
         //      any GET or PUT don't get 404 Not Found error.
     }
 
@@ -89,7 +89,7 @@ public class S3Storage
 
         // override close to call abort instead because close skips all remaining bytes so that
         // s3 client can reuse the TCP connection. but close of a fully opened file is occasionally
-        // used to skip remaing work (e.g. finally block when exception is thrown). Unlike openRange,
+        // used to skip remaining work (e.g. finally block when exception is thrown). Unlike openRange,
         // performance impact could be significantly large.
         InputStream stream = overrideCloseToAbort(obj.getObjectContent());
 

@@ -173,7 +173,7 @@ public class OperatorManager
             });
         }
         catch (RuntimeException | IOException ex) {
-            // exception happend in workspaceManager
+            // exception happened in workspaceManager
             logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
             callback.taskFailed(request.getSiteId(),
                     request.getTaskId(), request.getLockId(), agentId,

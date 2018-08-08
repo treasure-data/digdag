@@ -82,7 +82,7 @@ public class ServerLifeCycleManager
         }
 
         if (currentState.isSameOrAfter(State.STARTED)) {
-            // Not stopping but already has started (this.postStart() is allready done).
+            // Not stopping but already has started (this.postStart() is already done).
             // Need to call PostStart here. PreStop will be called alter.
             invokeMethods(obj, postStartMethods);
             postStartMethods = ImmutableList.of();

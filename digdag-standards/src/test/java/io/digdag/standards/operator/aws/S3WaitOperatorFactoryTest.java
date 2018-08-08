@@ -71,7 +71,7 @@ public class S3WaitOperatorFactoryTest
 
     private static final String SSE_C_KEY = Base64.getEncoder().encodeToString("test-sse-c-key".getBytes(UTF_8));
     private static final String SSE_C_KEY_MD5 = Base64.getEncoder().encodeToString("test-sse-c-key-md5".getBytes(UTF_8));
-    private static final String SSE_C_KEY_ALGORITM = Base64.getEncoder().encodeToString("test-sse-c-key-algorithm".getBytes(UTF_8));
+    private static final String SSE_C_KEY_ALGORITHM = Base64.getEncoder().encodeToString("test-sse-c-key-algorithm".getBytes(UTF_8));
     private static final String VERSION_ID = "test-version-id";
 
     static {
@@ -312,7 +312,7 @@ public class S3WaitOperatorFactoryTest
         when(taskRequest.getConfig()).thenReturn(config);
 
         when(s3Secrets.getSecretOptional("sse_c_key")).thenReturn(Optional.of(SSE_C_KEY));
-        when(s3Secrets.getSecretOptional("sse_c_key_algorithm")).thenReturn(Optional.of(SSE_C_KEY_ALGORITM));
+        when(s3Secrets.getSecretOptional("sse_c_key_algorithm")).thenReturn(Optional.of(SSE_C_KEY_ALGORITHM));
         when(s3Secrets.getSecretOptional("sse_c_key_md5")).thenReturn(Optional.of(SSE_C_KEY_MD5));
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
@@ -328,7 +328,7 @@ public class S3WaitOperatorFactoryTest
 
         GetObjectMetadataRequest objectMetadataRequest = objectMetadataRequestCaptor.getValue();
         assertThat(objectMetadataRequest.getSSECustomerKey().getKey(), is(SSE_C_KEY));
-        assertThat(objectMetadataRequest.getSSECustomerKey().getAlgorithm(), is(SSE_C_KEY_ALGORITM));
+        assertThat(objectMetadataRequest.getSSECustomerKey().getAlgorithm(), is(SSE_C_KEY_ALGORITHM));
         assertThat(objectMetadataRequest.getSSECustomerKey().getMd5(), is(SSE_C_KEY_MD5));
     }
 

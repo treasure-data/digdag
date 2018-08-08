@@ -9,7 +9,7 @@ Command-line Changes
 General Changes
 ------------------
 
-* Added ``loop`` operator. To support it, ``${...}`` varaibles in ``_do`` key will not be evaluated.
+* Added ``loop`` operator. To support it, ``${...}`` variables in ``_do`` key will not be evaluated.
 
 Release Date
 ------------------
