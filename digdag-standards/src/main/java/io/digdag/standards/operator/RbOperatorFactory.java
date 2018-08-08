@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class RbOperatorFactory
         implements OperatorFactory
 {
+    private static final String OUTPUT_FILE = "output.json";
     private static Logger logger = LoggerFactory.getLogger(RbOperatorFactory.class);
 
     private final String runnerScript;
@@ -134,7 +135,7 @@ public class RbOperatorFactory
                 }
 
                 final Path workspacePath = workspace.getPath();
-                final Path outputPath = workspacePath.resolve(status.getIoDirectory()).resolve("output.json");
+                final Path outputPath = workspacePath.resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
                 try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
                 }
@@ -151,7 +152,7 @@ public class RbOperatorFactory
             final Path tempDir = workspace.createTempDir(String.format("digdag-rb-%d-", request.getTaskId()));
             final Path workingDirectory = workspace.getPath(); // absolute
             final Path inputPath = tempDir.resolve("input.json"); // absolute
-            final Path outputPath = tempDir.resolve("output.json"); // absolute
+            final Path outputPath = tempDir.resolve(OUTPUT_FILE); // absolute
             final Path runnerPath = tempDir.resolve("runner.rb"); // absolute
 
             final String script;
