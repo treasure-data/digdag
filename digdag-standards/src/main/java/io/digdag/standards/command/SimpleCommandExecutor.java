@@ -25,7 +25,7 @@ public class SimpleCommandExecutor
     public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
             throws IOException
     {
-        final ProcessBuilder pb = new ProcessBuilder(request.getCommand());
+        final ProcessBuilder pb = new ProcessBuilder(request.getCommandLine());
         pb.directory(context.getLocalProjectPath().toFile());
         pb.redirectErrorStream(true);
         pb.environment().putAll(request.getEnvironments());

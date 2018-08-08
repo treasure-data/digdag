@@ -20,7 +20,7 @@ public class MockCommandExecutor
     public CommandStatus run(CommandExecutorContext context, CommandExecutorRequest request)
             throws IOException
     {
-        final ProcessBuilder pb = new ProcessBuilder(request.getCommand());
+        final ProcessBuilder pb = new ProcessBuilder(request.getCommandLine());
         pb.directory(context.getLocalProjectPath().toFile());
         pb.redirectErrorStream(true);
         pb.environment().putAll(request.getEnvironments());

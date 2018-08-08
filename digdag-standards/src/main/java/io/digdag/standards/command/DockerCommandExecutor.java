@@ -139,7 +139,7 @@ public class DockerCommandExecutor
             command.add(imageName);
 
             // command and args
-            command.addAll(request.getCommand());
+            command.addAll(request.getCommandLine());
 
             final ProcessBuilder pb = new ProcessBuilder(command.build());
             pb.directory(projectPath.toFile());
