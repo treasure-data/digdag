@@ -113,16 +113,17 @@ public class RbOperatorFactory
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("rb"));
             final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath();
+            final CommandContext commandContext = buildCommandContext(projectPath);
 
             final CommandStatus status;
             if (!stateParams.has("commandStatus")) {
                 // Run the code since command state doesn't exist
-                status = runCode(params, projectPath);
+                status = runCommand(params, commandContext);
             }
             else {
-                // Check the status of the code running
+                // Check the status of the running command
                 final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
-                status = checkCodeState(params, projectPath, previousStatusJson);
+                status = exec.poll(commandContext, previousStatusJson);
             }
 
             if (status.isFinished()) {
@@ -134,7 +135,7 @@ public class RbOperatorFactory
                     throw new RuntimeException("Ruby command failed with code " + statusCode);
                 }
 
-                final Path outputPath = workspace.getProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
+                final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
                 try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
                 }
@@ -145,7 +146,7 @@ public class RbOperatorFactory
             }
         }
 
-        private CommandStatus runCode(final Config params, final Path projectPath)
+        private CommandStatus runCommand(final Config params, final CommandContext commandContext)
                 throws IOException, InterruptedException
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-rb-%d-", request.getTaskId()));
@@ -158,9 +159,9 @@ public class RbOperatorFactory
             final List<String> args;
 
             if (params.has("_command")) {
-                String command = params.get("_command", String.class);
+                String methodName = params.get("_command", String.class);
                 script = runnerScript;
-                args = ImmutableList.of(command,
+                args = ImmutableList.of(methodName,
                         workingDirectory.relativize(inputPath).toString(), // relative
                         workingDirectory.relativize(outputPath).toString()); // relative
             }
@@ -202,21 +203,12 @@ public class RbOperatorFactory
             environments.putAll(System.getenv());
             CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-            final CommandContext context = buildCommandContext(projectPath);
-            final CommandRequest request = buildCommandRequest(context, workingDirectory, tempDir, environments, cmdline.build());
-            return exec.run(context, request);
+            final CommandRequest commandRequest = buildCommandRequest(commandContext, workingDirectory, tempDir, environments, cmdline.build());
+            return exec.run(commandContext, commandRequest);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
             // command executor. Because they will be bounded by the _instance_ where the command was executed
             // first.
-        }
-        private CommandStatus checkCodeState(final Config params,
-                final Path projectPath,
-                final ObjectNode previousStatusJson)
-                throws IOException, InterruptedException
-        {
-            final CommandContext context = buildCommandContext(projectPath);
-            return exec.poll(context, previousStatusJson);
         }
 
         private CommandContext buildCommandContext(final Path projectPath)
@@ -227,13 +219,13 @@ public class RbOperatorFactory
                     .build();
         }
 
-        private CommandRequest buildCommandRequest(final CommandContext context,
+        private CommandRequest buildCommandRequest(final CommandContext commandContext,
                 final Path workingDirectory,
                 final Path tempDir,
                 final Map<String, String> environments,
                 final List<String> cmdline)
         {
-            final Path projectPath = context.getLocalProjectPath();
+            final Path projectPath = commandContext.getLocalProjectPath();
             final Path relativeWorkingDirectory = projectPath.relativize(workingDirectory); // relative
             final Path ioDirectory = projectPath.relativize(tempDir); // relative
             return CommandRequest.builder()
