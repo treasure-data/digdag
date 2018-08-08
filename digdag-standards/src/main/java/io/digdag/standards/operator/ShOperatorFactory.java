@@ -85,16 +85,17 @@ public class ShOperatorFactory
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
             final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath();
+            final CommandContext commandContext = buildCommandContext(projectPath);
 
             final CommandStatus status;
             if (!stateParams.has("commandStatus")) {
                 // Run the code since command state doesn't exist
-                status = runCode(params, projectPath);
+                status = runCommand(params, commandContext);
             }
             else {
-                // Check the status of the code running
+                // Check the status of the running command
                 final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
-                status = checkCodeState(params, projectPath, previousStatusJson);
+                status = exec.poll(commandContext, previousStatusJson);
             }
 
             if (status.isFinished()) {
@@ -113,7 +114,7 @@ public class ShOperatorFactory
             }
         }
 
-        private CommandStatus runCode(final Config params, final Path projectPath)
+        private CommandStatus runCommand(final Config params, final CommandContext commandContext)
                 throws IOException, InterruptedException
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-sh-%d-", request.getTaskId()));
@@ -137,7 +138,7 @@ public class ShOperatorFactory
             }
             cmdline.add(workingDirectory.relativize(runnerPath).toString()); // relative
 
-            final String command = UserSecretTemplate.of(params.get("_command", String.class))
+            final String shScript = UserSecretTemplate.of(params.get("_command", String.class))
                     .format(context.getSecrets());
 
             final Map<String, String> environments = Maps.newHashMap();
@@ -174,25 +175,15 @@ public class ShOperatorFactory
 
             // Write script content to runnerPath
             try (Writer writer = Files.newBufferedWriter(runnerPath)) {
-                writer.write(command);
+                writer.write(shScript);
             }
 
-            final CommandContext context = buildCommandContext(projectPath);
-            final CommandRequest request = buildCommandRequest(context, workingDirectory, tempDir, environments, cmdline.build());
-            return exec.run(context, request);
+            final CommandRequest commandRequest = buildCommandRequest(commandContext, workingDirectory, tempDir, environments, cmdline.build());
+            return exec.run(commandContext, commandRequest);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
             // command executor. Because they will be bounded by the _instance_ where the command was executed
             // first.
-        }
-
-        private CommandStatus checkCodeState(final Config params,
-                final Path projectPath,
-                final ObjectNode previousStatusJson)
-                throws IOException, InterruptedException
-        {
-            final CommandContext context = buildCommandContext(projectPath);
-            return exec.poll(context, previousStatusJson);
         }
 
         private CommandContext buildCommandContext(final Path projectPath)
@@ -203,13 +194,13 @@ public class ShOperatorFactory
                     .build();
         }
 
-        private CommandRequest buildCommandRequest(final CommandContext context,
+        private CommandRequest buildCommandRequest(final CommandContext commandContext,
                 final Path workingDirectory,
                 final Path tempDir,
                 final Map<String, String> environments,
                 final List<String> cmdline)
         {
-            final Path projectPath = context.getLocalProjectPath();
+            final Path projectPath = commandContext.getLocalProjectPath();
             final Path relativeWorkingDirectory = projectPath.relativize(workingDirectory); // relative
             final Path ioDirectory = projectPath.relativize(tempDir); // relative
             return CommandRequest.builder()

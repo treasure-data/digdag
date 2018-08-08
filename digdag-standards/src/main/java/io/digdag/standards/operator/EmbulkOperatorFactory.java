@@ -103,16 +103,17 @@ public class EmbulkOperatorFactory
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("embulk"));
             final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath();
+            final CommandContext commandContext = buildCommandContext(projectPath);
 
             final CommandStatus status;
             if (!stateParams.has("commandStatus")) {
                 // Run the code since command state doesn't exist
-                status = runEmbulk(params, projectPath);
+                status = runCommand(params, commandContext);
             }
             else {
                 // Check the status of the code running
                 final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
-                status = checkCodeState(params, projectPath, previousStatusJson);
+                status = exec.poll(commandContext, previousStatusJson);
             }
 
             if (status.isFinished()) {
@@ -131,7 +132,7 @@ public class EmbulkOperatorFactory
             }
         }
 
-        private CommandStatus runEmbulk(final Config params, final Path projectPath)
+        private CommandStatus runCommand(final Config params, final CommandContext commandContext)
                 throws IOException, InterruptedException, TemplateException
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-embulk-%d-", request.getTaskId()));
@@ -139,8 +140,8 @@ public class EmbulkOperatorFactory
             final Path embulkYmlPath = tempDir.resolve("load.yml");
 
             if (params.has("_command")) {
-                String command = params.get("_command", String.class);
-                String data = workspace.templateFile(templateEngine, command, UTF_8, params);
+                String configData = params.get("_command", String.class);
+                String data = workspace.templateFile(templateEngine, configData, UTF_8, params);
 
                 ObjectNode embulkConfig;
                 try {
@@ -167,22 +168,12 @@ public class EmbulkOperatorFactory
             environments.putAll(System.getenv());
             CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-            final CommandContext context = buildCommandContext(projectPath);
-            final CommandRequest request = buildCommandRequest(context, workingDirectory, tempDir, environments, cmdline);
-            return exec.run(context, request);
+            final CommandRequest commandRequest = buildCommandRequest(commandContext, workingDirectory, tempDir, environments, cmdline);
+            return exec.run(commandContext, commandRequest);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
             // command executor. Because they will be bounded by the _instance_ where the command was executed
             // first.
-        }
-
-        private CommandStatus checkCodeState(final Config params,
-                final Path projectPath,
-                final ObjectNode previousStatusJson)
-                throws IOException, InterruptedException
-        {
-            final CommandContext context = buildCommandContext(projectPath);
-            return exec.poll(context, previousStatusJson);
         }
 
         private CommandContext buildCommandContext(final Path projectPath)
@@ -193,13 +184,13 @@ public class EmbulkOperatorFactory
                     .build();
         }
 
-        private CommandRequest buildCommandRequest(final CommandContext context,
+        private CommandRequest buildCommandRequest(final CommandContext commandContext,
                 final Path workingDirectory,
                 final Path tempDir,
                 final Map<String, String> environments,
                 final List<String> cmdline)
         {
-            final Path projectPath = context.getLocalProjectPath();
+            final Path projectPath = commandContext.getLocalProjectPath();
             final Path relativeWorkingDirectory = projectPath.relativize(workingDirectory); // relative
             final Path ioDirectory = projectPath.relativize(tempDir); // relative
             return CommandRequest.builder()
