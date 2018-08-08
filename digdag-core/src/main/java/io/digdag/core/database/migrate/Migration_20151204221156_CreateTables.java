@@ -9,7 +9,7 @@ public class Migration_20151204221156_CreateTables
     public void migrate(Handle handle, MigrationContext context)
     {
         if (context.isPostgres()) {
-            // check existance of extension first because CREATE EXTENSION is allowed only for superuser
+            // check the existence of extension first because CREATE EXTENSION is allowed only for superuser
             String ver = handle.createQuery("select installed_version from pg_catalog.pg_available_extensions where name = 'uuid-ossp'")
                 .mapTo(String.class)
                 .first();

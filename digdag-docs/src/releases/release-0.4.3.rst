@@ -34,7 +34,7 @@ Server-mode changes
 
 * Fixed putAndLockRepository on PostgreSQL.
 
-* insertAttempt validates existance of associated workflow definition and using foreign key validation.
+* insertAttempt validates existence of associated workflow definition and using foreign key validation.
 
 
 Release Date

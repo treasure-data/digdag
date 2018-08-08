@@ -4,7 +4,7 @@ Release 0.8.5
 General changes
 ---------------
 
-* Fixed ``file name ... is too long ( > 100 bytes)`` error that happend when ``digdag push`` command archives file names longer than 100 bytes. Now digdag client and server use PAX extension to handle long file names.
+* Fixed ``file name ... is too long ( > 100 bytes)`` error that happened when ``digdag push`` command archives file names longer than 100 bytes. Now digdag client and server use PAX extension to handle long file names.
 
 
 Server mode changes

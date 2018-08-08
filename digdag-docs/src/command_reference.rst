@@ -90,7 +90,7 @@ Options:
     * hourly: uses current hour's 00:00 as the session time (update session time every hour).
     * schedule: calculates time based on ``schedule`` configuration of the workflow. Error if ``schedule`` is not set.
     * last: reuses the last session time of the last execution. If it's not available, tries to calculate based on ``schedule``, or uses today's 00:00:00.
-    * timestmap in *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss* format: uses the specified time as the session time.
+    * timestamp in *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss* format: uses the specified time as the session time.
 
   Default is "last".
 
@@ -107,7 +107,7 @@ Options:
   Example: ``--max-task-threads 5``
 
 :command:`-p, --param KEY=VALUE`
-  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
 
@@ -148,7 +148,7 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
   Example: ``--project workflow/``
 
 :command:`-p, --param KEY=VALUE`
-  Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+  Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
 
@@ -204,7 +204,7 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
   Example: ``--max-task-threads 5``
 
 :command:`-p, --param KEY=VALUE`
-  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
 
@@ -300,7 +300,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: ``--disable-executor-loop``
 
 :command:`-p, --param KEY=VALUE`
-  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
 
@@ -434,7 +434,7 @@ Starts a new session. This command requires project name, workflow name, and ses
   Tries to start a new session attempt and validates the results but does nothing.
 
 :command:`-p, --param KEY=VALUE`
-  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
 

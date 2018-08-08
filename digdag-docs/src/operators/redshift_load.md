@@ -248,7 +248,7 @@
 * **csv**: CHARACTER
 
   Parameter mapped to `CSV` parameter of Redshift's `COPY` statement.
-  If you want to just use default quote charactor of `CSV` parameter, set empty string like `csv: ''`
+  If you want to just use default quote character of `CSV` parameter, set empty string like `csv: ''`
 
   Examples:
 
