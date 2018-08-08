@@ -62,10 +62,7 @@ public class DockerCommandExecutor
             throws IOException
     {
         // TODO set TZ environment variable
-        final Process p = startDockerProcess(context.getLocalProjectPath(),
-                context.getTaskRequest(),
-                request.getCommand(),
-                request.getEnvironments());
+        final Process p = startDockerProcess(context, request);
 
         // copy stdout to System.out and logger
         clog.copyStdout(p, System.out);
@@ -82,19 +79,19 @@ public class DockerCommandExecutor
         return SimpleCommandStatus.of(request.getIoDirectory().toString(), p);
     }
 
-    private Process startDockerProcess(final Path projectPath,
-            final TaskRequest request,
-            final List<String> cmdline,
-            final Map<String, String> environments)
+    private Process startDockerProcess(final CommandExecutorContext context,
+            final CommandExecutorRequest request)
             throws IOException
     {
-        Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
+        final TaskRequest taskRequest = context.getTaskRequest();
+        final Path projectPath = context.getLocalProjectPath();
+        final Config dockerConfig = taskRequest.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
 
         String imageName;
         if (dockerConfig.has("build")) {
             List<String> buildCommands = dockerConfig.getList("build", String.class);
-            imageName = uniqueImageName(request, baseImageName, buildCommands);
+            imageName = uniqueImageName(taskRequest, baseImageName, buildCommands);
             buildImage(imageName, projectPath, baseImageName, buildCommands);
         }
         else {
@@ -116,7 +113,7 @@ public class DockerCommandExecutor
                         "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
             // working directory
-            command.add("-w").add(projectPath.normalize().toAbsolutePath().toString());
+            command.add("-w").add(request.getWorkingDirectory().normalize().toAbsolutePath().toString());
 
             logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
 
@@ -134,7 +131,7 @@ public class DockerCommandExecutor
             //    }
             //}
             //command.add("--env-file").add(envFile.toAbsolutePath().toString());
-            for (Map.Entry<String, String> pair : environments.entrySet()) {
+            for (Map.Entry<String, String> pair : request.getEnvironments().entrySet()) {
                 command.add("-e").add(pair.getKey() + "=" + pair.getValue());
             }
 
@@ -142,7 +139,7 @@ public class DockerCommandExecutor
             command.add(imageName);
 
             // command and args
-            command.addAll(cmdline);
+            command.addAll(request.getCommand());
 
             final ProcessBuilder pb = new ProcessBuilder(command.build());
             pb.directory(projectPath.toFile());
