@@ -134,8 +134,7 @@ public class RbOperatorFactory
                     throw new RuntimeException("Ruby command failed with code " + statusCode);
                 }
 
-                final Path workspacePath = workspace.getPath();
-                final Path outputPath = workspacePath.resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
+                final Path outputPath = workspace.getProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
                 try (final InputStream in = Files.newInputStream(outputPath)) {
                     return mapper.readValue(in, Config.class);
                 }
