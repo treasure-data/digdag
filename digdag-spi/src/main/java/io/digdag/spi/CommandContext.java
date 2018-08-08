@@ -4,14 +4,14 @@ import java.nio.file.Path;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface CommandExecutorContext
+public interface CommandContext
 {
     Path getLocalProjectPath();
 
     TaskRequest getTaskRequest();
 
-    static ImmutableCommandExecutorContext.Builder builder()
+    static ImmutableCommandContext.Builder builder()
     {
-        return ImmutableCommandExecutorContext.builder();
+        return ImmutableCommandContext.builder();
     }
 }

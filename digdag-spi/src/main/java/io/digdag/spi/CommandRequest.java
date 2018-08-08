@@ -6,10 +6,10 @@ import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface CommandExecutorRequest
+public interface CommandRequest
 {
     /**
-     * Returns a relative path of working dir from CommandExecutorContent.getLocalProjectPath().
+     * Returns a relative path of working dir from CommandContent.getLocalProjectPath().
      *
      * @return
      */
@@ -22,14 +22,14 @@ public interface CommandExecutorRequest
 
     /**
      * Returns a dir where scripts files are located. It must be a relative path from
-     * CommandExecutorContent.getLocalProjectPath().
+     * CommandContent.getLocalProjectPath().
      *
      * @return
      */
     Path getIoDirectory();  // => .digdag/tmp/random/
 
-    static ImmutableCommandExecutorRequest.Builder builder()
+    static ImmutableCommandRequest.Builder builder()
     {
-        return ImmutableCommandExecutorRequest.builder();
+        return ImmutableCommandRequest.builder();
     }
 }

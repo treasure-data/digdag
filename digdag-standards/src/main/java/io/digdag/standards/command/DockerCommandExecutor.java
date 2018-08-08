@@ -19,8 +19,8 @@ import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.CommandExecutorContext;
-import io.digdag.spi.CommandExecutorRequest;
+import io.digdag.spi.CommandContext;
+import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
 import io.digdag.spi.TaskRequest;
@@ -46,7 +46,7 @@ public class DockerCommandExecutor
     }
 
     @Override
-    public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
+    public CommandStatus run(final CommandContext context, final CommandRequest request)
             throws IOException
     {
         final Config config = context.getTaskRequest().getConfig();
@@ -58,7 +58,7 @@ public class DockerCommandExecutor
         }
     }
 
-    private CommandStatus runWithDocker(final CommandExecutorContext context, final CommandExecutorRequest request)
+    private CommandStatus runWithDocker(final CommandContext context, final CommandRequest request)
             throws IOException
     {
         // TODO set TZ environment variable
@@ -79,8 +79,8 @@ public class DockerCommandExecutor
         return SimpleCommandStatus.of(request.getIoDirectory().toString(), p);
     }
 
-    private Process startDockerProcess(final CommandExecutorContext context,
-            final CommandExecutorRequest request)
+    private Process startDockerProcess(final CommandContext context,
+            final CommandRequest request)
             throws IOException
     {
         final TaskRequest taskRequest = context.getTaskRequest();
@@ -285,7 +285,7 @@ public class DockerCommandExecutor
      * polled by non-blocking.
      */
     @Override
-    public CommandStatus poll(final CommandExecutorContext context, final ObjectNode previousStatusJson)
+    public CommandStatus poll(final CommandContext context, final ObjectNode previousStatusJson)
             throws IOException
     {
         throw new UnsupportedOperationException("This method is never called.");

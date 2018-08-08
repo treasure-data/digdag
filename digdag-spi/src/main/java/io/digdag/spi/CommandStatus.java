@@ -19,7 +19,7 @@ public interface CommandStatus
     int getStatusCode();
 
     /**
-     * Return the same String with CommandExecutorRequest.getIoDirectory.
+     * Return the same String with CommandRequest.getIoDirectory.
      *
      * @return
      */
