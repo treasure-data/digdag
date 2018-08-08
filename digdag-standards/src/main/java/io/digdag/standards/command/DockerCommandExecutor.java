@@ -154,7 +154,7 @@ public class DockerCommandExecutor
     private String getAbsoluteWorkingDirectory(final CommandContext context, final CommandRequest request)
     {
         final Path workingDirectory;
-        if (request.getWorkingDirectory().toString().isEmpty()) {
+        if (!request.getWorkingDirectory().toString().isEmpty()) {
             workingDirectory = request.getWorkingDirectory();
         }
         else {
