@@ -17,7 +17,7 @@ public interface CommandExecutorRequest
 
     Map<String, String> getEnvironments();
 
-    List<String> getCommand();
+    List<String> getCommandLine();
 
 
     /**
