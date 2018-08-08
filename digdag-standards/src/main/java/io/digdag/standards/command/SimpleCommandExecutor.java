@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.CommandExecutorContext;
-import io.digdag.spi.CommandExecutorRequest;
+import io.digdag.spi.CommandContext;
+import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
 import java.io.IOException;
@@ -22,7 +22,7 @@ public class SimpleCommandExecutor
     }
 
     @Override
-    public CommandStatus run(final CommandExecutorContext context, final CommandExecutorRequest request)
+    public CommandStatus run(final CommandContext context, final CommandRequest request)
             throws IOException
     {
         final ProcessBuilder pb = new ProcessBuilder(request.getCommandLine());
@@ -53,7 +53,7 @@ public class SimpleCommandExecutor
      * polled by non-blocking.
      */
     @Override
-    public CommandStatus poll(final CommandExecutorContext context, final ObjectNode previousStatusJson)
+    public CommandStatus poll(final CommandContext context, final ObjectNode previousStatusJson)
             throws IOException
     {
         throw new UnsupportedOperationException("This method should not be called.");

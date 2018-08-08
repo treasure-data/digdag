@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.CommandExecutorContext;
-import io.digdag.spi.CommandExecutorRequest;
+import io.digdag.spi.CommandContext;
+import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
 import java.io.IOException;
 
@@ -17,7 +17,7 @@ public class MockCommandExecutor
     { }
 
     @Override
-    public CommandStatus run(CommandExecutorContext context, CommandExecutorRequest request)
+    public CommandStatus run(CommandContext context, CommandRequest request)
             throws IOException
     {
         final ProcessBuilder pb = new ProcessBuilder(request.getCommandLine());
@@ -65,7 +65,7 @@ public class MockCommandExecutor
     }
 
     @Override
-    public CommandStatus poll(CommandExecutorContext context, ObjectNode previousStatusJson)
+    public CommandStatus poll(CommandContext context, ObjectNode previousStatusJson)
             throws IOException
     {
         throw new UnsupportedOperationException();

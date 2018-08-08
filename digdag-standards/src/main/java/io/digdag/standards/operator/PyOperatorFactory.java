@@ -10,8 +10,8 @@ import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.spi.CommandExecutorContext;
-import io.digdag.spi.CommandExecutorRequest;
+import io.digdag.spi.CommandContext;
+import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandStatus;
 import io.digdag.spi.Operator;
@@ -187,8 +187,8 @@ public class PyOperatorFactory
             environments.putAll(System.getenv());
             CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
-            final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
-            final CommandExecutorRequest request = buildCommandExecutorRequest(context, workingDirectory, tempDir, environments, cmdline);
+            final CommandContext context = buildCommandContext(projectPath);
+            final CommandRequest request = buildCommandRequest(context, workingDirectory, tempDir, environments, cmdline);
             return exec.run(context, request);
 
             // TaskExecutionException could not be thrown here to poll the task by non-blocking for process-base
@@ -201,19 +201,19 @@ public class PyOperatorFactory
                 final ObjectNode previousStatusJson)
                 throws IOException, InterruptedException
         {
-            final CommandExecutorContext context = buildCommandExecutorContext(projectPath);
+            final CommandContext context = buildCommandContext(projectPath);
             return exec.poll(context, previousStatusJson);
         }
 
-        private CommandExecutorContext buildCommandExecutorContext(final Path projectPath)
+        private CommandContext buildCommandContext(final Path projectPath)
         {
-            return CommandExecutorContext.builder()
+            return CommandContext.builder()
                     .localProjectPath(projectPath)
                     .taskRequest(this.request)
                     .build();
         }
 
-        private CommandExecutorRequest buildCommandExecutorRequest(final CommandExecutorContext context,
+        private CommandRequest buildCommandRequest(final CommandContext context,
                 final Path workingDirectory,
                 final Path tempDir,
                 final Map<String, String> environments,
@@ -222,10 +222,10 @@ public class PyOperatorFactory
             final Path projectPath = context.getLocalProjectPath();
             final Path relativeWorkingDirectory = projectPath.relativize(workingDirectory); // relative
             final Path ioDirectory = projectPath.relativize(tempDir); // relative
-            return CommandExecutorRequest.builder()
+            return CommandRequest.builder()
                     .workingDirectory(relativeWorkingDirectory)
                     .environments(environments)
-                    .command(cmdline)
+                    .commandLine(cmdline)
                     .ioDirectory(ioDirectory)
                     .build();
         }

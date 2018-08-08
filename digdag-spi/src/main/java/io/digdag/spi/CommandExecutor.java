@@ -13,8 +13,7 @@ public interface CommandExecutor
      * @return
      * @throws IOException
      */
-    CommandStatus run(CommandExecutorContext context,
-            CommandExecutorRequest request)
+    CommandStatus run(CommandContext context, CommandRequest request)
             throws IOException;
 
     /**
@@ -24,7 +23,6 @@ public interface CommandExecutor
      * @return
      * @throws IOException
      */
-    CommandStatus poll(CommandExecutorContext context,
-            ObjectNode previousStatusJson)
+    CommandStatus poll(CommandContext context, ObjectNode previousStatusJson)
             throws IOException;
 }
