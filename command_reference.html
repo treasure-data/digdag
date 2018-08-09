@@ -306,7 +306,7 @@
 <li>hourly: uses current hour&#8217;s 00:00 as the session time (update session time every hour).</li>
 <li>schedule: calculates time based on <code class="docutils literal"><span class="pre">schedule</span></code> configuration of the workflow. Error if <code class="docutils literal"><span class="pre">schedule</span></code> is not set.</li>
 <li>last: reuses the last session time of the last execution. If it&#8217;s not available, tries to calculate based on <code class="docutils literal"><span class="pre">schedule</span></code>, or uses today&#8217;s 00:00:00.</li>
-<li>timestmap in <em>yyyy-MM-dd</em> or <em>yyyy-MM-dd HH:mm:ss</em> format: uses the specified time as the session time.</li>
+<li>timestamp in <em>yyyy-MM-dd</em> or <em>yyyy-MM-dd HH:mm:ss</em> format: uses the specified time as the session time.</li>
 </ul>
 </div></blockquote>
 <p>Default is &#8220;last&#8221;.</p>
@@ -321,7 +321,7 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
-<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
@@ -355,7 +355,7 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--project</span> <span class="pre">workflow/</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
-<dd><p class="first">Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<dd><p class="first">Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
@@ -401,7 +401,7 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--max-task-threads</span> <span class="pre">5</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
-<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
@@ -479,7 +479,7 @@
 <p class="last">Example: <code class="docutils literal"><span class="pre">--disable-executor-loop</span></code></p>
 </dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
-<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
@@ -594,7 +594,7 @@
 <dt><strong class="command">-d, --dry-run</strong></dt>
 <dd>Tries to start a new session attempt and validates the results but does nothing.</dd>
 <dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
-<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
 <p class="last">Example: <code class="docutils literal"><span class="pre">-p</span> <span class="pre">environment=staging</span></code></p>
 </dd>
 <dt><strong class="command">-P, --params-file PATH</strong></dt>
