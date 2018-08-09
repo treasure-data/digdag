@@ -24,7 +24,7 @@ public abstract class PgConnectionConfig
                 .host(secrets.getSecretOptional("host").or(() -> params.get("host", String.class)))
                 .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(() -> params.get("port", int.class, 5432)))
                 .user(secrets.getSecretOptional("user").or(() -> params.get("user", String.class)))
-                .password(secrets.getSecretOptional("password"))
+                .password(getPassword(secrets, params))
                 .database(secrets.getSecretOptional("database").or(() -> params.get("database", String.class)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(() -> params.get("ssl", boolean.class, false)))
                 .connectTimeout(secrets.getSecretOptional("connect_timeout").transform(DurationParam::parse).or(() ->
@@ -33,6 +33,18 @@ public abstract class PgConnectionConfig
                         params.get("socket_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(1800)))))
                 .schema(secrets.getSecretOptional("schema").or(params.getOptional("schema", String.class)))
                 .build();
+    }
+
+    protected static Optional<String> getPassword(SecretProvider secrets, Config params)
+    {
+        Optional<String> passwordOverrideKey = params.getOptional("password_override", String.class);
+
+        Optional<String> overriddenPassword = Optional.absent();
+        if (passwordOverrideKey.isPresent()) {
+            overriddenPassword = secrets.getSecretOptional(passwordOverrideKey.get());
+        }
+
+        return overriddenPassword.or(secrets.getSecretOptional("password"));
     }
 
     @Override

@@ -23,17 +23,32 @@ public class PgConnectionConfigTest
     private PgConnectionConfig connConfigWithCustomValue;
     private PgConnectionConfig connConfigWithDefaultValueFromSecrets;
     private PgConnectionConfig connConfigWithCustomValueFromSecrets;
+    private PgConnectionConfig connConfigWithOverriddenPassword;
+    private PgConnectionConfig connConfigWithMissingOverriddenPassword;
 
     @Before
     public void setUp()
             throws IOException
     {
+        // This map contains only minimum custom values to test default values
         Map<String, String> defaultConfigValues = ImmutableMap.of(
                 "host", "foobar0.org",
                 "user", "user0",
                 "database", "database0"
         );
+
+        // This map contains values that are all "ignore" so that we can detect if this value is used unexpectedly
         Map<String, String> ignoredDefaultConfigValues = Maps.transformValues(defaultConfigValues, key -> "ignore");
+
+        this.connConfigWithDefaultValue = PgConnectionConfig.configure(
+                key -> Optional.absent(), jdbcOpTestHelper.createConfig(defaultConfigValues)
+        );
+
+        this.connConfigWithDefaultValueFromSecrets = PgConnectionConfig.configure(
+                key -> Optional.fromNullable(defaultConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredDefaultConfigValues)
+        );
+
+        // This map contains whole custom values to test if custom values are used expectedly
         Map<String, String> customConfigValues = ImmutableMap.<String, String>builder().
                 put("host", "foobar1.org").
                 put("port", "6543").
@@ -44,15 +59,9 @@ public class PgConnectionConfigTest
                 put("connect_timeout", "15s").
                 put("socket_timeout", "12 m").
                 put("schema", "myschema").build();
+
+        // This map contains values that are all "ignore" so that we can detect if this value is used unexpectedly
         Map<String, String> ignoredCustomConfigValues = Maps.transformValues(customConfigValues, key -> "ignore");
-
-        this.connConfigWithDefaultValue = PgConnectionConfig.configure(
-                key -> Optional.absent(), jdbcOpTestHelper.createConfig(defaultConfigValues)
-        );
-
-        this.connConfigWithDefaultValueFromSecrets = PgConnectionConfig.configure(
-                key -> Optional.fromNullable(defaultConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredDefaultConfigValues)
-        );
 
         this.connConfigWithCustomValue = PgConnectionConfig.configure(
                 key -> key.equals("password") ? Optional.of("password1") : Optional.absent(), jdbcOpTestHelper.createConfig(customConfigValues)
@@ -60,6 +69,31 @@ public class PgConnectionConfigTest
 
         this.connConfigWithCustomValueFromSecrets = PgConnectionConfig.configure(
                 key -> Optional.fromNullable(customConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredCustomConfigValues)
+        );
+
+        Map<String, String> configValuesWithOverriddenPassword = ImmutableMap.<String, String>builder()
+                .putAll(customConfigValues)
+                .put("another_db_password", "password2")
+                .build();
+
+        Map<String, String> configValuesUsingOverriddenPassword = ImmutableMap.<String, String>builder()
+                .putAll(customConfigValues)
+                .put("password_override", "another_db_password")
+                .build();
+
+        this.connConfigWithOverriddenPassword = PgConnectionConfig.configure(
+                key -> Optional.fromNullable(configValuesWithOverriddenPassword.get(key)),
+                jdbcOpTestHelper.createConfig(configValuesUsingOverriddenPassword)
+        );
+
+        Map<String, String> configValuesUsingMissingOverriddenPassword = ImmutableMap.<String, String>builder()
+                .putAll(customConfigValues)
+                .put("password_override", "missing_db_password")
+                .build();
+
+        this.connConfigWithMissingOverriddenPassword = PgConnectionConfig.configure(
+                key -> Optional.fromNullable(configValuesWithOverriddenPassword.get(key)),
+                jdbcOpTestHelper.createConfig(configValuesUsingMissingOverriddenPassword)
         );
     }
 
@@ -97,14 +131,14 @@ public class PgConnectionConfigTest
     {
         validateDefaultValueProperties(connConfigWithDefaultValue.buildProperties());
         validateDefaultValueProperties(connConfigWithDefaultValueFromSecrets.buildProperties());
-        validateCustomValueProperties(connConfigWithCustomValue.buildProperties());
-        validateCustomValueProperties(connConfigWithCustomValueFromSecrets.buildProperties());
+        validateCustomValueProperties(connConfigWithCustomValue.buildProperties(), Optional.absent());
+        validateCustomValueProperties(connConfigWithCustomValueFromSecrets.buildProperties(), Optional.absent());
     }
 
-    private void validateCustomValueProperties(Properties properties)
+    private void validateCustomValueProperties(Properties properties, Optional expectedCustomPassword)
     {
         assertThat(properties.get("user"), is("user1"));
-        assertThat(properties.get("password"), is("password1"));
+        assertThat(properties.get("password"), is(expectedCustomPassword.or("password1")));
         assertThat(properties.get("currentSchema"), is("myschema"));
         assertThat(properties.get("loginTimeout"), is("15"));
         assertThat(properties.get("connectTimeout"), is("15"));
@@ -127,5 +161,17 @@ public class PgConnectionConfigTest
         assertThat(properties.get("ssl"), is(nullValue()));
         assertThat(properties.get("sslfactory"), is(nullValue()));
         assertThat(properties.get("applicationName"), is("digdag"));
+    }
+
+    @Test
+    public void configureWithOverriddenPassword()
+    {
+        validateCustomValueProperties(connConfigWithOverriddenPassword.buildProperties(), Optional.of("password2"));
+    }
+
+    @Test
+    public void configureWithMissingOverriddenPassword()
+    {
+        validateCustomValueProperties(connConfigWithMissingOverriddenPassword.buildProperties(), Optional.absent());
     }
 }
