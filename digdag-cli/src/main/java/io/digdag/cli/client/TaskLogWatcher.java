@@ -4,7 +4,9 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.Collections;
@@ -37,27 +39,31 @@ class TaskLogWatcher
     private final Map<String, TaskLogState> stateMap;
     private final LogLevel levelFilter;
     private final PrintStream out;
-    private final boolean isFinished;
+    private final Set<String> shownAsText;
 
-    TaskLogWatcher(DigdagClient client, Id attemptId, LogLevel levelFilterOrNull, PrintStream out, boolean isFinished)
+    TaskLogWatcher(DigdagClient client, Id attemptId, LogLevel levelFilterOrNull, PrintStream out)
     {
         this.client = client;
         this.attemptId = attemptId;
         this.levelFilter = levelFilterOrNull;
         this.out = out;
         this.stateMap = new HashMap<>();
-        this.isFinished = isFinished;
+        this.shownAsText = new HashSet<>();
     }
 
     boolean update(List<RestLogFileHandle> handles)
         throws IOException
     {
-        if (!isFinished) {
-            handles = handles
-                .stream()
-                .filter(handle -> handle.getFileName().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX))
-                .collect(Collectors.toList());
-        }
+        handles = handles
+            .stream()
+            .filter(handle -> {
+                if (handle.getFileName().endsWith(LogFiles.LOG_GZ_FILE_SUFFIX)) {
+                    return !shownAsText.contains(handle.getTaskName());
+                }
+
+                return true;
+            })
+            .collect(Collectors.toList());
 
         boolean updatedAtLeastOne = false;
         for (Map.Entry<String, List<RestLogFileHandle>> pair : sortHandles(handles).entrySet()) {
@@ -70,6 +76,12 @@ class TaskLogWatcher
             boolean updated = state.update(pair.getValue());
             if (updated) {
                 updatedAtLeastOne = true;
+            }
+        }
+
+        for (RestLogFileHandle handle : handles) {
+            if (handle.getFileName().endsWith(LogFiles.LOG_PLAIN_TEXT_FILE_SUFFIX)) {
+                shownAsText.add(handle.getTaskName());
             }
         }
 
