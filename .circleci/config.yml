@@ -1,77 +1,77 @@
-version: 2
+version: 2.0
+
 jobs:
-  build:
+  test:
     parallelism: 4
 
-    # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
-    environment:
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
-      TERM: dumb
-      TZ: 'UTC'
-
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-    - image: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
+      - image: digdag/digdag-build:20180629T182056-57453625881ad5b75c430cd04f128d3dd5a01d55
+        # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
+        environment:
+          TERM: dumb
+          TZ: 'UTC'
 
     steps:
-    - checkout
+      # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
+      - setup_remote_docker:
+          version: 17.11.0-ce
+          docker_layer_caching: true
 
-    # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
-    - setup_remote_docker:
-        docker_layer_caching: true
+      - checkout
 
-    - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+      - run: docker info
 
-    # Compile with dependencies cache
-    - type: cache-restore # Restore ~/.gradle cache
-      key: gradle-{{ checksum "build.gradle" }}
-    - type: cache-restore # Restore ~/.m2 cache
-      key: m2-{{ checksum "build.gradle" }}
-    - run: ./gradlew testClasses --no-daemon
-    - type: cache-save # Save ~/.gradle
-      key: gradle-{{ checksum "build.gradle" }}
-      paths:
-      - ~/.gradle
-    - type: cache-save # Save ~/.m2
-      key: m2-{{ checksum "build.gradle" }}
-      paths:
-      - ~/.m2
+      # Run tests with dependencies cache
+      - restore_cache:
+          key: dependency-cache-{{ .Branch }}-{{ .Revision }}
+      - run: ci/run_td_tests.sh
+      - save_cache:
+          paths:
+            - ~/.gradle
+            - ~/.m2
+          key: dependency-cache-{{ .Branch }}-{{ .Revision }}
 
-    # Run tests
-    - run: CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_td_tests.sh
-    - run: ci/circle_gather_test_reports.sh
 
-    # Save test results
-    - store_test_results:
-        path: /tmp/circleci-test-results
-    # Save artifacts
-    - store_artifacts:
-        path: /tmp/circleci-artifacts
-    - store_artifacts:
-        path: /tmp/circleci-test-results
+      # Collect test reports
+      - run: ci/circle_gather_test_reports.sh
 
-  deploy_docs:
-    environment:
-      TERM: dumb
-      TZ: 'UTC'
+      # Save artifacts and test results
+      - store_artifacts:
+          path: /tmp/circleci-artifacts/build
+      - store_test_results:
+          path: /tmp/circleci-artifacts/build/tests
 
+  docs_deployment:
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-    - image: digdag/digdag-build:20170228T062524-309738ae71c4642d72e2978568fea14a84d0f2a9
+      - image: digdag/digdag-build:20180629T182056-57453625881ad5b75c430cd04f128d3dd5a01d55
+        # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
+        environment:
+          TERM: dumb
+          TZ: 'UTC'
 
     steps:
-    - checkout
+      # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
+      - setup_remote_docker:
+          docker_layer_caching: true
 
-    # Build and deploy documents
-    - run: ci/run_deployment.sh
+      - checkout
+
+      - run: docker info
+
+      # Build and deploy documents
+      - run: ci/run_deployment.sh
 
 workflows:
   version: 2
-  build_and_deploy_docs:
+
+  test:
     jobs:
-      - build
-      - deploy_docs:
+      - test
+      - docs_deployment:
+          requires:
+            - test
           filters:
             branches:
               only:
