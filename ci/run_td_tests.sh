@@ -11,4 +11,6 @@ idleTimeout = 10
 minimumPoolSize = 0
 "
 
+export CI_ACCEPTANCE_TEST=true
+
 ./gradlew clean cleanTest test --info --no-daemon -p digdag-tests --tests 'acceptance.td.*'
