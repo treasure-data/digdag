@@ -6,7 +6,10 @@ import java.io.IOException;
 public interface CommandExecutor
 {
     /**
-     * Run a command.
+     * Starts a command and returns its state. Caller must check isFinished of the returned CommandStatus.
+     * If it's true, the command is done. CommandStatus.getStatusCode() is ready to call. Otherwise,
+     * caller must call poll method repeatedly with toJson of the returned CommandStatus until CommandStatus
+     * is returned with isFinished == true.
      *
      * @param context
      * @param request
@@ -17,7 +20,7 @@ public interface CommandExecutor
             throws IOException;
 
     /**
-     * Poll the command status by non-blocking
+     * Polls the command status by non-blocking and return CommandStatus.
      * @param context
      * @param previousStatusJson
      * @return
