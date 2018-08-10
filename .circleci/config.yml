@@ -11,7 +11,6 @@ jobs:
         environment:
           TERM: dumb
           TZ: 'UTC'
-          BUILD_IMAGE: digdag/digdag-build:20180810T125753-d773cb8aef8201261e6d0fc1e0189bde1f543a56
 
     steps:
       # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
