@@ -11,6 +11,10 @@ apt-get -y install curl
 curl -sL https://deb.nodesource.com/setup_8.x | bash -
 apt-get -y install nodejs
 
+# Docker required by CircleCI to execute docker command in Docker container
+apt-get -y install docker.io
+apt-get -y install docker-compose
+
 # Postgres
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
 wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
