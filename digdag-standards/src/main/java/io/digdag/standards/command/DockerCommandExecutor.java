@@ -113,7 +113,7 @@ public class DockerCommandExecutor
                         "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
             // working directory
-            final Path workingDirectory = getAbsoluteWorkingDirectory(context, request);
+            final Path workingDirectory = getAbsoluteWorkingDirectory(context, request); // absolute
             command.add("-w").add(workingDirectory.toString());
 
             logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
@@ -152,17 +152,10 @@ public class DockerCommandExecutor
             throw Throwables.propagate(ex);
         }
     }
+
     private static Path getAbsoluteWorkingDirectory(CommandContext context, CommandRequest request)
     {
-        final Path workingDirectory;
-        if (!request.getWorkingDirectory().toString().isEmpty()) {
-            workingDirectory = request.getWorkingDirectory();
-        }
-        else {
-            // if relative working dir is empty path, project path needs to be used.
-            workingDirectory = context.getLocalProjectPath();
-        }
-        return workingDirectory.normalize().toAbsolutePath();
+        return context.getLocalProjectPath().resolve(request.getWorkingDirectory()).normalize();
     }
 
     private static String uniqueImageName(TaskRequest request,
