@@ -45,7 +45,7 @@ public class SimpleCommandExecutor
             throw Throwables.propagate(e);
         }
 
-        return SimpleCommandStatus.of(request.getIoDirectory().toString(), p);
+        return SimpleCommandStatus.of(p, request.getIoDirectory());
     }
 
     /**

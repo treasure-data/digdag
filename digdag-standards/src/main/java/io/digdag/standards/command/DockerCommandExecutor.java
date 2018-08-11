@@ -76,7 +76,7 @@ public class DockerCommandExecutor
             throw Throwables.propagate(e);
         }
 
-        return SimpleCommandStatus.of(request.getIoDirectory().toString(), p);
+        return SimpleCommandStatus.of(p, request.getIoDirectory());
     }
 
     private Process startDockerProcess(final CommandContext context,
@@ -152,7 +152,7 @@ public class DockerCommandExecutor
             throw Throwables.propagate(ex);
         }
     }
-    private Path getAbsoluteWorkingDirectory(final CommandContext context, final CommandRequest request)
+    private static Path getAbsoluteWorkingDirectory(CommandContext context, CommandRequest request)
     {
         final Path workingDirectory;
         if (!request.getWorkingDirectory().toString().isEmpty()) {
