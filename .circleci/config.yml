@@ -11,6 +11,10 @@ jobs:
         environment:
           TERM: dumb
           TZ: 'UTC'
+      - image: circleci/postgres:9.5-alpine
+        environment:
+          POSTGRES_USER: digdag_test
+          POSTGRES_DB: digdag_test
 
     steps:
       # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
@@ -18,6 +22,18 @@ jobs:
           docker_layer_caching: true
 
       - checkout
+
+      # Set up Digdag database
+      - run:
+          command: |
+            set -x
+            # wait for PostgreSQL container to be available for 2 mins
+            for i in $(seq 1 120); do
+              nc -z localhost 5432 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for PostgreSQL && exit 1
 
       # Run tests with dependencies cache
       - restore_cache:
