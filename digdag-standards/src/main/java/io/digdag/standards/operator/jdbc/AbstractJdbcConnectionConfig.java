@@ -8,11 +8,24 @@ import java.sql.DriverManager;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.spi.SecretProvider;
 import io.digdag.util.DurationParam;
 import static java.util.Locale.ENGLISH;
 
 public abstract class AbstractJdbcConnectionConfig
 {
+    protected static Optional<String> getPassword(SecretProvider secrets, Config params)
+    {
+        Optional<String> passwordOverrideKey = params.getOptional("password_override", String.class);
+
+        Optional<String> overriddenPassword = Optional.absent();
+        if (passwordOverrideKey.isPresent()) {
+            overriddenPassword = secrets.getSecretOptional(passwordOverrideKey.get());
+        }
+
+        return overriddenPassword.or(secrets.getSecretOptional("password"));
+    }
+
     public abstract String host();
 
     public abstract int port();

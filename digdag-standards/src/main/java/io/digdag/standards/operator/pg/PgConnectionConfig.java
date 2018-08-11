@@ -35,18 +35,6 @@ public abstract class PgConnectionConfig
                 .build();
     }
 
-    protected static Optional<String> getPassword(SecretProvider secrets, Config params)
-    {
-        Optional<String> passwordOverrideKey = params.getOptional("password_override", String.class);
-
-        Optional<String> overriddenPassword = Optional.absent();
-        if (passwordOverrideKey.isPresent()) {
-            overriddenPassword = secrets.getSecretOptional(passwordOverrideKey.get());
-        }
-
-        return overriddenPassword.or(secrets.getSecretOptional("password"));
-    }
-
     @Override
     public String jdbcDriverName()
     {
