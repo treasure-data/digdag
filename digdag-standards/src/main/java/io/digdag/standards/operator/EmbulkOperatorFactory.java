@@ -152,8 +152,7 @@ public class EmbulkOperatorFactory
                     throw new ConfigException("Failed to parse yaml file", ex);
                 }
 
-                Files.write(workingDirectory.relativize(embulkYmlPath),
-                        mapper.writeValueAsBytes(resolveSecrets(embulkConfig, context.getSecrets())));
+                Files.write(embulkYmlPath, mapper.writeValueAsBytes(resolveSecrets(embulkConfig, context.getSecrets())));
             }
             else {
                 final Config embulkConfig = params.getNested("config");
