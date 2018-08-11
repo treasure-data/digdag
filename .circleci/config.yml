@@ -1,0 +1,89 @@
+version: 2.0
+
+jobs:
+  test:
+    parallelism: 4
+
+    # executor type https://circleci.com/docs/2.0/executor-types/
+    docker:
+      - image: digdag/digdag-build:20180810T125753-d773cb8aef8201261e6d0fc1e0189bde1f543a56
+        # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
+        environment:
+          TERM: dumb
+          TZ: 'UTC'
+      - image: circleci/postgres:9.5-alpine
+        environment:
+          POSTGRES_USER: digdag_test
+          POSTGRES_DB: digdag_test
+
+    steps:
+      # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
+      - setup_remote_docker:
+          docker_layer_caching: true
+
+      - checkout
+
+      # Set up Digdag database
+      - run:
+          command: |
+            set -x
+            # wait for PostgreSQL container to be available for 2 mins
+            for i in $(seq 1 120); do
+              nc -z localhost 5432 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for PostgreSQL && exit 1
+
+      # Run tests with dependencies cache
+      - restore_cache:
+          key: dependency-cache-{{ .Branch }}-{{ .Revision }}
+      - run: ci/run_td_tests.sh
+      - save_cache:
+          paths:
+            - ~/.gradle
+            - ~/.m2
+          key: dependency-cache-{{ .Branch }}-{{ .Revision }}
+
+
+      # Collect test reports
+      - run: ci/circle_gather_test_reports.sh
+
+      # Save artifacts and test results
+      - store_artifacts:
+          path: /tmp/circleci-artifacts/build
+      - store_test_results:
+          path: /tmp/circleci-artifacts/build/tests
+
+  docs_deployment:
+    # executor type https://circleci.com/docs/2.0/executor-types/
+    docker:
+      - image: digdag/digdag-build:20180810T125753-d773cb8aef8201261e6d0fc1e0189bde1f543a56
+        # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
+        environment:
+          TERM: dumb
+          TZ: 'UTC'
+
+    steps:
+      # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
+      - setup_remote_docker:
+          docker_layer_caching: true
+
+      - checkout
+
+      # Build and deploy documents
+      - run: ci/push_gh_pages.sh
+
+workflows:
+  version: 2
+
+  test:
+    jobs:
+      - test
+      - docs_deployment:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - master
