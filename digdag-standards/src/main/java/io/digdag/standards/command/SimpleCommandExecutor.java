@@ -9,6 +9,7 @@ import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandStatus;
 import java.io.IOException;
+import java.nio.file.Path;
 
 public class SimpleCommandExecutor
         implements CommandExecutor
@@ -26,7 +27,8 @@ public class SimpleCommandExecutor
             throws IOException
     {
         final ProcessBuilder pb = new ProcessBuilder(request.getCommandLine());
-        pb.directory(request.getWorkingDirectory().normalize().toAbsolutePath().toFile());
+        final Path workingDirectory = context.getLocalProjectPath().resolve(request.getWorkingDirectory()).normalize();
+        pb.directory(workingDirectory.toFile());
         pb.redirectErrorStream(true);
         pb.environment().putAll(request.getEnvironments());
 
