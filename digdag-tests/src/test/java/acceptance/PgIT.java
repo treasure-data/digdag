@@ -33,7 +33,6 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
@@ -58,6 +57,7 @@ public class PgIT
     private String host;
     private String user;
     private String database;
+    private String password;
     private String tempDatabase;
     private String dataSchemaName;
 
@@ -84,6 +84,7 @@ public class PgIT
 
             host = (String) props.get("host");
             user = (String) props.get("user");
+            password = (String) props.get("password");
             database = (String) props.get("database");
         }
         else {
@@ -91,6 +92,7 @@ public class PgIT
             Config config = Config.deserializeFromJackson(objectMapper, objectMapper.readTree(PG_IT_CONFIG));
             host = config.get("host", String.class);
             user = config.get("user", String.class);
+            password = config.get("password", String.class);
             database = config.get("database", String.class);
 
         }
@@ -484,6 +486,7 @@ public class PgIT
         return key -> Optional.fromNullable(ImmutableMap.of(
                 "host", host,
                 "user", user,
+                "password", password,
                 "database", tempDatabase
         ).get(key));
     }
@@ -493,6 +496,7 @@ public class PgIT
         return key -> Optional.fromNullable(ImmutableMap.of(
                 "host", host,
                 "user", user,
+                "password", password,
                 "database", database
         ).get(key));
     }
