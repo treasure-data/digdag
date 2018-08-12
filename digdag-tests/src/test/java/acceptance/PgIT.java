@@ -179,6 +179,38 @@ public class PgIT
     }
 
     @Test
+    public void selectAndDownloadWithPasswordOverride()
+            throws Exception
+    {
+        copyResource("acceptance/pg/select_download_with_password_override.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupSourceTable(Optional.of(
+                key -> Optional.fromNullable(ImmutableMap.of(
+                        "host", host,
+                        "user", user,
+                        "password", UUID.randomUUID().toString(),
+                        "another_db_password", password,
+                        "database", tempDatabase
+                ).get(key))
+        ));
+
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        assertCommandStatus(status);
+
+        List<String> csvLines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                csvLines.add(line);
+            }
+            assertThat(csvLines.toString(), is(stringContainsInOrder(
+                    Arrays.asList("id,name,score", "0,foo,3.14", "1,bar,1.23", "2,baz,5.0")
+            )));
+        }
+    }
+
+    @Test
     public void selectAndDownloadWithNullValues()
             throws Exception
     {
@@ -395,9 +427,19 @@ public class PgIT
         setupSourceTable(false);
     }
 
+    private void setupSourceTable(Optional<SecretProvider> customSecretProvider)
+    {
+        setupSourceTable(false, customSecretProvider);
+    }
+
     private void setupSourceTable(boolean withNulls)
     {
-        SecretProvider secrets = getDatabaseSecrets();
+        setupSourceTable(withNulls, Optional.absent());
+    }
+
+    private void setupSourceTable(boolean withNulls, Optional<SecretProvider> customSecretProvider)
+    {
+        SecretProvider secrets = customSecretProvider.or(getDatabaseSecrets());
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             switchSearchPath(conn);
