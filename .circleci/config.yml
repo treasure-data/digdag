@@ -73,8 +73,6 @@ workflows:
     jobs:
       - test
       - docs_deployment:
-          requires:
-            - test
           filters:
             branches:
               only:
