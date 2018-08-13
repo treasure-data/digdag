@@ -17,10 +17,6 @@ jobs:
           POSTGRES_DB: digdag_test
 
     steps:
-      # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
-      - setup_remote_docker:
-          docker_layer_caching: true
-
       - checkout
 
       # Set up Digdag database
@@ -65,10 +61,6 @@ jobs:
           TZ: 'UTC'
 
     steps:
-      # Enables Docker Layer Caching: https://circleci.com/docs/2.0/docker-layer-caching/
-      - setup_remote_docker:
-          docker_layer_caching: true
-
       - checkout
 
       # Build and deploy documents
@@ -81,8 +73,6 @@ workflows:
     jobs:
       - test
       - docs_deployment:
-          requires:
-            - test
           filters:
             branches:
               only:
