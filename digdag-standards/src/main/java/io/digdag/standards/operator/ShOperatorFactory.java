@@ -12,6 +12,7 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
+import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
@@ -50,7 +51,7 @@ public class ShOperatorFactory
     }
 
     @Override
-    public ShOperator newOperator(OperatorContext context)
+    public Operator newOperator(OperatorContext context)
     {
         return new ShOperator(context);
     }
