@@ -49,7 +49,8 @@ public interface CommandRequest
      * Actual input/output files are not shared to CommandExecutor from operators. The "IO" directory
      * only should be shared.
      *
-     * @see PyOperatorFactory
+     * Please see PyOperatorFactory more details.
+     *
      * @return
      */
     Path getIoDirectory();  // => .digdag/tmp/random/
