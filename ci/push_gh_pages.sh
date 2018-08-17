@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 
 GH_PAGES_GIT_URL="https://github.com/treasure-data/digdag-docs.git"
+GH_PAGES_REPO_BRANCH="treasure-data/digdag-docs"
 GH_PAGES_BRANCH="gh-pages"
 CNAME="docs.digdag.io"
 DOCS_DIR="digdag-docs/build/html"
@@ -39,9 +40,4 @@ fi
 
 set +x
 
-git config credential.helper "store --file=$HOME/.git_credentials"
-
-echo "https://$GITHUB_TOKEN:@github.com" > "$HOME/.git_credentials"
-trap "rm -rf $HOME/.git_credentials" EXIT
-
-git push -f origin "$GH_PAGES_BRANCH"
+git push -f -q "https://$GITHUB_TOKEN:@github.com/$GH_PAGES_REPO_BRANCH.git" "$GH_PAGES_BRANCH"
