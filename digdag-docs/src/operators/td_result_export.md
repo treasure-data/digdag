@@ -1,6 +1,6 @@
 # td_result_export>: Treasure Data result exporter
 
-**td_result_export>** operator exports job result to the specified result url
+**td_result_export>** operator exports a job result to an output destination.
 
     _export:
       td:
@@ -16,28 +16,28 @@
 
 ## Options
 
-* **job_id**: JOB_ID
-
-  The job_id whose job result is exported.
-  
-  You can also specify `${td.last_job_id}` as the last executed job id.
+* **job_id**: NUMBER The id of a job that is exported.
 
   Examples:
 
   ```
   job_id: 12345
   ```
-  
-* **result_url**: RESULT_URL
+ 
+  You can also specify `${td.last_job_id}` as the last executed job id.
 
-  The url where you want to export the result to.
-  
-  For all supported url style in Treasure Data, please see ["Writing Job Results into ***" in Treasure Data support site](https://support.treasuredata.com/hc/en-us/sections/360000245208-Databases).
-  
-  We **strongly** recommend using secrets to store all sensitive items(e.g. user, password, etc.). 
+  ```
+  job_id: ${td.last_job_id}
+  ```
+
+* **result_url**: NAME Output the job result to the URL.
 
   Examples:
 
   ```
   result_url: mysql://${secret:user}:${secret:password}@${secret:host}/database/table
   ```
+  
+  For all supported URL-style results in Treasure Data, please see ["Writing Job Results into ***" in Treasure Data support site](https://support.treasuredata.com/hc/en-us/sections/360000245208-Databases).
+
+  We **strongly** recommend using secrets to store all sensitive items (e.g. user, password, etc.) instead of writing down them in YAML files directly.
