@@ -10,6 +10,8 @@ public class ParamServer
         switch (type) {
             case "redis":
                 return new RedisServerClient(sysConfig);
+            case "postgresql":
+                return new PostgresqlServerClient(sysConfig, dbi);
             default:
                 throw new AssertionError("Not supported database type: " + type);
         }

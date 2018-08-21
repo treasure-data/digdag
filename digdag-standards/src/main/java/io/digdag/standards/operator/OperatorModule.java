@@ -7,6 +7,8 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.standards.operator.aws.EmrOperatorFactory;
 import io.digdag.standards.operator.aws.S3WaitOperatorFactory;
+import io.digdag.standards.operator.param.ParamGetOperatorFactory;
+import io.digdag.standards.operator.param.ParamSetOperatorFactory;
 import io.digdag.standards.operator.pg.PgOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftLoadOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftOperatorFactory;
@@ -55,6 +57,8 @@ public class OperatorModule
         addStandardOperatorFactory(binder, S3WaitOperatorFactory.class);
         addStandardOperatorFactory(binder, EmrOperatorFactory.class);
         addStandardOperatorFactory(binder, HttpOperatorFactory.class);
+        addStandardOperatorFactory(binder, ParamSetOperatorFactory.class);
+        addStandardOperatorFactory(binder, ParamGetOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)
