@@ -60,6 +60,10 @@ dependencies {
     // XXX (dano): This is just here so we can disable TDClientConfing spam in TdDigdagClientConfigurationPlugin
     compile 'ch.qos.logback:logback-classic:1.1.5'
 
+    // redis-client
+    // https://mvnrepository.com/artifact/io.lettuce/lettuce-core
+    compile group: 'io.lettuce', name: 'lettuce-core', version: '5.0.5.RELEASE'
+
     testCompile project(path: ':digdag-client', configuration: 'testArtifacts')
     testCompile project(path: ':digdag-core', configuration: 'testArtifacts')
 
