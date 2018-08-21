@@ -52,14 +52,19 @@ public interface DatabaseConfig
 
     static DatabaseConfig convertFrom(Config config)
     {
+        return convertFrom(config, "database");
+    }
+
+    static DatabaseConfig convertFrom(Config config, String keyPrefix)
+    {
         ImmutableDatabaseConfig.Builder builder = builder();
 
         // database.type, path, host, user, password, port, database
-        String type = config.get("database.type", String.class, "memory");
+        String type = config.get(keyPrefix + "." + "type", String.class, "memory");
         switch (type) {
         case "h2":
             builder.type("h2");
-            builder.path(Optional.of(config.get("database.path", String.class)));
+            builder.path(Optional.of(config.get(keyPrefix + "." + "path", String.class)));
             builder.remoteDatabaseConfig(Optional.absent());
             break;
         case "memory":
@@ -71,14 +76,14 @@ public interface DatabaseConfig
             builder.type("postgresql");
             builder.remoteDatabaseConfig(Optional.of(
                 RemoteDatabaseConfig.builder()
-                    .user(config.get("database.user", String.class))
-                    .password(config.get("database.password", String.class, ""))
-                    .host(config.get("database.host", String.class))
-                    .port(config.getOptional("database.port", Integer.class))
-                    .database(config.get("database.database", String.class))
-                    .loginTimeout(config.get("database.loginTimeout", int.class, 30))
-                    .socketTimeout(config.get("database.socketTimeout", int.class, 1800))
-                    .ssl(config.get("database.ssl", boolean.class, false))
+                    .user(config.get(keyPrefix + "." + "user", String.class))
+                    .password(config.get(keyPrefix + "." + "password", String.class, ""))
+                    .host(config.get(keyPrefix + "." + "host", String.class))
+                    .port(config.getOptional(keyPrefix + "." + "port", Integer.class))
+                    .database(config.get(keyPrefix + "." + "database", String.class))
+                    .loginTimeout(config.get(keyPrefix + "." + "loginTimeout", int.class, 30))
+                    .socketTimeout(config.get(keyPrefix + "." + "socketTimeout", int.class, 1800))
+                    .ssl(config.get(keyPrefix + "." + "ssl", boolean.class, false))
                     .build()));
             break;
         default:
@@ -86,78 +91,83 @@ public interface DatabaseConfig
         }
 
         builder.connectionTimeout(
-                config.get("database.connectionTimeout", int.class, 30));  // HikariCP default: 30
+                config.get(keyPrefix + "." + "connectionTimeout", int.class, 30));  // HikariCP default: 30
         builder.idleTimeout(
-                config.get("database.idleTimeout", int.class, 600));  // HikariCP default: 600
+                config.get(keyPrefix + "." + "idleTimeout", int.class, 600));  // HikariCP default: 600
         builder.validationTimeout(
-                config.get("database.validationTimeout", int.class, 5));  // HikariCP default: 5
+                config.get(keyPrefix + "." + "validationTimeout", int.class, 5));  // HikariCP default: 5
 
-        int maximumPoolSize = config.get("database.maximumPoolSize", int.class,
+        int maximumPoolSize = config.get(keyPrefix + "." + "maximumPoolSize", int.class,
                 Runtime.getRuntime().availableProcessors() * 32); // HikariCP default: 10
 
         builder.maximumPoolSize(maximumPoolSize);
         builder.minimumPoolSize(
-                 config.get("database.minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
+                config.get(keyPrefix + "." + "minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
 
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
         for (String key : config.getKeys()) {
-            if (key.startsWith("database.opts.")) {
-                options.put(key.substring("database.opts.".length()), config.get(key, String.class));
+            String optionKey = keyPrefix + "." + "opts.";
+            if (key.startsWith(optionKey)) {
+                options.put(key.substring(optionKey.length()), config.get(key, String.class));
             }
         }
         builder.options(options.build());
 
         builder.autoMigrate(
-                config.get("database.migrate", boolean.class, true));
+                config.get(keyPrefix + "." + "migrate", boolean.class, true));
 
         builder.expireLockInterval(
-                config.get("database.queue.expireLockInterval", int.class, 10));
+                config.get(keyPrefix + "." + "queue.expireLockInterval", int.class, 10));
 
         return builder.build();
     }
 
     static Config toConfig(DatabaseConfig databaseConfig, ConfigFactory cf) {
+        return toConfig(databaseConfig, cf, "database");
+    }
+
+    static Config toConfig(DatabaseConfig databaseConfig, ConfigFactory cf, String keyPrefix) {
         Config config = cf.create();
 
-        config.set("database.type", databaseConfig.getType());
+        config.set(keyPrefix + "." + "type", databaseConfig.getType());
         switch (databaseConfig.getType()) {
             case "h2":
-                config.setOptional("database.path", databaseConfig.getPath());
+                config.setOptional(keyPrefix + "." + "path", databaseConfig.getPath());
                 break;
             case "memory":
                 break;
             case "postgresql":
                 RemoteDatabaseConfig remoteDatabaseConfig = databaseConfig.getRemoteDatabaseConfig().orNull();
                 assert remoteDatabaseConfig != null;
-                config.set("database.user", remoteDatabaseConfig.getUser());
-                config.set("database.password", remoteDatabaseConfig.getPassword());
-                config.set("database.host", remoteDatabaseConfig.getHost());
-                config.setOptional("database.port", remoteDatabaseConfig.getPort());
-                config.set("database.database", remoteDatabaseConfig.getDatabase());
-                config.set("database.loginTimeout", remoteDatabaseConfig.getLoginTimeout());
-                config.set("database.socketTimeout", remoteDatabaseConfig.getSocketTimeout());
-                config.set("database.ssl", remoteDatabaseConfig.getSsl());
+                config.set(keyPrefix + "." + "user", remoteDatabaseConfig.getUser());
+                config.set(keyPrefix + "." + "password", remoteDatabaseConfig.getPassword());
+                config.set(keyPrefix + "." + "host", remoteDatabaseConfig.getHost());
+                config.setOptional(keyPrefix + "." + "port", remoteDatabaseConfig.getPort());
+                config.set(keyPrefix + "." + "database", remoteDatabaseConfig.getDatabase());
+                config.set(keyPrefix + "." + "loginTimeout", remoteDatabaseConfig.getLoginTimeout());
+                config.set(keyPrefix + "." + "socketTimeout", remoteDatabaseConfig.getSocketTimeout());
+                config.set(keyPrefix + "." + "ssl", remoteDatabaseConfig.getSsl());
                 break;
             default:
                 throw new AssertionError("Unknown database.type: " + databaseConfig.getType());
         }
 
-        config.set("database.connectionTimeout", databaseConfig.getConnectionTimeout());
-        config.set("database.idleTimeout", databaseConfig.getIdleTimeout());
-        config.set("database.validationTimeout", databaseConfig.getValidationTimeout());
-        config.set("database.maximumPoolSize", databaseConfig.getMaximumPoolSize());
-        config.set("database.minimumPoolSize", databaseConfig.getMinimumPoolSize());
+        config.set(keyPrefix + "." + "connectionTimeout", databaseConfig.getConnectionTimeout());
+        config.set(keyPrefix + "." + "idleTimeout", databaseConfig.getIdleTimeout());
+        config.set(keyPrefix + "." + "validationTimeout", databaseConfig.getValidationTimeout());
+        config.set(keyPrefix + "." + "maximumPoolSize", databaseConfig.getMaximumPoolSize());
+        config.set(keyPrefix + "." + "minimumPoolSize", databaseConfig.getMinimumPoolSize());
 
         // database.opts.*
         Map<String, String> options = databaseConfig.getOptions();
         for (String key : options.keySet()) {
-            config.set("database.opts." + key, options.get(key));
+            config.set(keyPrefix + "." + "opts." + key, options.get(key));
         }
 
-        config.set("database.migrate", databaseConfig.getAutoMigrate());
+        config.set(keyPrefix + "." + "migrate", databaseConfig.getAutoMigrate());
 
-        config.set("database.queue.expireLockInterval", databaseConfig.getExpireLockInterval());
+        config.set(keyPrefix + "." + "queue.expireLockInterval", databaseConfig.getExpireLockInterval());
 
         return config;
     }
