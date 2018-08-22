@@ -117,4 +117,25 @@ public class ParamSetPostgresqlIT
         );
         assertCommandStatus(status, Optional.of("Not supported database type: mysql"));
     }
+
+    @Test
+    public void testErrorIfUserIsNotSpecified()
+            throws IOException
+    {
+        Path projectDir = folder.newFolder().toPath();
+        addWorkflow(projectDir, "acceptance/params/set.dig");
+        Path config = projectDir.resolve("config");
+        Files.write(config, asList(
+                "param_server.database.type=postgresql",
+                "param_server.database.host=" + host
+        ));
+
+        CommandStatus status = main("run",
+                "-o", folder.newFolder().getAbsolutePath(),
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                projectDir.resolve("set.dig").toString()
+        );
+        assertCommandStatus(status, Optional.of("Parameter 'param_server.database.user' is required but not set"));
+    }
 }
