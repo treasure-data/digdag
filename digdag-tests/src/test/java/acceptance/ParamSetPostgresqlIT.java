@@ -36,11 +36,10 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.type=postgresql",
-                "user_database.type=postgresql",
-                "user_database.user=" + user,
-                "user_database.host=" + host,
-                "user_database.database=" + tempDatabase
+                "param_server.database.type=postgresql",
+                "param_server.database.user=" + user,
+                "param_server.database.host=" + host,
+                "param_server.database.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -82,10 +81,9 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "user_database.type=postgresql",
-                "user_database.user=" + user,
-                "user_database.host=" + host,
-                "user_database.database=" + tempDatabase
+                "param_server.database.user=" + user,
+                "param_server.database.host=" + host,
+                "param_server.database.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -94,7 +92,7 @@ public class ParamSetPostgresqlIT
                 "--project", projectDir.toString(),
                 projectDir.resolve("set.dig").toString()
         );
-        assertCommandStatus(status, Optional.of("param_server.type is required to use this operator."));
+        assertCommandStatus(status, Optional.of("param_server.database.type is required to use this operator."));
     }
 
     @Test
@@ -105,11 +103,10 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.type=mysql",
-                "user_database.type=postgresql",
-                "user_database.user=" + user,
-                "user_database.host=" + host,
-                "user_database.database=" + tempDatabase
+                "param_server.database.type=mysql",
+                "param_server.database.user=" + user,
+                "param_server.database.host=" + host,
+                "param_server.database.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -118,6 +115,6 @@ public class ParamSetPostgresqlIT
                 "--project", projectDir.toString(),
                 projectDir.resolve("set.dig").toString()
         );
-        assertCommandStatus(status, Optional.of("Not supported database type: mysql"));
+        assertCommandStatus(status, Optional.of("Unknown database.type: mysql"));
     }
 }

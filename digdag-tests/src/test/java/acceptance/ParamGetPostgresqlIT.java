@@ -28,11 +28,10 @@ public class ParamGetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.type=postgresql",
-                "user_database.type=postgresql",
-                "user_database.user=" + user,
-                "user_database.host=" + host,
-                "user_database.database=" + tempDatabase
+                "param_server.database.type=postgresql",
+                "param_server.database.user=" + user,
+                "param_server.database.host=" + host,
+                "param_server.database.database=" + tempDatabase
         ));
 
         SecretProvider secrets = getDatabaseSecrets();

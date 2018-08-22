@@ -53,9 +53,9 @@ public class ParamSetOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Optional<String> paramServerType = systemConfig.getOptional("param_server.type", String.class);
+            Optional<String> paramServerType = systemConfig.getOptional("param_server.database.type", String.class);
             if(!paramServerType.isPresent()){
-                throw new ConfigException("param_server.type is required to use this operator.");
+                throw new ConfigException("param_server.database.type is required to use this operator.");
             }
 
             ParamServerClient paramServerClient =
