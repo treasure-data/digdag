@@ -17,8 +17,8 @@ import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.assertCommandStatus;
 import static utils.TestUtils.main;
 
-public class ParamGetIT
-        extends BaseParamIT
+public class ParamGetPostgresqlIT
+        extends BaseParamPostgresqlIT
 {
     @Test
     public void testGetParams()

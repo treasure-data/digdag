@@ -22,7 +22,7 @@ import java.util.UUID;
 import static org.junit.Assume.assumeTrue;
 import static utils.TestUtils.configFactory;
 
-public class BaseParamIT
+public class BaseParamPostgresqlIT
 {
     protected static final String PG_PROPERTIES = System.getenv("DIGDAG_TEST_POSTGRESQL");
     protected static final String PG_IT_CONFIG = System.getenv("PG_IT_CONFIG");
