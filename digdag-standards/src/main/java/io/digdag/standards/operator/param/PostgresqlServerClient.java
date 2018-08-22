@@ -69,11 +69,9 @@ public class PostgresqlServerClient
     }
 
     @Override
-    public void finalize(){
-        // do nothing.
-        // When I made `finalize()` method to a default method,
-        // I got an compile error with 'cannot implement finalize()'.
-        // So I implemented explicitly empty method.
+    public void finalize()
+    {
+        // do nothing
     }
 
     private void initializeTables()
