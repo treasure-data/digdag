@@ -115,6 +115,6 @@ public class ParamSetPostgresqlIT
                 "--project", projectDir.toString(),
                 projectDir.resolve("set.dig").toString()
         );
-        assertCommandStatus(status, Optional.of("Unknown database.type: mysql"));
+        assertCommandStatus(status, Optional.of("Not supported database type: mysql"));
     }
 }

@@ -24,8 +24,8 @@ public class ParamGetRedisIT extends BaseParamRedisIT
         addWorkflow(projectDir, "acceptance/params/get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.type=redis",
-                "param_server.host=" + REDIS_HOST
+                "param_server.database.type=redis",
+                "param_server.database.host=" + REDIS_HOST
         ));
         String output = folder.newFolder().getAbsolutePath();
 

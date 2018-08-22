@@ -12,7 +12,6 @@ import javax.sql.DataSource;
 public class ParamServerModule
         implements Module
 {
-
     @Override
     public void configure(Binder binder)
     {

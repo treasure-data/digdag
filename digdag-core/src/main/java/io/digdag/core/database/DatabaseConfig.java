@@ -123,6 +123,20 @@ public interface DatabaseConfig
         return builder.build();
     }
 
+    static DatabaseConfig createDummy(){
+        return DatabaseConfig.builder()
+                .type("dummy")
+                .path(Optional.absent())
+                .expireLockInterval(10)
+                .autoMigrate(true)
+                .connectionTimeout(30)
+                .idleTimeout(600)
+                .validationTimeout(5)
+                .minimumPoolSize(0)
+                .maximumPoolSize(10)
+                .build();
+    }
+
     static Config toConfig(DatabaseConfig databaseConfig, ConfigFactory cf) {
         return toConfig(databaseConfig, cf, "database");
     }
