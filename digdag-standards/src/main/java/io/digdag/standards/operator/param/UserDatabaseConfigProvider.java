@@ -1,8 +1,9 @@
-package io.digdag.core.database;
+package io.digdag.standards.operator.param;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.digdag.client.config.Config;
+import io.digdag.core.database.DatabaseConfig;
 
 public class UserDatabaseConfigProvider
         implements Provider<DatabaseConfig>
@@ -12,7 +13,7 @@ public class UserDatabaseConfigProvider
     @Inject
     public UserDatabaseConfigProvider(Config systemConfig)
     {
-        this.config = DatabaseConfig.convertFrom(systemConfig, "user_database");
+        this.config = DatabaseConfig.convertFrom(systemConfig, "param_server.database");
     }
 
     @Override

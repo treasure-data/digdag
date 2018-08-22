@@ -21,7 +21,7 @@ public class ParamSetOperatorFactory
     private DBI dbi;
 
     @Inject
-    public ParamSetOperatorFactory(Config systemConfig, @Named("user_database") DBI dbi)
+    public ParamSetOperatorFactory(Config systemConfig, @Named("param_server.database") DBI dbi)
     {
         this.systemConfig = systemConfig;
         this.dbi = dbi;

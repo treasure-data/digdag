@@ -78,22 +78,4 @@ public class DatabaseModule
             return new DBI(ds);
         }
     }
-
-    public static class UserDbiProvider
-            implements Provider<DBI>
-    {
-        private final DataSource ds;
-
-        @Inject
-        public UserDbiProvider(@Named("user_database") DataSource ds)
-        {
-            this.ds = ds;
-        }
-
-        @Override
-        public DBI get()
-        {
-            return new DBI(ds);
-        }
-    }
 }
