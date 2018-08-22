@@ -18,12 +18,12 @@ public class ParamServerModule
     {
         binder.bind(DatabaseConfig.class)
                 .annotatedWith(Names.named("param_server.database"))
-                .toProvider(UserDatabaseConfigProvider.class).in(Scopes.SINGLETON);
+                .toProvider(ParamServerDatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class)
                 .annotatedWith(Names.named("param_server.database"))
-                .toProvider(UserDataSourceProvider.class).in(Scopes.SINGLETON);
+                .toProvider(ParamServerDataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(DBI.class)
                 .annotatedWith(Names.named("param_server.database"))
-                .toProvider(UserDbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
+                .toProvider(ParamServerDbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
     }
 }

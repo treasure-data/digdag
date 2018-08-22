@@ -5,11 +5,11 @@ import com.google.inject.name.Named;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 
-public class UserDataSourceProvider
+public class ParamServerDataSourceProvider
         extends DataSourceProvider
 {
     @Inject
-    public UserDataSourceProvider(@Named("param_server.database") DatabaseConfig config)
+    public ParamServerDataSourceProvider(@Named("param_server.database") DatabaseConfig config)
     {
         super(config);
     }

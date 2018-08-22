@@ -7,13 +7,13 @@ import org.skife.jdbi.v2.DBI;
 
 import javax.sql.DataSource;
 
-public class UserDbiProvider
+public class ParamServerDbiProvider
         implements Provider<DBI>
 {
     private final DataSource ds;
 
     @Inject
-    public UserDbiProvider(@Named("param_server.database") DataSource ds)
+    public ParamServerDbiProvider(@Named("param_server.database") DataSource ds)
     {
         this.ds = ds;
     }
