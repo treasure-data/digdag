@@ -27,15 +27,6 @@ public class DatabaseModule
         binder.bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(AutoMigrator.class);
         binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
-        binder.bind(DatabaseConfig.class)
-                .annotatedWith(Names.named("user_database"))
-                .toProvider(UserDatabaseConfigProvider.class).in(Scopes.SINGLETON);
-        binder.bind(DataSource.class)
-                .annotatedWith(Names.named("user_database"))
-                .toProvider(UserDataSourceProvider.class).in(Scopes.SINGLETON);
-        binder.bind(DBI.class)
-                .annotatedWith(Names.named("user_database"))
-                .toProvider(UserDbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
         binder.bind(TransactionManager.class).to(ThreadLocalTransactionManager.class).in(Scopes.SINGLETON);
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
