@@ -35,7 +35,7 @@ public class ParamSetRedisIT extends BaseParamRedisIT
                 projectDir.resolve("set.dig").toString()
         );
         assertCommandStatus(status);
-        assertThat("value1", is(redisClient.get("key1")));
-        assertThat("value2", is(redisClient.get("key2")));
+        assertThat("value1", is(redisClient.get("0:key1")));
+        assertThat("value2", is(redisClient.get("0:key2")));
     }
 }

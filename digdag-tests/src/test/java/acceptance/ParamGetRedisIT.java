@@ -29,8 +29,8 @@ public class ParamGetRedisIT extends BaseParamRedisIT
         ));
         String output = folder.newFolder().getAbsolutePath();
 
-        redisClient.set("key1", "value1");
-        redisClient.set("key2", "value2");
+        redisClient.set("0:key1", "value1");
+        redisClient.set("0:key2", "value2");
 
         CommandStatus status = main("run",
                 "-o", output,

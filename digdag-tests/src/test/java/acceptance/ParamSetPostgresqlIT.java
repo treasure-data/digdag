@@ -60,7 +60,7 @@ public class ParamSetPostgresqlIT
             conn.executeReadOnlyQuery("select * from params order by created_at asc",
                     (rs) -> {
                         System.out.println(rs.getColumnNames());
-                        assertThat(rs.getColumnNames(), is(Arrays.asList("key", "value", "updated_at", "created_at")));
+                        assertThat(rs.getColumnNames(), is(Arrays.asList("key", "value", "site_id", "updated_at", "created_at")));
                         List<Object> row;
                         int index = 0;
                         while ((row = rs.next()) != null) {

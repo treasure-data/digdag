@@ -9,8 +9,6 @@ import com.google.inject.Provider;
 import javax.sql.DataSource;
 import javax.annotation.PostConstruct;
 
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;

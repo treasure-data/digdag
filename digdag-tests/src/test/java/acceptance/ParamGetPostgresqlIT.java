@@ -38,19 +38,22 @@ public class ParamGetPostgresqlIT
         try (
                 PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate(
-                    "CREATE TABLE public.params (" +
+                    "CREATE TABLE params (" +
                             "key text NOT NULL," +
                             "value text NOT NULL," +
+                            "site_id integer," +
                             "updated_at timestamp with time zone NOT NULL," +
-                            "created_at timestamp with time zone NOT NULL)"
+                            "created_at timestamp with time zone NOT NULL," +
+                            "CONSTRAINT params_site_id_key_uniq UNIQUE(site_id, key)" +
+                            ")"
             );
 
             conn.executeUpdate(String.format(
-                    "insert into params (key, value, created_at, updated_at) values ('%s', '%s', now(), now())",
-                    "key1", "value1"));
+                    "insert into params (key, value, site_id, created_at, updated_at) values ('%s', '%s', %d, now(), now())",
+                    "key1", "value1", 0));
             conn.executeUpdate(String.format(
-                    "insert into params (key, value, created_at, updated_at) values ('%s', '%s', now(), now())",
-                    "key2", "value2"));
+                    "insert into params (key, value, site_id, created_at, updated_at) values ('%s', '%s', %d, now(), now())",
+                    "key2", "value2", 0));
         }
 
         String output = folder.newFolder().getAbsolutePath();

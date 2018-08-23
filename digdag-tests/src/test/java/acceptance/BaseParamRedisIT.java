@@ -23,12 +23,14 @@ public class BaseParamRedisIT
 
         this.redisClient = new Jedis(REDIS_HOST);
         redisClient.connect();
+        redisClient.flushDB();
     }
 
     @After
     public void tearDown()
     {
         if (this.redisClient != null) {
+            redisClient.flushDB();
             this.redisClient.close();
         }
     }

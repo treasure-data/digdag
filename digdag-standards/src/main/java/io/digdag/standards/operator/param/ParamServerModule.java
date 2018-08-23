@@ -3,11 +3,6 @@ package io.digdag.standards.operator.param;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.name.Names;
-import io.digdag.core.database.DatabaseConfig;
-import org.skife.jdbi.v2.DBI;
-
-import javax.sql.DataSource;
 
 public class ParamServerModule
         implements Module
@@ -15,14 +10,11 @@ public class ParamServerModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(DatabaseConfig.class)
-                .annotatedWith(Names.named("param_server.database"))
-                .toProvider(ParamServerDatabaseConfigProvider.class).in(Scopes.SINGLETON);
-        binder.bind(DataSource.class)
-                .annotatedWith(Names.named("param_server.database"))
-                .toProvider(ParamServerDataSourceProvider.class).in(Scopes.SINGLETON);
-        binder.bind(DBI.class)
-                .annotatedWith(Names.named("param_server.database"))
-                .toProvider(ParamServerDbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
+        binder.bind(ParamServerClientConnectionManager.class)
+                .toProvider(ParamServerClientConnectionManagerProvider.class).in(Scopes.SINGLETON);
+        binder.bind(ParamServerClientConnection.class)
+                .toProvider(ParamServerClientConnectionProvider.class); // do not make this class singleton because this object is fetched from multiple threads
+        binder.bind(ParamServerClient.class)
+                .toProvider(ParamServerClientProvider.class); // do not make this class singleton because this object is fetched from multiple threads
     }
 }

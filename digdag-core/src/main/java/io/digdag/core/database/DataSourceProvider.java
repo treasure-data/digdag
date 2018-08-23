@@ -37,10 +37,6 @@ public class DataSourceProvider
                 // h2 database doesn't need connection pool
                 createSimpleDataSource();
                 break;
-            case "dummy":
-                // dummy datasource is does not provide closer
-                this.ds = new JdbcDataSource();
-                break;
             default:
                 createPooledDataSource();
                 break;
@@ -105,19 +101,15 @@ public class DataSourceProvider
     @PreDestroy
     public synchronized void close()
     {
-        // dummy datasource does not provide closer
-        if(closer != null){
+        if (ds != null) {
             try {
                 closer.close();
             }
             catch (Exception ex) {
                 throw Throwables.propagate(ex);
             }
-            closer = null;
-        }
-
-        if (ds != null) {
             ds = null;
+            closer = null;
         }
     }
 }
