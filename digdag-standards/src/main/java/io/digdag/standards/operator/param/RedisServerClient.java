@@ -24,13 +24,13 @@ public class RedisServerClient
     }
 
     @Override
-    public Optional<String> get(String key)
+    public Optional<String> get(String key, int siteId)
     {
         return Optional.of(redisClient.get(key));
     }
 
     @Override
-    public void set(String key, String value)
+    public void set(String key, String value, int siteId)
     {
         redisClient.set(key, value);
     }

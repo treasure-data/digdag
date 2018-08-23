@@ -25,23 +25,30 @@ public class PostgresqlServerClient
     }
 
     @Override
-    public Optional<String> get(String key)
+    public Optional<String> get(String key, int siteId)
     {
         Optional<String> result;
         try (Handle handle = dbi.open()) {
             List<String> record = handle
-                    .createQuery("select value from params where key = :key limit 1")
+                    .createQuery("select value from params where key = :key and site_id = :site_id limit 1")
                     .bind("key", key)
+                    .bind("site_id", siteId)
                     .mapTo(String.class)
                     .list();
-            result = Optional.of(record.get(0));
+
+            if (record.size() > 0) {
+                result = Optional.of(record.get(0));
+            }
+            else {
+                result = Optional.absent();
+            }
         }
 
         return result;
     }
 
     @Override
-    public void set(String key, String value)
+    public void set(String key, String value, int siteId)
     {
         try (Handle handle = dbi.open()) {
             try {
@@ -52,18 +59,11 @@ public class PostgresqlServerClient
             }
 
             handle.begin();
-            Map<String, Object> firstRecord = handle.createQuery("select key from params where key = :key limit 1 for update ")
-                    .bind("key", key).first();
-            if (firstRecord == null) {
-                handle.insert(
-                        "insert into params (key, value, created_at, updated_at) values (?, ?, now(), now())",
-                        key, value);
-            }
-            else {
-                handle.update(
-                        "update params set value = ?, updated_at = now() where key = ?",
-                        value, key);
-            }
+
+            handle.insert(
+               "insert into params (key, value, site_id, created_at, updated_at) values (?, ?, ?, now(), now()) " +
+               "on conflict on constraint params_site_id_key_uniq do update set value = ?, set updated_at = now()",
+                key, value, siteId, siteId);
             handle.commit();
         }
     }
@@ -84,16 +84,16 @@ public class PostgresqlServerClient
                 return;
             }
 
-            MigrationContext context = new MigrationContext("postgresql");
-            handle.update(
-                    context.newCreateTableBuilder("params")
-                            .addString("key", "not null")
-                            .addString("value", "not null")
-                            .addTimestamp("updated_at", "not null")
-                            .addTimestamp("created_at", "not null")
-                            .build()
+            handle.execute(
+                "CREATE TABLE params (" +
+                        "key text NOT NULL," +
+                        "value text NOT NULL," +
+                        "site_id integer," +
+                        "updated_at timestamp with time zone NOT NULL," +
+                        "created_at timestamp with time zone NOT NULL," +
+                        "CONSTRAINT params_site_id_key_uniq UNIQUE(site_id, key)" +
+                    ")"
             );
-            handle.update("create unique index params_key_unique_index on params (key)");
         }
     }
 }

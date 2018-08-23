@@ -75,7 +75,7 @@ public class ParamSetOperatorFactory
             for (String key : keys) {
                 Optional<String> value = params.getOptional(key, String.class);
                 if (value.isPresent()) {
-                    paramServerClient.set(key, value.get());
+                    paramServerClient.set(key, value.get(), request.getSiteId());
                 }
             }
 

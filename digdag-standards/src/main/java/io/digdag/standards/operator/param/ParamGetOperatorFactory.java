@@ -76,7 +76,10 @@ public class ParamGetOperatorFactory
             for (String key : keys) {
                 Optional<String> destKey = params.getOptional(key, String.class);
                 if (destKey.isPresent()) {
-                    storeParams.set(destKey.get(), paramServerClient.get(key).or(""));
+                    storeParams.set(
+                            destKey.get(),
+                            paramServerClient.get(key, request.getSiteId()).or("")
+                    );
                 }
             }
 
