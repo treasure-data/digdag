@@ -1763,9 +1763,16 @@ class LogFileView extends React.Component {
   }
 
   render () {
-    return this.state.data
-      ? <span>{pako.inflate(this.state.data, {to: 'string'})}</span>
-      : null
+    if(this.state.data){
+      return (
+        <div>
+          <h3>{this.props.file.taskName}</h3>
+          <pre>{pako.inflate(this.state.data, {to: 'string'})}</pre>
+        </div>
+      )
+    }else{
+      return null
+    }
   }
 }
 
@@ -1825,7 +1832,7 @@ class AttemptLogsView extends React.Component {
     return (
       <div className='row'>
         <h2>Logs</h2>
-        <pre>{this.logFiles()}</pre>
+        {this.logFiles()}
         <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
       </div>
     )
