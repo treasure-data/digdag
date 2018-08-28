@@ -47,7 +47,7 @@ cron>: ``CRON``                 Use cron format for complex scheduling      cron
 
 .. note::
 
-    When a field is starting with ``*`` , enclosing in quotes is neccessary by a limitasion to be a vaild YAML.
+    When a field is starting with ``*`` , enclosing in quotes is necessary by a limitasion to be a vaild YAML.
 
 
 Running scheduler

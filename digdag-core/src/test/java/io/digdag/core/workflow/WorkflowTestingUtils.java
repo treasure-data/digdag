@@ -55,7 +55,7 @@ public class WorkflowTestingUtils
         DigdagEmbed.Bootstrap bootstrap = new DigdagEmbed.Bootstrap()
             .withExtensionLoader(false)
             .addModules((binder) -> {
-                binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
+                binder.bind(CommandExecutor.class).to(MockCommandExecutor.class).in(Scopes.SINGLETON);
 
                 binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
                 binder.bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);

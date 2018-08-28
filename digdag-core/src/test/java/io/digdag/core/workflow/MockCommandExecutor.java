@@ -8,11 +8,11 @@ import com.google.common.base.Optional;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 
-public class SimpleCommandExecutor
+public class MockCommandExecutor
     implements CommandExecutor
 {
     @Inject
-    public SimpleCommandExecutor()
+    public MockCommandExecutor()
     { }
 
     public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)

@@ -376,7 +376,7 @@ public class DatabaseProjectStoreManager
          * Create or overwrite a revision.
          *
          * This method doesn't check site id because ProjectControl
-         * interface is avaiable only if site is is valid.
+         * interface is available only if site is is valid.
          */
         @Override
         public StoredRevision insertRevision(int projId, Revision revision)

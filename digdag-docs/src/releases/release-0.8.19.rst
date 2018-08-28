@@ -4,7 +4,7 @@ Release 0.8.19
 Server Changes
 --------------
 
-* Added an ``isAdmin`` flag to the ``Authenticator.Result`` interface that can be used to grant users adminstrator rights.
+* Added an ``isAdmin`` flag to the ``Authenticator.Result`` interface that can be used to grant users administrator rights.
 * Added an administration API with an endpoint that can be used by administrators to get ``userinfo`` metadata for a session attempt.
 
 UI Changes

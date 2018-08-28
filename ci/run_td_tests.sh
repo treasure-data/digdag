@@ -1,5 +1,16 @@
 #!/bin/bash -e
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-"${BASEDIR}"/run_test_pg.sh -p digdag-tests --tests 'acceptance.td.*'
+export DIGDAG_TEST_POSTGRESQL="
+host = localhost
+port = 5432
+user = digdag_test
+password =
+database = digdag_test
+idleTimeout = 10
+minimumPoolSize = 0
+"
 
+export CI_ACCEPTANCE_TEST=true
+
+./gradlew clean cleanTest test --info --no-daemon -p digdag-tests --tests 'acceptance.td.*'

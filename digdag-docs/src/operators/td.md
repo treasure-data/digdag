@@ -159,7 +159,7 @@
   Examples:
 
   ```
-  reuslt_connection: my_s3_connection
+  result_connection: my_s3_connection
   ```
 
 * **result_settings**: MAP
@@ -171,14 +171,14 @@
   Examples:
 
   ```
-  reuslt_connection: my_s3_connection
+  result_connection: my_s3_connection
   result_settings:
     bucket: my_s3_bucket
     path: /logs/
   ```
 
   ```
-  reuslt_connection: my_http
+  result_connection: my_http
   result_settings:
     path: /endpoint
   ```
