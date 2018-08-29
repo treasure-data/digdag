@@ -108,9 +108,8 @@ public class WorkflowExecutorTest
         String contentBase = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/retry_interval_on_group.dig"), UTF_8);
 
         List<TestSet> retries = new ArrayList<TestSet>(Arrays.asList(
-                new TestSet("_retry: 3 5", 15), //retry will happen 3 times. 3 x 5sec = 15secs
-                new TestSet("_retry: 3 5 constant", 15),    //same as above
-                new TestSet("_retry: 3 5 exponential", 35) // 5 + 10 + 20
+                new TestSet("_retry: 3 2", 6), //retry will happen 3 times. 3 x 2sec = 6sec
+                new TestSet("_retry: 3 1 exponential", 7) // 1 + 2 + 4 = 7sec
         ));
 
         for (TestSet ts : retries) {
