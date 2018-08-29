@@ -272,6 +272,14 @@ If ``_retry: N`` (N is an integer: 1, 2, 3, ...) parameter is set to a group, it
 
 Tasks also support ``_retry: N`` parameter to retry the specific task. Note that some operators don't support the generic ``_retry`` option but has its own options to control retrying behavior.
 
+You can set interval to _retry as follows.
+
+``_retry: N I constant|exponential``
+
+``I`` is interval time(seconds). Additionaly you can choose interval way ``constant`` or ``exponential``.
+If you set ``constant`` (default) , interval time is always ``I``. If you set ``exponential``, interval time increases with each retry as ``I x 2^(retry_count-1)``.
+For example, with ``_retry: 3 10 exponential``, first retry interval is 10, second is 20, third is 40.
+
 
 Sending error notification
 ----------------------------------
