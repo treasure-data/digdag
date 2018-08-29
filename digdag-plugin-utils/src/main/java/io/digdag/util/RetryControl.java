@@ -6,7 +6,6 @@ import io.digdag.client.config.ConfigException;
 
 public class RetryControl
 {
-
     public static RetryControl prepare(Config config, Config stateParams, boolean enableByDefault)
     {
         return new RetryControl(config, stateParams, enableByDefault);
@@ -61,7 +60,6 @@ public class RetryControl
             }
         }
         catch(NumberFormatException nfe){
-            nfe.printStackTrace();
             throw new ConfigException(nfe);
         }
         catch(ConfigException ce){
