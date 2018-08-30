@@ -1352,8 +1352,16 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
   // First, divide tasks into rootTasks and taskGroups.
   const rootTasks: Array<Task> = []
   const taskGroups: Map<string, Array<Task>> = new Map()  // {parentId => Array<Task>}
+  const taskOrders: Map<string, Number> = new Map()
   tasks.forEach(t => {
     const parentId: ?string = t.parentId
+    if (taskOrders.get(t.fullName) == null) {
+      taskOrders.set(t.fullName, 1)
+    } else {
+      taskOrders.set(t.fullName, taskOrders.get(t.fullName) + 1)
+    }
+    t.order = taskOrders.get(t.fullName)
+
     if (parentId != null) {
       const group: ?Array<Task> = taskGroups.get(parentId)
       if (group != null) {
@@ -1410,7 +1418,9 @@ class TaskListView extends React.Component {
             {
               sortTasksForTreeView(Array.from(this.props.tasks.values())).map(task =>
                 <tr key={task.id}>
-                  <td>{task.id}</td>
+                  <td>
+                    {task.parentId != null ? <a href={'#logs-' + task.fullName + task.order}>{task.id}</a> : task.id}
+                  </td>
                   <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
                   <td>{task.fullName}</td>
                   <td>{task.parentId}</td>
@@ -1729,7 +1739,8 @@ class LogFileView extends React.Component {
   props:{
     attemptId: string;
     file: LogFileHandle;
-  };
+    order: Number;
+  }
 
   state = {
     data: null
@@ -1766,7 +1777,8 @@ class LogFileView extends React.Component {
     if(this.state.data){
       return (
         <div>
-          <h3>{this.props.file.taskName}</h3>
+          <h3 id={'logs-' + this.props.file.taskName + this.props.order.toString()}
+              style={{display: 'block', paddingTop: '50px', marginTop: '-50px'}}>{this.props.file.taskName}</h3>
           <pre>{pako.inflate(this.state.data, {to: 'string'})}</pre>
         </div>
       )
@@ -1803,6 +1815,23 @@ class AttemptLogsView extends React.Component {
     this.fetch()
   }
 
+  logFiles () {
+    if (!this.state.files.length) {
+      return <pre/>
+    }
+    const taskOrders: Map<string, Number> = new Map()
+    return this.state.files.map(file => {
+      if (taskOrders.get(file.taskName) == null) {
+        taskOrders.set(file.taskName, 1)
+      }
+      else {
+        taskOrders.set(file.taskName, taskOrders.get(file.taskName) + 1)
+      }
+
+      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} order={taskOrders.get(file.taskName)}/>
+    })
+  }
+
   fetch () {
     const { attemptId } = this.props
     model().fetchAttempt(attemptId).then(attempt => {
@@ -1816,15 +1845,6 @@ class AttemptLogsView extends React.Component {
         this.setState({ files: sortedFiles })
       }
     })
-  }
-
-  logFiles () {
-    if (!this.state.files.length) {
-      return <pre />
-    }
-    return this.state.files.map(file =>
-      <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} />
-    )
   }
 
   render () {
