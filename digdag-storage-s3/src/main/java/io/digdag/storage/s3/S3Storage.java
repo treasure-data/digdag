@@ -26,6 +26,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.model.UploadResult;
+import io.digdag.client.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.Storage;
@@ -45,14 +46,16 @@ public class S3Storage
 {
     private static Logger logger = LoggerFactory.getLogger(S3Storage.class);
 
+    private final Config config;
     private final AmazonS3Client client;
     private final String bucket;
     private final ExecutorService uploadExecutor;
     private final TransferManager transferManager;
 
-    public S3Storage(AmazonS3Client client, String bucket)
+    public S3Storage(final Config config, AmazonS3Client client, String bucket)
     {
         checkArgument(!isNullOrEmpty(bucket), "bucket is null or empty");
+        this.config = config;
         this.client = client;
         this.bucket = bucket;
         this.uploadExecutor = Executors.newCachedThreadPool(
@@ -197,8 +200,11 @@ public class S3Storage
     @Override
     public Optional<DirectDownloadHandle> getDirectDownloadHandle(String key)
     {
+        final long secondsToExpire = config.has("direct_download_expiration") ?
+                config.get("direct_download_expiration", Long.class) : 10*60;
+
         GeneratePresignedUrlRequest req = new GeneratePresignedUrlRequest(bucket, key);
-        req.setExpiration(Date.from(Instant.now().plusSeconds(10*60)));
+        req.setExpiration(Date.from(Instant.now().plusSeconds(secondsToExpire)));
 
         String url = client.generatePresignedUrl(req).toString();
 
@@ -208,9 +214,12 @@ public class S3Storage
     @Override
     public Optional<DirectUploadHandle> getDirectUploadHandle(String key)
     {
+        final long secondsToExpire = config.has("direct_upload_expiration") ?
+                config.get("direct_upload_expiration", Long.class) : 10*60;
+
         GeneratePresignedUrlRequest req = new GeneratePresignedUrlRequest(bucket, key);
         req.setMethod(HttpMethod.PUT);
-        req.setExpiration(Date.from(Instant.now().plusSeconds(10*60)));
+        req.setExpiration(Date.from(Instant.now().plusSeconds(secondsToExpire)));
 
         String url = client.generatePresignedUrl(req).toString();
 
