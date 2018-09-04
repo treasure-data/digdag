@@ -228,7 +228,7 @@ public class RedshiftIT
             throws Exception
     {
         testSelectAndDownload(
-                "acceptance/redshift/select_download.dig_with_password_override",
+                "acceptance/redshift/select_download_with_password_override.dig",
                 configFileWithPasswordOverride);
     }
 
