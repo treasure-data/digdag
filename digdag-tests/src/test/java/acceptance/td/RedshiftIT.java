@@ -83,6 +83,7 @@ public class RedshiftIT
     private String restrictedUserPassword;
     private String dataSchemaName;
     private Path configFile;
+    private Path configFileWithPasswordOverride;
     private Path configFileWithoutFederation;
     private Path configFileWithRestrictedUser;
     private AmazonS3Client s3Client;
@@ -142,6 +143,15 @@ public class RedshiftIT
                 "secrets.aws.secret_access_key=" + s3SecretAccessKey
         ));
 
+        configFileWithPasswordOverride = folder.newFile().toPath();
+        Files.write(configFileWithPasswordOverride, asList(
+                "secrets.aws.redshift.password= " + UUID.randomUUID().toString(),
+                "secrets.aws.redshift.another_password= " + redshiftPassword,
+                "secrets.aws.redshift_unload.access_key_id=" + s3AccessKeyId,
+                "secrets.aws.redshift_load.access_key_id=" + s3AccessKeyId,
+                "secrets.aws.secret_access_key=" + s3SecretAccessKey
+        ));
+
         String s3AccessKeyIdWithoutFederation = config.get("s3_access_key_id_wo_federation", String.class);
         String s3SecretAccessKeyWithoutFederation = config.get("s3_secret_access_key_wo_federation", String.class);
         configFileWithoutFederation = folder.newFile().toPath();
@@ -180,11 +190,10 @@ public class RedshiftIT
         }
     }
 
-    @Test
-    public void selectAndDownload()
-            throws Exception
+    private void testSelectAndDownload(String workflowFilePath, Path configFilePath)
+            throws IOException
     {
-        copyResource("acceptance/redshift/select_download.dig", projectDir.resolve("redshift.dig"));
+        copyResource(workflowFilePath, projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
 
         setupSourceTable();
@@ -195,7 +204,7 @@ public class RedshiftIT
                 "-p", "redshift_host=" + redshiftHost,
                 "-p", "redshift_user=" + redshiftUser,
                 "-p", "download_file_in_config=" + resultFile.toString(),
-                "-c", configFile.toString(),
+                "-c", configFilePath.toString(),
                 "redshift.dig");
         assertCommandStatus(status);
 
@@ -205,6 +214,22 @@ public class RedshiftIT
         assertThat(csvLines.toString(), is(stringContainsInOrder(
                 asList("id,name,score", "0,foo,3.14", "1,bar,1.23", "2,baz,5.0")
         )));
+    }
+
+    @Test
+    public void selectAndDownload()
+            throws Exception
+    {
+        testSelectAndDownload("acceptance/redshift/select_download.dig", configFile);
+    }
+
+    @Test
+    public void selectAndDownloadWithPasswordOverride()
+            throws Exception
+    {
+        testSelectAndDownload(
+                "acceptance/redshift/select_download.dig_with_password_override",
+                configFileWithPasswordOverride);
     }
 
     @Test
