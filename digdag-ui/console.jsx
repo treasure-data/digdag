@@ -1816,7 +1816,8 @@ class AttemptLogsView extends React.Component {
   }
 
   logFiles () {
-    if (!this.state.files.length) {
+    const {files} = this.state
+    if (!files.length) {
       return <pre />
     }
     const taskOrders: Map<string, Number> = new Map()
