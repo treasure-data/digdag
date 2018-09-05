@@ -1778,7 +1778,7 @@ class LogFileView extends React.Component {
       return (
         <div>
           <h3 id={'logs-' + this.props.file.taskName + this.props.order.toString()}
-              style={{display: 'block', paddingTop: '50px', marginTop: '-50px'}}>{this.props.file.taskName}</h3>
+              className='log-view'>{this.props.file.taskName}</h3>
           <pre>{pako.inflate(this.state.data, {to: 'string'})}</pre>
         </div>
       )
