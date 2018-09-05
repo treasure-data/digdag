@@ -40,7 +40,7 @@ public class S3StorageFactory
 
         String bucket = config.get("bucket", String.class);
 
-        return new S3Storage(client, bucket);
+        return new S3Storage(config, client, bucket);
     }
 
     private static ClientConfiguration buildClientConfiguration(Config config)
