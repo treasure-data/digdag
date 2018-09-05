@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +61,8 @@ public class PgIT
     private String password;
     private String tempDatabase;
     private String dataSchemaName;
+    private Path configFile;
+    private Path configFileWithPasswordOverride;
 
     private Path root()
     {
@@ -96,6 +99,15 @@ public class PgIT
             database = config.get("database", String.class);
 
         }
+
+        configFile = folder.newFile().toPath();
+        Files.write(configFile, Arrays.asList("pg.password= " + password));
+
+        configFileWithPasswordOverride = folder.newFile().toPath();
+        Files.write(configFileWithPasswordOverride,
+                Arrays.asList("pg.password= " + UUID.randomUUID().toString(),
+                        "pg.another_password= " + password));
+
         tempDatabase = "pgoptest_" + UUID.randomUUID().toString().replace('-', '_');
 
         createTempDatabase();
@@ -163,7 +175,12 @@ public class PgIT
 
         setupSourceTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
@@ -187,7 +204,12 @@ public class PgIT
 
         setupSourceTable(true);
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
@@ -216,6 +238,7 @@ public class PgIT
                 "--project", root().toString(),
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -245,6 +268,7 @@ public class PgIT
                 "--project", root().toString(),
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -273,6 +297,7 @@ public class PgIT
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-X", "config.pg.max_store_last_results_rows=2",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status, Optional.of("The number of result rows exceeded the limit"));
     }
@@ -292,6 +317,7 @@ public class PgIT
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-X", "config.jdbc.max_store_last_results_value_size=2",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status, Optional.of("The size of result value exceeded the limit"));
     }
@@ -306,7 +332,12 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
@@ -326,7 +357,12 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
@@ -358,6 +394,7 @@ public class PgIT
                 "-p", "user_in_config=" + RESTRICTED_USER,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -379,7 +416,12 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
