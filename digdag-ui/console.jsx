@@ -1774,15 +1774,15 @@ class LogFileView extends React.Component {
   }
 
   render () {
-    if(this.state.data){
+    if (this.state.data) {
       return (
         <div>
           <h3 id={'logs-' + this.props.file.taskName + this.props.order.toString()}
-              className='log-view'>{this.props.file.taskName}</h3>
+            className='log-view'>{this.props.file.taskName}</h3>
           <pre>{pako.inflate(this.state.data, {to: 'string'})}</pre>
         </div>
       )
-    }else{
+    } else {
       return null
     }
   }
@@ -1817,18 +1817,17 @@ class AttemptLogsView extends React.Component {
 
   logFiles () {
     if (!this.state.files.length) {
-      return <pre/>
+      return <pre />
     }
     const taskOrders: Map<string, Number> = new Map()
     return this.state.files.map(file => {
       if (taskOrders.get(file.taskName) == null) {
         taskOrders.set(file.taskName, 1)
-      }
-      else {
+      } else {
         taskOrders.set(file.taskName, taskOrders.get(file.taskName) + 1)
       }
 
-      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} order={taskOrders.get(file.taskName)}/>
+      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} order={taskOrders.get(file.taskName)} />
     })
   }
 
