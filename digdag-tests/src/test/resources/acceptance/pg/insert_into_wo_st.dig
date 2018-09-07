@@ -3,7 +3,7 @@ timezone: UTC
 +run:
   pg>: select_table.sql
   strict_transaction: false
-  host: localhost
+  host: ${pg_host}
   database: ${pg_database}
-  user: not_admin
+  user: ${pg_user}
   insert_into: dest_tbl

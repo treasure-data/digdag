@@ -178,6 +178,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-c", configFile.toString(),
                 "pg.dig");
@@ -207,6 +209,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-c", configFile.toString(),
                 "pg.dig");
@@ -236,6 +240,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-c", configFile.toString(),
@@ -266,6 +272,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-c", configFile.toString(),
@@ -294,6 +302,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-X", "config.pg.max_store_last_results_rows=2",
@@ -314,6 +324,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-X", "config.jdbc.max_store_last_results_value_size=2",
@@ -335,6 +347,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-c", configFile.toString(),
                 "pg.dig");
@@ -360,6 +374,8 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-c", configFile.toString(),
                 "pg.dig");
@@ -390,8 +406,9 @@ public class PgIT
         setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + RESTRICTED_USER,
                 "-p", "pg_database=" + tempDatabase,
-                "-p", "user_in_config=" + RESTRICTED_USER,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
                 "-c", configFile.toString(),
@@ -416,9 +433,13 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
+        // With "strict_transaction: false", `pg` operator can work
+        // even if the user can't create a new status table
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + RESTRICTED_USER,
                 "-p", "pg_database=" + tempDatabase,
                 "-c", configFile.toString(),
                 "pg.dig");
