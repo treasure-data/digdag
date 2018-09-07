@@ -61,7 +61,10 @@ abstract class BaseTdJobOperator
             // Set last_job_id param
             taskResult.getStoreParams()
                     .getNestedOrSetEmpty("td")
-                    .set("last_job_id", job.getJobId());
+                    .set("last_job_id", job.getJobId()) // for compatibility with old style
+                    .getNestedOrSetEmpty("last_job")
+                    .set("id", job.getJobId())
+                    .set("num_records", job.getJobInfo().getNumRecords());
 
             return taskResult;
         }
