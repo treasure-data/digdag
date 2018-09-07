@@ -41,3 +41,26 @@
   For all supported URL-style results in Treasure Data, please see ["Writing Job Results into ***" in Treasure Data support site](https://support.treasuredata.com/hc/en-us/sections/360000245208-Databases).
 
   We **strongly** recommend using secrets to store all sensitive items (e.g. user, password, etc.) instead of writing down them in YAML files directly.
+
+## Output parameters
+
+* **td.last_job_id**
+* **td.last_job.id**
+
+  The job id this task executed.
+
+  Examples:
+
+  ```
+  52036074
+  ```
+
+* **td.last_job.num_records**
+
+  The number of records of this job output.
+ 
+  Examples:
+  
+  ```
+  10
+  ```
