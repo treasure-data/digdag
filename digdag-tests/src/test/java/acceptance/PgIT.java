@@ -97,16 +97,16 @@ public class PgIT
             user = config.get("user", String.class);
             password = config.get("password", String.class);
             database = config.get("database", String.class);
-
         }
 
         configFile = folder.newFile().toPath();
-        Files.write(configFile, Arrays.asList("pg.password= " + password));
+        Files.write(configFile, Arrays.asList("secrets.pg.password= " + password));
 
         configFileWithPasswordOverride = folder.newFile().toPath();
         Files.write(configFileWithPasswordOverride,
-                Arrays.asList("pg.password= " + UUID.randomUUID().toString(),
-                        "pg.another_password= " + password));
+                Arrays.asList(
+                        "secrets.pg.password= " + UUID.randomUUID().toString(),
+                        "secrets.pg.another_password= " + password));
 
         tempDatabase = "pgoptest_" + UUID.randomUUID().toString().replace('-', '_');
 
@@ -166,11 +166,10 @@ public class PgIT
         }
     }
 
-    @Test
-    public void selectAndDownload()
-            throws Exception
+    private void testSelectAndDownload(String workflowFilePath, Path configFilePath)
+            throws IOException
     {
-        copyResource("acceptance/pg/select_download.dig", root().resolve("pg.dig"));
+        copyResource(workflowFilePath, root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
         setupSourceTable();
@@ -181,7 +180,7 @@ public class PgIT
                 "-p", "pg_host=" + host,
                 "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
-                "-c", configFile.toString(),
+                "-c", configFilePath.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -195,6 +194,22 @@ public class PgIT
                     Arrays.asList("id,name,score", "0,foo,3.14", "1,bar,1.23", "2,baz,5.0")
             )));
         }
+    }
+
+    @Test
+    public void selectAndDownload()
+            throws Exception
+    {
+        testSelectAndDownload("acceptance/pg/select_download.dig", configFile);
+    }
+
+    @Test
+    public void selectAndDownloadWithPasswordOverride()
+            throws Exception
+    {
+        testSelectAndDownload(
+                "acceptance/pg/select_download_with_password_override.dig",
+                configFileWithPasswordOverride);
     }
 
     @Test
