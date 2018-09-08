@@ -17,13 +17,13 @@ public abstract class AbstractJdbcConnectionConfig
     protected static Optional<String> getPassword(SecretProvider secrets, Config params)
     {
         Optional<String> passwordOverrideKey = params.getOptional("password_override", String.class);
-
-        Optional<String> overriddenPassword = Optional.absent();
         if (passwordOverrideKey.isPresent()) {
-            overriddenPassword = secrets.getSecretOptional(passwordOverrideKey.get());
+            // When `password_override` is specified, the key needs to exist
+            return Optional.of(secrets.getSecret(passwordOverrideKey.get()));
         }
-
-        return overriddenPassword.or(secrets.getSecretOptional("password"));
+        else {
+            return secrets.getSecretOptional("password");
+        }
     }
 
     public abstract String host();
