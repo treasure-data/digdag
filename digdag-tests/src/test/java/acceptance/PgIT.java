@@ -46,6 +46,7 @@ public class PgIT
     private static final String PG_PROPERTIES = System.getenv("DIGDAG_TEST_POSTGRESQL");
     private static final String PG_IT_CONFIG = System.getenv("PG_IT_CONFIG");
     private static final String RESTRICTED_USER = "not_admin";
+    private static final String RESTRICTED_USER_PASSWORD = "not_admin_password";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
     private static final String DATA_SECHEMA = "data_schema";
@@ -63,6 +64,7 @@ public class PgIT
     private String dataSchemaName;
     private Path configFile;
     private Path configFileWithPasswordOverride;
+    private Path configFileWithRestrictedUser;
 
     private Path root()
     {
@@ -107,6 +109,9 @@ public class PgIT
                 Arrays.asList(
                         "secrets.pg.password= " + UUID.randomUUID().toString(),
                         "secrets.pg.another_password= " + password));
+
+        configFileWithRestrictedUser = folder.newFile().toPath();
+        Files.write(configFileWithRestrictedUser, Arrays.asList("secrets.pg.password= " + RESTRICTED_USER_PASSWORD));
 
         tempDatabase = "pgoptest_" + UUID.randomUUID().toString().replace('-', '_');
 
@@ -426,7 +431,7 @@ public class PgIT
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
-                "-c", configFile.toString(),
+                "-c", configFileWithRestrictedUser.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -456,7 +461,7 @@ public class PgIT
                 "-p", "pg_host=" + host,
                 "-p", "pg_user=" + RESTRICTED_USER,
                 "-p", "pg_database=" + tempDatabase,
-                "-c", configFile.toString(),
+                "-c", configFileWithRestrictedUser.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -501,7 +506,7 @@ public class PgIT
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             try {
-                conn.executeUpdate("CREATE ROLE " + RESTRICTED_USER);
+                conn.executeUpdate("CREATE ROLE " + RESTRICTED_USER + " WITH PASSWORD '" + RESTRICTED_USER_PASSWORD + "'");
             }
             catch (DatabaseException e) {
                 // 42710: duplicate_object
