@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import io.digdag.spi.SecretNotFoundException;
 import io.digdag.standards.operator.jdbc.JdbcOpTestHelper;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +26,6 @@ public class RedshiftConnectionConfigTest
     private RedshiftConnectionConfig connConfigWithDefaultValueFromSecrets;
     private RedshiftConnectionConfig connConfigWithCustomValueFromSecrets;
     private RedshiftConnectionConfig connConfigWithOverriddenPassword;
-    private RedshiftConnectionConfig connConfigWithMissingOverriddenPassword;
 
     @Before
     public void setUp()
@@ -93,16 +93,6 @@ public class RedshiftConnectionConfigTest
             this.connConfigWithOverriddenPassword = RedshiftConnectionConfig.configure(
                     key -> Optional.fromNullable(configValuesWithOverriddenPassword.get(key)),
                     jdbcOpTestHelper.createConfig(configValuesUsingOverriddenPassword)
-            );
-
-            Map<String, String> configValuesUsingMissingOverriddenPassword = ImmutableMap.<String, String>builder()
-                    .putAll(customConfigValues)
-                    .put("password_override", "missing_db_password")
-                    .build();
-
-            this.connConfigWithMissingOverriddenPassword = RedshiftConnectionConfig.configure(
-                    key -> Optional.fromNullable(configValuesWithOverriddenPassword.get(key)),
-                    jdbcOpTestHelper.createConfig(configValuesUsingMissingOverriddenPassword)
             );
         }
     }
@@ -179,9 +169,20 @@ public class RedshiftConnectionConfigTest
         validateCustomValueProperties(connConfigWithOverriddenPassword.buildProperties(), Optional.of("password2"));
     }
 
-    @Test
+    @Test(expected = SecretNotFoundException.class)
     public void configureWithMissingOverriddenPassword()
+            throws IOException
     {
-        validateCustomValueProperties(connConfigWithMissingOverriddenPassword.buildProperties(), Optional.absent());
+        Map<String, String> configValues = ImmutableMap.<String, String>builder().
+                put("host", "foobar1.org").
+                put("port", "6543").
+                put("user", "user1").
+                put("password_override", "missing_db_password").
+                put("database", "database1").build();
+
+        RedshiftConnectionConfig.configure(
+                key -> key.equals("password") ? Optional.of("password1") : Optional.absent(),
+                jdbcOpTestHelper.createConfig(configValues)
+        );
     }
 }
