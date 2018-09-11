@@ -1,0 +1,12 @@
+_export:
+  td:
+    database: ${database}
+
++job_run:
+  td_run>: ${queryName}
+
++job_show:
+  td_job_show>: ${td.last_job_id}
+
++echo_fetched_job_num_records:
+  sh>: echo "${td.stored_jobs[td.last_job_id].num_records} ${td.stored_jobs[td.last_job_id].status}" > ${_project_path}/out
