@@ -7,6 +7,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.Record;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
 
@@ -68,9 +69,12 @@ public class ParamGetOperatorFactory
             for (String key : keys) {
                 Optional<String> destKey = params.getOptional(key, String.class);
                 if (destKey.isPresent()) {
+                    Optional<Record> record = paramServerClient.get(key, request.getSiteId());
                     storeParams.set(
                             destKey.get(),
-                            paramServerClient.get(key, request.getSiteId()).or("")
+                            // In this operator, we expect that record.get().value().get("value")
+                            // returns only String class value.
+                            record.isPresent() ? record.get().value().get("value") : ""
                     );
                 }
             }

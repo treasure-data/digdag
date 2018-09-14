@@ -14,7 +14,8 @@ import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.assertCommandStatus;
 import static utils.TestUtils.main;
 
-public class ParamSetRedisIT extends BaseParamRedisIT
+public class ParamSetRedisIT
+        extends BaseParamRedisIT
 {
     @Test
     public void setValueToRedis()
@@ -35,7 +36,7 @@ public class ParamSetRedisIT extends BaseParamRedisIT
                 projectDir.resolve("set.dig").toString()
         );
         assertCommandStatus(status);
-        assertThat("value1", is(redisClient.get("0:key1")));
-        assertThat("value2", is(redisClient.get("0:key2")));
+        assertThat(redisClient.get("0:key1"), is("{\"value_type\":0,\"value\":{\"value\":\"value1\"}}"));
+        assertThat(redisClient.get("0:key2"), is("{\"value_type\":0,\"value\":{\"value\":\"value2\"}}"));
     }
 }

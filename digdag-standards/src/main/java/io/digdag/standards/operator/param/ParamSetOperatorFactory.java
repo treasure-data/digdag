@@ -55,16 +55,24 @@ public class ParamSetOperatorFactory
             if (!paramServerType.isPresent()) {
                 throw new ConfigException("param_server.database.type is required to use this operator.");
             }
-            Config params = request.getLocalConfig();
+            Config localParams = request.getLocalConfig();
 
-            List<String> keys = params.getKeys();
+            List<String> keys = localParams.getKeys();
             if (keys.size() == 0) {
                 throw new ConfigException("no key is set.");
             }
 
             paramServerClient.doTransaction(client -> {
                 for (String key : keys) {
-                    Optional<String> value = params.getOptional(key, String.class);
+                    // This operator expected to take a String like scalar value as parameters.
+                    // e.g.
+                    //   param_set>:
+                    //   key1: value1
+                    //   key2: value2
+                    //
+                    // So if user specified Array like value, `localParams.getOptional(key, String.class)` throws Error.
+                    // If we about to support Array like value, we need to create an another operator.
+                    Optional<String> value = localParams.getOptional(key, String.class);
                     if (value.isPresent()) {
                         paramServerClient.set(key, value.get(), request.getSiteId());
                     }

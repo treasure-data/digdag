@@ -14,7 +14,8 @@ import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.assertCommandStatus;
 import static utils.TestUtils.main;
 
-public class ParamGetRedisIT extends BaseParamRedisIT
+public class ParamGetRedisIT
+        extends BaseParamRedisIT
 {
     @Test
     public void testGetParams()
@@ -29,8 +30,8 @@ public class ParamGetRedisIT extends BaseParamRedisIT
         ));
         String output = folder.newFolder().getAbsolutePath();
 
-        redisClient.set("0:key1", "value1");
-        redisClient.set("0:key2", "value2");
+        redisClient.set("0:key1", "{\"value\":{\"value\":\"value1\"}, \"value_type\":0}");
+        redisClient.set("0:key2", "{\"value\":{\"value\":\"value2\"}, \"value_type\":0}");
 
         CommandStatus status = main("run",
                 "-o", output,

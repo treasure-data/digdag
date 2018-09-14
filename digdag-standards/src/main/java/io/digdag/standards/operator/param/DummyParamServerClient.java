@@ -1,18 +1,21 @@
 package io.digdag.standards.operator.param;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import io.digdag.spi.Record;
 
 import java.util.function.Consumer;
 
 public class DummyParamServerClient
         implements ParamServerClient
 {
-    public DummyParamServerClient(ParamServerClientConnection _) {
+    public DummyParamServerClient(ParamServerClientConnection _connection, ObjectMapper _objectMapper)
+    {
 
     }
 
     @Override
-    public Optional<String> get(String key, int sitedId)
+    public Optional<Record> get(String key, int sitedId)
     {
         return null;
     }

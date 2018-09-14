@@ -41,6 +41,7 @@ public class ParamGetPostgresqlIT
                     "CREATE TABLE params (" +
                             "key text NOT NULL," +
                             "value text NOT NULL," +
+                            "value_type int NOT NULL," +
                             "site_id integer," +
                             "updated_at timestamp with time zone NOT NULL," +
                             "created_at timestamp with time zone NOT NULL," +
@@ -49,11 +50,13 @@ public class ParamGetPostgresqlIT
             );
 
             conn.executeUpdate(String.format(
-                    "insert into params (key, value, site_id, created_at, updated_at) values ('%s', '%s', %d, now(), now())",
-                    "key1", "value1", 0));
+                    "insert into params (key, value, value_type, site_id, created_at, updated_at) " +
+                            "values ('%s', '%s', %d, %d, now(), now())",
+                    "key1", "{\"value\": \"value1\"}", 0, 0));
             conn.executeUpdate(String.format(
-                    "insert into params (key, value, site_id, created_at, updated_at) values ('%s', '%s', %d, now(), now())",
-                    "key2", "value2", 0));
+                    "insert into params (key, value, value_type, site_id, created_at, updated_at) " +
+                            "values ('%s', '%s', %d, %d, now(), now())",
+                    "key2", "{\"value\": \"value2\"}", 0, 0));
         }
 
         String output = folder.newFolder().getAbsolutePath();
