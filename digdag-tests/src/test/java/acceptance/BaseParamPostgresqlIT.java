@@ -65,6 +65,7 @@ public class BaseParamPostgresqlIT
         tempDatabase = "paramsetoptest_" + UUID.randomUUID().toString().replace('-', '_');
 
         createTempDatabase();
+        createParamTable();
     }
 
     @After
@@ -110,6 +111,33 @@ public class BaseParamPostgresqlIT
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("DROP DATABASE IF EXISTS " + tempDatabase);
+        }
+    }
+
+    protected void createParamTable()
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+        try (
+                PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS params (" +
+                            "key text NOT NULL," +
+                            "value text NOT NULL," +
+                            "value_type int NOT NULL," +
+                            "site_id integer," +
+                            "updated_at timestamp with time zone NOT NULL," +
+                            "created_at timestamp with time zone NOT NULL," +
+                            "CONSTRAINT params_site_id_key_uniq UNIQUE(site_id, key)" +
+                            ")"
+            );
+        }
+    }
+
+    protected void cleanupParamTable(){
+        SecretProvider secrets = getDatabaseSecrets();
+        try (
+                PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate("DELETE FROM params");
         }
     }
 }

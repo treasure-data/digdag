@@ -35,11 +35,15 @@ public class PostgresqlParamServerClient
             throw new IllegalStateException("Connection has already closed");
         }
 
+        // In this method, timezone of `now()` is not specified.
+        // Timezone depends on PostgreSQL server settings.
         Record rawRecord = handle
                 .createQuery(
                         "select key, value, value_type" +
                                 " from params" +
-                                " where key = :key and site_id = :site_id limit 1")
+                                " where key = :key and site_id = :site_id" +
+                                " and updated_at + INTERVAL '" + String.valueOf(DEFAULT_TTL) + " seconds' >= now()" +
+                                " limit 1")
                 .bind("key", key)
                 .bind("site_id", siteId)
                 .mapTo(Record.class)
