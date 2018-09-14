@@ -40,4 +40,8 @@ apt-get -y install redis-server
 wget -O /usr/local/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
 chmod 777 /usr/local/bin/minio
 
+# Redis
+apt-get -y install redis-server
+redis-server &
+
 rm -rf /var/lib/apt/lists/*
