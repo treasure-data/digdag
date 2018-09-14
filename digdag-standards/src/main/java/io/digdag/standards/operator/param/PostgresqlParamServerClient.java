@@ -1,10 +1,14 @@
 package io.digdag.standards.operator.param;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.inject.Inject;
+import com.google.common.base.Throwables;
+import io.digdag.spi.Record;
+import io.digdag.spi.ValueType;
 import org.skife.jdbi.v2.Handle;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.function.Consumer;
 
 /*
@@ -15,29 +19,33 @@ import java.util.function.Consumer;
 public class PostgresqlParamServerClient
         implements ParamServerClient
 {
+    private final ObjectMapper objectMapper;
     private Handle handle;
 
-    @Inject
-    public PostgresqlParamServerClient(ParamServerClientConnection connection)
+    public PostgresqlParamServerClient(ParamServerClientConnection connection, ObjectMapper objectMapper)
     {
         this.handle = (Handle) connection.get();
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    public Optional<String> get(String key, int siteId)
+    public Optional<Record> get(String key, int siteId)
     {
         if (handle == null) {
             throw new IllegalStateException("Connection has already closed");
         }
 
-        List<String> record = handle
-                .createQuery("select value from params where key = :key and site_id = :site_id limit 1")
+        Record rawRecord = handle
+                .createQuery(
+                        "select key, value, value_type" +
+                                " from params" +
+                                " where key = :key and site_id = :site_id limit 1")
                 .bind("key", key)
                 .bind("site_id", siteId)
-                .mapTo(String.class)
-                .list();
+                .mapTo(Record.class)
+                .first();
 
-        return record.size() > 0 ? Optional.of(record.get(0)) : Optional.absent();
+        return rawRecord == null ? Optional.absent() : Optional.of(rawRecord);
     }
 
     @Override
@@ -47,10 +55,18 @@ public class PostgresqlParamServerClient
             throw new IllegalStateException("Connection has already closed");
         }
 
+        String jsonValue;
+        try {
+            jsonValue = jsonizeValue(value);
+        }
+        catch (JsonProcessingException e) {
+            throw Throwables.propagate(e);
+        }
+
         handle.insert(
-                "insert into params (key, value, site_id, created_at, updated_at) values (?, ?, ?, now(), now()) " +
+                "insert into params (key, value, value_type, site_id, created_at, updated_at) values (?, ?, ?, ?, now(), now()) " +
                         "on conflict on constraint params_site_id_key_uniq do update set value = ?, updated_at = now()",
-                key, value, siteId, value);
+                key, jsonValue, ValueType.STRING.ordinal(), siteId, jsonValue); // value_type is fixed to ValueType.STRING for now
     }
 
     @Override
@@ -79,5 +95,14 @@ public class PostgresqlParamServerClient
             handle.close();
             this.handle = null;
         }
+    }
+
+    private String jsonizeValue(String originalValue)
+            throws JsonProcessingException
+    {
+        return objectMapper.writeValueAsString(new HashMap<String, String>()
+        {{
+            put("value", originalValue);
+        }});
     }
 }

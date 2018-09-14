@@ -1,17 +1,24 @@
 package io.digdag.standards.operator.param;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.digdag.client.config.Config;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.spi.Record;
+import io.digdag.spi.ValueType;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -23,6 +30,28 @@ public class PostgresqlServerClientConnectionManager
     private DBI dbi;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    class RecordMapper
+            implements ResultSetMapper<Record>
+    {
+        @Override
+        public Record map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            try {
+                return Record.builder()
+                        .key(r.getString("key"))
+                        .value(objectMapper.readTree(r.getString("value")))
+                        .valueType(ValueType.of(r.getInt("value_type")))
+                        .build();
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+    }
+
     public PostgresqlServerClientConnectionManager(Config systemConfig)
     {
         this.systemConfig = systemConfig;
@@ -30,6 +59,7 @@ public class PostgresqlServerClientConnectionManager
         HikariDataSource ds = createDataSourceWithConnectionPool();
         this.closer = ds;
         this.dbi = new DBI(ds);
+        registerMapper();
         initializeTables();
     }
 
@@ -84,6 +114,11 @@ public class PostgresqlServerClientConnectionManager
         return new HikariDataSource(hikari);
     }
 
+    private void registerMapper()
+    {
+        dbi.registerMapper(new PostgresqlServerClientConnectionManager.RecordMapper());
+    }
+
     private void initializeTables()
     {
         //TODO migrator
@@ -99,6 +134,7 @@ public class PostgresqlServerClientConnectionManager
                     "CREATE TABLE params (" +
                             "key text NOT NULL," +
                             "value text NOT NULL," +
+                            "value_type int NOT NULL," +
                             "site_id integer," +
                             "updated_at timestamp with time zone NOT NULL," +
                             "created_at timestamp with time zone NOT NULL," +
