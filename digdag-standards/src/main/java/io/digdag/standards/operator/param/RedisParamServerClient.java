@@ -8,11 +8,10 @@ import com.google.common.base.Throwables;
 import io.digdag.spi.Record;
 import io.digdag.spi.ValueType;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -95,13 +94,11 @@ public class RedisParamServerClient
     {
         if (connection != null) {
             if (!msetTarget.isEmpty()) {
-                List<String> queries = new ArrayList<>();
+                Transaction multi = connection.multi();
                 for (Map.Entry<String, String> entry : msetTarget.entrySet()) {
-                    queries.add(entry.getKey());
-                    queries.add(entry.getValue());
+                    multi.setex(entry.getKey(), DEFAULT_TTL, entry.getValue());
                 }
-                // redisClient.mset(key1, value1, key2, value2, ...)
-                connection.mset(queries.toArray(new String[queries.size()]));
+                multi.exec();
             }
             msetTarget.clear();
 
