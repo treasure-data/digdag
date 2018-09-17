@@ -5,10 +5,8 @@ import com.google.inject.Module;
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import com.google.inject.Provider;
-
 import javax.sql.DataSource;
 import javax.annotation.PostConstruct;
-
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;

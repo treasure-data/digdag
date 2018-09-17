@@ -73,6 +73,50 @@ public class ParamSetPostgresqlIT
     }
 
     @Test
+    public void parallelSetValueToPostgresql()
+            throws IOException, NotReadOnlyException
+    {
+        Path projectDir = folder.newFolder().toPath();
+        addWorkflow(projectDir, "acceptance/params/parallel_set.dig");
+        Path config = projectDir.resolve("config");
+        Files.write(config, asList(
+                "param_server.database.type=postgresql",
+                "param_server.database.user=" + user,
+                "param_server.database.host=" + host,
+                "param_server.database.database=" + tempDatabase
+        ));
+
+        CommandStatus status = main("run",
+                "-o", folder.newFolder().getAbsolutePath(),
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                projectDir.resolve("parallel_set.dig").toString()
+        );
+        assertCommandStatus(status);
+
+        SecretProvider secrets = getDatabaseSecrets();
+        List<Map<String, Object>> expectedValues = Arrays.asList(
+                ImmutableMap.of("key", "key1", "value", "{\"value\":\"value1\"}"),
+                ImmutableMap.of("key", "key2", "value", "{\"value\":\"value2\"}"));
+
+        try (
+                PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeReadOnlyQuery("select * from params order by created_at asc",
+                    (rs) -> {
+                        assertThat(rs.getColumnNames(), is(Arrays.asList("key", "value", "value_type", "site_id", "updated_at", "created_at")));
+                        List<Object> row;
+                        int index = 0;
+                        while ((row = rs.next()) != null) {
+                            Map<String, Object> expected = expectedValues.get(index);
+                            assertThat(row.get(0), is(expected.get("key")));
+                            assertThat(row.get(1), is(expected.get("value")));
+                            ++index;
+                        }
+                    });
+        }
+    }
+
+    @Test
     public void testErrorIfParamServerTypeIsNotSet()
             throws IOException
     {

@@ -1,0 +1,10 @@
+timezone: UTC
+
++param_set_test:
+  loop>: 100
+  _parallel: true
+  _do:
+    +task:
+      param_set>:
+      key1: value1
+      key2: value2

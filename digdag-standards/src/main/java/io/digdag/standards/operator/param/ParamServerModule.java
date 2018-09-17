@@ -12,9 +12,5 @@ public class ParamServerModule
     {
         binder.bind(ParamServerClientConnectionManager.class)
                 .toProvider(ParamServerClientConnectionManagerProvider.class).in(Scopes.SINGLETON);
-        binder.bind(ParamServerClientConnection.class)
-                .toProvider(ParamServerClientConnectionProvider.class); // do not make this class singleton because this object is fetched from multiple threads
-        binder.bind(ParamServerClient.class)
-                .toProvider(ParamServerClientProvider.class); // do not make this class singleton because this object is fetched from multiple threads
     }
 }

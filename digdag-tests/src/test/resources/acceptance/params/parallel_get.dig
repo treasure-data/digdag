@@ -1,9 +1,13 @@
 timezone: UTC
 
 +param_get_test:
-  param_get>:
-  key1: next_key1
-  key2: next_key2
+  loop>: 100
+  _parallel: true
+  _do:
+    +task:
+      param_get>:
+      key1: next_key1
+      key2: next_key2
 
 +show_stored_param:
   sh>: echo "${next_key1} ${next_key2}" > ${_project_path}/out

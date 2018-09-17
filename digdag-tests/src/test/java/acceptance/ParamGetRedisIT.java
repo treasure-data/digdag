@@ -43,4 +43,31 @@ public class ParamGetRedisIT
         assertCommandStatus(status);
         assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value1 value2"));
     }
+
+    @Test
+    public void testParallelGetParams()
+            throws IOException
+    {
+        Path projectDir = folder.newFolder().toPath();
+        addWorkflow(projectDir, "acceptance/params/parallel_get.dig");
+        Path config = projectDir.resolve("config");
+        Files.write(config, asList(
+                "param_server.database.type=redis",
+                "param_server.database.host=" + REDIS_HOST
+        ));
+        String output = folder.newFolder().getAbsolutePath();
+
+        redisClient.set("0:key1", "{\"value\":{\"value\":\"value1\"}, \"value_type\":0}");
+        redisClient.set("0:key2", "{\"value\":{\"value\":\"value2\"}, \"value_type\":0}");
+
+        CommandStatus status = main("run",
+                "-o", output,
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                projectDir.resolve("parallel_get.dig").toString()
+        );
+
+        assertCommandStatus(status);
+        assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value1 value2"));
+    }
 }

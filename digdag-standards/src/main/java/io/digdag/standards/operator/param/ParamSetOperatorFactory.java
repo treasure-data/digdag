@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.param;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -16,13 +17,15 @@ public class ParamSetOperatorFactory
         implements OperatorFactory
 {
     private final Config systemConfig;
-    private final ParamServerClient paramServerClient;
+    private final ParamServerClientConnectionManager connectionManager;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    public ParamSetOperatorFactory(Config systemConfig, ParamServerClient paramServerClient)
+    public ParamSetOperatorFactory(Config systemConfig, ParamServerClientConnectionManager connectionManager, ObjectMapper objectMapper)
     {
         this.systemConfig = systemConfig;
-        this.paramServerClient = paramServerClient;
+        this.connectionManager = connectionManager;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -34,6 +37,11 @@ public class ParamSetOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
+        // In order to create a connection for each task thread,
+        // a param server client connection is fetched here manually.
+        // `connectionManager` is an only SINGLETON object.
+        ParamServerClientConnection connection = connectionManager.getConnection();
+        ParamServerClient paramServerClient = ParamServerClientFactory.build(connection, objectMapper);
         return new ParamSetOperator(context, paramServerClient);
     }
 

@@ -103,4 +103,44 @@ public class ParamGetPostgresqlIT
         assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value2"));
         cleanupParamTable();
     }
+
+    @Test
+    public void testParallelGetParams()
+            throws IOException
+    {
+        Path projectDir = folder.newFolder().toPath();
+        addWorkflow(projectDir, "acceptance/params/parallel_get.dig");
+        Path config = projectDir.resolve("config");
+        Files.write(config, asList(
+                "param_server.database.type=postgresql",
+                "param_server.database.user=" + user,
+                "param_server.database.host=" + host,
+                "param_server.database.database=" + tempDatabase
+        ));
+
+        SecretProvider secrets = getDatabaseSecrets();
+        try (
+                PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate(String.format(
+                    "insert into params (key, value, value_type, site_id, created_at, updated_at) " +
+                            "values ('%s', '%s', %d, %d, now(), now())",
+                    "key1", "{\"value\": \"value1\"}", 0, 0));
+            conn.executeUpdate(String.format(
+                    "insert into params (key, value, value_type, site_id, created_at, updated_at) " +
+                            "values ('%s', '%s', %d, %d, now(), now())",
+                    "key2", "{\"value\": \"value2\"}", 0, 0));
+        }
+
+        String output = folder.newFolder().getAbsolutePath();
+        CommandStatus status = main("run",
+                "-o", output,
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                projectDir.resolve("parallel_get.dig").toString()
+        );
+
+        assertCommandStatus(status);
+        assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value1 value2"));
+        cleanupParamTable();
+    }
 }

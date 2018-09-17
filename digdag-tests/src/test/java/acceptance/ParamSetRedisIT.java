@@ -39,4 +39,27 @@ public class ParamSetRedisIT
         assertThat(redisClient.get("0:key1"), is("{\"value_type\":0,\"value\":{\"value\":\"value1\"}}"));
         assertThat(redisClient.get("0:key2"), is("{\"value_type\":0,\"value\":{\"value\":\"value2\"}}"));
     }
+
+    @Test
+    public void parallelSetValueToRedis()
+            throws IOException
+    {
+        Path projectDir = folder.newFolder().toPath();
+        addWorkflow(projectDir, "acceptance/params/parallel_set.dig");
+        Path config = projectDir.resolve("config");
+        Files.write(config, asList(
+                "param_server.database.type=redis",
+                "param_server.database.host=" + REDIS_HOST
+        ));
+
+        CommandStatus status = main("run",
+                "-o", folder.newFolder().getAbsolutePath(),
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                projectDir.resolve("parallel_set.dig").toString()
+        );
+        assertCommandStatus(status);
+        assertThat(redisClient.get("0:key1"), is("{\"value_type\":0,\"value\":{\"value\":\"value1\"}}"));
+        assertThat(redisClient.get("0:key2"), is("{\"value_type\":0,\"value\":{\"value\":\"value2\"}}"));
+    }
 }

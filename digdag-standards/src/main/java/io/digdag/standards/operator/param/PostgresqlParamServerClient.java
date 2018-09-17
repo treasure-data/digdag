@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 /*
     This class is not Threadsafe, but this class is
     expected to be bound as NOT singleton in guice container.
-    see ParamServerModule
+    see ParamGetOperatorFactory / ParamSetOperatorFactory
  */
 public class PostgresqlParamServerClient
         implements ParamServerClient
