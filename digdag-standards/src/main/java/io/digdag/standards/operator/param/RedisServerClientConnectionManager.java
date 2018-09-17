@@ -2,13 +2,9 @@ package io.digdag.standards.operator.param;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
+import io.digdag.spi.ParamServerClientConnection;
+import io.digdag.spi.ParamServerClientConnectionManager;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Transaction;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class RedisServerClientConnectionManager
         implements ParamServerClientConnectionManager

@@ -7,6 +7,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.digdag.client.config.Config;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.spi.ParamServerClientConnection;
+import io.digdag.spi.ParamServerClientConnectionManager;
 import io.digdag.spi.Record;
 import io.digdag.spi.ValueType;
 import org.skife.jdbi.v2.DBI;

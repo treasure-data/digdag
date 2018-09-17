@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import io.digdag.spi.ParamServerClient;
+import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
 import io.digdag.spi.ValueType;
 import redis.clients.jedis.Jedis;

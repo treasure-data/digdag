@@ -8,6 +8,9 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.ParamServerClient;
+import io.digdag.spi.ParamServerClientConnection;
+import io.digdag.spi.ParamServerClientConnectionManager;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
 

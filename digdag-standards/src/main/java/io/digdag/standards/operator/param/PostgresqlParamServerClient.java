@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import io.digdag.spi.ParamServerClient;
+import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
 import io.digdag.spi.ValueType;
 import org.skife.jdbi.v2.Handle;

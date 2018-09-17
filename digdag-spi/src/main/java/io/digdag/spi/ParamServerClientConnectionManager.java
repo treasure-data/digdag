@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.param;
+package io.digdag.spi;
 
 public interface ParamServerClientConnectionManager
 {

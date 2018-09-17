@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.param;
 
+import io.digdag.spi.ParamServerClientConnection;
 import redis.clients.jedis.Jedis;
 
 public class RedisServerClientConnection implements ParamServerClientConnection<Jedis>

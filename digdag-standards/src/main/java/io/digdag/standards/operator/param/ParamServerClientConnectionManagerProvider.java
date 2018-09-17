@@ -3,6 +3,7 @@ package io.digdag.standards.operator.param;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.digdag.client.config.Config;
+import io.digdag.spi.ParamServerClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

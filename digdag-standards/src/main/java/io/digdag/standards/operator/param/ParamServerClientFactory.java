@@ -1,6 +1,8 @@
 package io.digdag.standards.operator.param;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digdag.spi.ParamServerClient;
+import io.digdag.spi.ParamServerClientConnection;
 
 public class ParamServerClientFactory
 {

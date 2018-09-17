@@ -1,7 +1,6 @@
-package io.digdag.standards.operator.param;
+package io.digdag.spi;
 
 import com.google.common.base.Optional;
-import io.digdag.spi.Record;
 
 import java.util.function.Consumer;
 
