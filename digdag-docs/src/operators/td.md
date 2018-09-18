@@ -209,7 +209,6 @@
 ## Output parameters
 
 * **td.last_job_id**
-* **td.last_job.id**
 
   The job id this task executed.
 
@@ -227,14 +226,4 @@
 
   ```
   {"path":"/index.html","count":1}
-  ```
-
-* **td.last_job.num_records**
-
-  The number of records of this job output.
- 
-  Examples:
-  
-  ```
-  10
   ```

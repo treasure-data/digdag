@@ -126,7 +126,6 @@ NOTE: We're limiting export capability to only us-east region S3 bucket. In gene
 ## Output parameters
 
 * **td.last_job_id**
-* **td.last_job.id**
 
   The job id this task executed.
 
@@ -134,14 +133,4 @@ NOTE: We're limiting export capability to only us-east region S3 bucket. In gene
 
   ```
   52036074
-  ```
-
-* **td.last_job.num_records**
-
-  The number of records of this job output.
- 
-  Examples:
-  
-  ```
-  10
   ```
