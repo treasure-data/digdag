@@ -89,6 +89,10 @@
   empty_databases: [my_database1, my_database2]
   ```
 
+.. note::
+
+   Database permissions for the restricted users are not inherited. You need to grant permission again after ran `empty_databases`.
+
 * **drop_databases**: [ARRAY OF NAMES]
 
   Drop databases if exists.
