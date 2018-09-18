@@ -12,15 +12,11 @@ public class Secrets
 
     static final String TD_SECRETS_ENABLED_PROP_KEY = "io.digdag.standards.td.secrets.enabled";
 
-    static final String TD_API_ENDPOINT;
-
     static {
         // Do not pick up apikey from ~/.td/td.conf during local test runs
         System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "false");
 
         TD_API_KEY = System.getenv().getOrDefault("TD_API_KEY", "");
-
-        TD_API_ENDPOINT = System.getenv().getOrDefault("TD_API_ENDPOINT", "api.treasuredata.com");
     }
 
     static final byte[] ENCRYPTION_KEY_BYTES = new byte[128 / 8];
