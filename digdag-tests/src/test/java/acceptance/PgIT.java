@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +34,6 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
@@ -46,6 +46,7 @@ public class PgIT
     private static final String PG_PROPERTIES = System.getenv("DIGDAG_TEST_POSTGRESQL");
     private static final String PG_IT_CONFIG = System.getenv("PG_IT_CONFIG");
     private static final String RESTRICTED_USER = "not_admin";
+    private static final String RESTRICTED_USER_PASSWORD = "not_admin_password";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
     private static final String DATA_SECHEMA = "data_schema";
@@ -58,8 +59,12 @@ public class PgIT
     private String host;
     private String user;
     private String database;
+    private String password;
     private String tempDatabase;
     private String dataSchemaName;
+    private Path configFile;
+    private Path configFileWithPasswordOverride;
+    private Path configFileWithRestrictedUser;
 
     private Path root()
     {
@@ -84,6 +89,7 @@ public class PgIT
 
             host = (String) props.get("host");
             user = (String) props.get("user");
+            password = (String) props.get("password");
             database = (String) props.get("database");
         }
         else {
@@ -91,9 +97,22 @@ public class PgIT
             Config config = Config.deserializeFromJackson(objectMapper, objectMapper.readTree(PG_IT_CONFIG));
             host = config.get("host", String.class);
             user = config.get("user", String.class);
+            password = config.get("password", String.class);
             database = config.get("database", String.class);
-
         }
+
+        configFile = folder.newFile().toPath();
+        Files.write(configFile, Arrays.asList("secrets.pg.password= " + password));
+
+        configFileWithPasswordOverride = folder.newFile().toPath();
+        Files.write(configFileWithPasswordOverride,
+                Arrays.asList(
+                        "secrets.pg.password= " + UUID.randomUUID().toString(),
+                        "secrets.pg.another_password= " + password));
+
+        configFileWithRestrictedUser = folder.newFile().toPath();
+        Files.write(configFileWithRestrictedUser, Arrays.asList("secrets.pg.password= " + RESTRICTED_USER_PASSWORD));
+
         tempDatabase = "pgoptest_" + UUID.randomUUID().toString().replace('-', '_');
 
         createTempDatabase();
@@ -152,16 +171,22 @@ public class PgIT
         }
     }
 
-    @Test
-    public void selectAndDownload()
-            throws Exception
+    private void testSelectAndDownload(String workflowFilePath, Path configFilePath)
+            throws IOException
     {
-        copyResource("acceptance/pg/select_download.dig", root().resolve("pg.dig"));
+        copyResource(workflowFilePath, root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
         setupSourceTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFilePath.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
@@ -177,6 +202,22 @@ public class PgIT
     }
 
     @Test
+    public void selectAndDownload()
+            throws Exception
+    {
+        testSelectAndDownload("acceptance/pg/select_download.dig", configFile);
+    }
+
+    @Test
+    public void selectAndDownloadWithPasswordOverride()
+            throws Exception
+    {
+        testSelectAndDownload(
+                "acceptance/pg/select_download_with_password_override.dig",
+                configFileWithPasswordOverride);
+    }
+
+    @Test
     public void selectAndDownloadWithNullValues()
             throws Exception
     {
@@ -185,7 +226,14 @@ public class PgIT
 
         setupSourceTable(true);
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
@@ -212,8 +260,11 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -241,8 +292,11 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -268,9 +322,12 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-X", "config.pg.max_store_last_results_rows=2",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status, Optional.of("The number of result rows exceeded the limit"));
     }
@@ -287,9 +344,12 @@ public class PgIT
         CommandStatus status = TestUtils.main(
                 "run", "-o", root().toString(),
                 "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "outfile=out",
                 "-X", "config.jdbc.max_store_last_results_value_size=2",
+                "-c", configFile.toString(),
                 "pg.dig");
         assertCommandStatus(status, Optional.of("The size of result value exceeded the limit"));
     }
@@ -304,7 +364,14 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
@@ -324,7 +391,14 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + user,
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFile.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
@@ -352,10 +426,12 @@ public class PgIT
         setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + RESTRICTED_USER,
                 "-p", "pg_database=" + tempDatabase,
-                "-p", "user_in_config=" + RESTRICTED_USER,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-c", configFileWithRestrictedUser.toString(),
                 "pg.dig");
         assertCommandStatus(status);
 
@@ -377,7 +453,16 @@ public class PgIT
         setupSourceTable();
         setupDestTable();
 
-        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + tempDatabase, "pg.dig");
+        // With "strict_transaction: false", `pg` operator can work
+        // even if the user can't create a new status table
+        CommandStatus status = TestUtils.main(
+                "run", "-o", root().toString(),
+                "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + RESTRICTED_USER,
+                "-p", "pg_database=" + tempDatabase,
+                "-c", configFileWithRestrictedUser.toString(),
+                "pg.dig");
         assertCommandStatus(status);
 
         assertTableContents(DEST_TABLE, Arrays.asList(
@@ -421,7 +506,7 @@ public class PgIT
 
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             try {
-                conn.executeUpdate("CREATE ROLE " + RESTRICTED_USER);
+                conn.executeUpdate("CREATE ROLE " + RESTRICTED_USER + " WITH PASSWORD '" + RESTRICTED_USER_PASSWORD + "'");
             }
             catch (DatabaseException e) {
                 // 42710: duplicate_object
@@ -484,6 +569,7 @@ public class PgIT
         return key -> Optional.fromNullable(ImmutableMap.of(
                 "host", host,
                 "user", user,
+                "password", password,
                 "database", tempDatabase
         ).get(key));
     }
@@ -493,6 +579,7 @@ public class PgIT
         return key -> Optional.fromNullable(ImmutableMap.of(
                 "host", host,
                 "user", user,
+                "password", password,
                 "database", database
         ).get(key));
     }

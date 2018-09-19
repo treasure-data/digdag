@@ -1,6 +1,7 @@
-package io.digdag.standards.operator.pg;
+package io.digdag.standards.operator.redshift;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import io.digdag.spi.SecretNotFoundException;
@@ -16,37 +17,39 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-public class PgConnectionConfigTest
+public class RedshiftConnectionConfigTest
 {
     private final JdbcOpTestHelper jdbcOpTestHelper = new JdbcOpTestHelper();
 
-    private PgConnectionConfig connConfigWithDefaultValue;
-    private PgConnectionConfig connConfigWithCustomValue;
-    private PgConnectionConfig connConfigWithDefaultValueFromSecrets;
-    private PgConnectionConfig connConfigWithCustomValueFromSecrets;
-    private PgConnectionConfig connConfigWithOverriddenPassword;
+    private RedshiftConnectionConfig connConfigWithDefaultValue;
+    private RedshiftConnectionConfig connConfigWithCustomValue;
+    private RedshiftConnectionConfig connConfigWithDefaultValueFromSecrets;
+    private RedshiftConnectionConfig connConfigWithCustomValueFromSecrets;
+    private RedshiftConnectionConfig connConfigWithOverriddenPassword;
 
     @Before
     public void setUp()
             throws IOException
     {
-        // This map contains only minimum custom values to test default values
-        Map<String, String> defaultConfigValues = ImmutableMap.of(
-                "host", "foobar0.org",
-                "user", "user0",
-                "database", "database0"
-        );
+        {
+            // This map contains only minimum custom values to test default values
+            Map<String, String> defaultConfigValues = ImmutableMap.of(
+                    "host", "foobar0.org",
+                    "user", "user0",
+                    "database", "database0"
+            );
 
-        this.connConfigWithDefaultValue = PgConnectionConfig.configure(
-                key -> Optional.absent(), jdbcOpTestHelper.createConfig(defaultConfigValues)
-        );
+            this.connConfigWithDefaultValue = RedshiftConnectionConfig.configure(
+                    key -> Optional.absent(), jdbcOpTestHelper.createConfig(defaultConfigValues)
+            );
 
-        // This map contains values that are all "ignore" so that we can detect if this value is used unexpectedly
-        Map<String, String> ignoredDefaultConfigValues = Maps.transformValues(defaultConfigValues, key -> "ignore");
+            // This map contains values that are all "ignore" so that we can detect if this value is used unexpectedly
+            Map<String, String> ignoredDefaultConfigValues = Maps.transformValues(defaultConfigValues, key -> "ignore");
 
-        this.connConfigWithDefaultValueFromSecrets = PgConnectionConfig.configure(
-                key -> Optional.fromNullable(defaultConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredDefaultConfigValues)
-        );
+            this.connConfigWithDefaultValueFromSecrets = RedshiftConnectionConfig.configure(
+                    key -> Optional.fromNullable(defaultConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredDefaultConfigValues)
+            );
+        }
 
         // This map contains whole custom values to test if custom values are used expectedly
         Map<String, String> customConfigValues = ImmutableMap.<String, String>builder().
@@ -60,31 +63,38 @@ public class PgConnectionConfigTest
                 put("socket_timeout", "12 m").
                 put("schema", "myschema").build();
 
-        this.connConfigWithCustomValue = PgConnectionConfig.configure(
-                key -> key.equals("password") ? Optional.of("password1") : Optional.absent(), jdbcOpTestHelper.createConfig(customConfigValues)
-        );
+        {
+            this.connConfigWithCustomValue = RedshiftConnectionConfig.configure(
+                    key -> key.equals("password") ? Optional.of("password1") : Optional.absent(), jdbcOpTestHelper.createConfig(customConfigValues)
+            );
 
-        // This map contains values that are all "ignore" so that we can detect if this value is used unexpectedly
-        Map<String, String> ignoredCustomConfigValues = Maps.transformValues(customConfigValues, key -> "ignore");
+            // This map contains values that are all "ignore" so that we can detect if this value is used unexpectedly
+            ImmutableList<String> itemsFromOnlyConfig = ImmutableList.of("connect_timeout", "socket_timeout");
+            Map<String, String> ignoredCustomConfigValues =
+                    Maps.transformEntries(customConfigValues,
+                            (key, value) -> itemsFromOnlyConfig.contains(key) ? value : "ignore");
 
-        this.connConfigWithCustomValueFromSecrets = PgConnectionConfig.configure(
-                key -> Optional.fromNullable(customConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredCustomConfigValues)
-        );
+            this.connConfigWithCustomValueFromSecrets = RedshiftConnectionConfig.configure(
+                    key -> Optional.fromNullable(customConfigValues.get(key)), jdbcOpTestHelper.createConfig(ignoredCustomConfigValues)
+            );
+        }
 
-        Map<String, String> configValuesWithOverriddenPassword = ImmutableMap.<String, String>builder()
-                .putAll(customConfigValues)
-                .put("another_db_password", "password2")
-                .build();
+        {
+            Map<String, String> configValuesWithOverriddenPassword = ImmutableMap.<String, String>builder()
+                    .putAll(customConfigValues)
+                    .put("another_db_password", "password2")
+                    .build();
 
-        Map<String, String> configValuesUsingOverriddenPassword = ImmutableMap.<String, String>builder()
-                .putAll(customConfigValues)
-                .put("password_override", "another_db_password")
-                .build();
+            Map<String, String> configValuesUsingOverriddenPassword = ImmutableMap.<String, String>builder()
+                    .putAll(customConfigValues)
+                    .put("password_override", "another_db_password")
+                    .build();
 
-        this.connConfigWithOverriddenPassword = PgConnectionConfig.configure(
-                key -> Optional.fromNullable(configValuesWithOverriddenPassword.get(key)),
-                jdbcOpTestHelper.createConfig(configValuesUsingOverriddenPassword)
-        );
+            this.connConfigWithOverriddenPassword = RedshiftConnectionConfig.configure(
+                    key -> Optional.fromNullable(configValuesWithOverriddenPassword.get(key)),
+                    jdbcOpTestHelper.createConfig(configValuesUsingOverriddenPassword)
+            );
+        }
     }
 
     @Test
@@ -110,8 +120,8 @@ public class PgConnectionConfigTest
     @Test
     public void url()
     {
-        assertThat(connConfigWithDefaultValue.url(), is("jdbc:postgresql://foobar0.org:5432/database0"));
-        assertThat(connConfigWithDefaultValueFromSecrets.url(), is("jdbc:postgresql://foobar0.org:5432/database0"));
+        assertThat(connConfigWithDefaultValue.url(), is("jdbc:postgresql://foobar0.org:5439/database0"));
+        assertThat(connConfigWithDefaultValueFromSecrets.url(), is("jdbc:postgresql://foobar0.org:5439/database0"));
         assertThat(connConfigWithCustomValue.url(), is("jdbc:postgresql://foobar1.org:6543/database1"));
         assertThat(connConfigWithCustomValueFromSecrets.url(), is("jdbc:postgresql://foobar1.org:6543/database1"));
     }
@@ -170,7 +180,7 @@ public class PgConnectionConfigTest
                 put("password_override", "missing_db_password").
                 put("database", "database1").build();
 
-        PgConnectionConfig.configure(
+        RedshiftConnectionConfig.configure(
                 key -> key.equals("password") ? Optional.of("password1") : Optional.absent(),
                 jdbcOpTestHelper.createConfig(configValues)
         );

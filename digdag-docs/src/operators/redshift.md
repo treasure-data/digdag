@@ -23,9 +23,7 @@ _export:
 +insert_to_summary_table:
   redshift>: queries/join_log_with_master.sql
   insert_into: summary_table
-```
 
-```
 +select_members:
   redshift>: select_members.sql
   store_last_results: first
@@ -43,7 +41,7 @@ _export:
 
 * **aws.redshift.password**: NAME
 
-  Optional user password to use when connecting to the Redshift database.
+  Optional user password to use when connecting to the Redshift database. If you want to use multiple credentials, use `password_override` option.
 
 ## Options
 
@@ -219,3 +217,14 @@ _export:
   ```
   socket_timeout: 1800s
   ```
+
+* **password_override**: NAME
+
+  Secret key name that has a non-default database password as its value. This would be useful whey you want to use multiple database credentials. If it's set, Digdag looks up secrets with this value as a secret key name. If not, the default secret key `redshift.password` is used.
+
+  Examples (let's say you've already added a secret key value `redshift.another_password=password1234`):
+
+  ```
+  password_override: another_password
+  ```
+

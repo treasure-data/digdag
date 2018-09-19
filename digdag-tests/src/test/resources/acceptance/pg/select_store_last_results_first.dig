@@ -2,9 +2,9 @@ timezone: UTC
 
 +run:
   pg>: select_table.sql
-  host: localhost
+  host: ${pg_host}
   database: ${pg_database}
-  user: digdag_test
+  user: ${pg_user}
   store_last_results: first
 
 +process:
