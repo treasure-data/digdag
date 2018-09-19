@@ -3,6 +3,7 @@ package io.digdag.standards.operator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.Maps;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -56,6 +57,13 @@ public class ShOperatorFactory
         return new ShOperator(context);
     }
 
+    @VisibleForTesting
+    static void runCodeForTesting(ShOperator operator, Config state)
+            throws IOException, InterruptedException
+    {
+        operator.runCode(state);
+    }
+
     class ShOperator
             extends BaseOperator
     {
@@ -70,8 +78,9 @@ public class ShOperatorFactory
         @Override
         public TaskResult runTask()
         {
+            final Config state = TaskState.of(request).params();
             try {
-                runCode();
+                runCode(state);
                 return TaskResult.empty(request);
             }
             catch (IOException | InterruptedException e) {
@@ -79,23 +88,22 @@ public class ShOperatorFactory
             }
         }
 
-        private void runCode()
+        private void runCode(final Config state)
                 throws IOException, InterruptedException
         {
-            Config params = request.getConfig()
+            final Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
-            final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath();
             final CommandContext commandContext = buildCommandContext(projectPath);
 
             final CommandStatus status;
-            if (!stateParams.has("commandStatus")) {
+            if (!state.has("commandStatus")) {
                 // Run the code since command state doesn't exist
                 status = runCommand(params, commandContext);
             }
             else {
                 // Check the status of the running command
-                final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
+                final ObjectNode previousStatusJson = state.get("commandStatus", ObjectNode.class);
                 status = exec.poll(commandContext, previousStatusJson);
             }
 
@@ -104,14 +112,14 @@ public class ShOperatorFactory
                 if (statusCode != 0) {
                     // Remove the polling state after fetching the result so that the result fetch can be retried
                     // without resubmitting the code.
-                    stateParams.remove("commandStatus");
+                    state.remove("commandStatus");
                     throw new RuntimeException("Command failed with code " + statusCode);
                 }
                 return;
             }
             else {
-                stateParams.set("commandStatus", status);
-                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
+                state.set("commandStatus", status);
+                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(state));
             }
         }
 
