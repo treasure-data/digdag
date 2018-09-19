@@ -42,15 +42,8 @@ public class OperatorTestingUtils
 
     public static <T extends OperatorFactory> T newOperatorFactory(Class<T> factoryClass)
     {
-        return newOperatorFactory(MockCommandExecutor.class, factoryClass);
-    }
-
-    public static <T extends OperatorFactory> T newOperatorFactory(
-            final Class<? extends CommandExecutor> executorClass,
-            final Class<T> factoryClass)
-    {
         Injector initInjector = Guice.createInjector((Module) (binder) -> {
-            binder.bind(CommandExecutor.class).to(executorClass).in(Scopes.SINGLETON);
+            binder.bind(CommandExecutor.class).to(MockCommandExecutor.class).in(Scopes.SINGLETON);
             binder.bind(CommandLogger.class).to(TaskContextCommandLogger.class).in(Scopes.SINGLETON);
             binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
             binder.bind(ConfigFactory.class).toInstance(ConfigUtils.configFactory);
