@@ -15,6 +15,7 @@ import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.MockNonBlockingCommandExecutor;
+import io.digdag.standards.operator.state.TaskState;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -22,11 +23,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -67,8 +71,20 @@ public class NonBlockingCommandOperatorTest
         this.tempPath = folder.getRoot().toPath();
     }
 
+    private TaskExecutionException runIteration(Supplier f)
+    {
+        try {
+            f.get();
+        }
+        catch (TaskExecutionException e) {
+            assertThat(e.getRetryInterval().isPresent(), is(true));
+            return e;
+        }
+        return null;
+    }
+
     @Test
-    public void testRunCommandWithOutputSuccessfully()
+    public void testRunWithOutputSuccessfully()
             throws Exception
     {
         final String configResource = "/io/digdag/standards/operator/py/basic.yml";
@@ -79,20 +95,14 @@ public class NonBlockingCommandOperatorTest
         final Config state0 = configFactory.create(); // empty state first
 
         // 1. run command
-        Config state1 = null;
+        final Config state1;
         {
-            try {
-                PyOperatorFactory.runCodeForTesting(operator, state0);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state1 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> PyOperatorFactory.runCodeForTesting(operator, state0));
+            state1 = e.getStateParams(configFactory).get();
         }
 
         // 2. poll command status and still wait its complete
-        Config state2 = null;
+        final Config state2;
         {
             final ObjectNode previousJson = state1.get("commandStatus", ObjectNode.class);
             final ObjectNode currentJson = (ObjectNode) previousJson.deepCopy()
@@ -101,14 +111,8 @@ public class NonBlockingCommandOperatorTest
                     ));
             state1.set("commandStatus", currentJson);
 
-            try {
-                PyOperatorFactory.runCodeForTesting(operator, state1);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state2 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> PyOperatorFactory.runCodeForTesting(operator, state1));
+            state2 = e.getStateParams(configFactory).get();
         }
 
         // 3. poll command status and completed.
@@ -121,7 +125,8 @@ public class NonBlockingCommandOperatorTest
                     ));
             state2.set("commandStatus", currentJson);
 
-            PyOperatorFactory.runCodeForTesting(operator, state2);
+            final TaskExecutionException e = runIteration(() -> PyOperatorFactory.runCodeForTesting(operator, state2));
+            assertNull(e);
         }
     }
 
@@ -137,20 +142,14 @@ public class NonBlockingCommandOperatorTest
         final Config state0 = configFactory.create(); // empty state first
 
         // 1. run command
-        Config state1 = null;
+        final Config state1;
         {
-            try {
-                PyOperatorFactory.runCodeForTesting(operator, state0);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state1 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> PyOperatorFactory.runCodeForTesting(operator, state0));
+            state1 = e.getStateParams(configFactory).get();
         }
 
         // 2. poll command status and still wait its complete
-        Config state2 = null;
+        final Config state2;
         {
             final ObjectNode previousJson = state1.get("commandStatus", ObjectNode.class);
             final ObjectNode currentJson = (ObjectNode) previousJson.deepCopy()
@@ -159,14 +158,8 @@ public class NonBlockingCommandOperatorTest
                     ));
             state1.set("commandStatus", currentJson);
 
-            try {
-                PyOperatorFactory.runCodeForTesting(operator, state1);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state2 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> PyOperatorFactory.runCodeForTesting(operator, state1));
+            state2 = e.getStateParams(configFactory).get();
         }
 
         // 3. poll command status and completed.
@@ -180,7 +173,7 @@ public class NonBlockingCommandOperatorTest
             state2.set("commandStatus", currentJson);
 
             try {
-                PyOperatorFactory.runCodeForTesting(operator, state2);
+                runIteration(() -> PyOperatorFactory.runCodeForTesting(operator, state2));
                 fail();
             }
             catch (Exception e) {
@@ -201,20 +194,14 @@ public class NonBlockingCommandOperatorTest
         final Config state0 = configFactory.create(); // empty state first
 
         // 1. run command
-        Config state1 = null;
+        final Config state1;
         {
-            try {
-                ShOperatorFactory.runCodeForTesting(operator, state0);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state1 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> ShOperatorFactory.runCodeForTesting(operator, state0));
+            state1 = e.getStateParams(configFactory).get();
         }
 
         // 2. poll command status and still wait its complete
-        Config state2 = null;
+        final Config state2;
         {
             final ObjectNode previousJson = state1.get("commandStatus", ObjectNode.class);
             final ObjectNode currentJson = (ObjectNode) previousJson.deepCopy()
@@ -223,14 +210,8 @@ public class NonBlockingCommandOperatorTest
                     ));
             state1.set("commandStatus", currentJson);
 
-            try {
-                ShOperatorFactory.runCodeForTesting(operator, state1);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state2 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> ShOperatorFactory.runCodeForTesting(operator, state1));
+            state2 = e.getStateParams(configFactory).get();
         }
 
         // 3. poll command status and completed.
@@ -243,7 +224,8 @@ public class NonBlockingCommandOperatorTest
                     ));
             state2.set("commandStatus", currentJson);
 
-            ShOperatorFactory.runCodeForTesting(operator, state2);
+            final TaskExecutionException e = runIteration(() -> ShOperatorFactory.runCodeForTesting(operator, state2));
+            assertNull(e);
         }
     }
 
@@ -259,20 +241,14 @@ public class NonBlockingCommandOperatorTest
         final Config state0 = configFactory.create(); // empty state first
 
         // 1. run command
-        Config state1 = null;
+        final Config state1;
         {
-            try {
-                ShOperatorFactory.runCodeForTesting(operator, state0);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state1 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> ShOperatorFactory.runCodeForTesting(operator, state0));
+            state1 = e.getStateParams(configFactory).get();
         }
 
         // 2. poll command status and still wait its complete
-        Config state2 = null;
+        final Config state2;
         {
             final ObjectNode previousJson = state1.get("commandStatus", ObjectNode.class);
             final ObjectNode currentJson = (ObjectNode) previousJson.deepCopy()
@@ -281,14 +257,8 @@ public class NonBlockingCommandOperatorTest
                     ));
             state1.set("commandStatus", currentJson);
 
-            try {
-                ShOperatorFactory.runCodeForTesting(operator, state1);
-                fail();
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval().isPresent(), is(true));
-                state2 = e.getStateParams(configFactory).get();
-            }
+            final TaskExecutionException e = runIteration(() -> ShOperatorFactory.runCodeForTesting(operator, state1));
+            state2 = e.getStateParams(configFactory).get();
         }
 
         // 3. poll command status and completed.
@@ -301,8 +271,9 @@ public class NonBlockingCommandOperatorTest
                     ));
             state2.set("commandStatus", currentJson);
 
+
             try {
-                ShOperatorFactory.runCodeForTesting(operator, state2);
+                runIteration(() -> ShOperatorFactory.runCodeForTesting(operator, state2));
                 fail();
             }
             catch (Exception e) {

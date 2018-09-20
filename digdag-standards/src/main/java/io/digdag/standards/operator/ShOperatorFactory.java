@@ -58,10 +58,15 @@ public class ShOperatorFactory
     }
 
     @VisibleForTesting
-    static void runCodeForTesting(ShOperator operator, Config state)
-            throws IOException, InterruptedException
+    static Void runCodeForTesting(ShOperator operator, Config state)
     {
-        operator.runCode(state);
+        try {
+            operator.runCode(state);
+            return null;
+        }
+        catch (IOException | InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
     }
 
     class ShOperator
