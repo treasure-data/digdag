@@ -50,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static acceptance.td.Secrets.ENCRYPTION_KEY;
+import static acceptance.td.Secrets.TD_API_ENDPOINT;
 import static acceptance.td.Secrets.TD_API_KEY;
 import static acceptance.td.Secrets.TD_SECRETS_ENABLED_PROP_KEY;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
@@ -111,6 +112,7 @@ public class TdIT
         env.put("TD_CONFIG_PATH", noTdConf);
 
         client = TDClient.newBuilder(false)
+                .setEndpoint(TD_API_ENDPOINT)
                 .setApiKey(TD_API_KEY)
                 .build();
         database = "tmp_" + UUID.randomUUID().toString().replace('-', '_');
@@ -172,6 +174,8 @@ public class TdIT
         assertWorkflowRunsSuccessfully();
         JsonNode result = objectMapper().readTree(outfile.toFile());
         assertThat(result.get("last_job_id").asInt(), is(not(0)));
+        assertThat(result.get("last_job").get("id").asInt(), is(not(0)));
+        assertThat(result.get("last_job").get("num_records").asInt(), is(1));
         assertThat(result.get("last_results").isObject(), is(true));
         assertThat(result.get("last_results").isEmpty(objectMapper().getSerializerProvider()), is(false));
         assertThat(result.get("last_results").get("a").asInt(), is(1));
@@ -186,6 +190,8 @@ public class TdIT
         assertWorkflowRunsSuccessfully();
         JsonNode result = objectMapper().readTree(outfile.toFile());
         assertThat(result.get("last_job_id").asInt(), is(not(0)));
+        assertThat(result.get("last_job").get("id").asInt(), is(not(0)));
+        assertThat(result.get("last_job").get("num_records").asInt(), is(0));
         assertThat(result.get("last_results").isObject(), is(true));
         assertThat(result.get("last_results").isEmpty(objectMapper().getSerializerProvider()), is(true));
     }
