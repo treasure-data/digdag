@@ -73,9 +73,13 @@ public class PyOperatorFactory
 
     @VisibleForTesting
     static Config runCodeForTesting(PyOperator operator, Config state)
-            throws IOException, InterruptedException
     {
-        return operator.runCode(state);
+        try {
+            return operator.runCode(state);
+        }
+        catch (IOException | InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
     }
 
     @Override
