@@ -3,6 +3,7 @@ package io.digdag.standards.operator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.Maps;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -70,13 +71,20 @@ public class PyOperatorFactory
         return "py";
     }
 
+    @VisibleForTesting
+    static Config runCodeForTesting(PyOperator operator, Config state)
+            throws IOException, InterruptedException
+    {
+        return operator.runCode(state);
+    }
+
     @Override
     public Operator newOperator(OperatorContext context)
     {
         return new PyOperator(context);
     }
 
-    private class PyOperator
+    class PyOperator
             extends BaseOperator
     {
         // TODO extract as config params.
@@ -92,7 +100,7 @@ public class PyOperatorFactory
         {
             final Config data;
             try {
-                data = runCode();
+                data = runCode(TaskState.of(request).params());
             }
             catch (IOException | InterruptedException e) {
                 throw Throwables.propagate(e);
@@ -105,23 +113,22 @@ public class PyOperatorFactory
                 .build();
         }
 
-        private Config runCode()
+        private Config runCode(final Config state)
                 throws IOException, InterruptedException
         {
             final Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"));
-            final Config stateParams = TaskState.of(request).params();
             final Path projectPath = workspace.getProjectPath(); // absolute
             final CommandContext commandContext = buildCommandContext(projectPath);
 
             final CommandStatus status;
-            if (!stateParams.has("commandStatus")) {
+            if (!state.has("commandStatus")) {
                 // Run the code since command state doesn't exist
                 status = runCommand(params, commandContext);
             }
             else {
                 // Check the status of the running command
-                final ObjectNode previousStatusJson = stateParams.get("commandStatus", ObjectNode.class);
+                final ObjectNode previousStatusJson = state.get("commandStatus", ObjectNode.class);
                 status = exec.poll(commandContext, previousStatusJson);
             }
 
@@ -130,7 +137,7 @@ public class PyOperatorFactory
                 if (statusCode != 0) {
                     // Remove the polling state after fetching the result so that the result fetch can be retried
                     // without resubmitting the code.
-                    stateParams.remove("commandStatus");
+                    state.remove("commandStatus");
                     throw new RuntimeException("Python command failed with code " + statusCode);
                 }
 
@@ -140,8 +147,8 @@ public class PyOperatorFactory
                 }
             }
             else {
-                stateParams.set("commandStatus", status);
-                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(stateParams));
+                state.set("commandStatus", status);
+                throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(state));
             }
         }
 
