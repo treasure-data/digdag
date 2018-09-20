@@ -2,6 +2,8 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.treasuredata.client.TDClientException;
+import com.treasuredata.client.TDClientHttpException;
+import com.treasuredata.client.model.TDJob;
 import io.digdag.client.config.Config;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
@@ -10,8 +12,13 @@ import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.RetryExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
 
 abstract class BaseTdJobOperator
         extends BaseOperator
@@ -25,6 +32,7 @@ abstract class BaseTdJobOperator
     protected final DurationInterval pollInterval;
     protected final DurationInterval retryInterval;
     protected final SystemDefaultConfig systemDefaultConfig;
+    private static Logger logger = LoggerFactory.getLogger(BaseTdJobOperator.class);
 
     BaseTdJobOperator(OperatorContext context, Map<String, String> env, Config systemConfig)
     {
@@ -58,10 +66,22 @@ abstract class BaseTdJobOperator
             // Get the job results
             TaskResult taskResult = processJobResult(op, job);
 
+            long numRecords = 0L;
+            try {
+                // job.getJobInfo() may throw error after having retried 3 times
+                numRecords = job.getJobInfo().getNumRecords();
+            }
+            catch (Exception ex) {
+                logger.warn("Setting num_records failed. Ignoring this error.", ex);
+            }
+
             // Set last_job_id param
             taskResult.getStoreParams()
                     .getNestedOrSetEmpty("td")
-                    .set("last_job_id", job.getJobId());
+                    .set("last_job_id", job.getJobId()) // for compatibility with old style
+                    .getNestedOrSetEmpty("last_job")
+                    .set("id", job.getJobId())
+                    .set("num_records", numRecords);
 
             return taskResult;
         }
