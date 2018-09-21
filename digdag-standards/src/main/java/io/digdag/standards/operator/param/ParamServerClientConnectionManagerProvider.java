@@ -3,6 +3,7 @@ package io.digdag.standards.operator.param;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.spi.ParamServerClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +31,11 @@ public class ParamServerClientConnectionManagerProvider
             case "redis":
                 client = new RedisServerClientConnectionManager(systemConfig);
                 break;
-            default:
+            case "":
                 client = new DummyServerClientConnectionManager();
+                break;
+            default:
+                throw new ConfigException("Unsupported param_server.database.type : " + databaseType);
         }
     }
 
