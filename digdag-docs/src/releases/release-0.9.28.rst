@@ -24,7 +24,7 @@ General Changes
 
 Release Date
 ------------
-2018-XX-XX
+2018-09-21
 
 Contributors
 ------------
