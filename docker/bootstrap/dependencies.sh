@@ -16,6 +16,7 @@ apt-get -y install docker.io
 apt-get -y install docker-compose
 
 # Postgres
+sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 7FCC7D46ACCC4CF8 # To fix failure at add-apt-repository
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
 wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 apt-get -y update
@@ -31,6 +32,10 @@ apt-get -y install python python-pip python-dev
 pip install pip --upgrade && hash -r pip # rehashed https://github.com/pypa/pip/issues/5240
 # Using sphinx==1.4.9 because sphinx_rtd_theme with sphinx 1.5.x has a problem with search and its fix is not released: https://github.com/snide/sphinx_rtd_theme/pull/346
 pip install sphinx==1.4.9 recommonmark sphinx_rtd_theme
+
+# Redis
+apt-get -y install redis-server
+redis-server & # /etc/init.d/redis-server start doesn't work well
 
 # Minio (S3)
 wget -O /usr/local/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
