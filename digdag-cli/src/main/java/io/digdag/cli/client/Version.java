@@ -13,10 +13,16 @@ public class Version extends ClientCommand
     public void mainWithClientException()
             throws Exception
     {
-        DigdagClient client = buildClient(false);
-        Map<String, Object> remoteVersion = client.getVersion();
         ln("Client version: " + version);
-        ln("Server version: " + remoteVersion.getOrDefault("version", ""));
+        try {
+            DigdagClient client = buildClient(false);
+            Map<String, Object> remoteVersion = client.getVersion();
+            ln("Server version: " + remoteVersion.getOrDefault("version", ""));
+        }
+        catch (Exception e) {
+            ln("An error happened during getting Server version.");
+            throw e;
+        }
     }
 
     @Override

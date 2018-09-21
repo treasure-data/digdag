@@ -110,7 +110,7 @@ subprojects {
     ext {
         jacksonVersion = "2.8.11"
         awsJavaSdkVersion = "1.11.63"
-        guavaVersion = "21.0"
+        guavaVersion = "19.0"
     }
 
     tasks.withType(JavaCompile) {

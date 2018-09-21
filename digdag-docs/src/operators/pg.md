@@ -23,9 +23,7 @@ _export:
 +insert_to_summary_table:
   pg>: queries/join_log_with_master.sql
   insert_into: summary_table
-```
 
-```
 +select_members:
   pg>: select_members.sql
   store_last_results: first
@@ -42,7 +40,8 @@ _export:
 ## Secrets
 
 * **pg.password**: NAME
-  Optional user password to use when connecting to the postgres database.
+
+  Optional user password to use when connecting to the Postgres database. If you want to use multiple credentials, use `password_override` option.
 
 ## Options
 
@@ -197,4 +196,14 @@ _export:
 
   ```
   status_table: customized_status_table
+  ```
+
+* **password_override**: NAME
+
+  Secret key name that has a non-default database password as its value. This would be useful whey you want to use multiple database credentials. If it's set, Digdag looks up secrets with this value as a secret key name. If not, the default secret key `pg.password` is used.
+
+  Examples (let's say you've already added a secret key value `pg.another_password=password1234`):
+
+  ```
+  password_override: another_password
   ```

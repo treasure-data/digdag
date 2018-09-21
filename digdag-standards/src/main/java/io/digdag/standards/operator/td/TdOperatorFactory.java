@@ -98,7 +98,8 @@ public class TdOperatorFactory
         private final Optional<String> poolName;
         private final Optional<String> downloadFile;
         private final Optional<String> resultConnection;
-        private final Optional<Config> resultSettings;
+        private final Optional<UserSecretTemplate> resultSettings;
+
         private final boolean storeLastResults;
         private final boolean preview;
 
@@ -133,7 +134,7 @@ public class TdOperatorFactory
 
             this.resultConnection = params.getOptional("result_connection", String.class);
             this.resultSettings = params.has("result_settings") ?
-                Optional.of(params.parseNestedOrGetEmpty("result_settings")) :
+                Optional.of(params.parseNestedOrGetEmpty("result_settings")).transform(Config::toString).transform(UserSecretTemplate::of) :
                 Optional.absent();
 
             if (resultSettings.isPresent() && !resultConnection.isPresent()) {
@@ -222,7 +223,7 @@ public class TdOperatorFactory
                     .setPoolName(poolName.orNull())
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .setResultConnectionId(resultConnection.transform(name -> getResultConnectionId(name, op)))
-                    .setResultConnectionSettings(resultSettings.transform(Config::toString))
+                    .setResultConnectionSettings(resultSettings.transform(t -> t.format(context.getSecrets())))
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
 

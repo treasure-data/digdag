@@ -15,7 +15,15 @@ dependencies {
     compile 'com.sun.mail:javax.mail:1.5.6'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
 
     // td
-    compile 'com.treasuredata.client:td-client:0.8.5'
+    compile ('com.treasuredata.client:td-client:0.8.6') {
+        // digdag-tests depends on okhtttp3 3.4.1,
+        // but td-client:0.8.6 depends on okhttp3 3.9.0 for now.
+        // To avoid affecting to digdat-tests, I excluded okhttp3 here.
+        exclude group: 'com.squareup.okhttp3', module: 'okhttp'
+        exclude group: 'com.squareup.okhttp3', module: 'okhttp-urlconnection'
+        // digdag depends on guava 0.19.0
+        exclude group: 'com.google.guava', module: 'guava'
+    }
     compile 'org.msgpack:msgpack-core:0.8.11'
     compile 'org.yaml:snakeyaml:1.17'
 
@@ -47,6 +55,8 @@ dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
 
     // Newer version of jetty-client with some important bugfixes.
+    // jetty-client is used by td-client-java, and ideally we would bump the version there but
+    // td-client-java still targets JDK 7 and jetty-client 9.3.x targets JDK 8.
     // https://github.com/treasure-data/td-client-java/pull/68
     // https://bugs.eclipse.org/bugs/show_bug.cgi?id=475546
     // https://github.com/eclipse/jetty.project/issues/416

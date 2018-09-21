@@ -351,7 +351,7 @@ In the config file, following parameters are available
 * archive.s3.credentials.access-key-id (string. default: instance profile)
 * archive.s3.credentials.secret-access-key (string. default: instance profile)
 * archive.s3.path-style-access (boolean. default: false)
-* log-server.type (type of log storage, "local" or "s3". default: "local")
+* log-server.type (type of log storage, "local" , "null", or "s3". default: "null". This parameter will be overwritten with "local" if ``-O, --task-log DIR`` is set.)
 * log-server.s3.endpoint (string, default: "s3.amazonaws.com")
 * log-server.s3.bucket (string)
 * log-server.s3.path (string)
