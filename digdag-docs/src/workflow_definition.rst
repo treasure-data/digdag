@@ -274,11 +274,22 @@ Tasks also support ``_retry: N`` parameter to retry the specific task. Note that
 
 You can set interval to _retry as follows.
 
-``_retry: N I constant|exponential``
+.. code-block:: yaml
 
-``I`` is interval time(seconds). Additionaly you can choose interval way ``constant`` or ``exponential``.
-If you set ``constant`` (default) , interval time is always ``I``. If you set ``exponential``, interval time increases with each retry as ``I x 2^(retry_count-1)``.
-For example, with ``_retry: 3 10 exponential``, first retry interval is 10, second is 20, third is 40.
+    +prepare:
+      _retry:
+        limit: 3
+        interval: 10
+        interval_type: exponential
+
+
+
+``limit`` is number of retry.
+``interval`` is interval time (seconds).
+Additionaly you can choose ``interval_type`` as ``constant`` or ``exponential``.
+If you set ``constant`` (default) , interval time is constant as set by ``limit``.
+If you set ``exponential``, interval time increases with each retry as ``interval x 2^(retry_count-1)``.
+In the above example, first retry interval is 10 secs, second is 20 secs, third is 40 secs.
 
 
 Sending error notification

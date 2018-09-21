@@ -1,5 +1,6 @@
 package io.digdag.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 //import io.digdag.core.workflow.TaskConfig;
@@ -38,31 +39,36 @@ public class RetryControl
         this.stateParams = stateParams;
         this.retryCount = stateParams.get("retry_count", int.class, 0);
 
+        final JsonNode retry = config.getInternalObjectNode().get("_retry");
         try {
-            String retryStr = config.get("_retry", String.class, "");
-            String[] params = {};
-            if(! retryStr.equals("")) params = retryStr.split("\\s+", 3);
-
-            if (params.length == 0) {
+            if (retry == null) { // No _retry description. default.
                 this.retryLimit = enableByDefault ? 3 : 0;
-            } else {
-                this.retryLimit = Integer.parseInt(params[0]);
-            }
-            if (params.length >= 2) {
-                this.retryInterval = Integer.parseInt(params[1]);
-            } else {
                 this.retryInterval = 0;
-            }
-            if (params.length >= 3) {
-                this.retryIntervalType = RetryIntervalType.find(params[2]);
-            } else {
                 this.retryIntervalType = RetryIntervalType.CONSTATNT;
+            } else if (retry.isNumber()) {  // Only limit is set
+                this.retryLimit = retry.intValue();
+                this.retryInterval = 0;
+                this.retryIntervalType = RetryIntervalType.CONSTATNT;
+            } else if (retry.isObject()) { // json format
+                this.retryLimit = retry.get("limit").intValue();
+                if(retry.has("interval")){
+                    this.retryInterval = retry.get("interval").intValue();
+                } else {
+                    this.retryInterval = 0;
+                }
+                if(retry.has("interval_type")){
+                    this.retryIntervalType = RetryIntervalType.find(retry.get("interval_type").textValue());
+                } else {
+                    this.retryIntervalType = RetryIntervalType.CONSTATNT;
+                }
+            } else { // Unknown format
+                throw new ConfigException("Invalid _retry format");
             }
         }
-        catch(NumberFormatException nfe){
+        catch(NumberFormatException nfe) {
             throw new ConfigException(nfe);
         }
-        catch(ConfigException ce){
+        catch(ConfigException ce) {
             throw ce;
         }
     }
