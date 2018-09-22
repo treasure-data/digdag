@@ -35,7 +35,6 @@ pip install sphinx==1.4.9 recommonmark sphinx_rtd_theme
 
 # Redis
 apt-get -y install redis-server
-redis-server & # /etc/init.d/redis-server start doesn't work well
 
 # Minio (S3)
 wget -O /usr/local/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
