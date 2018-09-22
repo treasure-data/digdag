@@ -10,33 +10,18 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
+import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class TaskDependenciesTest {
-
-    private static DigdagEmbed embed;
-
-    @BeforeClass
-    public static void createDigdagEmbed()
-            throws Exception {
-        embed = WorkflowTestingUtils.setupEmbed();
-    }
-
-    @AfterClass
-    public static void destroyDigdagEmbed()
-            throws Exception {
-        embed.close();
-    }
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -44,6 +29,7 @@ public class TaskDependenciesTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
+    private DigdagEmbed embed;
     private LocalSite localSite;
     private Path projectPath;
     private TransactionManager tm;
@@ -51,9 +37,16 @@ public class TaskDependenciesTest {
     @Before
     public void setUp()
             throws Exception {
+        this.embed = setupEmbed();
         this.localSite = embed.getLocalSite();
         this.tm = embed.getTransactionManager();
         this.projectPath = folder.newFolder().toPath();
+    }
+
+    @After
+    public void destroy()
+            throws Exception {
+        embed.close();
     }
 
     @Test

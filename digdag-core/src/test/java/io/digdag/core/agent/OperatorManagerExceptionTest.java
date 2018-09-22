@@ -7,16 +7,13 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.workflow.WorkflowTestingUtils;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.file.Paths;
@@ -24,6 +21,7 @@ import java.util.Map;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
+import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -91,33 +89,26 @@ public class OperatorManagerExceptionTest
         .put("wrapped_custom_message", new TaskExecutionException("custom!!", new RuntimeException("foo")))
         .build();
 
-    private static DigdagEmbed embed;
-
+    private DigdagEmbed embed;
     private OperatorManager operatorManager;
-
-    @BeforeClass
-    public static void shutdown()
-            throws Exception
-    {
-        embed = WorkflowTestingUtils.setupEmbed((bootstrap) -> bootstrap.addModules((binder) -> {
-                    Multibinder.newSetBinder(binder, OperatorFactory.class)
-                            .addBinding().to(CustomErrorOperatorFactory.class).in(Scopes.SINGLETON);
-                })
-        );
-    }
-
-    @AfterClass
-    public static void destroyDigdagEmbed()
-            throws Exception
-    {
-        embed.close();
-    }
 
     @Before
     public void setUp()
             throws Exception
     {
+        this.embed = setupEmbed((bootstrap) -> bootstrap.addModules((binder) -> {
+                    Multibinder.newSetBinder(binder, OperatorFactory.class)
+                        .addBinding().to(CustomErrorOperatorFactory.class).in(Scopes.SINGLETON);
+                })
+            );
         this.operatorManager = embed.getInjector().getInstance(OperatorManager.class);
+    }
+
+    @After
+    public void shutdown()
+            throws Exception
+    {
+        embed.close();
     }
 
     @Test
