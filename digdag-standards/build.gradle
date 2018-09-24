@@ -16,6 +16,11 @@ dependencies {
 
     // td
     compile ('com.treasuredata.client:td-client:0.8.6') {
+        // digdag-tests depends on okhtttp3 3.11.0,
+        // but td-client:0.8.6 depends on okhttp3 3.9.0 for now.
+        // To avoid affecting to digdat-tests, I excluded okhttp3 here.
+        exclude group: 'com.squareup.okhttp3', module: 'okhttp'
+        exclude group: 'com.squareup.okhttp3', module: 'okhttp-urlconnection'
         // digdag depends on guava 0.19.0
         exclude group: 'com.google.guava', module: 'guava'
     }
