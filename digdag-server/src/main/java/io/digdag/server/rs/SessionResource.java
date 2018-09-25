@@ -38,6 +38,7 @@ public class SessionResource
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final TransactionManager tm;
+    private static final int MAX_SESSION_PAGE_SIZE = 1000;
 
     @Inject
     public SessionResource(
@@ -52,13 +53,17 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions")
-    public RestSessionCollection getSessions(@QueryParam("last_id") Long lastId)
+    public RestSessionCollection getSessions(
+            @QueryParam("last_id") Long lastId,
+            @QueryParam("page_size") int pageSize)
     {
+        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_SESSION_PAGE_SIZE);
+
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(100, Optional.fromNullable(lastId));
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId));
 
             return RestModels.sessionCollection(rs, sessions);
         });
