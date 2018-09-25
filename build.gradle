@@ -11,7 +11,7 @@ apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.9.30-SNAPSHOT'
+    version = '0.9.30'
 
     ext {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
