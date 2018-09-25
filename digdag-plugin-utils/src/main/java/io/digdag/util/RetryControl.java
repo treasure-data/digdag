@@ -24,7 +24,7 @@ public class RetryControl
                     return r;
                 }
             }
-            throw new ConfigException("Invalid retry_interval_type");
+            throw new ConfigException("Invalid retry_interval_type: " + value);
         }
     }
 
