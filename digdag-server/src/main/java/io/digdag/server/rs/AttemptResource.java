@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -34,7 +35,7 @@ import io.digdag.spi.ScheduleTime;
 @Path("/")
 @Produces("application/json")
 public class AttemptResource
-    extends AuthenticatedResource
+        extends AuthenticatedResource
 {
     // GET  /api/attempts                                    # list attempts from recent to old
     // GET  /api/attempts?include_retried=1                  # list attempts from recent to old
@@ -53,6 +54,7 @@ public class AttemptResource
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
+    private int MAX_ATTEMPTS_PAGE_SIZE = 1000;
 
     @Inject
     public AttemptResource(
@@ -79,7 +81,8 @@ public class AttemptResource
             @QueryParam("project") String projName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
-            @QueryParam("last_id") Long lastId)
+            @QueryParam("last_id") Long lastId,
+            @QueryParam("pageSize") int pageSize)
             throws ResourceNotFoundException
     {
         return tm.begin(() -> {
@@ -91,16 +94,16 @@ public class AttemptResource
                 StoredProject proj = rs.getProjectByName(projName);
                 if (wfName != null) {
                     // of workflow
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, 100, Optional.fromNullable(lastId));
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, QueryParamSanitizer.sanitizePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE), Optional.fromNullable(lastId));
                 }
                 else {
                     // of project
-                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), 100, Optional.fromNullable(lastId));
+                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), QueryParamSanitizer.sanitizePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE), Optional.fromNullable(lastId));
                 }
             }
             else {
                 // of site
-                attempts = ss.getAttempts(includeRetried, 100, Optional.fromNullable(lastId));
+                attempts = ss.getAttempts(includeRetried, QueryParamSanitizer.sanitizePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE), Optional.fromNullable(lastId));
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
