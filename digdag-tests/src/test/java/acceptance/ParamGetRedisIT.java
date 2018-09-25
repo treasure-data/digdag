@@ -26,7 +26,7 @@ public class ParamGetRedisIT
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
                 "param_server.database.type=redis",
-                "param_server.database.host=" + REDIS_HOST
+                "param_server.database.host=" + DIGDAG_TEST_REDIS
         ));
         String output = folder.newFolder().getAbsolutePath();
 
@@ -53,7 +53,7 @@ public class ParamGetRedisIT
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
                 "param_server.database.type=redis",
-                "param_server.database.host=" + REDIS_HOST
+                "param_server.database.host=" + DIGDAG_TEST_REDIS
         ));
         String output = folder.newFolder().getAbsolutePath();
 

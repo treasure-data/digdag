@@ -5,6 +5,7 @@ docker run \
 -v `pwd`/:/digdag \
 -v ~/.gradle:/root/.gradle \
 -e DIGDAG_TEST_POSTGRESQL="${DIGDAG_TEST_POSTGRESQL}" \
+-e DIGDAG_TEST_REDIS="${DIGDAG_TEST_REDIS}" \
 -e TD_API_KEY="${TD_API_KEY}" \
 -e TD_LOAD_IT_S3_BUCKET="${TD_LOAD_IT_S3_BUCKET}" \
 -e TD_LOAD_IT_AWS_ACCESS_KEY_ID="${TD_LOAD_IT_AWS_ACCESS_KEY_ID}" \

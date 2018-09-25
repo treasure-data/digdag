@@ -11,4 +11,6 @@ idleTimeout = 10
 minimumPoolSize = 0
 "
 
+export DIGDAG_TEST_REDIS=127.0.0.1
+
 $BASEDIR/run_test_docker.sh

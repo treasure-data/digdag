@@ -10,7 +10,7 @@ import static org.junit.Assume.assumeTrue;
 
 public class BaseParamRedisIT
 {
-    protected static final String REDIS_HOST = System.getenv("REDIS_HOST");
+    protected static final String DIGDAG_TEST_REDIS = System.getenv("DIGDAG_TEST_REDIS");
     protected Jedis redisClient;
 
     @Rule
@@ -19,9 +19,9 @@ public class BaseParamRedisIT
     @Before
     public void setUp()
     {
-        assumeTrue(REDIS_HOST != null && !REDIS_HOST.isEmpty());
+        assumeTrue(DIGDAG_TEST_REDIS != null && !DIGDAG_TEST_REDIS.isEmpty());
 
-        this.redisClient = new Jedis(REDIS_HOST);
+        this.redisClient = new Jedis(DIGDAG_TEST_REDIS);
         redisClient.connect();
         redisClient.flushDB();
     }

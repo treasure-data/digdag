@@ -26,7 +26,7 @@ public class ParamSetRedisIT
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
                 "param_server.database.type=redis",
-                "param_server.database.host=" + REDIS_HOST
+                "param_server.database.host=" + DIGDAG_TEST_REDIS
         ));
 
         CommandStatus status = main("run",
@@ -49,7 +49,7 @@ public class ParamSetRedisIT
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
                 "param_server.database.type=redis",
-                "param_server.database.host=" + REDIS_HOST
+                "param_server.database.host=" + DIGDAG_TEST_REDIS
         ));
 
         CommandStatus status = main("run",
