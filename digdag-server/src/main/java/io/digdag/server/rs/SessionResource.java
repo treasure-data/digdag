@@ -38,7 +38,8 @@ public class SessionResource
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final TransactionManager tm;
-    private static final int MAX_SESSION_PAGE_SIZE = 1000;
+    private static final int MAX_SESSIONS_PAGE_SIZE = 1000;
+    private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
 
     @Inject
     public SessionResource(
@@ -57,7 +58,7 @@ public class SessionResource
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") int pageSize)
     {
-        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_SESSION_PAGE_SIZE);
+        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
 
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());

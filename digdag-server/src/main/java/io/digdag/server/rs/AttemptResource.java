@@ -34,7 +34,7 @@ import io.digdag.spi.ScheduleTime;
 @Path("/")
 @Produces("application/json")
 public class AttemptResource
-     extends AuthenticatedResource
+    extends AuthenticatedResource
 {
     // GET  /api/attempts                                    # list attempts from recent to old
     // GET  /api/attempts?include_retried=1                  # list attempts from recent to old
@@ -54,6 +54,7 @@ public class AttemptResource
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
     private static final int MAX_ATTEMPTS_PAGE_SIZE = 1000;
+    private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
 
     @Inject
     public AttemptResource(
@@ -84,7 +85,7 @@ public class AttemptResource
             @QueryParam("page_size") int pageSize)
             throws ResourceNotFoundException
     {
-        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE);
+        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
 
         return tm.begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;
