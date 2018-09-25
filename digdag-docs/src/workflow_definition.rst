@@ -272,6 +272,25 @@ If ``_retry: N`` (N is an integer: 1, 2, 3, ...) parameter is set to a group, it
 
 Tasks also support ``_retry: N`` parameter to retry the specific task. Note that some operators don't support the generic ``_retry`` option but has its own options to control retrying behavior.
 
+You can set interval to _retry as follows.
+
+.. code-block:: yaml
+
+    +prepare:
+      _retry:
+        limit: 3
+        interval: 10
+        interval_type: exponential
+
+
+
+``limit`` is number of retry.
+``interval`` is interval time (seconds).
+Additionaly you can choose ``interval_type`` as ``constant`` or ``exponential``.
+If you set ``constant`` (default) , interval time is constant as set by ``limit``.
+If you set ``exponential``, interval time increases with each retry as ``interval x 2^(retry_count-1)``.
+In the above example, first retry interval is 10 secs, second is 20 secs, third is 40 secs.
+
 
 Sending error notification
 ----------------------------------
