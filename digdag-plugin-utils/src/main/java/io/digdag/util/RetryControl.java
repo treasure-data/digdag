@@ -41,27 +41,32 @@ public class RetryControl
 
         final JsonNode retry = config.getInternalObjectNode().get("_retry");
         try {
-            if (retry == null) { // No _retry description. default.
+            if (retry == null) {  // No _retry description. default.
                 this.retryLimit = enableByDefault ? 3 : 0;
                 this.retryInterval = 0;
                 this.retryIntervalType = RetryIntervalType.CONSTATNT;
-            } else if (retry.isNumber()) {  // Only limit is set
+            }
+            else if (retry.isNumber()) {  // Only limit is set
                 this.retryLimit = retry.intValue();
                 this.retryInterval = 0;
                 this.retryIntervalType = RetryIntervalType.CONSTATNT;
-            } else if (retry.isObject()) { // json format
+            }
+            else if (retry.isObject()) {  // json format
                 this.retryLimit = retry.get("limit").intValue();
-                if(retry.has("interval")){
+                if (retry.has("interval")) {
                     this.retryInterval = retry.get("interval").intValue();
-                } else {
+                }
+                else {
                     this.retryInterval = 0;
                 }
-                if(retry.has("interval_type")){
+                if (retry.has("interval_type")) {
                     this.retryIntervalType = RetryIntervalType.find(retry.get("interval_type").textValue());
-                } else {
+                }
+                else {
                     this.retryIntervalType = RetryIntervalType.CONSTATNT;
                 }
-            } else { // Unknown format
+            }
+            else {  // Unknown format
                 throw new ConfigException("Invalid _retry format");
             }
         }
