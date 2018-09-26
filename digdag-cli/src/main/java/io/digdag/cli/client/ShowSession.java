@@ -79,7 +79,7 @@ public class ShowSession
         err.println("       " + programName + " sessions <project-name> <name>   show sessions for a workflow");
         err.println("       " + programName + " session  <session-id>            show a single session");
         err.println("  Options:");
-        err.println("    -i, --last-id ID                 shows more session attempts from this id");
+        err.println("    -i, --last-id ID                 shows more sessions from this id");
         err.println("    -s, --page-size Number           shows more sessions of the number of this page size(up to 1000)");
         showCommonOptions();
         return systemExit(error);
