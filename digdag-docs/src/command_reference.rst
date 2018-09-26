@@ -618,6 +618,8 @@ Shows list of sessions. This command shows only the latest attempts of sessions 
 :command:`-i, --last-id ID`
   Shows more sessions older than this id.
 
+:command:`-s, --page-size N`
+  Shows more sessions of the number of N (up to 1000).
 
 attempts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -637,6 +639,8 @@ Shows list of attempts. This command shows shows all attempts including attempts
 :command:`-i, --last-id ID`
   Shows more attempts older than this id.
 
+:command:`-s, --page-size N`
+  Shows more attempts of the number of N (up to 1000).
 
 tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
