@@ -40,6 +40,8 @@ public class SessionResource
     private final TransactionManager tm;
     private static final int MAX_SESSIONS_PAGE_SIZE = 1000;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
+    private static final int MAX_ATTEMPTS_PAGE_SIZE = 1000;
+    private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
 
     @Inject
     public SessionResource(
@@ -90,16 +92,19 @@ public class SessionResource
     @Path("/api/sessions/{id}/attempts")
     public RestSessionAttemptCollection getSessionAttempts(
             @PathParam("id") long id,
-            @QueryParam("last_id") Long lastId)
+            @QueryParam("last_id") Long lastId,
+            @QueryParam("page_size") int pageSize)
             throws ResourceNotFoundException
     {
+        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
+
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
             StoredSession session = ss.getSessionById(id);
             StoredProject project = rs.getProjectById(session.getProjectId());
-            List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, 100, Optional.fromNullable(lastId));
+            List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));
 
             List<RestSessionAttempt> collection = attempts.stream()
                     .map(attempt -> RestModels.attempt(session, attempt, project.getName()))
