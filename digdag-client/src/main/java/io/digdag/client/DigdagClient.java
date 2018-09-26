@@ -548,28 +548,30 @@ public class DigdagClient implements AutoCloseable
     }
 
     public RestSessionCollection getSessions(Id projectId) {
-        return getSessions(projectId, Optional.absent());
+        return getSessions(projectId, Optional.absent(), Optional.absent());
     }
 
-    public RestSessionCollection getSessions(Id projectId, Optional<Id> lastId)
+    public RestSessionCollection getSessions(Id projectId, Optional<Id> lastId, Optional<Integer> pageSize)
     {
         return doGet(RestSessionCollection.class,
                 target("/api/projects/{projectId}/sessions")
                         .resolveTemplate("projectId", projectId)
-                        .queryParam("last_id", lastId.orNull()));
+                        .queryParam("last_id", lastId.orNull())
+                        .queryParam("page_size", pageSize.orNull()));
     }
 
     public RestSessionCollection getSessions(Id projectId, String workflowName) {
-        return getSessions(projectId, workflowName, Optional.absent());
+        return getSessions(projectId, workflowName, Optional.absent(), Optional.absent());
     }
 
-    public RestSessionCollection getSessions(Id projectId, String workflowName, Optional<Id> lastId)
+    public RestSessionCollection getSessions(Id projectId, String workflowName, Optional<Id> lastId, Optional<Integer> pageSize)
     {
         return doGet(RestSessionCollection.class,
                 target("/api/projects/{projectId}/sessions")
                         .resolveTemplate("projectId", projectId)
                         .queryParam("workflow", workflowName)
-                        .queryParam("last_id", lastId.orNull()));
+                        .queryParam("last_id", lastId.orNull())
+                        .queryParam("page_size", pageSize.orNull()));
     }
 
     public RestSession getSession(Id sessionId)
@@ -579,19 +581,21 @@ public class DigdagClient implements AutoCloseable
                         .resolveTemplate("id", sessionId));
     }
 
-    public RestSessionAttemptCollection getSessionAttempts(Id sessionId, Optional<Id> lastId)
+    public RestSessionAttemptCollection getSessionAttempts(Id sessionId, Optional<Id> lastId, Optional<Integer> pageSize)
     {
         return doGet(RestSessionAttemptCollection.class,
                 target("/api/sessions/{sessionId}/attempts")
                         .resolveTemplate("sessionId", sessionId)
-                        .queryParam("last_id", lastId.orNull()));
+                        .queryParam("last_id", lastId.orNull())
+                        .queryParam("page_size", pageSize.orNull()));
     }
 
-    public RestSessionAttemptCollection getSessionAttempts(Optional<Id> lastId)
+    public RestSessionAttemptCollection getSessionAttempts(Optional<Id> lastId, Optional<Integer> pageSize)
     {
         return doGet(RestSessionAttemptCollection.class,
                 target("/api/attempts")
-                .queryParam("last_id", lastId.orNull()));
+                .queryParam("last_id", lastId.orNull())
+                .queryParam("page_size", pageSize.orNull()));
     }
 
     public RestSessionAttemptCollection getSessionAttempts(String projName, Optional<Id> lastId)
