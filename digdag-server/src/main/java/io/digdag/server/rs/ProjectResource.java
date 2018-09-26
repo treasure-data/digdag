@@ -157,6 +157,8 @@ public class ProjectResource
     private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
     private static final int ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
     private static final int ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
+    private static final int MAX_SESSIONS_PAGE_SIZE = 1000;
+    private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -399,9 +401,12 @@ public class ProjectResource
     public RestSessionCollection getSessions(
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
-            @QueryParam("last_id") Long lastId)
+            @QueryParam("last_id") Long lastId,
+            @QueryParam("page_size") int pageSize)
             throws ResourceNotFoundException
     {
+        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             SessionStore ss = ssm.getSessionStore(getSiteId());
@@ -410,9 +415,9 @@ public class ProjectResource
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, 100, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId));
             } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), 100, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId));
             }
 
             return RestModels.sessionCollection(ps, sessions);

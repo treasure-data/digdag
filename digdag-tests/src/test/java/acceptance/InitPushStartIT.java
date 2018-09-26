@@ -144,7 +144,7 @@ public class InitPushStartIT
 
         // Fetch attempt using client
         {
-            List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent()).getAttempts();
+            List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent(), Optional.absent()).getAttempts();
             assertThat(attempts.size(), is(1));
             RestSessionAttempt attempt = attempts.get(0);
             assertThat(attempt.getProject().getName(), is("foobar"));
