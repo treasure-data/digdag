@@ -20,6 +20,9 @@ public class ShowSession
     @Parameter(names = {"-i", "--last-id"})
     Id lastId = null;
 
+    @Parameter(names = {"-s", "--page-size"})
+    Integer pageSize = null;
+
     @Override
     public void mainWithClientException()
             throws Exception
@@ -77,6 +80,7 @@ public class ShowSession
         err.println("       " + programName + " session  <session-id>            show a single session");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more session attempts from this id");
+        err.println("    -s, --page-size Number           shows more sessions of the number of this page size(up to 1000)");
         showCommonOptions();
         return systemExit(error);
     }
@@ -92,10 +96,10 @@ public class ShowSession
         } else {
             RestProject project = client.getProject(projName);
             if (workflowName == null) {
-                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId)).getSessions();
+                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId), Optional.fromNullable(pageSize)).getSessions();
             }
             else {
-                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId)).getSessions();
+                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId), Optional.fromNullable(pageSize)).getSessions();
             }
         }
 
