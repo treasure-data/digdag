@@ -418,7 +418,7 @@ public class ServerScheduleIT
         assertThat(lastUnixtime2Epoch, is(unixtime2Epoch - 2));
         assertThat(unixtime2Epoch, Matchers.greaterThanOrEqualTo(unixtime1Epoch + 10));
 
-        List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent()).getAttempts();
+        List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent(), Optional.absent()).getAttempts();
 
         RestSessionAttempt attempt1 = attempts.stream()
                 .filter(a -> a.getSessionTime().toEpochSecond() == unixtime1Epoch)
