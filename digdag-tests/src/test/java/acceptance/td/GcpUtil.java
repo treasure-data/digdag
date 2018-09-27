@@ -1,6 +1,7 @@
 package acceptance.td;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.api.services.bigquery.Bigquery;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+import static io.digdag.util.RetryExecutor.retryExecutor;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -35,6 +37,13 @@ public class GcpUtil
     static final String GCS_TEST_BUCKET = System.getenv().getOrDefault("GCS_TEST_BUCKET", "");
 
     static final String GCP_PROJECT_ID;
+
+    private static RetryExecutor retryExecutor = retryExecutor()
+            .withInitialRetryWait(500)
+            .withMaxRetryWait(2000)
+            .withRetryLimit(3)
+            //  retry for 5xx status code
+            .retryIf((e) -> e instanceof HttpResponseException && ((HttpResponseException) e).getStatusCode() >= 500);
 
     static {
         try {
@@ -83,7 +92,7 @@ public class GcpUtil
     }
 
     static void cleanupBq(Bigquery bq, String gcpProjectId)
-            throws IOException
+            throws IOException, RetryExecutor.RetryGiveupException
     {
         if (bq == null) {
             return;
@@ -130,7 +139,7 @@ public class GcpUtil
     }
 
     static Dataset createDataset(Bigquery bq, String projectId, String datasetId)
-            throws IOException
+            throws IOException, RetryExecutor.RetryGiveupException
     {
         Dataset dataset = new Dataset()
                 .setDatasetReference(new DatasetReference()
@@ -141,9 +150,9 @@ public class GcpUtil
     }
 
     static Dataset createDataset(Bigquery bq, String projectId, Dataset dataset)
-            throws IOException
+            throws RetryExecutor.RetryGiveupException
     {
-        return bq.datasets().insert(projectId, dataset).execute();
+        return retryExecutor.run(() -> bq.datasets().insert(projectId, dataset).execute());
     }
 
     static boolean datasetExists(Bigquery bq, String projectId, String datasetId)
@@ -184,17 +193,11 @@ public class GcpUtil
         return tables;
     }
 
-    static List<DatasetList.Datasets> listDatasets(Bigquery bq, String projectId)
-            throws IOException
-    {
-        return listDatasets(bq, projectId, ds -> true);
-    }
-
     static List<DatasetList.Datasets> listDatasets(Bigquery bq, String projectId, Predicate<DatasetList.Datasets> needle)
-            throws IOException
+            throws IOException, RetryExecutor.RetryGiveupException
     {
         List<DatasetList.Datasets> datasets = new ArrayList<>();
-        Bigquery.Datasets.List req = bq.datasets().list(projectId);
+        Bigquery.Datasets.List req = retryExecutor.run(() -> bq.datasets().list(projectId));
         DatasetList datasetList;
         do {
             datasetList = req.execute();
@@ -219,10 +222,10 @@ public class GcpUtil
             try {
                 RetryExecutor.retryExecutor()
                         .retryIf((ex) ->
-                                        ex instanceof IOException ||
-                                                (ex instanceof GoogleJsonResponseException &&
-                                                        ((GoogleJsonResponseException) ex).getDetails().getErrors().stream()
-                                                                .anyMatch(x -> x.getReason().equals("resourceInUse")))
+                                ex instanceof IOException ||
+                                        (ex instanceof GoogleJsonResponseException &&
+                                                ((GoogleJsonResponseException) ex).getDetails().getErrors().stream()
+                                                        .anyMatch(x -> x.getReason().equals("resourceInUse")))
 
                         )
                         .run(() -> bq.tables().delete(gcpProjectId, datasetId, tableId).execute());
