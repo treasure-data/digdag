@@ -109,7 +109,7 @@ Options:
 :command:`-O, --task-log DIR`
   Store task logs to this directory.
 
-  Example: ``--task-log digdag.log``
+  Example: ``--task-log log/tasks``
 
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
