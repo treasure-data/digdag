@@ -6,6 +6,7 @@ import com.google.inject.Module;
 import io.digdag.spi.Extension;
 import io.digdag.standards.operator.OperatorModule;
 import io.digdag.standards.operator.gcp.GcpOperatorModule;
+import io.digdag.standards.operator.param.ParamServerModule;
 import io.digdag.standards.scheduler.SchedulerModule;
 import io.digdag.standards.command.CommandExecutorModule;
 import io.digdag.standards.td.TdConfigurationModule;
@@ -21,7 +22,8 @@ public class StandardsExtension
                 new CommandExecutorModule(),
                 new OperatorModule(),
                 new TdConfigurationModule(),
-                new GcpOperatorModule()
+                new GcpOperatorModule(),
+                new ParamServerModule()
                 );
     }
 }

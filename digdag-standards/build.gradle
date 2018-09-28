@@ -60,6 +60,9 @@ dependencies {
     // XXX (dano): This is just here so we can disable TDClientConfing spam in TdDigdagClientConfigurationPlugin
     compile 'ch.qos.logback:logback-classic:1.1.5'
 
+    // redis-client
+    compile group: 'redis.clients', name: 'jedis', version: '2.9.0'
+
     testCompile project(path: ':digdag-client', configuration: 'testArtifacts')
     testCompile project(path: ':digdag-core', configuration: 'testArtifacts')
 
