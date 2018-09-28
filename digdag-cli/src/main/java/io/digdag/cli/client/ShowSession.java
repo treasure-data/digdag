@@ -80,7 +80,7 @@ public class ShowSession
         err.println("       " + programName + " session  <session-id>            show a single session");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more sessions from this id");
-        err.println("    -s, --page-size Number           shows more sessions of the number of this page size(up to 1000)");
+        err.println("    -s, --page-size Number           shows more sessions of the number of this page size(in default up to 100)");
         showCommonOptions();
         return systemExit(error);
     }

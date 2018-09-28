@@ -45,7 +45,7 @@ public class ShowAttempts
         err.println("       " + programName + " attempts <session-id>            show attempts for a session");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more session attempts from this id");
-        err.println("    -s, --page-size Number           shows more session attempts of the number of this page size(up to 1000)");
+        err.println("    -s, --page-size Number           shows more session attempts of the number of this page size (in default up to 100)");
         showCommonOptions();
         return systemExit(error);
     }
