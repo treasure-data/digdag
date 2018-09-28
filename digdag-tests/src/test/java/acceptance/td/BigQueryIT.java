@@ -3,6 +3,8 @@ package acceptance.td;
 import com.amazonaws.util.StringInputStream;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
@@ -21,10 +23,12 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.util.RetryExecutor;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.After;
@@ -38,6 +42,7 @@ import utils.TestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +71,7 @@ import static utils.TestUtils.createProject;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.pushProject;
+import static io.digdag.util.RetryExecutor.retryExecutor;
 
 public class BigQueryIT
 {
@@ -88,6 +94,13 @@ public class BigQueryIT
     protected Storage gcs;
     protected Bigquery bq;
     protected String gcpProjectId = GcpUtil.GCP_PROJECT_ID;
+
+    private static RetryExecutor retryExecutor = retryExecutor()
+            .withInitialRetryWait(500)
+            .withMaxRetryWait(2000)
+            .withRetryLimit(3)
+            // retry for 5xx status code
+            .retryIf((e) -> e instanceof HttpResponseException && ((HttpResponseException) e).getStatusCode() >= 500);
 
     @Before
     public void setUp()
@@ -232,17 +245,17 @@ public class BigQueryIT
             InputStreamContent content = new InputStreamContent("text/csv", new ByteArrayInputStream(data))
                     .setLength(data.length);
             StorageObject metadata = new StorageObject().setName(objectName);
-            gcs.objects()
+            retryExecutor.run(() -> gcs.objects()
                     .insert(GCS_TEST_BUCKET, metadata, content)
-                    .execute();
+                    .execute());
 
             // Create output dataset
             String datasetId = BQ_TAG + "_load_test";
             Dataset dataset = new Dataset().setDatasetReference(new DatasetReference()
                     .setProjectId(gcpProjectId)
                     .setDatasetId(datasetId));
-            bq.datasets().insert(gcpProjectId, dataset)
-                    .execute();
+            retryExecutor.run(() -> bq.datasets().insert(gcpProjectId, dataset)
+                    .execute());
 
             // Run load
             String tableId = "data";
@@ -257,7 +270,7 @@ public class BigQueryIT
             assertThat(Files.exists(outfile), is(true));
 
             // Check that destination table was created
-            Table destinationTable = bq.tables().get(gcpProjectId, datasetId, tableId).execute();
+            Table destinationTable = retryExecutor.run(() -> bq.tables().get(gcpProjectId, datasetId, tableId).execute());
             assertThat(destinationTable.getTableReference().getTableId(), is(tableId));
         }
     }
@@ -277,8 +290,8 @@ public class BigQueryIT
             Dataset dataset = new Dataset().setDatasetReference(new DatasetReference()
                     .setProjectId(gcpProjectId)
                     .setDatasetId(datasetId));
-            bq.datasets().insert(gcpProjectId, dataset)
-                    .execute();
+            retryExecutor.run(() -> bq.datasets().insert(gcpProjectId, dataset)
+                    .execute());
             Table table = new Table().setTableReference(new TableReference()
                     .setProjectId(gcpProjectId)
                     .setTableId(tableId))
@@ -287,8 +300,8 @@ public class BigQueryIT
                                     new TableFieldSchema().setName("foo").setType("STRING"),
                                     new TableFieldSchema().setName("bar").setType("STRING")
                             )));
-            bq.tables().insert(gcpProjectId, datasetId, table)
-                    .execute();
+            retryExecutor.run(() -> bq.tables().insert(gcpProjectId, datasetId, table)
+                    .execute());
 
             // Populate source table
             TableDataInsertAllRequest content = new TableDataInsertAllRequest()
@@ -299,8 +312,8 @@ public class BigQueryIT
                             new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
                                     "foo", "c",
                                     "bar", "d"))));
-            bq.tabledata().insertAll(gcpProjectId, datasetId, tableId, content)
-                    .execute();
+            retryExecutor.run(() -> bq.tabledata().insertAll(gcpProjectId, datasetId, tableId, content)
+                    .execute());
 
             // Run extract
             String objectName = GCS_PREFIX + "test.csv";
@@ -315,12 +328,19 @@ public class BigQueryIT
             assertThat(Files.exists(outfile), is(true));
 
             // Check that destination file was created
-            StorageObject metadata = gcs.objects().get(GCS_TEST_BUCKET, objectName)
-                    .execute();
+            StorageObject metadata = retryExecutor.run(() -> gcs.objects().get(GCS_TEST_BUCKET, objectName)
+                    .execute());
             assertThat(metadata.getName(), is(objectName));
             ByteArrayOutputStream data = new ByteArrayOutputStream();
-            gcs.objects().get(GCS_TEST_BUCKET, objectName)
-                    .executeMediaAndDownloadTo(data);
+            retryExecutor.run(() -> {
+                try {
+                    gcs.objects().get(GCS_TEST_BUCKET, objectName)
+                            .executeMediaAndDownloadTo(data);
+                }
+                catch (IOException e) {
+                    throw Throwables.propagate(e);
+                }
+            });
         }
     }
 
@@ -384,12 +404,15 @@ public class BigQueryIT
                                     new TableFieldSchema().setName("f2").setType("STRING")
                             ))));
 
-            bq.tabledata().insertAll(gcpProjectId, testDefaultDataset, testEmptyTable5, new TableDataInsertAllRequest()
-                    .setRows(ImmutableList.of(
-                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1a", "f2", "v2a")),
-                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1b", "f2", "v2b"))
+            retryExecutor.run(() ->
+                    bq.tabledata().insertAll(gcpProjectId, testDefaultDataset, testEmptyTable5, new TableDataInsertAllRequest()
+                            .setRows(ImmutableList.of(
+                                    new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1a", "f2", "v2a")),
+                                    new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1b", "f2", "v2b"))
+                                    )
                             )
-                    ));
+                    )
+            );
 
             addWorkflow(projectDir, "acceptance/bigquery/ddl.dig");
             Id attemptId = pushAndStart(server.endpoint(), projectDir, "ddl", ImmutableMap.<String, String>builder()
