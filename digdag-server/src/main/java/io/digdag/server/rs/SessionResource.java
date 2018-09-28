@@ -6,6 +6,7 @@ import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
+import io.digdag.client.config.Config;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
@@ -38,20 +39,23 @@ public class SessionResource
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final TransactionManager tm;
-    private static final int MAX_SESSIONS_PAGE_SIZE = 1000;
+    private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
-    private static final int MAX_ATTEMPTS_PAGE_SIZE = 1000;
+    private static int MAX_ATTEMPTS_PAGE_SIZE;
     private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
 
     @Inject
     public SessionResource(
             ProjectStoreManager rm,
             SessionStoreManager sm,
-            TransactionManager tm)
+            TransactionManager tm,
+            Config systemConfig)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
+        MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
+        MAX_ATTEMPTS_PAGE_SIZE = systemConfig.get("api.max_attempts_page_size", Integer.class, DEFAULT_ATTEMPTS_PAGE_SIZE);
     }
 
     @GET

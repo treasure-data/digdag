@@ -157,7 +157,7 @@ public class ProjectResource
     private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
     private static final int ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
     private static final int ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
-    private static final int MAX_SESSIONS_PAGE_SIZE = 1000;
+    private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
 
     private final ConfigFactory cf;
@@ -186,7 +186,8 @@ public class ProjectResource
             SessionStoreManager ssm,
             SecretControlStoreManager scsp,
             TransactionManager tm,
-            ProjectArchiveLoader projectArchiveLoader)
+            ProjectArchiveLoader projectArchiveLoader,
+            Config systemConfig)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -200,6 +201,7 @@ public class ProjectResource
         this.tm = tm;
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
+        MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -402,10 +404,10 @@ public class ProjectResource
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId,
-            @QueryParam("page_size") int pageSize)
+            @QueryParam("page_size") Integer pageSize)
             throws ResourceNotFoundException
     {
-        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+        int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
 
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
