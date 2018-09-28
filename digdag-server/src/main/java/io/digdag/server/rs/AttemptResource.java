@@ -85,10 +85,10 @@ public class AttemptResource
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId,
-            @QueryParam("page_size") int pageSize)
+            @QueryParam("page_size") Integer pageSize)
             throws ResourceNotFoundException
     {
-        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
+        int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
 
         return tm.begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;

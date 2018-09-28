@@ -62,9 +62,9 @@ public class SessionResource
     @Path("/api/sessions")
     public RestSessionCollection getSessions(
             @QueryParam("last_id") Long lastId,
-            @QueryParam("page_size") int pageSize)
+            @QueryParam("page_size") Integer pageSize)
     {
-        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+        int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
 
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -97,10 +97,10 @@ public class SessionResource
     public RestSessionAttemptCollection getSessionAttempts(
             @PathParam("id") long id,
             @QueryParam("last_id") Long lastId,
-            @QueryParam("page_size") int pageSize)
+            @QueryParam("page_size") Integer pageSize)
             throws ResourceNotFoundException
     {
-        int validPageSize = QueryParamValidator.validatePageSize(pageSize, MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
+        int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
 
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
