@@ -1,6 +1,6 @@
 # param_get>: Get persistent data from ParamServer and set it as a value of store parameters
 
-**param_get>** operator gets a value from a ParamServer and sets it as a value of store parameters
+**param_get>** operator gets a value from a ParamServer and sets it as a value of [store parameters](../../concepts.html#export-and-store-parameters)
 
     +get_single_value:
       param_get>:
@@ -14,15 +14,15 @@
     +show_gotten_data:
       sh>: echo '${key1_for_params} ${key2_for_params} ${key3_for_params}'
 
-# System configurations
+## System configurations
 
-## Common
+### Common
 
 * **param_server.type (required)**:
 
   String of the database type of ParamServer ( `postgresql` or `redis` )
 
-## When using PostgreSQL
+### When using PostgreSQL
 
 * **param_server.host (required)**:
 
@@ -41,7 +41,7 @@
   String of the password of the ParamServer
 
 
-## When using Redis
+### When using Redis
 
 * **param_server.host (required)**:
 
@@ -57,7 +57,7 @@
 
   The Default value is `false`
 
-# Options
+## Options
 
 * **{key}: {destKey}**
 

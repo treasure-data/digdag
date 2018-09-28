@@ -11,15 +11,15 @@
       key2: value2
       key3: value3
 
-# System configurations
+## System configurations
 
-## Common
+### Common
 
 * **param_server.type (required)**:
 
   String of the database type of ParamServer ( `postgresql` or `redis` )
 
-## When using PostgreSQL
+### When using PostgreSQL
 
 * **param_server.host (required)**:
 
@@ -37,7 +37,7 @@
 
   String of the password of the ParamServer
 
-### Sample
+#### Sample
 
     param_server.type=postgresql
     param_server.host=my_params.example.com
@@ -45,7 +45,7 @@
     param_server.password=QD8-_7nE4eMoaZ4FbKE2pA
     param_server.database=digdag_param_server
 
-## When using Redis
+### When using Redis
 
 * **param_server.host (required)**:
 
@@ -62,14 +62,14 @@
   The Default value is `false`
 
 
-### Sample
+#### Sample
 
     param_server.type=redis
     param_server.host=my_params.example.com
     param_server.password=AQ5e5EvdiVzlLNsDI0Pm4A
     param_server.ssl=true
 
-# Options
+## Options
 
 * **{key}: {value}**
 

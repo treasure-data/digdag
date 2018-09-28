@@ -11,4 +11,5 @@ Operators
     operators/aws.rst
     operators/gcp.rst
     operators/scripting.rst
+    operators/param.rst
 
