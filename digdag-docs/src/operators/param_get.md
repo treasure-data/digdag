@@ -1,6 +1,6 @@
-# param_get>: Get a persistent data from a DataStore and set it into ParamStore
+# param_get>: Get persistent data from ParamServer and set it as a value of store parameters
 
-**param_get>** operator gets a value from a DataStore and sets into ParamStore
+**param_get>** operator gets a value from a ParamServer and sets it as a value of store parameters
 
     +get_single_value:
       param_get>:
@@ -20,13 +20,13 @@
 
 * **param_server.database.type (required)**:
 
-  String of the database type of DataStore ( `postgresql` or `redis` )
+  String of the database type of ParamServer ( `postgresql` or `redis` )
 
 ## When using PostgreSQL
 
 * **param_server.database.host (required)**:
 
-  String of the host of the DataStore
+  String of the host of the ParamServer
 
 * **param_server.database.database (required)**:
 
@@ -34,22 +34,22 @@
 
 * **param_server.database.user (required)**:
 
-  String of the user of the DataStore
+  String of the user of the ParamServer
 
 * **param_server.database.password (optional)**:
 
-  String of the password of the DataStore
+  String of the password of the ParamServer
 
 
 ## When using Redis
 
 * **param_server.database.host (required)**:
 
-  String of the host of the DataStore
+  String of the host of the ParamServer
 
 * **param_server.database.password (optional)**:
 
-  String of the password of the DataStore
+  String of the password of the ParamServer
 
 * **param_server.database.ssl (optional)**:
 
@@ -61,6 +61,6 @@
 
 * **{key}: {destKey}**
 
-  {key}: The name of the key which you want to get from DataStore
+  {key}: The name of the key which you want to get from ParamServer
 
-  {destKey}: The name of the key which you want to set the value gotten from DataStore to ParamStore
+  {destKey}: The name of the key which you want to set the value gotten from ParamServer to ParamStore

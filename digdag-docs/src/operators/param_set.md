@@ -1,6 +1,6 @@
-# param_set>: Set a value into a DataStore as persistent data
+# param_set>: Set a value into a ParamServer as persistent data
 
-**param_set>** operator saves a specified value into a DataStore
+**param_set>** operator saves a specified value into a ParamServer
 
     +set_single_value:
       param_set>:
@@ -17,13 +17,13 @@
 
 * **param_server.database.type (required)**:
 
-  String of the database type of DataStore ( `postgresql` or `redis` )
+  String of the database type of ParamServer ( `postgresql` or `redis` )
 
 ## When using PostgreSQL
 
 * **param_server.database.host (required)**:
 
-  String of the host of the DataStore
+  String of the host of the ParamServer
 
 * **param_server.database.database (required)**:
 
@@ -31,11 +31,11 @@
 
 * **param_server.database.user (required)**:
 
-  String of the user of the DataStore
+  String of the user of the ParamServer
 
 * **param_server.database.password (optional)**:
 
-  String of the password of the DataStore
+  String of the password of the ParamServer
 
 ### Sample
 
@@ -49,11 +49,11 @@
 
 * **param_server.database.host (required)**:
 
-  String of the host of the DataStore
+  String of the host of the ParamServer
 
 * **param_server.database.password (optional)**:
 
-  String of the password of the DataStore
+  String of the password of the ParamServer
 
 * **param_server.database.ssl (optional)**:
 
@@ -73,7 +73,7 @@
 
 * **{key}: {value}**
 
-  The name of the key/value of the record which you want to save to DataStore
+  The name of the key/value of the record which you want to save to ParamServer
 
   * About data type of {value}
 
