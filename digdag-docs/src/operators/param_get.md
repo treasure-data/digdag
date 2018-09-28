@@ -4,15 +4,15 @@
 
     +get_single_value:
       param_get>:
-      key1: key1_for_params
+      key1: key_of_store_parameter1
     
     +get_multiple_values:
       param_get>:
-      key2: key2_for_params
-      key3: key3_for_params
+      key2: key_of_store_parameter2
+      key3: key_of_store_parameter3
       
     +show_gotten_data:
-      sh>: echo '${key1_for_params} ${key2_for_params} ${key3_for_params}'
+      sh>: echo '${key_of_store_parameter1} ${key_of_store_parameter2} ${key_of_store_parameter3}'
 
 ## System configurations
 
