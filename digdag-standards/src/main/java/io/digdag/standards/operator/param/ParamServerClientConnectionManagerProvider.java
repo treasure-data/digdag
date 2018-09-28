@@ -21,7 +21,7 @@ public class ParamServerClientConnectionManagerProvider
     public ParamServerClientConnectionManagerProvider(Config systemConfig)
     {
         this.systemConfig = systemConfig;
-        String databaseType = systemConfig.get("param_server.database.type", String.class, "");
+        String databaseType = systemConfig.get("param_server.type", String.class, "");
         logger.debug("Using param_server database type: {}", databaseType);
 
         switch(databaseType){
@@ -35,7 +35,7 @@ public class ParamServerClientConnectionManagerProvider
                 client = new DummyServerClientConnectionManager();
                 break;
             default:
-                throw new ConfigException("Unsupported param_server.database.type : " + databaseType);
+                throw new ConfigException("Unsupported param_server.type : " + databaseType);
         }
     }
 

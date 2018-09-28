@@ -25,8 +25,8 @@ public class ParamSetRedisIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=redis",
-                "param_server.database.host=" + DIGDAG_TEST_REDIS
+                "param_server.type=redis",
+                "param_server.host=" + DIGDAG_TEST_REDIS
         ));
 
         CommandStatus status = main("run",
@@ -48,8 +48,8 @@ public class ParamSetRedisIT
         addWorkflow(projectDir, "acceptance/params/parallel_set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=redis",
-                "param_server.database.host=" + DIGDAG_TEST_REDIS
+                "param_server.type=redis",
+                "param_server.host=" + DIGDAG_TEST_REDIS
         ));
 
         CommandStatus status = main("run",

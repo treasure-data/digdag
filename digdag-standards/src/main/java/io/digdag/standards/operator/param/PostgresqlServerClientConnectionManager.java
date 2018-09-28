@@ -93,7 +93,7 @@ public class PostgresqlServerClientConnectionManager
 
     private HikariDataSource createDataSourceWithConnectionPool()
     {
-        DatabaseConfig databaseConfig = DatabaseConfig.convertFrom(systemConfig, "param_server.database");
+        DatabaseConfig databaseConfig = DatabaseConfig.convertFrom(systemConfig, "param_server");
         String url = DatabaseConfig.buildJdbcUrl(databaseConfig);
 
         HikariConfig hikari = new HikariConfig();

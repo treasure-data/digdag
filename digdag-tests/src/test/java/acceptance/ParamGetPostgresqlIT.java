@@ -28,10 +28,10 @@ public class ParamGetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=postgresql",
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.type=postgresql",
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         SecretProvider secrets = getDatabaseSecrets();
@@ -68,10 +68,10 @@ public class ParamGetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=postgresql",
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.type=postgresql",
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         SecretProvider secrets = getDatabaseSecrets();
@@ -112,10 +112,10 @@ public class ParamGetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/parallel_get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=postgresql",
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.type=postgresql",
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         SecretProvider secrets = getDatabaseSecrets();

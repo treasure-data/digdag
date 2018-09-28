@@ -15,47 +15,47 @@
 
 ## Common
 
-* **param_server.database.type (required)**:
+* **param_server.type (required)**:
 
   String of the database type of ParamServer ( `postgresql` or `redis` )
 
 ## When using PostgreSQL
 
-* **param_server.database.host (required)**:
+* **param_server.host (required)**:
 
   String of the host of the ParamServer
 
-* **param_server.database.database (required)**:
+* **param_server.database (required)**:
 
   String of the database name of PostgreSQL
 
-* **param_server.database.user (required)**:
+* **param_server.user (required)**:
 
   String of the user of the ParamServer
 
-* **param_server.database.password (optional)**:
+* **param_server.password (optional)**:
 
   String of the password of the ParamServer
 
 ### Sample
 
-    param_server.database.type=postgresql
-    param_server.database.host=my_params.example.com
-    param_server.database.user=serizawa
-    param_server.database.password=QD8-_7nE4eMoaZ4FbKE2pA
-    param_server.database.database=digdag_param_server
+    param_server.type=postgresql
+    param_server.host=my_params.example.com
+    param_server.user=serizawa
+    param_server.password=QD8-_7nE4eMoaZ4FbKE2pA
+    param_server.database=digdag_param_server
 
 ## When using Redis
 
-* **param_server.database.host (required)**:
+* **param_server.host (required)**:
 
   String of the host of the ParamServer
 
-* **param_server.database.password (optional)**:
+* **param_server.password (optional)**:
 
   String of the password of the ParamServer
 
-* **param_server.database.ssl (optional)**:
+* **param_server.ssl (optional)**:
 
   The boolean flag of whether connection with SSL or not SSL.
 
@@ -64,10 +64,10 @@
 
 ### Sample
 
-    param_server.database.type=redis
-    param_server.database.host=my_params.example.com
-    param_server.database.password=AQ5e5EvdiVzlLNsDI0Pm4A
-    param_server.database.ssl=true
+    param_server.type=redis
+    param_server.host=my_params.example.com
+    param_server.password=AQ5e5EvdiVzlLNsDI0Pm4A
+    param_server.ssl=true
 
 # Options
 

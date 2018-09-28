@@ -36,10 +36,10 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=postgresql",
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.type=postgresql",
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -80,10 +80,10 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/parallel_set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=postgresql",
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.type=postgresql",
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -124,9 +124,9 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -135,7 +135,7 @@ public class ParamSetPostgresqlIT
                 "--project", projectDir.toString(),
                 projectDir.resolve("set.dig").toString()
         );
-        assertCommandStatus(status, Optional.of("param_server.database.type is required to use this operator."));
+        assertCommandStatus(status, Optional.of("param_server.type is required to use this operator."));
     }
 
     @Test
@@ -146,10 +146,10 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=mysql",
-                "param_server.database.user=" + user,
-                "param_server.database.host=" + host,
-                "param_server.database.database=" + tempDatabase
+                "param_server.type=mysql",
+                "param_server.user=" + user,
+                "param_server.host=" + host,
+                "param_server.database=" + tempDatabase
         ));
 
         CommandStatus status = main("run",
@@ -158,7 +158,7 @@ public class ParamSetPostgresqlIT
                 "--project", projectDir.toString(),
                 projectDir.resolve("set.dig").toString()
         );
-        assertCommandStatus(status, Optional.of("Unsupported param_server.database.type : mysql"));
+        assertCommandStatus(status, Optional.of("Unsupported param_server.type : mysql"));
     }
 
     @Test
@@ -169,8 +169,8 @@ public class ParamSetPostgresqlIT
         addWorkflow(projectDir, "acceptance/params/set.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=postgresql",
-                "param_server.database.host=" + host
+                "param_server.type=postgresql",
+                "param_server.host=" + host
         ));
 
         CommandStatus status = main("run",
@@ -179,6 +179,6 @@ public class ParamSetPostgresqlIT
                 "--project", projectDir.toString(),
                 projectDir.resolve("set.dig").toString()
         );
-        assertCommandStatus(status, Optional.of("Parameter 'param_server.database.user' is required but not set"));
+        assertCommandStatus(status, Optional.of("Parameter 'param_server.user' is required but not set"));
     }
 }

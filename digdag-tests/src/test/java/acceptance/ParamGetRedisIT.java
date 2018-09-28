@@ -25,8 +25,8 @@ public class ParamGetRedisIT
         addWorkflow(projectDir, "acceptance/params/get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=redis",
-                "param_server.database.host=" + DIGDAG_TEST_REDIS
+                "param_server.type=redis",
+                "param_server.host=" + DIGDAG_TEST_REDIS
         ));
         String output = folder.newFolder().getAbsolutePath();
 
@@ -52,8 +52,8 @@ public class ParamGetRedisIT
         addWorkflow(projectDir, "acceptance/params/parallel_get.dig");
         Path config = projectDir.resolve("config");
         Files.write(config, asList(
-                "param_server.database.type=redis",
-                "param_server.database.host=" + DIGDAG_TEST_REDIS
+                "param_server.type=redis",
+                "param_server.host=" + DIGDAG_TEST_REDIS
         ));
         String output = folder.newFolder().getAbsolutePath();
 
