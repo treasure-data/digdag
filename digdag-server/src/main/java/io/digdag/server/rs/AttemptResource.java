@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import io.digdag.client.config.Config;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStore;
@@ -53,6 +54,8 @@ public class AttemptResource
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
+    private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
+    private static int MAX_ATTEMPTS_PAGE_SIZE;
 
     @Inject
     public AttemptResource(
@@ -62,7 +65,8 @@ public class AttemptResource
             TransactionManager tm,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor executor,
-            ConfigFactory cf)
+            ConfigFactory cf,
+            Config systemConfig)
     {
         this.rm = rm;
         this.sm = sm;
@@ -71,6 +75,7 @@ public class AttemptResource
         this.attemptBuilder = attemptBuilder;
         this.executor = executor;
         this.cf = cf;
+        MAX_ATTEMPTS_PAGE_SIZE = systemConfig.get("api.max_attempts_page_size", Integer.class, DEFAULT_ATTEMPTS_PAGE_SIZE);
     }
 
     @GET
@@ -79,9 +84,12 @@ public class AttemptResource
             @QueryParam("project") String projName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
-            @QueryParam("last_id") Long lastId)
+            @QueryParam("last_id") Long lastId,
+            @QueryParam("page_size") Integer pageSize)
             throws ResourceNotFoundException
     {
+        int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
+
         return tm.begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;
 
@@ -91,16 +99,16 @@ public class AttemptResource
                 StoredProject proj = rs.getProjectByName(projName);
                 if (wfName != null) {
                     // of workflow
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, 100, Optional.fromNullable(lastId));
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId));
                 }
                 else {
                     // of project
-                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), 100, Optional.fromNullable(lastId));
+                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId));
                 }
             }
             else {
                 // of site
-                attempts = ss.getAttempts(includeRetried, 100, Optional.fromNullable(lastId));
+                attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId));
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);

@@ -19,6 +19,9 @@ public class ShowAttempts
     @Parameter(names = {"-i", "--last-id"})
     Id lastId = null;
 
+    @Parameter(names = {"-s", "--page-size"})
+    Integer pageSize = null;
+
     @Override
     public void mainWithClientException()
             throws Exception
@@ -42,6 +45,7 @@ public class ShowAttempts
         err.println("       " + programName + " attempts <session-id>            show attempts for a session");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more session attempts from this id");
+        err.println("    -s, --page-size Number           shows more session attempts of the number of this page size (in default up to 100)");
         showCommonOptions();
         return systemExit(error);
     }
@@ -53,9 +57,9 @@ public class ShowAttempts
         List<RestSessionAttempt> attempts;
 
         if (sessionId == null) {
-            attempts = client.getSessionAttempts(Optional.fromNullable(lastId)).getAttempts();
+            attempts = client.getSessionAttempts(Optional.fromNullable(lastId), Optional.fromNullable(pageSize)).getAttempts();
         } else {
-            attempts = client.getSessionAttempts(sessionId, Optional.fromNullable(lastId)).getAttempts();
+            attempts = client.getSessionAttempts(sessionId, Optional.fromNullable(lastId), Optional.fromNullable(pageSize)).getAttempts();
         }
 
         ln("Session attempts:");

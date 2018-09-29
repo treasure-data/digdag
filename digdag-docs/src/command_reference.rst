@@ -362,6 +362,8 @@ In the config file, following parameters are available
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 * executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)
 * executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
+* api.max_attempts_page_size (integer. The max number of rows of attempts in api response)
+* api.max_sessions_page_size (integer. The max number of rows of sessions in api response)
 
 
 Secret Encryption Key
@@ -618,6 +620,8 @@ Shows list of sessions. This command shows only the latest attempts of sessions 
 :command:`-i, --last-id ID`
   Shows more sessions older than this id.
 
+:command:`-s, --page-size N`
+  Shows more sessions of the number of N (in default up to 100).
 
 attempts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -637,6 +641,8 @@ Shows list of attempts. This command shows shows all attempts including attempts
 :command:`-i, --last-id ID`
   Shows more attempts older than this id.
 
+:command:`-s, --page-size N`
+  Shows more attempts of the number of N (in default up to 100).
 
 tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
