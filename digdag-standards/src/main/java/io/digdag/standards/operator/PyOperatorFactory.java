@@ -124,8 +124,9 @@ public class PyOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
+            final String python = params.get("python", String.class, "python");
             List<String> cmdline = ImmutableList.<String>builder()
-                .add("python").add("-")  // script is fed from stdin
+                .add(python).add("-")  // script is fed from stdin
                 .addAll(args)
                 .build();
 
