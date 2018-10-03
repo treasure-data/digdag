@@ -20,3 +20,12 @@ See [Python API documents](../../python_api.html) for details including variable
   ```
   py>: tasks.MyWorkflow.my_task
   ```
+
+The python defaults to `python`. If an alternate python such as `/opt/conda/bin/python` is desired, use the `python` option in the `_export` section.
+
+    _export:
+      py:
+        python: ["/opt/conda/bin/python"]
+
+    +step1:
+      py>: tasks.MyWorkflow.my_task2
