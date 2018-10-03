@@ -123,17 +123,10 @@ public class PyOperatorFactory
             try (OutputStream fo = workspace.newOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
-            
-            String pythonExecutable;
-            
-            if(params.has("_pythonexec")) {
-            	pythonExecutable = params.get("_pythonexec", String.class);
-            }else {
-            	pythonExecutable = "python";
-            }
 
+            final String python = params.get("python", String.class, "python");
             List<String> cmdline = ImmutableList.<String>builder()
-                .add(pythonExecutable).add("-")  // script is fed from stdin
+                .add(python).add("-")  // script is fed from stdin
                 .addAll(args)
                 .build();
 
