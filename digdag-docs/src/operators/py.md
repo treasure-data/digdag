@@ -25,7 +25,7 @@ The python defaults to `python`. If an alternate python such as `/opt/conda/bin/
 
     _export:
       py:
-        python: ["/opt/conda/bin/python"]
+        python: /opt/conda/bin/python
 
     +step1:
       py>: tasks.MyWorkflow.my_task2
