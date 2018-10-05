@@ -1,10 +1,17 @@
 # if>: Conditional execution
 
-**if>** operator runs `_do` subtasks if `true` is given. otherwise, it runs `_else_do` subtasks.
-
 (This operator is EXPERIMENTAL. Parameters may change in a future release)
 
+**if>** operator runs `_do` subtasks if `true` is given.
+
     +run_if_param_is_true:
+      if>: ${param}
+      _do:
+        echo>: ${param} == true
+
+`_else_do` subtasks are executed if `false` is given as the operator's condition..
+
+    +run_if_param_is_false:
       if>: ${param}
       _do:
         echo>: ${param} == true
