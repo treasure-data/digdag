@@ -1,13 +1,18 @@
-package io.digdag.standards.operator;
+package io.digdag.core.workflow;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.spi.Operator;
-import io.digdag.spi.OperatorContext;
-import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
+import io.digdag.spi.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.*;
 
 public class IfOperatorFactory
         implements OperatorFactory
@@ -22,12 +27,12 @@ public class IfOperatorFactory
     }
 
     @Override
-    public IfOperator newOperator(OperatorContext context)
+    public Operator newOperator(OperatorContext context)
     {
         return new IfOperator(context);
     }
 
-    static class IfOperator
+    private static class IfOperator
             implements Operator
     {
         private final TaskRequest request;
@@ -50,13 +55,13 @@ public class IfOperatorFactory
             }
             if (condition) {
                 return TaskResult.defaultBuilder(request)
-                    .subtaskConfig(doConfig)
-                    .build();
+                        .subtaskConfig(doConfig)
+                        .build();
             }
             else {
                 return TaskResult.defaultBuilder(request)
-                    .subtaskConfig(elseDoConfig)
-                    .build();
+                        .subtaskConfig(elseDoConfig)
+                        .build();
             }
         }
     }

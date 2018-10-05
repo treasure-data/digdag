@@ -8,6 +8,8 @@
       if>: ${param}
       _do:
         echo>: ${param} == true
+      _else_do:
+        echo>: ${param} == false
 
 ## Options
 
@@ -19,3 +21,8 @@
 
   Tasks to run if `true` is given.
 
+* **\_else_do**: TASKS
+
+  Tasks to run if `false` is given.
+
+Note: _do or _else_do must be specified.

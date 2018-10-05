@@ -1,0 +1,10 @@
+_export:
+  value1: false
++if_task:
+  if>: ${value1}
+  _do:
+    echo>: undefined_var is ${undefined_var}
+    append_file: out
+  _else_do:
+    echo>: OK_else_do
+    append_file: out

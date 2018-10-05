@@ -133,6 +133,7 @@ public class ConfigEvalEngine
     {
         private final Config params;
         private final Invocable templateInvocable;
+        private final ImmutableList<String> noEvaluatedKeys = ImmutableList.of("_do",  "_else_do");
 
         public Context(Config params)
         {
@@ -147,7 +148,7 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 JsonNode value = pair.getValue();
                 JsonNode evaluated;
-                if (pair.getKey().equals("_do")) {
+                if (noEvaluatedKeys.contains(pair.getKey())) {
                     // don't evaluate _do parameters
                     evaluated = value;
                 }
