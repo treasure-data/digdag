@@ -1,6 +1,6 @@
 # if>: Conditional execution
 
-**if>** operator runs subtasks if `true` is given.
+**if>** operator runs `_do` subtasks if `true` is given. otherwise, it runs `_else_do` subtasks.
 
 (This operator is EXPERIMENTAL. Parameters may change in a future release)
 
