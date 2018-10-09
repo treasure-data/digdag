@@ -106,6 +106,11 @@ Options:
 
   Example: ``--max-task-threads 5``
 
+:command:`-O, --task-log DIR`
+  Store task logs to this directory.
+
+  Example: ``--task-log log/tasks``
+
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
