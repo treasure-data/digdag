@@ -123,6 +123,8 @@ public class MailOperatorFactory
             catch (ConfigException ex) {
                 toList = ImmutableList.of(params.get("to", String.class));
             }
+            List<String> bccList = params.getListOrEmpty("bcc", String.class);
+            List<String> ccList = params.getListOrEmpty("cc", String.class);
 
             boolean isHtml = params.get("html", boolean.class, false);
 
@@ -135,6 +137,14 @@ public class MailOperatorFactory
 
                 msg.setRecipients(RecipientType.TO,
                         toList.stream()
+                                .map(it -> newAddress(it))
+                                .toArray(InternetAddress[]::new));
+                msg.setRecipients(RecipientType.BCC,
+                        bccList.stream()
+                                .map(it -> newAddress(it))
+                                .toArray(InternetAddress[]::new));
+                msg.setRecipients(RecipientType.CC,
+                        ccList.stream()
                                 .map(it -> newAddress(it))
                                 .toArray(InternetAddress[]::new));
 
