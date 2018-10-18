@@ -16,12 +16,14 @@ To use Gmail SMTP server, you need to do either of:
         mail>: body.txt
         subject: workflow started
         to: [me@example.com]
+        cc: [foo@example.com,bar@example.com]
 
       +step2:
         mail>:
           data: this is email body embedded in a .dig file
         subject: workflow started
         to: [me@example.com]
+        bcc: [foo@example.com,bar@example.com]
 
       +step3:
         sh>: this_task_might_fail.sh
@@ -134,6 +136,26 @@ To use Gmail SMTP server, you need to do either of:
 
   ```
   to: [analyst@examile.com]
+  ```
+
+* **cc**: [ADDR1, ADDR2, ...]
+
+  Cc addresses.
+
+  Examples:
+
+  ```
+  cc: [analyst@examile.com]
+  ```
+
+* **bcc**: [ADDR1, ADDR2, ...]
+
+  Bcc addresses.
+
+  Examples:
+
+  ```
+  bcc: [analyst@examile.com]
   ```
 
 * **from**: ADDR
