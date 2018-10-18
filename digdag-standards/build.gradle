@@ -77,4 +77,7 @@ dependencies {
     testCompile 'org.eclipse.jetty:jetty-servlet:9.3.11.v20160721'
     testCompile 'org.eclipse.jetty:jetty-servlets:9.3.11.v20160721'
     testCompile 'org.eclipse.jetty:jetty-webapp:9.3.11.v20160721'
+    // mail test
+    testCompile 'org.subethamail:subethasmtp:3.1.7'
+
 }
