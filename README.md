@@ -127,4 +127,25 @@ It builds index.html at digdag-docs/build/html/index.html.
 
 The list of release note is [here](https://github.com/treasure-data/digdag/tree/master/digdag-docs/src/releases).
 
+### Development on IDEs
+
+#### IntelliJ IDEA
+
+Digdag is using a Java annotation processor `org.immutables:value.` The combination of Java annotation processing and Gradle on IntelliJ IDEA sometimes introduces some troubles. In Digdag's case, you may run into some compile errors like `cannot find symbol: class ImmutableRestWorkflowDefinitionCollection.`
+So we'd recommend the followings to avoid those compile errors if you want to develop Digdag one the IDE.
+
+1. Generate `pom.xml` with `./gradlew pom` command
+
+ Digdag can generate `pom.xml` from `build.gradle`
+
+2. Import the sources as a new Maven project on the IDE
+
+3. Build the project on the IDE
+
+ This build itself should finish successfully, but you would still see some compile errors like `cannot find symbol: class ImmutableRestWorkflowDefinitionCollection`
+
+4. Execute `Maven -> Reimport` on the IDE
+
+ This command should resolve the above compile errors
+
 
