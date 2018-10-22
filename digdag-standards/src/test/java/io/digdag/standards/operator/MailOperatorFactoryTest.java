@@ -10,6 +10,7 @@ import com.icegreen.greenmail.util.ServerSetupTest;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
+import io.digdag.spi.TaskExecutionException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -207,7 +208,7 @@ public class MailOperatorFactoryTest
         }
     }
 
-    @Ignore
+    @Test
     public void errorCheckNoHost()
     {
         Config config = newConfig()
@@ -226,7 +227,7 @@ public class MailOperatorFactoryTest
             op.run();
             fail("should be thrown Exception.");
         }
-        catch (ConfigException ignore) {
+        catch (TaskExecutionException ignore) {
         }
     }
 
