@@ -78,6 +78,8 @@ dependencies {
     testCompile 'org.eclipse.jetty:jetty-servlets:9.3.11.v20160721'
     testCompile 'org.eclipse.jetty:jetty-webapp:9.3.11.v20160721'
     // mail test
-    testCompile 'com.icegreen:greenmail:1.5.8'
+    testCompile ('com.icegreen:greenmail:1.5.8'){
+        exclude group: 'org.slf4j', module: 'slf4j-api'
 
+    }
 }
