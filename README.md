@@ -36,6 +36,18 @@ $ brew install node
   * sphinx_rtd_theme
   * recommonmark
 
+### Check Digdag REST API
+
+Use `--enable-swagger` option to check the current Digdag REST API.
+
+```
+$ ./gradlew cli
+$ ./pkg/digdag-<current version>.jar server --memory --enable-swagger # Run server with --enable-swagger option
+
+$ docker run -dp 8080:8080 swaggerapi/swagger-ui # Run Swagger-UI on different console
+$ open http://localhost:8080/?url=http://localhost:65432/api/swagger.json # Open api/swagger.json on Swagger-UI
+```
+
 ### Running tests
 
 ```
