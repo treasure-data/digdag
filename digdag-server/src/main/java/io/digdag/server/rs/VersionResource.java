@@ -5,12 +5,15 @@ import com.google.inject.Inject;
 import io.digdag.client.Version;
 import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.server.ClientVersionChecker;
+import io.swagger.annotations.Api;
+
 import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+@Api("Version")
 @Path("/")
 @Produces("application/json")
 public class VersionResource

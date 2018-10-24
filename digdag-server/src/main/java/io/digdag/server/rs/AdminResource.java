@@ -8,6 +8,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.swagger.annotations.Api;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -16,6 +17,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+@Api("Admin")
 @AdminRestricted
 @Path("/")
 @Produces("application/json")

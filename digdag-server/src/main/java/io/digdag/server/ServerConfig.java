@@ -42,6 +42,8 @@ public interface ServerConfig
 
     public boolean getExecutorEnabled();
 
+    public boolean getEnableSwagger();
+
     public Map<String, String> getHeaders();
 
     public ConfigElement getSystemConfig();
@@ -85,6 +87,7 @@ public interface ServerConfig
             .jmxPort(config.getOptional("server.jmx.port", Integer.class))
             .enableHttp2(config.get("server.http.enable-http2", boolean.class, false))
             .executorEnabled(config.get("server.executor.enabled", boolean.class, true))
+            .enableSwagger(config.get("server.enable-swagger", boolean.class, false))
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .environment(readPrefixed.apply("server.environment."))

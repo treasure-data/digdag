@@ -6,6 +6,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
+import io.digdag.client.DigdagVersion;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
@@ -32,14 +33,18 @@ import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
+import io.swagger.jaxrs.Reader;
+import io.swagger.jaxrs.config.BeanConfig;
+import io.swagger.jaxrs.config.DefaultJaxrsConfig;
+import io.swagger.jaxrs.listing.ApiListingResource;
+import io.swagger.jaxrs.listing.SwaggerSerializers;
+import io.swagger.models.Swagger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.NotSupportedException;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -60,6 +65,13 @@ import static io.digdag.guice.rs.GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_AT
 public class ServerModule
         extends GuiceRsModule
 {
+    private static final Logger logger = LoggerFactory.getLogger(ServerModule.class);
+    private ServerConfig serverConfig;
+
+    public ServerModule(ServerConfig serverConfig) {
+        this.serverConfig = serverConfig;
+    }
+
     @Override
     public void configure()
     {
@@ -75,6 +87,10 @@ public class ServerModule
         bindExceptionhandlers(builder);
         bindSecrets();
         bindUiApplication();
+
+        if (serverConfig.getEnableSwagger()) {
+            enableSwagger(builder);
+        }
     }
 
     protected void bindSecrets()
@@ -124,6 +140,20 @@ public class ServerModule
             .matches("/*")
             .addResources(UiResource.class)
             ;
+    }
+
+    protected void enableSwagger(ApplicationBindingBuilder builder) {
+        BeanConfig beanConfig = new BeanConfig();
+        beanConfig.setTitle("Digdag");
+        beanConfig.setDescription("Digdag server API");
+        beanConfig.setVersion(DigdagVersion.buildVersion().toString());
+        beanConfig.setResourcePackage(VersionResource.class.getPackage().getName());
+        beanConfig.setScan();
+
+        builder.addProvider(SwaggerSerializers.class)
+                .addProvider(CorsFilter.class)
+                .addResources(SwaggerApiListingResource.class);
+        logger.info("swagger api enabled on: /api/swagger.{json,yaml}");
     }
 
     public static class JsonProviderProvider
@@ -209,5 +239,11 @@ public class ServerModule
                 throw new ForbiddenException();
             }
         }
+    }
+
+    @Path("/api/swagger.{type:json|yaml}")
+    public static class SwaggerApiListingResource extends ApiListingResource
+    {
+
     }
 }
