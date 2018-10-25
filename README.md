@@ -57,6 +57,12 @@ $ ./gradlew check
 Test coverage report is generated at `didgag-*/build/reports/jacoco/test/html/index.html`.
 Findbugs report is generated at `digdag-*/build/reports/findbugs/main.html`.
 
+```
+$ CI_ACCEPTANCE_TEST=true ./gradlew digdag-tests:test --info --tests acceptance.BuiltInVariablesIT
+```
+
+To execute single test in digdag-tests package locally, `tests` option that is provided by Gradle can be helped. Environment variable `CI_ACCEPTANCE_TEST=true` is also required.
+
 ### Testing with PostgreSQL
 
 Test uses in-memory H2 database by default. To use PostgreSQL, set following environment variables:
