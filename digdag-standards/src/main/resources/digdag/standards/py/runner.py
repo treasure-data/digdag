@@ -108,7 +108,13 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
     if callable_type == object.__init__:
         # object.__init__ accepts *varargs and **keywords but it throws exception
         return {}
-    spec = inspect.getargspec(callable_type)
+    if hasattr(inspect, 'getfullargspec'): # Python3
+        spec = inspect.getfullargspec(callable_type)
+        keywords_ = spec.varkw
+    else: # Python 2
+        spec = inspect.getargspec(callable_type)
+        keywords_ = spec.keywords
+
     args = {}
     for idx, key in enumerate(spec.args):
         if exclude_self and idx == 0:
@@ -127,7 +133,7 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
                 else:
                     name = callable_type.__name__
                 raise TypeError("Method '%s' requires parameter '%s' but not set" % (name, key))
-    if spec.keywords:
+    if keywords_:
         # above code was only for validation
         return params
     else:
