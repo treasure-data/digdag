@@ -264,7 +264,11 @@ public class Secrets
             int equalsIndex = s.indexOf('=');
             if (equalsIndex != -1) {
                 String key = s.substring(0, equalsIndex);
-                String value = s.substring(equalsIndex + 1, s.length());
+                int sLength = s.length();
+                if(equalsIndex + 1 == sLength) {
+                    throw usage("Empty value for --set secret key: '" + key + "'");
+                }
+                String value = s.substring(equalsIndex + 1, sLength);
                 if (key.isEmpty()) {
                     throw usage(null);
                 }
