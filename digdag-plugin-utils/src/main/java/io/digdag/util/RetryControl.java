@@ -34,6 +34,15 @@ public class RetryControl
     private final int retryInterval;
     private final RetryIntervalType retryIntervalType;
 
+    private int intValueTextual(JsonNode node){
+        if(node.isTextual()){
+            return Integer.parseInt(node.asText());
+        }
+        else {
+            return node.intValue();
+        }
+    }
+
     private RetryControl(Config config, Config stateParams, boolean enableByDefault)
     {
 
@@ -49,14 +58,14 @@ public class RetryControl
             }
             else if (retry.isNumber() || retry.isTextual()) {  // Only limit is set.
                 //If set as variable ${..}, the value become text. So text data is also accepted.
-                this.retryLimit = retry.intValue();
+                this.retryLimit = intValueTextual(retry);
                 this.retryInterval = 0;
                 this.retryIntervalType = RetryIntervalType.CONSTATNT;
             }
             else if (retry.isObject()) {  // json format
-                this.retryLimit = retry.get("limit").intValue();
+                this.retryLimit = intValueTextual(retry.get("limit"));
                 if (retry.has("interval")) {
-                    this.retryInterval = retry.get("interval").intValue();
+                    this.retryInterval = intValueTextual(retry.get("interval"));
                 }
                 else {
                     this.retryInterval = 0;
