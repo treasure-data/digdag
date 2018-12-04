@@ -642,6 +642,47 @@ class ProjectsView extends React.Component {
   }
 }
 
+class StatusFilter extends React.Component {
+  state = {
+    selectedStatus: 'All'
+  };
+
+  filterSessionsByStatus(sessions, selectedStatus) {
+    switch (selectedStatus) {
+      case 'Success':
+        return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success);
+      case 'Failed':
+        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success);
+      case 'Pending':
+        return sessions.filter(s => !s.lastAttempt.done);
+      case 'Canceled':
+        return sessions.filter(s => s.lastAttempt.cancelRequested && s.lastAttempt.done);
+      case 'Canceling':
+        return sessions.filter(s => s.lastAttempt.cancelRequested && !s.lastAttempt.done);
+      default:
+        return sessions;
+    }
+  }
+
+  render () {
+    const statusTypes = ['All', 'Success', 'Failed', 'Pending', 'Canceled', 'Canceling'];
+    const childrenWithProps = React.Children.map(this.props.children, child => {
+      return React.cloneElement(child, {
+        sessions: this.filterSessionsByStatus(this.props.sessions, this.state.selectedStatus)
+      });
+    });
+
+    return (
+      <div className="status-filter">
+        <select onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+          {statusTypes.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {childrenWithProps}
+      </div>
+    )
+  }
+}
+
 class SessionsView extends React.Component {
   state = {
     sessions: []
@@ -661,7 +702,9 @@ class SessionsView extends React.Component {
     return (
       <div>
         <h2>Sessions</h2>
-        <SessionListView sessions={this.state.sessions} />
+        <StatusFilter sessions={this.state.sessions} >
+          <SessionListView />
+        </StatusFilter>
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
@@ -756,7 +799,9 @@ class ProjectView extends React.Component {
         </div>
         <div className='row'>
           <h2>Sessions</h2>
-          <SessionListView sessions={this.state.sessions} />
+          <StatusFilter sessions={this.state.sessions}>
+            <SessionListView />
+          </StatusFilter>
         </div>
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
@@ -874,7 +919,9 @@ class WorkflowView extends React.Component {
         <div><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></div>
         <div className='row'>
           <h2>Sessions</h2>
-          <SessionListView sessions={this.state.sessions} />
+          <StatusFilter sessions={this.state.sessions}>
+            <SessionListView />
+          </StatusFilter>
         </div>
         <div className='row'>
           <h2>Files</h2>
