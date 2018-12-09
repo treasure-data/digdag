@@ -651,7 +651,7 @@ class StatusFilter extends React.Component {
     switch (selectedStatus) {
       case 'Success':
         return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success);
-      case 'Failed':
+      case 'Failure':
         return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success);
       case 'Pending':
         return sessions.filter(s => !s.lastAttempt.done);
@@ -665,7 +665,7 @@ class StatusFilter extends React.Component {
   }
 
   render () {
-    const statusTypes = ['All', 'Success', 'Failed', 'Pending', 'Canceled', 'Canceling'];
+    const statusTypes = ['All', 'Success', 'Failure', 'Pending', 'Canceled', 'Canceling'];
     const childrenWithProps = React.Children.map(this.props.children, child => {
       return React.cloneElement(child, {
         sessions: this.filterSessionsByStatus(this.props.sessions, this.state.selectedStatus)
