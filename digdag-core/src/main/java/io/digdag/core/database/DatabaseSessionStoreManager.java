@@ -56,6 +56,7 @@ import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskStateSummary;
 import io.digdag.core.session.TaskType;
 import io.digdag.core.workflow.TaskConfig;
+import io.digdag.spi.AccessController;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskResult;
 import org.skife.jdbi.v2.DBI;
@@ -1190,7 +1191,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId, List<String> filters)
+        public List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId, AccessController.ListFilter filter)
         {
             final String query =
                     "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
@@ -1219,7 +1220,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public List<StoredSessionAttemptWithSession> getAttemptsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId, List<String> filters)
+        public List<StoredSessionAttemptWithSession> getAttemptsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId, AccessController.ListFilter filter)
         {
             final String query =
                     "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
@@ -1256,7 +1257,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, int projectId, String workflowName, int pageSize, Optional<Long> lastId, List<String> filters)
+        public List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, int projectId, String workflowName, int pageSize, Optional<Long> lastId, AccessController.ListFilter filter)
         {
             final String query =
                     "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
