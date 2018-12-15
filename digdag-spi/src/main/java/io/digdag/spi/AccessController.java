@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import org.immutables.value.Value;
 
+@Value.Enclosing
 public interface AccessController
 {
     @Value.Immutable
@@ -15,7 +16,7 @@ public interface AccessController
 
         static ProjectTarget of(int id, String name)
         {
-            return ImmutableProjectTarget.builder()
+            return ImmutableAccessController.ProjectTarget.builder()
                     .id(id)
                     .name(name)
                     .build();
@@ -33,7 +34,7 @@ public interface AccessController
 
         static WorkflowTarget of(String name, int projectId, String projectName)
         {
-            return ImmutableWorkflowTarget.builder()
+            return ImmutableAccessController.WorkflowTarget.builder()
                     .name(name)
                     .projectId(projectId)
                     .projectName(projectName)
@@ -54,7 +55,7 @@ public interface AccessController
 
         static SessionTarget of(int id, String workflowName, int projectId, String projectName)
         {
-            return ImmutableSessionTarget.builder()
+            return ImmutableAccessController.SessionTarget.builder()
                     .id(id)
                     .workflowName(workflowName)
                     .projectId(projectId)
@@ -84,7 +85,7 @@ public interface AccessController
                 Optional<Integer> projectId,
                 Optional<String> projectName)
         {
-            return ImmutableAttemptTarget.builder()
+            return ImmutableAccessController.AttemptTarget.builder()
                     .id(id)
                     .name(name)
                     .sessionId(sessionId)
