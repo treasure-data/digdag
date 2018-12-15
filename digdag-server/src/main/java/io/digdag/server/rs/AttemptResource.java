@@ -31,6 +31,7 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import io.digdag.spi.AccessControlException;
 import io.digdag.spi.AccessController;
 import io.digdag.spi.ScheduleTime;
 import io.swagger.annotations.Api;
@@ -93,10 +94,10 @@ public class AttemptResource
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize)
-            throws ResourceNotFoundException, ResourceForbiddenException
+            throws ResourceNotFoundException, AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
-        return tm.<RestSessionAttemptCollection, ResourceNotFoundException, ResourceForbiddenException>begin(() -> {
+        return tm.<RestSessionAttemptCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -128,7 +129,7 @@ public class AttemptResource
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        }, ResourceNotFoundException.class, ResourceForbiddenException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET

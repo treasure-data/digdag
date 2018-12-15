@@ -1,6 +1,5 @@
 package io.digdag.core.database;
 
-import io.digdag.core.repository.ResourceForbiddenException;
 import org.skife.jdbi.v2.Handle;
 
 public interface TransactionManager
