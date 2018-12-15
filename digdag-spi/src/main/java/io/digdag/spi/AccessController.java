@@ -108,30 +108,20 @@ public interface AccessController
     // for ui resource
 
     // for attempt resource
-    default boolean checkGetAttempt(int siteId, Config userInfo, AttemptTarget target)
-    {
-        return true;
-    }
+    default void checkGetAttempt(int siteId, Config userInfo, AttemptTarget target)
+    { }
 
-    default boolean checkRunAttempt(int siteId, Config userInfo, AttemptTarget target)
-    {
-        return true;
-    }
+    default void checkRunAttempt(int siteId, Config userInfo, AttemptTarget target)
+    { }
 
-    default boolean checkKillAttempt(int siteId, Config userInfo, AttemptTarget target)
-    {
-        return true;
-    }
+    default void checkKillAttempt(int siteId, Config userInfo, AttemptTarget target)
+    { }
 
-    default boolean checkListAttemptsOfProject(int siteId, Config userInfo, ProjectTarget target)
-    {
-        return true;
-    }
+    default void checkListAttemptsOfProject(int siteId, Config userInfo, ProjectTarget target)
+    { }
 
-    default boolean checkListAttemptsOfWorkflow(int siteId, Config userInfo, WorkflowTarget target)
-    {
-        return true;
-    }
+    default void checkListAttemptsOfWorkflow(int siteId, Config userInfo, WorkflowTarget target)
+    { }
 
     default ListFilter getListAttemptsFilter(int siteId, Config userInfo, ProjectTarget target)
     {

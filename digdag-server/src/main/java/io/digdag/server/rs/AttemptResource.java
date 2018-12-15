@@ -106,9 +106,7 @@ public class AttemptResource
                 StoredProject proj = rs.getProjectByName(projName); // NotFound
                 if (wfName != null) {
                     final AccessController.WorkflowTarget workflowTarget = AccessController.WorkflowTarget.of(wfName, proj.getId(), proj.getName());
-                    if (ac.checkListAttemptsOfWorkflow(getSiteId(), getUserInfo(), workflowTarget)) {
-                        throw new ResourceForbiddenException("Cannot list attempts of the workflow by no permission."); // Forbidden
-                    }
+                    ac.checkListAttemptsOfWorkflow(getSiteId(), getUserInfo(), workflowTarget); // AccessControl
 
                     // of workflow
                     AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo(), workflowTarget);
@@ -116,9 +114,7 @@ public class AttemptResource
                 }
                 else {
                     final AccessController.ProjectTarget projectTarget = AccessController.ProjectTarget.of(proj.getId(), projName);
-                    if (ac.checkListAttemptsOfProject(getSiteId(), getUserInfo(), projectTarget)) {
-                        throw new ResourceForbiddenException("Cannot list attempts of the project by no permission."); // Forbidden
-                    }
+                    ac.checkListAttemptsOfProject(getSiteId(), getUserInfo(), projectTarget); // AccessControl
 
                     // of project
                     AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo(), projectTarget);
