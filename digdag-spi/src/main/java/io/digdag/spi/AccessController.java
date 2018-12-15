@@ -1,9 +1,7 @@
 package io.digdag.spi;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
-import java.util.List;
 import org.immutables.value.Value;
 
 public interface AccessController
@@ -12,76 +10,93 @@ public interface AccessController
     interface ProjectTarget
     {
         int getId();
-        String getName();
-    }
 
-    static ProjectTarget buildProjectTarget(int id, String name)
-    {
-        return ImmutableProjectTarget.builder()
-                .id(id)
-                .name(name)
-                .build();
+        String getName();
+
+        static ProjectTarget of(int id, String name)
+        {
+            return ImmutableProjectTarget.builder()
+                    .id(id)
+                    .name(name)
+                    .build();
+        }
     }
 
     @Value.Immutable
     interface WorkflowTarget
     {
         String getName();
-        int getProjectId();
-        String getProjectName();
-    }
 
-    static WorkflowTarget buildWorkflowTarget(String name, int projectId, String projectName)
-    {
-        return ImmutableWorkflowTarget.builder()
-                .name(name)
-                .projectId(projectId)
-                .projectName(projectName)
-                .build();
+        int getProjectId();
+
+        String getProjectName();
+
+        static WorkflowTarget of(String name, int projectId, String projectName)
+        {
+            return ImmutableWorkflowTarget.builder()
+                    .name(name)
+                    .projectId(projectId)
+                    .projectName(projectName)
+                    .build();
+        }
     }
 
     @Value.Immutable
     interface SessionTarget
     {
         int getId();
-        String getWorkflowName();
-        int getProjectId();
-        String getProjectName();
-    }
 
-    static SessionTarget buildSessionTarget(int id, String workflowName, int projectId, String projectName)
-    {
-        return ImmutableSessionTarget.builder()
-                .id(id)
-                .workflowName(workflowName)
-                .projectId(projectId)
-                .projectName(projectName)
-                .build();
+        String getWorkflowName();
+
+        int getProjectId();
+
+        String getProjectName();
+
+        static SessionTarget of(int id, String workflowName, int projectId, String projectName)
+        {
+            return ImmutableSessionTarget.builder()
+                    .id(id)
+                    .workflowName(workflowName)
+                    .projectId(projectId)
+                    .projectName(projectName)
+                    .build();
+        }
     }
 
     @Value.Immutable
     interface AttemptTarget
     {
+        // TODO
+
         Optional<Integer> getId();
+
         Optional<String> getName();
+
         Optional<Integer> getSessionId();
+
         Optional<Integer> getProjectId();
+
         Optional<String> getProjectName();
+
+        static AttemptTarget of(Optional<Integer> id,
+                Optional<String> name,
+                Optional<Integer> sessionId,
+                Optional<Integer> projectId,
+                Optional<String> projectName)
+        {
+            return ImmutableAttemptTarget.builder()
+                    .id(id)
+                    .name(name)
+                    .sessionId(sessionId)
+                    .projectId(projectId)
+                    .projectName(projectName)
+                    .build();
+        }
     }
 
-    static AttemptTarget buildAttemptTarget(Optional<Integer> id,
-            Optional<String> name,
-            Optional<Integer> sessionId,
-            Optional<Integer> projectId,
-            Optional<String> projectName)
+    interface ListFilter
     {
-        return ImmutableAttemptTarget.builder()
-                .id(id)
-                .name(name)
-                .sessionId(sessionId)
-                .projectId(projectId)
-                .projectName(projectName)
-                .build();
+        String getSql();
     }
 
     // for project resource
@@ -118,16 +133,19 @@ public interface AccessController
         return true;
     }
 
-    default boolean checkListAttemptsOfSession(int siteId, Config userInfo, SessionTarget target)
+    default ListFilter getListAttemptsFilter(int siteId, Config userInfo, ProjectTarget target)
     {
-        return true;
+        return () -> "true";
     }
 
-    default List<String> getListAttemptsFilter(int siteId, Config userInfo)
+    default ListFilter getListAttemptsFilter(int siteId, Config userInfo, WorkflowTarget target)
     {
-        return ImmutableList.<String>of();
-        // return "wf.name like ''"
-        // return "p.name like ''"
+        return () -> "true";
+    }
+
+    default ListFilter getListAttemptsFilter(int siteId, Config userInfo)
+    {
+        return () -> "true";
     }
 
     // for authenticated resource
