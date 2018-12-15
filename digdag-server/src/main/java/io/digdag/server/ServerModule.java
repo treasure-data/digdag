@@ -16,10 +16,12 @@ import io.digdag.core.database.ThreadLocalTransactionManager;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceForbiddenException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -30,6 +32,7 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
+import io.digdag.spi.AccessController;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -83,6 +86,7 @@ public class ServerModule
             .addProvider(AdminRestrictedFilter.class)
             ;
         bindResources(builder);
+        bindAuthorization();
         bindAuthenticator();
         bindExceptionhandlers(builder);
         bindSecrets();
@@ -119,9 +123,15 @@ public class ServerModule
         binder().bind(Authenticator.class).to(JwtAuthenticator.class);
     }
 
+    protected void bindAuthorization()
+    {
+        binder().bind(AccessController.class).to(DefaultAccessController.class);
+    }
+
     protected void bindExceptionhandlers(ApplicationBindingBuilder builder)
     {
         builder
+            .addProviderInstance(new GenericJsonExceptionHandler<ResourceForbiddenException>(Response.Status.FORBIDDEN) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
             .addProviderInstance(new GenericJsonExceptionHandler<StorageFileNotFoundException>(Response.Status.NOT_FOUND) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
