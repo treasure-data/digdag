@@ -66,6 +66,8 @@ import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.sqlobject.customizers.Define;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.io.IOException;
@@ -299,8 +301,8 @@ public class DatabaseSessionStoreManager
                             .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
                     // exclude already cancel-requested tasks
                     " and " + bitAnd("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) + " = 0" +
-                    " and started_at < :startedBefore" +
-                    " and id > :lastId" +
+                    " and started_at \\< :startedBefore" +
+                    " and id \\> :lastId" +
                     " order by id asc" +
                     " limit :limit"
                 )
@@ -350,7 +352,7 @@ public class DatabaseSessionStoreManager
                     " and state in (" +
                         Stream.of(states)
                         .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
-                    " and id > :lastId" +
+                    " and id \\> :lastId" +
                     " order by id asc" +
                     " limit :limit"
                     )
@@ -368,7 +370,7 @@ public class DatabaseSessionStoreManager
                 handle.createQuery(
                     "select distinct parent_id" +
                     " from tasks" +
-                    " where parent_id > :lastId" +
+                    " where parent_id \\> :lastId" +
                     " and state = " + TaskStateCode.BLOCKED_CODE +
                     " order by parent_id" +
                     " limit :limit"
@@ -1193,57 +1195,23 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId, AccessController.ListFilter filter)
         {
-            final String query =
-                    "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
-                    " from session_attempts sa" +
-                    " join sessions s on s.last_attempt_id = sa.id" +
-                    " join projects p on p.id = sa.project_id" +
-                    " where sa.site_id = :siteId" +
-                    (withRetriedAttempts ?
-                            " and s.last_attempt_id is not null" :
-                            "") +
-                    " and sa.id < :lastId" +
-                    " and " + filter.getSql() +
-                    " order by sa.id desc" +
-                    " limit :limit";
-
-            return autoCommit((handle, dao) ->
-                    handle.createQuery(query)
-                            .bind("siteId", siteId)
-                            .bind("lastId", lastId.or(Long.MAX_VALUE))
-                            .bind("limit", pageSize)
-                            .map(new DatabaseSessionStoreManager.StoredSessionAttemptWithSessionMapper(configMapper))
-                            .list()
-            );
+            if (withRetriedAttempts) {
+                return autoCommit((handle, dao) -> dao.getAttemptsWithRetries(siteId, pageSize, lastId.or(Long.MAX_VALUE), filter.getSql()));
+            }
+            else {
+                return autoCommit((handle, dao) -> dao.getAttempts(siteId, pageSize, lastId.or(Long.MAX_VALUE), filter.getSql()));
+            }
         }
 
         @Override
         public List<StoredSessionAttemptWithSession> getAttemptsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId, AccessController.ListFilter filter)
         {
-            final String query =
-                    "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
-                    " from session_attempts sa" +
-                    " join sessions s on s.id = sa.session_id" +
-                    " join projects p on p.id = sa.project_id" +
-                    " where sa.project_id = :projId" +
-                    " and sa.site_id = :siteId" +
-                    (withRetriedAttempts ?
-                            " and s.last_attempt_id is not null" :
-                            "") +
-                    " and sa.id < :lastId" +
-                    " and " + filter.getSql() +
-                    " order by sa.id desc" +
-                    " limit :limit";
-
-            return autoCommit((handle, dao) ->
-                    handle.createQuery(query)
-                            .bind("projId", projectId)
-                            .bind("siteId", siteId)
-                            .bind("lastId", lastId.or(Long.MAX_VALUE))
-                            .bind("limit", pageSize)
-                            .map(new DatabaseSessionStoreManager.StoredSessionAttemptWithSessionMapper(configMapper))
-                            .list()
-            );
+            if (withRetriedAttempts) {
+                return autoCommit((handle, dao) -> dao.getAttemptsOfProjectWithRetries(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE), filter.getSql()));
+            }
+            else {
+                return autoCommit((handle, dao) -> dao.getAttemptsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE), filter.getSql()));
+            }
         }
 
         @Override
@@ -1255,31 +1223,12 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, int projectId, String workflowName, int pageSize, Optional<Long> lastId, AccessController.ListFilter filter)
         {
-            final String query =
-                    "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
-                    " from session_attempts sa" +
-                    " join sessions s on s.id = sa.session_id" +
-                    " where s.project_id = :projectId" +
-                    " and s.workflow_name = :workflowName" +
-                    " and sa.site_id = :siteId" +
-                    (withRetriedAttempts ?
-                            " and s.last_attempt_id is not null" :
-                            "") +
-                    " and sa.id < :lastId" +
-                    " and " + filter.getSql() +
-                    " order by sa.id desc" +
-                    " limit :limit";
-
-            return autoCommit((handle, dao) ->
-                    handle.createQuery(query)
-                            .bind("projectId", projectId)
-                            .bind("workflowName", workflowName)
-                            .bind("siteId", siteId)
-                            .bind("lastId", lastId.or(Long.MAX_VALUE))
-                            .bind("limit", pageSize)
-                            .map(new DatabaseSessionStoreManager.StoredSessionAttemptWithSessionMapper(configMapper))
-                            .list()
-            );
+            if (withRetriedAttempts) {
+                return autoCommit((handle, dao) -> dao.getAttemptsOfWorkflowWithRetries(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE), filter.getSql()));
+            }
+            else {
+                return autoCommit((handle, dao) -> dao.getAttemptsOfWorkflow(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE), filter.getSql()));
+            }
         }
 
         @Override
@@ -1570,6 +1519,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    @UseStringTemplate3StatementLocator
     public interface H2Dao
             extends Dao
     {
@@ -1577,7 +1527,7 @@ public class DatabaseSessionStoreManager
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id in (select id from projects where site_id = :siteId)" +
-                " and s.id < :lastId" +
+                " and s.id \\< :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1604,6 +1554,7 @@ public class DatabaseSessionStoreManager
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
     }
 
+    @UseStringTemplate3StatementLocator
     public interface PgDao
             extends Dao
     {
@@ -1613,7 +1564,7 @@ public class DatabaseSessionStoreManager
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
-                " and s.id < :lastId" +
+                " and s.id \\< :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1661,7 +1612,7 @@ public class DatabaseSessionStoreManager
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projId" +
                 " and sa.site_id = :siteId" +
-                " and s.id < :lastId" +
+                " and s.id \\< :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1672,10 +1623,85 @@ public class DatabaseSessionStoreManager
                 " where s.project_id = :projId" +
                 " and s.workflow_name = :workflowName" +
                 " and sa.site_id = :siteId" +
-                " and s.id < :lastId" +
+                " and s.id \\< :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " join projects p on p.id = sa.project_id" +
+                " where sa.site_id = :siteId" +
+                " and sa.id \\< :lastId" +
+                " and <acFilter>" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getAttempts(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Define("acFilter") String acFilter);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " join projects p on p.id = sa.project_id" +
+                " where sa.site_id = :siteId" +
+                " and s.last_attempt_id is not null" +
+                " and sa.id \\< :lastId" +
+                " and <acFilter>" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getAttemptsWithRetries(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Define("acFilter") String acFilter);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " join projects p on p.id = sa.project_id" +
+                " where sa.project_id = :projId" +
+                " and sa.site_id = :siteId" +
+                " and sa.id \\< :lastId" +
+                " and <acFilter>" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getAttemptsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Define("acFilter") String acFilter);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " join projects p on p.id = sa.project_id" +
+                " where sa.project_id = :projId" +
+                " and sa.site_id = :siteId" +
+                " and s.last_attempt_id is not null" +
+                " and sa.id \\< :lastId" +
+                " and <acFilter>" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getAttemptsOfProjectWithRetries(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Define("acFilter") String acFilter);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " join projects p on p.id = sa.project_id" +
+                " where s.project_id = :projectId" +
+                " and s.workflow_name = :workflowName" +
+                " and sa.site_id = :siteId" +
+                " and sa.id \\< :lastId" +
+                " and <acFilter>" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId, @Define("acFilter") String acFilter);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " join projects p on p.id = sa.project_id" +
+                " where s.project_id = :projectId" +
+                " and s.workflow_name = :workflowName" +
+                " and sa.site_id = :siteId" +
+                " and s.last_attempt_id is not null" +
+                " and sa.id \\< :lastId" +
+                " and <acFilter>" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getAttemptsOfWorkflowWithRetries(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId, @Define("acFilter") String acFilter);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
@@ -1684,7 +1710,7 @@ public class DatabaseSessionStoreManager
                 " and s.workflow_name = :workflowName" +
                 " and sa.state_flags = 0" +
                 " and sa.site_id = :siteId" +
-                " and sa.id < :lastId" +
+                " and sa.id \\< :lastId" +
                 " order by sa.id desc" +
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1692,7 +1718,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select * from session_attempts" +
                 " where session_id = :sessionId" +
                 " and site_id = :siteId" +
-                " and id < :lastId" +
+                " and id \\< :lastId" +
                 " order by id desc" +
                 " limit :limit")
         List<StoredSessionAttempt> getAttemptsOfSessionWithRetries(@Bind("siteId") int siteId, @Bind("sessionId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1756,8 +1782,8 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select * from session_attempts" +
                 " where state_flags = 0" +
-                " and created_at < :createdBefore" +
-                " and id > :lastId" +
+                " and created_at \\< :createdBefore" +
+                " and id \\> :lastId" +
                 " order by id asc" +
                 " limit :limit")
         List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
@@ -1778,7 +1804,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select session_time from sessions" +
                 " where project_id = :projectId" +
                 " and workflow_name = :workflowName" +
-                " and session_time < :beforeThisSessionTime" +
+                " and session_time \\< :beforeThisSessionTime" +
                 " order by session_time desc" +
                 " limit 1")
         Long getLastExecutedSessionTime(@Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("beforeThisSessionTime") long beforeThisSessionTime);
@@ -1874,8 +1900,8 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select id, attempt_id, parent_id, state, updated_at" +
                 " from tasks" +
-                " where updated_at > :updatedSince" +
-                " or (updated_at = :updatedSince and id > :lastId)" +
+                " where updated_at \\> :updatedSince" +
+                " or (updated_at = :updatedSince and id \\> :lastId)" +
                 " order by updated_at asc, id asc" +
                 " limit :limit")
         List<TaskStateSummary> findRecentlyChangedTasks(@Bind("updatedSince") Instant updatedSince, @Bind("lastId") long lastId, @Bind("limit") int limit);
@@ -1883,7 +1909,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select id" +
                 " from tasks" +
                 " where state = :state" +
-                " and id > :lastId" +
+                " and id \\> :lastId" +
                 " order by id asc" +
                 //" order by updated_at asc, id asc" +
                 " limit :limit")
