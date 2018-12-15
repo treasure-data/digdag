@@ -1203,9 +1203,7 @@ public class DatabaseSessionStoreManager
                             " and s.last_attempt_id is not null" :
                             "") +
                     " and sa.id < :lastId" +
-                    (!filters.isEmpty() ?
-                            filters.stream().collect(Collectors.joining(" and ", " and ", "")) :
-                            "") +
+                    " and " + filter.getSql() +
                     " order by sa.id desc" +
                     " limit :limit";
 
@@ -1233,9 +1231,7 @@ public class DatabaseSessionStoreManager
                             " and s.last_attempt_id is not null" :
                             "") +
                     " and sa.id < :lastId" +
-                    (!filters.isEmpty() ?
-                            filters.stream().collect(Collectors.joining(" and ", " and ", "")) :
-                            "") +
+                    " and " + filter.getSql() +
                     " order by sa.id desc" +
                     " limit :limit";
 
@@ -1270,9 +1266,7 @@ public class DatabaseSessionStoreManager
                             " and s.last_attempt_id is not null" :
                             "") +
                     " and sa.id < :lastId" +
-                    (!filters.isEmpty() ?
-                            filters.stream().collect(Collectors.joining(" and ", " and ", "")) :
-                            "") +
+                    " and " + filter.getSql() +
                     " order by sa.id desc" +
                     " limit :limit";
 
