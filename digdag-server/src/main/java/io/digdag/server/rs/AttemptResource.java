@@ -105,30 +105,30 @@ public class AttemptResource
             if (projName != null) {
                 StoredProject proj = rs.getProjectByName(projName); // NotFound
                 if (wfName != null) {
-                    AccessController.WorkflowTarget workflowTarget = AccessController.buildWorkflowTarget(wfName, proj.getId(), proj.getName());
+                    final AccessController.WorkflowTarget workflowTarget = AccessController.WorkflowTarget.of(wfName, proj.getId(), proj.getName());
                     if (ac.checkListAttemptsOfWorkflow(getSiteId(), getUserInfo(), workflowTarget)) {
                         throw new ResourceForbiddenException("Cannot list attempts of the workflow by no permission."); // Forbidden
                     }
 
                     // of workflow
-                    List<String> filters = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId), filters);
+                    AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo(), workflowTarget);
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId), filter);
                 }
                 else {
-                    AccessController.ProjectTarget projectTarget = AccessController.buildProjectTarget(proj.getId(), projName);
+                    final AccessController.ProjectTarget projectTarget = AccessController.ProjectTarget.of(proj.getId(), projName);
                     if (ac.checkListAttemptsOfProject(getSiteId(), getUserInfo(), projectTarget)) {
                         throw new ResourceForbiddenException("Cannot list attempts of the project by no permission."); // Forbidden
                     }
 
                     // of project
-                    List<String> filters = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
-                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId), filters);
+                    AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo(), projectTarget);
+                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId), filter);
                 }
             }
             else {
                 // of site
-                List<String> filters = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
-                attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId), filters);
+                AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
+                attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId), filter);
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
