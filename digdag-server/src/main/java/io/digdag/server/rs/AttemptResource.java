@@ -1,6 +1,7 @@
 package io.digdag.server.rs;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import io.digdag.spi.AccessController;
 import io.digdag.spi.ScheduleTime;
 import io.swagger.annotations.Api;
 
@@ -53,6 +55,7 @@ public class AttemptResource
     private final SessionStoreManager sm;
     private final SchedulerManager srm;
     private final TransactionManager tm;
+    private final AccessController ac;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
@@ -65,6 +68,7 @@ public class AttemptResource
             SessionStoreManager sm,
             SchedulerManager srm,
             TransactionManager tm,
+            AccessController ac,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor executor,
             ConfigFactory cf,
@@ -74,6 +78,7 @@ public class AttemptResource
         this.sm = sm;
         this.srm = srm;
         this.tm = tm;
+        this.ac = ac;
         this.attemptBuilder = attemptBuilder;
         this.executor = executor;
         this.cf = cf;
@@ -88,33 +93,46 @@ public class AttemptResource
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, ResourceForbiddenException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
-
-        return tm.begin(() -> {
+        return tm.<RestSessionAttemptCollection, ResourceNotFoundException, ResourceForbiddenException>begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
+
             if (projName != null) {
-                StoredProject proj = rs.getProjectByName(projName);
+                StoredProject proj = rs.getProjectByName(projName); // NotFound
                 if (wfName != null) {
+                    AccessController.WorkflowTarget workflowTarget = AccessController.buildWorkflowTarget(wfName, proj.getId(), proj.getName());
+                    if (ac.checkListAttemptsOfWorkflow(getSiteId(), getUserInfo(), workflowTarget)) {
+                        throw new ResourceForbiddenException("Cannot list attempts of the workflow by no permission."); // Forbidden
+                    }
+
                     // of workflow
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId));
+                    List<String> filters = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId), filters);
                 }
                 else {
+                    AccessController.ProjectTarget projectTarget = AccessController.buildProjectTarget(proj.getId(), projName);
+                    if (ac.checkListAttemptsOfProject(getSiteId(), getUserInfo(), projectTarget)) {
+                        throw new ResourceForbiddenException("Cannot list attempts of the project by no permission."); // Forbidden
+                    }
+
                     // of project
-                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId));
+                    List<String> filters = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
+                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId), filters);
                 }
             }
             else {
                 // of site
-                attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId));
+                List<String> filters = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
+                attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId), filters);
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, ResourceForbiddenException.class);
     }
 
     @GET
