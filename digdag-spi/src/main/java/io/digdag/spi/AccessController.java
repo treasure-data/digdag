@@ -109,18 +109,23 @@ public interface AccessController
 
     // for attempt resource
     default void checkGetAttempt(int siteId, Config userInfo, AttemptTarget target)
+            throws AccessControlException
     { }
 
     default void checkRunAttempt(int siteId, Config userInfo, AttemptTarget target)
+            throws AccessControlException
     { }
 
     default void checkKillAttempt(int siteId, Config userInfo, AttemptTarget target)
+            throws AccessControlException
     { }
 
     default void checkListAttemptsOfProject(int siteId, Config userInfo, ProjectTarget target)
+            throws AccessControlException
     { }
 
     default void checkListAttemptsOfWorkflow(int siteId, Config userInfo, WorkflowTarget target)
+            throws AccessControlException
     { }
 
     default ListFilter getListAttemptsFilter(int siteId, Config userInfo, ProjectTarget target)

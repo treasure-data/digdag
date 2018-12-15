@@ -1,18 +1,19 @@
-package io.digdag.core.repository;
+package io.digdag.spi;
 
 /**
  * An exception thrown when a required resource (project, revision, session, etc.) does not be permitted by an user.
  *
  * This exception is deterministic.
  */
-public class ResourceForbiddenException extends Exception
+public class AccessControlException
+        extends Exception
 {
-    public ResourceForbiddenException(String message)
+    public AccessControlException(String message)
     {
         super(message);
     }
 
-    public ResourceForbiddenException(Throwable cause)
+    public AccessControlException(Throwable cause)
     {
         super(cause);
     }
