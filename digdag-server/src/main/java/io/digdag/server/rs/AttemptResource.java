@@ -106,25 +106,28 @@ public class AttemptResource
             if (projName != null) {
                 StoredProject proj = rs.getProjectByName(projName); // NotFound
                 if (wfName != null) {
-                    final AccessController.WorkflowTarget workflowTarget = AccessController.WorkflowTarget.of(wfName, proj.getId(), proj.getName());
-                    ac.checkListAttemptsOfWorkflow(getSiteId(), getUserInfo(), workflowTarget); // AccessControl
+                    final AccessController.WorkflowTarget workflowTarget = AccessController.WorkflowTarget.of(getSiteId(), wfName, proj.getId(), proj.getName());
+                    ac.checkListAttemptsOfWorkflow(getUserInfo(), workflowTarget); // AccessControl
 
                     // of workflow
-                    AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo(), workflowTarget);
+                    AccessController.ListFilter filter = ac.getListAttemptsFilterOfWorkflow(getUserInfo(), workflowTarget);
                     attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId), filter);
                 }
                 else {
-                    final AccessController.ProjectTarget projectTarget = AccessController.ProjectTarget.of(proj.getId(), projName);
-                    ac.checkListAttemptsOfProject(getSiteId(), getUserInfo(), projectTarget); // AccessControl
+                    final AccessController.ProjectTarget projectTarget = AccessController.ProjectTarget.of(getSiteId(), proj.getId(), projName);
+                    ac.checkListAttemptsOfProject(getUserInfo(), projectTarget); // AccessControl
 
                     // of project
-                    AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo(), projectTarget);
+                    AccessController.ListFilter filter = ac.getListAttemptsFilterOfProject(getUserInfo(), projectTarget);
                     attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId), filter);
                 }
             }
             else {
+                final AccessController.SiteTarget siteTarget = AccessController.SiteTarget.of(getSiteId());
+                ac.checkListAttempsOfSite(getUserInfo(), siteTarget); // AccessControl
+
                 // of site
-                AccessController.ListFilter filter = ac.getListAttemptsFilter(getSiteId(), getUserInfo());
+                AccessController.ListFilter filter = ac.getListAttemptsFilterOfSite(getUserInfo(), siteTarget);
                 attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId), filter);
             }
 
