@@ -1,7 +1,7 @@
 package io.digdag.spi;
 
 /**
- * An exception thrown when a required resource (project, revision, session, etc.) does not be permitted by an user.
+ * An exception thrown when a required action to a target (project, revision, session, etc.) is not be permitted.
  *
  * This exception is deterministic.
  */
