@@ -1,7 +1,6 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
@@ -31,9 +30,12 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
-import io.digdag.spi.AccessControlException;
-import io.digdag.spi.AccessController;
+import io.digdag.spi.ac.AccessControlException;
+import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.ac.ProjectTarget;
+import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
 
 @Api("Attempt")
@@ -106,7 +108,7 @@ public class AttemptResource
             if (projName != null) {
                 StoredProject proj = rs.getProjectByName(projName); // NotFound
                 if (wfName != null) {
-                    final AccessController.WorkflowTarget workflowTarget = AccessController.WorkflowTarget.of(getSiteId(), wfName, proj.getId(), proj.getName());
+                    final WorkflowTarget workflowTarget = WorkflowTarget.of(getSiteId(), wfName, proj.getId(), proj.getName());
                     ac.checkListAttemptsOfWorkflow(getUserInfo(), workflowTarget); // AccessControl
 
                     // of workflow
@@ -114,7 +116,7 @@ public class AttemptResource
                     attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId), filter);
                 }
                 else {
-                    final AccessController.ProjectTarget projectTarget = AccessController.ProjectTarget.of(getSiteId(), proj.getId(), projName);
+                    final ProjectTarget projectTarget = ProjectTarget.of(getSiteId(), proj.getId(), projName);
                     ac.checkListAttemptsOfProject(getUserInfo(), projectTarget); // AccessControl
 
                     // of project
@@ -123,7 +125,7 @@ public class AttemptResource
                 }
             }
             else {
-                final AccessController.SiteTarget siteTarget = AccessController.SiteTarget.of(getSiteId());
+                final SiteTarget siteTarget = SiteTarget.of(getSiteId());
                 ac.checkListAttempsOfSite(getUserInfo(), siteTarget); // AccessControl
 
                 // of site
