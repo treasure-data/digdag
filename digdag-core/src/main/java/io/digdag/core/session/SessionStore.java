@@ -3,9 +3,8 @@ package io.digdag.core.session;
 import java.util.List;
 import java.time.Instant;
 import com.google.common.base.Optional;
-import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.spi.AccessController;
+import io.digdag.spi.ac.AccessController;
 
 public interface SessionStore
         extends SessionTransaction
