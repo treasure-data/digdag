@@ -71,7 +71,7 @@ public class TaskControl
         checkTaskLimit(store, task.getAttemptId(), tasks);
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
-                cancelSiblings, false, false,
+                cancelSiblings, false, true,
                 collectResumingTasks(task.getAttemptId(), tasks));
     }
 
@@ -80,7 +80,7 @@ public class TaskControl
     {
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
-                cancelSiblings, false, false,
+                cancelSiblings, false, true,
                 collectResumingTasks(task.getAttemptId(), tasks));
     }
 
