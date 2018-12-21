@@ -13,7 +13,7 @@ public interface ProjectTarget
 
     // TODO better to have revision info?
 
-    public static ProjectTarget of(int siteId, int id, String name)
+    static ProjectTarget of(int siteId, int id, String name)
     {
         return ImmutableProjectTarget.builder()
                 .siteId(siteId)

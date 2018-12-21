@@ -13,7 +13,7 @@ public interface WorkflowTarget
 
     String getProjectName();
 
-    public static WorkflowTarget of(int siteId, String name, int projectId, String projectName)
+    static WorkflowTarget of(int siteId, String name, int projectId, String projectName)
     {
         return ImmutableWorkflowTarget.builder()
                 .siteId(siteId)
