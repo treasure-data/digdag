@@ -7,7 +7,7 @@ public interface SiteTarget
 {
     int getSiteId();
 
-    public static SiteTarget of(int siteId)
+    static SiteTarget of(int siteId)
     {
         return ImmutableSiteTarget.builder()
                 .siteId(siteId)
