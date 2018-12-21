@@ -15,7 +15,7 @@ public interface SessionTarget
 
     String getProjectName();
 
-    public static SessionTarget of(int siteId, int id, String workflowName, int projectId, String projectName)
+    static SessionTarget of(int siteId, int id, String workflowName, int projectId, String projectName)
     {
         return ImmutableSessionTarget.builder()
                 .siteId(siteId)

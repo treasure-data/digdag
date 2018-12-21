@@ -6,34 +6,41 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface AttemptTarget
 {
-    // TODO
-
-    Optional<Integer> getSiteId();
-
-    Optional<Integer> getId();
+    int getSiteId();
 
     Optional<String> getName();
 
-    Optional<Integer> getSessionId();
+    int getProjectId();
 
-    Optional<Integer> getProjectId();
+    String getProjectName();
 
-    Optional<String> getProjectName();
+    long getWorkflowId();
 
-    public static AttemptTarget of(Optional<Integer> siteId,
-            Optional<Integer> id,
+    String getWorkflowName();
+
+    int getRevisionId();
+
+    String getRevisionName();
+
+    static AttemptTarget of(
+            int siteId,
             Optional<String> name,
-            Optional<Integer> sessionId,
-            Optional<Integer> projectId,
-            Optional<String> projectName)
+            int projectId,
+            String projectName,
+            long workflowId,
+            String workflowName,
+            int revisionId,
+            String revisionName)
     {
         return ImmutableAttemptTarget.builder()
                 .siteId(siteId)
-                .id(id)
                 .name(name)
-                .sessionId(sessionId)
                 .projectId(projectId)
                 .projectName(projectName)
+                .workflowId(workflowId)
+                .workflowName(workflowName)
+                .revisionId(revisionId)
+                .revisionName(revisionName)
                 .build();
     }
 }

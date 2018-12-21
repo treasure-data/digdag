@@ -23,10 +23,6 @@ public interface AccessController
             throws AccessControlException
     { }
 
-    default void checkRunAttempt(Config userInfo, AttemptTarget target)
-            throws AccessControlException
-    { }
-
     default void checkKillAttempt(Config userInfo, AttemptTarget target)
             throws AccessControlException
     { }
@@ -43,6 +39,10 @@ public interface AccessController
             throws AccessControlException
     { }
 
+    default void checkRunAttempt(Config userInfo, AttemptTarget target)
+            throws AccessControlException
+    { }
+
     default ListFilter getListAttemptsFilterOfProject(Config userInfo, ProjectTarget target)
     {
         return () -> "true";
@@ -54,6 +54,16 @@ public interface AccessController
     }
 
     default ListFilter getListAttemptsFilterOfSite(Config userInfo, SiteTarget target)
+    {
+        return () -> "true";
+    }
+
+    default ListFilter getGetAttemptFilterOfSite(Config userInfo, SiteTarget target)
+    {
+        return () -> "true";
+    }
+
+    default ListFilter getGetWorkflowFilterOfSite(Config userInfo, SiteTarget target)
     {
         return () -> "true";
     }
