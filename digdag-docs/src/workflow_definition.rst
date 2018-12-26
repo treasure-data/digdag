@@ -223,7 +223,7 @@ If ``_parallel: true`` parameter is set to a group, child tasks in the group run
         sh>: tasks/prepare_data3.sh
 
     +analyze:
-        sh>: tasks/analyze_prepared_data_sets.sh
+      sh>: tasks/analyze_prepared_data_sets.sh
 
 If ``_background: true`` parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.
 
@@ -243,7 +243,7 @@ If ``_background: true`` parameter is set to a task or group, the task or group 
         sh>: tasks/prepare_data3.sh
 
     +analyze:
-        sh>: tasks/analyze_prepared_data_sets.sh
+      sh>: tasks/analyze_prepared_data_sets.sh
 
 Retrying failed tasks automatically
 -----------------------------------
@@ -267,7 +267,7 @@ If ``_retry: N`` (N is an integer: 1, 2, 3, ...) parameter is set to a group, it
         sh>: tasks/check_loaded_data.sh
 
     +analyze:
-        sh>: tasks/analyze_prepared_data_sets.sh
+      sh>: tasks/analyze_prepared_data_sets.sh
 
 
 Tasks also support ``_retry: N`` parameter to retry the specific task. Note that some operators don't support the generic ``_retry`` option but has its own options to control retrying behavior.
@@ -304,7 +304,7 @@ If an operator configuration is set at ``_error:`` parameter, the operator runs 
       sh>: tasks/runs_when_workflow_failed.sh
 
     +analyze:
-        sh>: tasks/analyze_prepared_data_sets.sh
+      sh>: tasks/analyze_prepared_data_sets.sh
 
 To send mails, you can use `mail> operator <operators.html#mail-sending-email>`_.
 
