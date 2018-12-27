@@ -635,7 +635,7 @@ attempts
 
     $ digdag attempts [project-name] [+name]
 
-Shows list of attempts. This command shows shows all attempts including attempts retried by another attempt. Examples:
+Shows list of attempts. This command shows all attempts including attempts retried by another attempt. Examples:
 
 .. code-block:: console
 
