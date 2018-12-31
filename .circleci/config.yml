@@ -49,7 +49,7 @@ jobs:
       - store_artifacts:
           path: /tmp/circleci-artifacts/build
       - store_test_results:
-          path: /tmp/circleci-artifacts/build/tests
+          path: /tmp/circleci-test-results/build/tests
 
   docs_deployment:
     # executor type https://circleci.com/docs/2.0/executor-types/
