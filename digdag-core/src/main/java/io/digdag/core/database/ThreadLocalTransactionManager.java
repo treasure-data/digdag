@@ -209,6 +209,9 @@ public class ThreadLocalTransactionManager
         if (transaction == null) {
             transaction = threadLocalAutoCommitTransaction.get();
             if (transaction == null) {
+		// TODO
+		// refactoring and make source code simple.
+		// better to create ready-only-transaction to remove explicit begin() call.
                 throw new IllegalStateException("Not in transaction");
             }
         }
