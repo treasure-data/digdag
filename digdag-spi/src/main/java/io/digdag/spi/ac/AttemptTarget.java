@@ -1,14 +1,14 @@
 package io.digdag.spi.ac;
 
-import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public interface AttemptTarget
+        extends Target
 {
     int getSiteId();
 
-    Optional<String> getName();
+    String getName();
 
     int getProjectId();
 
@@ -24,7 +24,7 @@ public interface AttemptTarget
 
     static AttemptTarget of(
             int siteId,
-            Optional<String> name,
+            String name,
             int projectId,
             String projectName,
             long workflowId,
