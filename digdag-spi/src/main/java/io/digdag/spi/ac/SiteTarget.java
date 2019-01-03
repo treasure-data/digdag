@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 public interface SiteTarget
+        extends Target
 {
     int getSiteId();
 
