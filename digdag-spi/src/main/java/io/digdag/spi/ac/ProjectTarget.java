@@ -1,5 +1,6 @@
 package io.digdag.spi.ac;
 
+import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -8,13 +9,13 @@ public interface ProjectTarget
 {
     int getSiteId();
 
-    int getId();
+    Optional<Integer> getId();
 
     String getName();
 
     // TODO better to have revision info?
 
-    static ProjectTarget of(int siteId, int id, String name)
+    static ProjectTarget of(int siteId, Optional<Integer> id, String name)
     {
         return ImmutableProjectTarget.builder()
                 .siteId(siteId)
