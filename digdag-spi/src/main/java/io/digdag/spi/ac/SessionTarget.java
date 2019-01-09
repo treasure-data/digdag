@@ -12,17 +12,14 @@ public interface SessionTarget
 
     String getWorkflowName();
 
-    int getProjectId();
-
     String getProjectName();
 
-    static SessionTarget of(int siteId, long id, String workflowName, int projectId, String projectName)
+    static SessionTarget of(int siteId, long id, String workflowName, String projectName)
     {
         return ImmutableSessionTarget.builder()
                 .siteId(siteId)
                 .id(id)
                 .workflowName(workflowName)
-                .projectId(projectId)
                 .projectName(projectName)
                 .build();
     }
