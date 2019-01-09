@@ -97,116 +97,107 @@ public class AttemptResource
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
-        return tm.begin(() -> {
+        return tm.<RestSessionAttemptCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredSessionAttemptWithSession> attempts;
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
             if (projName != null) {
-                StoredProject proj = rs.getProjectByName(projName, // NotFound
-                        () -> ac.getGetProjectFilterOf( // TODO need to revisit to decide that we can use getGetProjectFilter method
-                                ProjectTarget.of(getSiteId(),
-                                        Optional.absent(),
-                                        projName),
-                                getUserInfo())
-                );
+                ac.checkListAttemptsOfProject( // AccessControl
+                        ProjectTarget.of(getSiteId(), projName),
+                        getUserInfo());
 
+                // TODO revisit to decide that ListFilter may be appropriate or not.
+                final StoredProject proj = rs.getProjectByName(projName, () -> "true"); // NotFound
                 if (wfName != null) {
+                    ac.checkListAttemptsOfWorkflow( // AccessControl
+                            WorkflowTarget.of(getSiteId(), wfName, proj.getName()),
+                            getUserInfo());
+
                     // of workflow
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId),
-                            () -> ac.getListAttemptsFilterOf(
-                                    WorkflowTarget.of(getSiteId(),
-                                            wfName,
-                                            Optional.of(proj.getId()),
-                                            proj.getName()),
-                                    getUserInfo())
-                    );
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId));
                 }
                 else {
                     // of project
-                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId),
-                            () -> ac.getListAttemptsFilterOf(
-                                    ProjectTarget.of(getSiteId(),
-                                            Optional.of(proj.getId()),
-                                            projName),
-                                    getUserInfo())
-                    );
+                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId));
                 }
             }
             else {
                 // of site
                 attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId),
-                        () -> ac.getListAttemptsFilterOf(
+                        ac.getListAttemptsFilterOfSite(
                                 SiteTarget.of(getSiteId()),
-                                getUserInfo())
-                );
+                                getUserInfo()));
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/attempts/{id}")
     public RestSessionAttempt getAttempt(@PathParam("id") long id)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestSessionAttempt, ResourceNotFoundException, AccessControlException >begin(() -> {
             StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                    .getAttemptById(id, // NotFound
-                            () -> ac.getGetAttemptFilterOf(
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
-
+                    .getAttemptById(id); // NotFound
             StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(attempt.getSession().getProjectId(), // NotFound
-                            () -> ac.getGetProjectFilterOf(
-                                    ProjectTarget.of(getSiteId(),
-                                            Optional.of(attempt.getSession().getProjectId()),
-                                            attempt.getSession().getWorkflowName()),
-                                    getUserInfo())
-                    );
+                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
+
+            ac.checkGetAttemptOfAttempt(
+                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    getUserInfo()); // AccessControl
 
             return RestModels.attempt(attempt, proj.getName());
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/attempts/{id}/retries")
     public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestSessionAttemptCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
+            final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
+                    .getAttemptById(id); // NotFound
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
+
+            ac.checkListAttemptsOfAttempt(
+                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    getUserInfo()); // AccessControl
+
             List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
-                    .getOtherAttempts(id, // NotFound
-                            () -> ac.getListAttemptsFilterOf(
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
+                    .getOtherAttempts(id); // NotFound
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/attempts/{id}/tasks")
     public RestTaskCollection getTasks(@PathParam("id") long id)
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
-            // Return empty list if any tasks not exist instead of NotFoundException
+        return tm.<RestTaskCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
+            final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
+                    .getAttemptById(id); // NotFound
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
+
+            ac.checkGetAttemptOfAttempt( // AccessControl
+                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    getUserInfo());
+
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
-                    .getTasksOfAttempt(id,
-                            () -> ac.getGetAttemptTasksFilterOf(
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
+                    .getTasksOfAttempt(id);
             return RestModels.taskCollection(tasks);
-        });
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @PUT
@@ -216,19 +207,13 @@ public class AttemptResource
             throws AttemptLimitExceededException, TaskLimitExceededException, ResourceNotFoundException, AccessControlException
     {
         return tm.<Response, AttemptLimitExceededException, ResourceNotFoundException, TaskLimitExceededException, AccessControlException>begin(() -> {
-            final StoredWorkflowDefinitionWithProject def = rm.getProjectStore(getSiteId())
-                    .getWorkflowDefinitionById(RestModels.parseWorkflowId(request.getWorkflowId()), // NotFound
-                            () -> ac.getRunAttemptFilterOf(
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
+            ProjectStore rs = rm.getProjectStore(getSiteId());
+            final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // NotFound
+                    RestModels.parseWorkflowId(request.getWorkflowId()));
 
-            final AttemptTarget attemptTarget = AttemptTarget.of(getSiteId(),
-                    request.getRetryAttemptName(),
-                    def.getProject().getId(),
-                    def.getProject().getName(),
-                    def.getName());
-            ac.checkRunAttemptOf(attemptTarget, getUserInfo()); // AccessControl
+            ac.checkRunAttemptOfAttempt( // AccessControl
+                    AttemptTarget.of(getSiteId(), request.getRetryAttemptName(), def.getProject().getName(), def.getName()),
+                    getUserInfo());
 
             Optional<Long> resumingAttemptId = request.getResume()
                     .transform(r -> RestModels.parseAttemptId(r.getAttemptId()));
@@ -280,7 +265,7 @@ public class AttemptResource
     {
         List<ArchivedTask> tasks = sm
                 .getSessionStore(getSiteId())
-                .getTasksOfAttempt(attemptId, () -> () -> "true");
+                .getTasksOfAttempt(attemptId);
 
         List<Long> successTasks = tasks.stream()
                 .filter(task -> task.getState() == TaskStateCode.SUCCESS)
@@ -299,7 +284,7 @@ public class AttemptResource
     {
         List<ArchivedTask> tasks = sm
                 .getSessionStore(getSiteId())
-                .getTasksOfAttempt(attemptId, () -> () -> "true");
+                .getTasksOfAttempt(attemptId);
 
         ArchivedTask fromTask = matchTaskPattern(fromTaskPattern, tasks);
 
@@ -336,34 +321,23 @@ public class AttemptResource
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")
     public void killAttempt(@PathParam("id") long id)
-            throws ResourceNotFoundException, ResourceConflictException
+            throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
-        tm.<Void, ResourceNotFoundException, ResourceConflictException>begin(() -> {
+        tm.<Void, ResourceNotFoundException, ResourceConflictException, AccessControlException>begin(() -> {
             final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                    .getAttemptById(id, // NotFound
-                            () -> ac.getKillAttemptFilterOf(
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
+                    .getAttemptById(id); // NotFound
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(attempt.getSession().getProjectId(), // NotFound
-                            () -> ac.getGetProjectFilterOf( // TODO need to revisit to decide that we can use getGetProjectFilter method
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
-            final AttemptTarget attemptTarget = AttemptTarget.of(getSiteId(),
-                    attempt.getRetryAttemptName(),
-                    proj.getId(),
-                    proj.getName(),
-                    attempt.getSession().getWorkflowName()
-            );
-            ac.checkKillAttemptOf(attemptTarget, getUserInfo());
+                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            boolean updated = executor.killAttempt(attempt);
+            ac.checkKillAttemptOfAttempt( // AccessControl
+                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    getUserInfo());
+
+            boolean updated = executor.killAttemptById(getSiteId(), id); // NotFound
             if (!updated) {
                 throw new ResourceConflictException("Session attempt already killed or finished");
             }
             return null;
-        }, ResourceNotFoundException.class, ResourceConflictException.class);
+        }, ResourceNotFoundException.class, ResourceConflictException.class, AccessControlException.class);
     }
 }
