@@ -23,6 +23,8 @@ import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
 import io.digdag.spi.*;
+import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.SiteTarget;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -38,18 +40,24 @@ public class LogResource
     // GET  /api/logs/{attempt_id}/files/{file_name}
     // GET  /api/logs/{attempt_id}/upload_handle?task=<name>&file_time=<unixtime sec>&node_id=<nodeId>
 
+    private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final TransactionManager tm;
+    private final AccessController ac;
     private final LogServer logServer;
 
     @Inject
     public LogResource(
+            ProjectStoreManager rm,
             SessionStoreManager sm,
             TransactionManager tm,
+            AccessController ac,
             LogServerManager lm)
     {
+        this.rm = rm;
         this.sm = sm;
         this.tm = tm;
+        this.ac = ac;
         this.logServer = lm.getLogServer();
     }
 
@@ -67,7 +75,12 @@ public class LogResource
         return tm.<RestLogFilePutResult, ResourceNotFoundException, IOException>begin(() -> {
             // TODO null check taskName
             // TODO null check nodeId
-            LogFilePrefix prefix = getPrefix(attemptId);
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
+                    () -> ac.getPutLogFilesFilterOf(
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo()
+                    ))
+            );
 
             byte[] data = ByteStreams.toByteArray(body);
             String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
@@ -87,7 +100,11 @@ public class LogResource
         return tm.begin(() -> {
             // TODO null check taskName
             // TODO null check nodeId
-            LogFilePrefix prefix = getPrefix(attemptId);
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
+                    () -> ac.getPutLogFilesFilterOf(
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo()))
+            );
 
             Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
 
@@ -112,7 +129,12 @@ public class LogResource
             throws ResourceNotFoundException
     {
         return tm.begin(() -> {
-            LogFilePrefix prefix = getPrefix(attemptId);
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
+                    () -> ac.getListLogFilesFilterOf(
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo()
+                    ))
+            );
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
             return RestModels.logFileHandleCollection(handles);
         }, ResourceNotFoundException.class);
@@ -127,17 +149,25 @@ public class LogResource
             throws ResourceNotFoundException, IOException, StorageFileNotFoundException
     {
         return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>begin(() -> {
-            LogFilePrefix prefix = getPrefix(attemptId);
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
+                    () -> ac.getGetLogFileFilterOf(
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo()))
+            );
             return logServer.getFile(prefix, fileName);
         }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class);
     }
 
-    private LogFilePrefix getPrefix(long attemptId)
-        throws ResourceNotFoundException
+    private StoredSessionAttemptWithSession getAttempt(final long attemptId, final AccessController.FilterCreateAction acAction)
+            throws ResourceNotFoundException
     {
-        StoredSessionAttemptWithSession attempt =
-                sm.getSessionStore(getSiteId())
-                        .getAttemptById(attemptId);
+        final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
+                .getAttemptById(attemptId, acAction); // NotFound
+        return attempt;
+    }
+
+    private LogFilePrefix getPrefix(final StoredSessionAttemptWithSession attempt)
+    {
         return logFilePrefixFromSessionAttempt(attempt);
     }
 }
