@@ -17,6 +17,9 @@ import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
+import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.SessionTarget;
+import io.digdag.spi.ac.SiteTarget;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.GET;
@@ -41,6 +44,7 @@ public class SessionResource
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final TransactionManager tm;
+    private final AccessController ac;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
     private static int MAX_ATTEMPTS_PAGE_SIZE;
@@ -51,11 +55,13 @@ public class SessionResource
             ProjectStoreManager rm,
             SessionStoreManager sm,
             TransactionManager tm,
+            AccessController ac,
             Config systemConfig)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
+        this.ac = ac;
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ATTEMPTS_PAGE_SIZE = systemConfig.get("api.max_attempts_page_size", Integer.class, DEFAULT_ATTEMPTS_PAGE_SIZE);
     }
@@ -72,7 +78,11 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId));
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId),
+                    () -> ac.getListSessionsFilterOf(
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo())
+            );
 
             return RestModels.sessionCollection(rs, sessions);
         });
@@ -85,10 +95,18 @@ public class SessionResource
     {
         return tm.begin(() -> {
             StoredSessionWithLastAttempt session = sm.getSessionStore(getSiteId())
-                    .getSessionById(id);
+                    .getSessionById(id, // NotFound
+                            () -> ac.getGetSessionFilterOf(
+                                    SiteTarget.of(getSiteId()),
+                                    getUserInfo())
+                    );
 
             StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(session.getProjectId());
+                    .getProjectById(session.getProjectId(), // NotFound
+                            () -> ac.getGetProjectFilterOf( // TODO need to revisit to decide that we can use getGetProjectFilter method
+                                    SiteTarget.of(getSiteId()),
+                                    getUserInfo())
+                    );
 
             return RestModels.session(session, proj.getName());
         }, ResourceNotFoundException.class);
@@ -108,9 +126,26 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            StoredSession session = ss.getSessionById(id);
-            StoredProject project = rs.getProjectById(session.getProjectId());
-            List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));
+            final StoredSession session = ss.getSessionById(id, // NotFound
+                    () -> ac.getListSessionAttemptsFilterOf(
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo())
+            );
+            final StoredProject project = rs.getProjectById(session.getProjectId(), // NotFound
+                    () -> ac.getGetProjectFilterOf( // TODO need to revisit to decide that we can use getGetProjectFilter method
+                            SiteTarget.of(getSiteId()),
+                            getUserInfo())
+            );
+            List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId),
+                    () -> ac.getListSessionAttemptsFilterOf(
+                            SessionTarget.of(getSiteId(),
+                                    session.getId(),
+                                    session.getWorkflowName(),
+                                    project.getId(),
+                                    project.getName()),
+                            getUserInfo()
+                    )
+            );
 
             List<RestSessionAttempt> collection = attempts.stream()
                     .map(attempt -> RestModels.attempt(session, attempt, project.getName()))
