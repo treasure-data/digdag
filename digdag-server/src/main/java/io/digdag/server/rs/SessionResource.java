@@ -17,6 +17,7 @@ import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
+import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.SessionTarget;
 import io.digdag.spi.ac.SiteTarget;
@@ -78,11 +79,11 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
+            // of site
             List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId),
-                    () -> ac.getListSessionsFilterOf(
+                    ac.getListSessionsFilterOfSite(
                             SiteTarget.of(getSiteId()),
-                            getUserInfo())
-            );
+                            getUserInfo()));
 
             return RestModels.sessionCollection(rs, sessions);
         });
@@ -91,25 +92,20 @@ public class SessionResource
     @GET
     @Path("/api/sessions/{id}")
     public RestSession getSession(@PathParam("id") long id)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
-            StoredSessionWithLastAttempt session = sm.getSessionStore(getSiteId())
-                    .getSessionById(id, // NotFound
-                            () -> ac.getGetSessionFilterOf(
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
+        return tm.<RestSession, ResourceNotFoundException, AccessControlException>begin(() -> {
+            final StoredSessionWithLastAttempt session = sm.getSessionStore(getSiteId())
+                    .getSessionById(id); // NotFound
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(session.getProjectId()); // NotFound
 
-            StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(session.getProjectId(), // NotFound
-                            () -> ac.getGetProjectFilterOf( // TODO need to revisit to decide that we can use getGetProjectFilter method
-                                    SiteTarget.of(getSiteId()),
-                                    getUserInfo())
-                    );
+            ac.checkGetSessionOfSession( // AccessControl
+                    SessionTarget.of(getSiteId(), session.getId(), session.getWorkflowName(), proj.getName()),
+                    getUserInfo());
 
             return RestModels.session(session, proj.getName());
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -118,40 +114,28 @@ public class SessionResource
             @PathParam("id") long id,
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_ATTEMPTS_PAGE_SIZE, DEFAULT_ATTEMPTS_PAGE_SIZE);
 
-        return tm.begin(() -> {
+        return tm.<RestSessionAttemptCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            final StoredSession session = ss.getSessionById(id, // NotFound
-                    () -> ac.getListSessionAttemptsFilterOf(
-                            SiteTarget.of(getSiteId()),
-                            getUserInfo())
-            );
-            final StoredProject project = rs.getProjectById(session.getProjectId(), // NotFound
-                    () -> ac.getGetProjectFilterOf( // TODO need to revisit to decide that we can use getGetProjectFilter method
-                            SiteTarget.of(getSiteId()),
-                            getUserInfo())
-            );
-            List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId),
-                    () -> ac.getListSessionAttemptsFilterOf(
-                            SessionTarget.of(getSiteId(),
-                                    session.getId(),
-                                    session.getWorkflowName(),
-                                    project.getId(),
-                                    project.getName()),
-                            getUserInfo()
-                    )
-            );
+            final StoredSession session = ss.getSessionById(id); // NotFound
+            final StoredProject project = rs.getProjectById(session.getProjectId()); // NotFound
+
+            ac.checkListAttemptsOfSession( // AccessControl
+                    SessionTarget.of(getSiteId(), session.getId(), session.getWorkflowName(), project.getName()),
+                    getUserInfo());
+
+            List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));
 
             List<RestSessionAttempt> collection = attempts.stream()
                     .map(attempt -> RestModels.attempt(session, attempt, project.getName()))
                     .collect(Collectors.toList());
 
             return RestModels.attemptCollection(collection);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 }
