@@ -10,17 +10,14 @@ public interface WorkflowTarget
 
     String getName();
 
-    Optional<Integer> getProjectId();
-
     String getProjectName();
 
-    static WorkflowTarget of(int siteId, String name, Optional<Integer> projectId, String projectName)
+    static WorkflowTarget of(int siteId, String name, String projectName)
     {
         return ImmutableWorkflowTarget.builder()
                 .siteId(siteId)
                 .name(name)
-                .projectId(projectId)
-                 .projectName(projectName)
+                .projectName(projectName)
                 .build();
     }
 }
