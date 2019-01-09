@@ -23,6 +23,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
@@ -39,6 +41,10 @@ import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
+import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.ProjectTarget;
+import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -63,18 +69,21 @@ public class WorkflowResource
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TransactionManager tm;
+    private final AccessController ac;
 
     @Inject
     public WorkflowResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            TransactionManager tm)
+            TransactionManager tm,
+            AccessController ac)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.tm = tm;
+        this.ac = ac;
     }
 
     @GET
@@ -90,15 +99,30 @@ public class WorkflowResource
             Preconditions.checkArgument(wfName != null, "name= is required");
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
-            StoredProject proj = rs.getProjectByName(projName);
+            StoredProject proj = rs.getProjectByName(projName, // NotFound
+                    () -> ac.getGetWorkflowFilterOf(
+                            ProjectTarget.of(getSiteId(), Optional.absent(), projName),
+                            getUserInfo())
+            );
             StoredRevision rev;
+
+            final ProjectTarget projTargetWithId = ProjectTarget.of(getSiteId(), Optional.of(proj.getId()), projName);
             if (revName == null) {
-                rev = rs.getLatestRevision(proj.getId());
+                rev = rs.getLatestRevision(proj.getId(), // NotFound
+                        () -> ac.getGetWorkflowFilterOf(projTargetWithId, getUserInfo()));
             }
             else {
-                rev = rs.getRevisionByName(proj.getId(), revName);
+                rev = rs.getRevisionByName(proj.getId(), revName, // NotFound
+                        () -> ac.getGetWorkflowFilterOf(projTargetWithId, getUserInfo()));
             }
-            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
+            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName, // NotFound
+                    () -> ac.getGetWorkflowFilterOf(
+                            WorkflowTarget.of(getSiteId(),
+                                    wfName,
+                                    Optional.of(proj.getId()),
+                                    proj.getName()),
+                            getUserInfo())
+            );
             return RestModels.workflowDefinition(proj, rev, def);
         }, ResourceNotFoundException.class);
     }
@@ -113,7 +137,11 @@ public class WorkflowResource
         return tm.begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
-                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId));
+                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // NotFound
+                                    () -> ac.getListWorkflowsFilterOf(
+                                            SiteTarget.of(getSiteId()),
+                                            getUserInfo())
+                            );
             return RestModels.workflowDefinitionCollection(defs);
         }, ResourceNotFoundException.class);
     }
@@ -126,7 +154,11 @@ public class WorkflowResource
         return tm.begin(() -> {
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id);
+                            .getWorkflowDefinitionById(id, // NotFound
+                                    () -> ac.getGetWorkflowFilterOf(
+                                            SiteTarget.of(getSiteId()),
+                                            getUserInfo())
+                            );
             return RestModels.workflowDefinition(def);
         }, ResourceNotFoundException.class);
     }
@@ -144,7 +176,11 @@ public class WorkflowResource
 
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id);
+                            .getWorkflowDefinitionById(id, // NotFound
+                                    () -> ac.getGetWorkflowFilterOf(
+                                            SiteTarget.of(getSiteId()),
+                                            getUserInfo())
+                            );
 
             ZoneId timeZone = def.getTimeZone();
 
