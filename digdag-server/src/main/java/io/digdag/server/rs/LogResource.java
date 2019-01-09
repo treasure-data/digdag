@@ -23,8 +23,9 @@ import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
 import io.digdag.spi.*;
+import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.AttemptTarget;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -70,22 +71,20 @@ public class LogResource
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId,
             InputStream body)
-            throws ResourceNotFoundException, IOException
+            throws ResourceNotFoundException, IOException, AccessControlException
     {
-        return tm.<RestLogFilePutResult, ResourceNotFoundException, IOException>begin(() -> {
+        return tm.<RestLogFilePutResult, ResourceNotFoundException, IOException, AccessControlException>begin(() -> {
             // TODO null check taskName
             // TODO null check nodeId
-            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
-                    () -> ac.getPutLogFilesFilterOf(
-                            SiteTarget.of(getSiteId()),
-                            getUserInfo()
-                    ))
-            );
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound, AccessControl
+                    (p, a) -> ac.checkPutLogFilesOfAttempt(
+                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            getUserInfo())));
 
             byte[] data = ByteStreams.toByteArray(body);
             String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
             return RestLogFilePutResult.of(fileName);
-        }, ResourceNotFoundException.class, IOException.class);
+        }, ResourceNotFoundException.class, IOException.class, AccessControlException.class);
     }
 
     @GET
@@ -95,16 +94,15 @@ public class LogResource
             @QueryParam("task") String taskName,
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<DirectUploadHandle, ResourceNotFoundException, AccessControlException>begin(() -> {
             // TODO null check taskName
             // TODO null check nodeId
-            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
-                    () -> ac.getPutLogFilesFilterOf(
-                            SiteTarget.of(getSiteId()),
-                            getUserInfo()))
-            );
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound, AccessControl
+                    (p, a) -> ac.checkPutLogFilesOfAttempt(
+                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            getUserInfo())));
 
             Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
 
@@ -118,7 +116,7 @@ public class LogResource
                                 .entity("{\"message\":\"Direct upload handle is not available for this log server implementation\",\"status\":501}")
                                 .build());
             }
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -126,18 +124,16 @@ public class LogResource
     public RestLogFileHandleCollection getFileHandles(
             @PathParam("attempt_id") long attemptId,
             @QueryParam("task") String taskName)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
-            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
-                    () -> ac.getListLogFilesFilterOf(
-                            SiteTarget.of(getSiteId()),
-                            getUserInfo()
-                    ))
-            );
+        return tm.<RestLogFileHandleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound, AccessControl
+                    (p, a) -> ac.checkListLogFilesOfAttempt(
+                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            getUserInfo())));
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
             return RestModels.logFileHandleCollection(handles);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -146,28 +142,36 @@ public class LogResource
     public byte[] getFile(
             @PathParam("attempt_id") long attemptId,
             @PathParam("file_name") String fileName)
-            throws ResourceNotFoundException, IOException, StorageFileNotFoundException
+            throws ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException
     {
-        return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException>begin(() -> {
-            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound
-                    () -> ac.getGetLogFileFilterOf(
-                            SiteTarget.of(getSiteId()),
-                            getUserInfo()))
-            );
+        return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException>begin(() -> {
+            final LogFilePrefix prefix = getPrefix(getAttempt(attemptId, // NotFound, AccessControl
+                    (p, a) -> ac.checkGetLogFileOfAttempt(
+                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            getUserInfo())));
             return logServer.getFile(prefix, fileName);
-        }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class);
+        }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class, AccessControlException.class);
     }
 
-    private StoredSessionAttemptWithSession getAttempt(final long attemptId, final AccessController.FilterCreateAction acAction)
-            throws ResourceNotFoundException
+    private StoredSessionAttemptWithSession getAttempt(final long attemptId, final AccessControlAction acAction)
+            throws ResourceNotFoundException, AccessControlException
     {
         final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                .getAttemptById(attemptId, acAction); // NotFound
+                .getAttemptById(attemptId); // NotFound
+        final StoredProject project = rm.getProjectStore(getSiteId())
+                .getProjectById(attempt.getSession().getProjectId()); // NotFound
+        acAction.call(project, attempt); // AccessControl
         return attempt;
     }
 
     private LogFilePrefix getPrefix(final StoredSessionAttemptWithSession attempt)
     {
         return logFilePrefixFromSessionAttempt(attempt);
+    }
+
+    private interface AccessControlAction
+    {
+        void call(StoredProject project, StoredSessionAttemptWithSession attempt)
+                throws AccessControlException;
     }
 }
