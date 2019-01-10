@@ -154,9 +154,9 @@ public class AttemptResource
             StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            ac.checkGetAttemptOfAttempt(
+            ac.checkGetAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
-                    getUserInfo()); // AccessControl
+                    getUserInfo());
 
             return RestModels.attempt(attempt, proj.getName());
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -173,7 +173,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            ac.checkListAttemptsOfAttempt(
+            ac.checkListOtherAttemptsOfAttempt(
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo()); // AccessControl
 
@@ -195,7 +195,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            ac.checkGetAttemptOfAttempt( // AccessControl
+            ac.checkGetAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
@@ -216,7 +216,7 @@ public class AttemptResource
             final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // NotFound
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
-            ac.checkRunAttemptOfAttempt( // AccessControl
+            ac.checkRunAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getProject().getName(), def.getName()),
                     getUserInfo());
 
@@ -334,7 +334,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            ac.checkKillAttemptOfAttempt( // AccessControl
+            ac.checkKillAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 

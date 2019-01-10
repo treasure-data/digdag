@@ -11,7 +11,15 @@ public interface AccessController
 
     // Projects
 
-    default void checkGetProjectOfProject(ProjectTarget target, Config user)
+    default void checkGetProject(ProjectTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default void checkPutProject(ProjectTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default void checkDeleteProject(ProjectTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -20,21 +28,19 @@ public interface AccessController
         return () -> "true";
     }
 
-    default void checkPutProjectOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    // FIXME TODO not necessary
-
-    default void checkPutProjectOfWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    default void checkDeleteProjectOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
-
     // Workflows
+
+    default void checkGetWorkflow(WorkflowTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default void checkListWorkflowsOfProject(ProjectTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default void checkListWorkflows(WorkflowTarget target, Config user)
+            throws AccessControlException
+    { }
 
     default ListFilter getListWorkflowsFilterOfSite(SiteTarget target, Config user)
     {
@@ -46,19 +52,24 @@ public interface AccessController
         return () -> "true";
     }
 
-    default void checkGetWorkflowOfWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    default void checkListWorkflowsOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    default void checkListWorkflowsOfWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
     // Sessions
+
+    default void checkListSessionsOfProject(ProjectTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default void checkListSessionsOfWorkflow(WorkflowTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default void checkGetSession(WorkflowTarget target, Config user)
+            throws AccessControlException
+    { }
+
+    default ListFilter getListSessionsFilterOfSite(SiteTarget target, Config user)
+    {
+        return () -> "true";
+    }
 
     /**
      * Return a filter to check if the user has permissions to list sessions.
@@ -77,38 +88,21 @@ public interface AccessController
         return () -> "true";
     }
 
-    default ListFilter getListSessionsFilterOfSite(SiteTarget target, Config user)
-    {
-        return () -> "true";
-    }
-
-    default void checkListSessionsOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    default void checkListSessionsOfWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    default void checkGetSession(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
     // for version resource
 
     /** not support any filters for version resource */
 
     // Log
 
-    default void checkListLogFilesOfAttempt(WorkflowTarget target, Config user)
+    default void checkListLogFiles(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkGetLogFileOfAttempt(WorkflowTarget target, Config user)
+    default void checkGetLogFile(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkPutLogFilesOfAttempt(WorkflowTarget target, Config user)
+    default void checkPutLogFiles(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -117,6 +111,10 @@ public interface AccessController
     // Uis
 
     // Attempts
+
+    default void checkListAttemptsOfSite(SiteTarget target, Config user)
+            throws AccessControlException
+    { }
 
     default void checkListAttemptsOfProject(ProjectTarget target, Config user)
             throws AccessControlException
@@ -130,23 +128,28 @@ public interface AccessController
             throws AccessControlException
     { }
 
-    default void checkListAttemptsOfAttempt(WorkflowTarget target, Config user)
+    default void checkListOtherAttemptsOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkListAttemptsOfSite(SiteTarget target, Config user)
+    default void checkGetAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default ListFilter getListAttemptsFilterOfProject(ProjectTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    /**
+     * Check if the user has permissions to run the attempt.
+     *
+     * @param target
+     * @param user
+     * @throws AccessControlException
+     */
+    default void checkRunAttempt(WorkflowTarget target, Config user)
+            throws AccessControlException
+    { }
 
-    default ListFilter getListAttemptsFilterOfWorkflow(WorkflowTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    default void checkKillAttempt(WorkflowTarget target, Config user)
+            throws AccessControlException
+    { }
 
     /**
      * Return a filter to check if the user has permissions to list attempts.
@@ -160,28 +163,19 @@ public interface AccessController
         return () -> "true";
     }
 
-    default void checkGetAttemptOfAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    default ListFilter getListAttemptsFilterOfProject(ProjectTarget target, Config user)
+    {
+        return () -> "true";
+    }
 
-    /**
-     * Check if the user has permissions to run the attempt.
-     *
-     * @param target
-     * @param user
-     * @throws AccessControlException
-     */
-    default void checkRunAttemptOfAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    default void checkKillAttemptOfAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    default ListFilter getListAttemptsFilterOfWorkflow(WorkflowTarget target, Config user)
+    {
+        return () -> "true";
+    }
 
     // Schedules
 
-    default void checkGetScheduleOfWorkflow(WorkflowTarget target, Config user)
+    default void checkGetSchedule(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -193,19 +187,19 @@ public interface AccessController
             throws AccessControlException
     { }
 
-    default void checkSkipScheduleOfWorkflow(WorkflowTarget target, Config user)
+    default void checkSkipSchedule(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkBackfillScheduleOfWorkflow(WorkflowTarget target, Config user)
+    default void checkBackfillSchedule(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkDisableScheduleOfWorkflow(WorkflowTarget target, Config user)
+    default void checkDisableSchedule(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkEnableScheduleOfWorkflow(WorkflowTarget target, Config user)
+    default void checkEnableSchedule(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 

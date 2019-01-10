@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.file.Files;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -20,7 +18,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
@@ -29,26 +26,17 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.Response;
 
 import com.google.common.base.Strings;
-import com.google.common.base.Supplier;
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
-import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteStreams;
-import com.google.inject.Inject;
-import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
-import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
-import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSecretMetadata;
-import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
@@ -75,7 +63,6 @@ import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
@@ -106,30 +93,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
-
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.time.Instant;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.Locale.ENGLISH;
 
@@ -239,7 +203,7 @@ public class ProjectResource
             StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // NotFound
             StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
 
-            ac.checkGetProjectOfProject( // AccessControl
+            ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
                     getUserInfo());
 
@@ -260,7 +224,7 @@ public class ProjectResource
                     StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // NotFound
                     StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
 
-                    ac.checkGetProjectOfProject( // AccessControl
+                    ac.checkGetProject( // AccessControl
                             ProjectTarget.of(getSiteId(), proj.getName()),
                             getUserInfo());
 
@@ -304,7 +268,7 @@ public class ProjectResource
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
             StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
 
-            ac.checkGetProjectOfProject( // AccessControl
+            ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
                     getUserInfo());
 
@@ -322,7 +286,7 @@ public class ProjectResource
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
             List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
 
-            ac.checkGetProjectOfProject( // AccessControl
+            ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
                     getUserInfo());
 
@@ -350,7 +314,7 @@ public class ProjectResource
             }
             StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // NotFound
 
-            ac.checkGetWorkflowOfWorkflow( // AccessControl
+            ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), name),
                     getUserInfo());
 
@@ -391,7 +355,7 @@ public class ProjectResource
                 try {
                     StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // NotFound
 
-                    ac.checkGetWorkflowOfWorkflow( // AccessControl
+                    ac.checkGetWorkflow( // AccessControl
                             WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
                             getUserInfo());
 
@@ -525,7 +489,7 @@ public class ProjectResource
             Optional<ArchiveManager.StoredArchive> archiveOrNone =
                     archiveManager.getArchive(ps, projId, revName); // NotFound
 
-            ac.checkGetProjectOfProject( // AccessControl
+            ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
                     getUserInfo());
 
@@ -585,7 +549,7 @@ public class ProjectResource
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject project = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
 
-            ac.checkDeleteProjectOfProject( // AccessControl
+            ac.checkDeleteProject( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
@@ -604,7 +568,7 @@ public class ProjectResource
             @QueryParam("schedule_from") String scheduleFromString)
             throws ResourceConflictException, IOException, ResourceNotFoundException, AccessControlException
     {
-        ac.checkPutProjectOfProject( // AccessControl
+        ac.checkPutProject( // AccessControl
                 ProjectTarget.of(getSiteId(), name),
                 getUserInfo());
 
@@ -643,13 +607,6 @@ public class ProjectResource
                     if (md5Count.getCount() != contentLength) {
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
-                }
-
-                // The project itself is not permitted if some of workflows in the project archive are not permitted.
-                for (final WorkflowDefinition def : meta.getWorkflowList().get()) {
-                    ac.checkPutProjectOfWorkflow( // AccessControl
-                            WorkflowTarget.of(getSiteId(), def.getName(), name),
-                            getUserInfo());
                 }
 
                 ArchiveManager.Location location =
@@ -798,7 +755,7 @@ public class ProjectResource
             StoredProject project = projectStore.getProjectById(projectId); // NotFound
             ensureNotDeletedProject(project);
 
-            ac.checkPutProjectOfProject( // AccessControl
+            ac.checkPutProject( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
@@ -824,7 +781,7 @@ public class ProjectResource
             StoredProject project = projectStore.getProjectById(projectId); // NotFound
             ensureNotDeletedProject(project);
 
-            ac.checkDeleteProjectOfProject( // AccessControl
+            ac.checkDeleteProject( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
@@ -847,7 +804,7 @@ public class ProjectResource
             StoredProject project = projectStore.getProjectById(projectId); // NotFound
             ensureNotDeletedProject(project);
 
-            ac.checkGetProjectOfProject( // AccessControl
+            ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
