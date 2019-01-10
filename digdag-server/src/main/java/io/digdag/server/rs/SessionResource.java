@@ -131,7 +131,7 @@ public class SessionResource
             final StoredSession session = ss.getSessionById(id); // check NotFound first
             final StoredProject project = rs.getProjectById(session.getProjectId()); // check NotFound first
 
-            ac.checkGetAttemptsOfSession( // AccessControl
+            ac.checkGetAttemptsFromSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), session.getWorkflowName(), project.getName()),
                     getUserInfo());
 

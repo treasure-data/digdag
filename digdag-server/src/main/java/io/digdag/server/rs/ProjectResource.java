@@ -415,7 +415,7 @@ public class ProjectResource
 
                 StoredSchedule sched;
                 try {
-                    ac.checkGetScheduleOfWorkflow( // AccessControl
+                    ac.checkGetScheduleFromWorkflow( // AccessControl
                             WorkflowTarget.of(getSiteId(), workflowName, proj.getName()),
                             getUserInfo());
 

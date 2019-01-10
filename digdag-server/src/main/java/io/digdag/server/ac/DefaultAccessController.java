@@ -137,12 +137,7 @@ public class DefaultAccessController
     }
 
     @Override
-    public void checkGetAttemptsOfSession(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    @Override
-    public void checkGetOtherAttemptsOfAttempt(WorkflowTarget target, Config user)
+    public void checkGetAttemptsFromSession(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -152,7 +147,7 @@ public class DefaultAccessController
     { }
 
     @Override
-    public void checkGetTasksOfAttempt(WorkflowTarget target, Config user)
+    public void checkGetTasksFromAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -189,7 +184,7 @@ public class DefaultAccessController
     }
 
     @Override
-    public void checkGetScheduleOfWorkflow(WorkflowTarget target, Config user)
+    public void checkGetScheduleFromWorkflow(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
