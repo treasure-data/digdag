@@ -107,27 +107,33 @@ public class AttemptResource
             SessionStore ss = sm.getSessionStore(getSiteId());
 
             if (projName != null) {
-                ac.checkListAttemptsOfProject( // AccessControl
-                        ProjectTarget.of(getSiteId(), projName),
-                        getUserInfo());
-
-                // TODO revisit to decide that ListFilter may be appropriate or not.
-                final StoredProject proj = rs.getProjectByName(projName, () -> "true"); // NotFound
+                final StoredProject proj = rs.getProjectByName(projName); // NotFound
                 if (wfName != null) {
-                    ac.checkListAttemptsOfWorkflow( // AccessControl
-                            WorkflowTarget.of(getSiteId(), wfName, proj.getName()),
-                            getUserInfo());
-
                     // of workflow
-                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId));
+
+                    final WorkflowTarget wfTarget = WorkflowTarget.of(getSiteId(), wfName, proj.getName());
+                    ac.checkListAttemptsOfWorkflow(wfTarget, getUserInfo()); // AccessControl
+                    attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId),
+                            ac.getListAttemptsFilterOfWorkflow(
+                                    wfTarget,
+                                    getUserInfo()));
                 }
                 else {
                     // of project
-                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId));
+
+                    final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), projName);
+                    ac.checkListAttemptsOfProject(projTarget, getUserInfo()); // AccessControl
+                    attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId),
+                            ac.getListAttemptsFilterOfProject(
+                                    projTarget,
+                                    getUserInfo()));
                 }
             }
             else {
                 // of site
+
+                final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+                ac.checkListAttemptsOfSite(siteTarget, getUserInfo()); // AccessControl
                 attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId),
                         ac.getListAttemptsFilterOfSite(
                                 SiteTarget.of(getSiteId()),
