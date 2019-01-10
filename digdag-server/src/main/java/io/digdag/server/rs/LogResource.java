@@ -77,7 +77,7 @@ public class LogResource
             // TODO null check taskName
             // TODO null check nodeId
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkPutLogFilesOfAttempt(
+                    (p, a) -> ac.checkPutLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
 
@@ -100,7 +100,7 @@ public class LogResource
             // TODO null check taskName
             // TODO null check nodeId
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkPutLogFilesOfAttempt(
+                    (p, a) -> ac.checkPutLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
 
@@ -128,7 +128,7 @@ public class LogResource
     {
         return tm.<RestLogFileHandleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkListLogFilesOfAttempt(
+                    (p, a) -> ac.checkListLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
@@ -146,7 +146,7 @@ public class LogResource
     {
         return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkGetLogFileOfAttempt(
+                    (p, a) -> ac.checkGetLogFile(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
             return logServer.getFile(prefix, fileName);

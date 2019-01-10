@@ -1,56 +1,31 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.function.Supplier;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.FileOutputStream;
-import java.io.ByteArrayInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import javax.ws.rs.Consumes;
+
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
-import com.google.common.collect.*;
-import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
-import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 @Api("Workflow")
 @Path("/")
@@ -111,7 +86,7 @@ public class WorkflowResource
             }
             StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName); // NotFound
 
-            ac.checkGetWorkflowOfWorkflow( // AccessControl
+            ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
                     getUserInfo());
 
@@ -136,7 +111,7 @@ public class WorkflowResource
 
             // The operation is not permitted if getting some of workflows is not permitted.
             for (StoredWorkflowDefinitionWithProject def : defs) {
-                ac.checkListWorkflowsOfWorkflow( // AccessControl
+                ac.checkListWorkflows( // AccessControl
                         WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
                         getUserInfo());
             }
@@ -155,7 +130,7 @@ public class WorkflowResource
                     rm.getProjectStore(getSiteId())
                             .getWorkflowDefinitionById(id); // NotFound
 
-            ac.checkGetWorkflowOfWorkflow( // AccessControl
+            ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
                     getUserInfo());
 
@@ -178,7 +153,7 @@ public class WorkflowResource
                     rm.getProjectStore(getSiteId())
                             .getWorkflowDefinitionById(id); // NotFound
 
-            ac.checkGetWorkflowOfWorkflow( // AccessControl
+            ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
                     getUserInfo());
 
