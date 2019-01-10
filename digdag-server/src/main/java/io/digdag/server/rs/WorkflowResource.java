@@ -109,13 +109,6 @@ public class WorkflowResource
                                             SiteTarget.of(getSiteId()),
                                             getUserInfo()));
 
-            // The operation is not permitted if getting some of workflows is not permitted.
-            for (StoredWorkflowDefinitionWithProject def : defs) {
-                ac.checkListWorkflows( // AccessControl
-                        WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
-                        getUserInfo());
-            }
-
             return RestModels.workflowDefinitionCollection(defs);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }

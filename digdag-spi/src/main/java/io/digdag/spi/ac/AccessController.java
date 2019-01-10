@@ -85,17 +85,6 @@ public interface AccessController
     { }
 
     /**
-     * Check if the user has permissions to list workflows.
-     *
-     * @param target
-     * @param user
-     * @throws AccessControlException
-     */
-    default void checkListWorkflows(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    /**
      * Return a filter to check if the user has permission to list workflows.
      *
      * @param target
