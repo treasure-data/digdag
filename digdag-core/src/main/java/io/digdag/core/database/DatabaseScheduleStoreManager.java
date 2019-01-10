@@ -11,12 +11,14 @@ import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.ac.AccessController;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.sqlobject.customizers.Define;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import javax.sql.DataSource;
@@ -120,9 +122,9 @@ public class DatabaseScheduleStoreManager
         //}
 
         @Override
-        public List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId)
+        public List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getSchedules(siteId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getSchedules(siteId, pageSize, lastId.or(0), acFilter.getSql()));
         }
 
         @Override
@@ -266,15 +268,21 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " join projects proj on proj.id = s.project_id" +
                 " where exists (" +
-                    "select * from projects proj" +
-                    " where proj.id = s.project_id" +
-                    " and proj.site_id = :siteId" +
+                    "select p.* from projects p" +
+                    " where p.id = s.project_id" +
+                    " and p.site_id = :siteId" +
                 ")" +
-                " and s.id > :lastId" +
+                " and s.id \\> :lastId" +
+                " and <acFilter>" +
                 " order by s.id asc" +
                 " limit :limit")
-        List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredSchedule> getSchedules(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Define("acFilter") String acFilter);
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
