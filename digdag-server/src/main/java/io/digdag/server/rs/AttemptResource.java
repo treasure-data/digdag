@@ -173,7 +173,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
-            ac.checkGetOtherAttemptsOfAttempt( // AccessControl
+            ac.checkGetAttemptsFromSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
@@ -195,7 +195,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            ac.checkGetTasksOfAttempt( // AccessControl
+            ac.checkGetTasksFromAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
