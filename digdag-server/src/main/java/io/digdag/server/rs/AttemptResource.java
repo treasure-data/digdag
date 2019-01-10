@@ -106,7 +106,7 @@ public class AttemptResource
             SessionStore ss = sm.getSessionStore(getSiteId());
 
             if (projName != null) {
-                final StoredProject proj = rs.getProjectByName(projName); // NotFound
+                final StoredProject proj = rs.getProjectByName(projName); // check NotFound first
                 if (wfName != null) {
                     // of workflow
 
@@ -149,10 +149,10 @@ public class AttemptResource
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestSessionAttempt, ResourceNotFoundException, AccessControlException >begin(() -> {
-            StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                    .getAttemptById(id); // NotFound
-            StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
+            final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
+                    .getAttemptById(id); // check NotFound first
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
             ac.checkGetAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
@@ -169,16 +169,16 @@ public class AttemptResource
     {
         return tm.<RestSessionAttemptCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                    .getAttemptById(id); // NotFound
+                    .getAttemptById(id); // check NotFound first
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
+                    .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
-            ac.checkListOtherAttemptsOfAttempt(
+            ac.checkListOtherAttemptsOfAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
-                    getUserInfo()); // AccessControl
+                    getUserInfo());
 
             List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
-                    .getOtherAttempts(id); // NotFound
+                    .getOtherAttempts(id); // should never throw NotFound
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -213,7 +213,7 @@ public class AttemptResource
     {
         return tm.<Response, AttemptLimitExceededException, ResourceNotFoundException, TaskLimitExceededException, AccessControlException>begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
-            final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // NotFound
+            final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // check NotFound first
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
             ac.checkRunAttempt( // AccessControl
@@ -330,15 +330,15 @@ public class AttemptResource
     {
         tm.<Void, ResourceNotFoundException, ResourceConflictException, AccessControlException>begin(() -> {
             final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                    .getAttemptById(id); // NotFound
+                    .getAttemptById(id); // check NotFound first
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(attempt.getSession().getProjectId()); // NotFound
+                    .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
             ac.checkKillAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
-            boolean updated = executor.killAttemptById(getSiteId(), id); // NotFound
+            boolean updated = executor.killAttemptById(getSiteId(), id); // should never throw NotFound
             if (!updated) {
                 throw new ResourceConflictException("Session attempt already killed or finished");
             }
