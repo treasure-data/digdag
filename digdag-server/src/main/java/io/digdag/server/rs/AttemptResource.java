@@ -111,9 +111,9 @@ public class AttemptResource
                     // of workflow
 
                     final WorkflowTarget wfTarget = WorkflowTarget.of(getSiteId(), wfName, proj.getName());
-                    ac.checkListAttemptsOfWorkflow(wfTarget, getUserInfo()); // AccessControl
+                    ac.checkListSessionsOfWorkflow(wfTarget, getUserInfo()); // AccessControl
                     attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId),
-                            ac.getListAttemptsFilterOfWorkflow(
+                            ac.getListSessionsFilterOfWorkflow(
                                     wfTarget,
                                     getUserInfo()));
                 }
@@ -121,9 +121,9 @@ public class AttemptResource
                     // of project
 
                     final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), projName);
-                    ac.checkListAttemptsOfProject(projTarget, getUserInfo()); // AccessControl
+                    ac.checkListSessionsOfProject(projTarget, getUserInfo()); // AccessControl
                     attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId),
-                            ac.getListAttemptsFilterOfProject(
+                            ac.getListSessionsFilterOfProject(
                                     projTarget,
                                     getUserInfo()));
                 }
@@ -132,10 +132,10 @@ public class AttemptResource
                 // of site
 
                 final SiteTarget siteTarget = SiteTarget.of(getSiteId());
-                ac.checkListAttemptsOfSite(siteTarget, getUserInfo()); // AccessControl
+                ac.checkListSessionsOfSite(siteTarget, getUserInfo()); // AccessControl
                 attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId),
-                        ac.getListAttemptsFilterOfSite(
-                                SiteTarget.of(getSiteId()),
+                        ac.getListSessionsFilterOfSite(
+                                siteTarget,
                                 getUserInfo()));
             }
 
@@ -173,7 +173,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
-            ac.checkListOtherAttemptsOfAttempt( // AccessControl
+            ac.checkGetOtherAttemptsOfAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
@@ -195,7 +195,7 @@ public class AttemptResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
-            ac.checkGetAttempt( // AccessControl
+            ac.checkGetTasksOfAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
@@ -216,7 +216,7 @@ public class AttemptResource
             final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // check NotFound first
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
-            ac.checkRunAttempt( // AccessControl
+            ac.checkRunWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getProject().getName(), def.getName()),
                     getUserInfo());
 
