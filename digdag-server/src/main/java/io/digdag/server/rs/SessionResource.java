@@ -19,8 +19,8 @@ import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.ac.SessionTarget;
 import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.GET;
@@ -100,8 +100,8 @@ public class SessionResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(session.getProjectId()); // NotFound
 
-            ac.checkGetSessionOfSession( // AccessControl
-                    SessionTarget.of(getSiteId(), session.getId(), session.getWorkflowName(), proj.getName()),
+            ac.checkGetSession( // AccessControl
+                    WorkflowTarget.of(getSiteId(), session.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
             return RestModels.session(session, proj.getName());
@@ -126,7 +126,7 @@ public class SessionResource
             final StoredProject project = rs.getProjectById(session.getProjectId()); // NotFound
 
             ac.checkListAttemptsOfSession( // AccessControl
-                    SessionTarget.of(getSiteId(), session.getId(), session.getWorkflowName(), project.getName()),
+                    WorkflowTarget.of(getSiteId(), session.getWorkflowName(), project.getName()),
                     getUserInfo());
 
             List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));

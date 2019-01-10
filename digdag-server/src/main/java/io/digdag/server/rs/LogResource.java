@@ -25,7 +25,7 @@ import io.digdag.client.api.*;
 import io.digdag.spi.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.ac.AttemptTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -78,7 +78,7 @@ public class LogResource
             // TODO null check nodeId
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkPutLogFilesOfAttempt(
-                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
 
             byte[] data = ByteStreams.toByteArray(body);
@@ -101,7 +101,7 @@ public class LogResource
             // TODO null check nodeId
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkPutLogFilesOfAttempt(
-                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
 
             Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
@@ -129,7 +129,7 @@ public class LogResource
         return tm.<RestLogFileHandleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkListLogFilesOfAttempt(
-                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
             return RestModels.logFileHandleCollection(handles);
@@ -147,7 +147,7 @@ public class LogResource
         return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkGetLogFileOfAttempt(
-                            AttemptTarget.of(getSiteId(), a.getRetryAttemptName(), p.getName(), a.getSession().getWorkflowName()),
+                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
             return logServer.getFile(prefix, fileName);
         }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class, AccessControlException.class);
