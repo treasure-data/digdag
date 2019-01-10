@@ -41,6 +41,7 @@ import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
+import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
@@ -92,39 +93,30 @@ public class WorkflowResource
             @QueryParam("project") String projName,
             @QueryParam("revision") String revName,
             @QueryParam("name") String wfName)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(projName != null, "project= is required");
             Preconditions.checkArgument(wfName != null, "name= is required");
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
-            StoredProject proj = rs.getProjectByName(projName, // NotFound
-                    () -> ac.getGetWorkflowFilterOf(
-                            ProjectTarget.of(getSiteId(), Optional.absent(), projName),
-                            getUserInfo())
-            );
+            StoredProject proj = rs.getProjectByName(projName); // NotFound
             StoredRevision rev;
 
-            final ProjectTarget projTargetWithId = ProjectTarget.of(getSiteId(), Optional.of(proj.getId()), projName);
             if (revName == null) {
-                rev = rs.getLatestRevision(proj.getId(), // NotFound
-                        () -> ac.getGetWorkflowFilterOf(projTargetWithId, getUserInfo()));
+                rev = rs.getLatestRevision(proj.getId()); // NotFound
             }
             else {
-                rev = rs.getRevisionByName(proj.getId(), revName, // NotFound
-                        () -> ac.getGetWorkflowFilterOf(projTargetWithId, getUserInfo()));
+                rev = rs.getRevisionByName(proj.getId(), revName); // NotFound
             }
-            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName, // NotFound
-                    () -> ac.getGetWorkflowFilterOf(
-                            WorkflowTarget.of(getSiteId(),
-                                    wfName,
-                                    Optional.of(proj.getId()),
-                                    proj.getName()),
-                            getUserInfo())
-            );
+            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName); // NotFound
+
+            ac.checkGetWorkflowOfWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
+                    getUserInfo());
+
             return RestModels.workflowDefinition(proj, rev, def);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -132,35 +124,43 @@ public class WorkflowResource
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
             @QueryParam("last_id") Long lastId,
             @QueryParam("count") Integer count)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
                             .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // NotFound
-                                    () -> ac.getListWorkflowsFilterOf(
+                                    ac.getListWorkflowsFilterOfSite(
                                             SiteTarget.of(getSiteId()),
-                                            getUserInfo())
-                            );
+                                            getUserInfo()));
+
+            // The operation is not permitted if getting some of workflows is not permitted.
+            for (StoredWorkflowDefinitionWithProject def : defs) {
+                ac.checkListWorkflowsOfWorkflow( // AccessControl
+                        WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
+                        getUserInfo());
+            }
+
             return RestModels.workflowDefinitionCollection(defs);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id, // NotFound
-                                    () -> ac.getGetWorkflowFilterOf(
-                                            SiteTarget.of(getSiteId()),
-                                            getUserInfo())
-                            );
+                            .getWorkflowDefinitionById(id); // NotFound
+
+            ac.checkGetWorkflowOfWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
+                    getUserInfo());
+
             return RestModels.workflowDefinition(def);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -169,18 +169,18 @@ public class WorkflowResource
             @PathParam("id") long id,
             @QueryParam("session_time") LocalTimeOrInstant localTime,
             @QueryParam("mode") SessionTimeTruncate mode)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowSessionTime, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(localTime != null, "session_time= is required");
 
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id, // NotFound
-                                    () -> ac.getGetWorkflowFilterOf(
-                                            SiteTarget.of(getSiteId()),
-                                            getUserInfo())
-                            );
+                            .getWorkflowDefinitionById(id); // NotFound
+
+            ac.checkGetWorkflowOfWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
+                    getUserInfo());
 
             ZoneId timeZone = def.getTimeZone();
 
@@ -196,7 +196,7 @@ public class WorkflowResource
 
             return RestModels.workflowSessionTime(
                     def, truncated, timeZone);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     private Instant truncateSessionTime(
