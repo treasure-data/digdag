@@ -431,11 +431,15 @@ public class ProjectResource
             else {
                 // of project
 
+                final ProjectTarget projSite = ProjectTarget.of(getSiteId(), proj.getName());
                 ac.checkListSchedulesOfProject( // AccessControl
-                        ProjectTarget.of(getSiteId(), proj.getName()),
+                        projSite,
                         getUserInfo());
 
-                scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
+                scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId),
+                        ac.getListSchedulesFilterOfProject(
+                                projSite,
+                                getUserInfo()));
             }
 
             return RestModels.scheduleCollection(projectStore, scheds);

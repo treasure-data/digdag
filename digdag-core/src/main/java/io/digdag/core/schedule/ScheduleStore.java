@@ -14,7 +14,7 @@ public interface ScheduleStore
     StoredSchedule getScheduleById(int schedId)
         throws ResourceNotFoundException;
 
-    List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId);
+    List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId, AccessController.ListFilter filter);
 
     StoredSchedule getScheduleByProjectIdAndWorkflowName(int projectId, String workflowName)
             throws ResourceNotFoundException;

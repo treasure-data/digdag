@@ -131,11 +131,10 @@ public class SessionResource
             final StoredSession session = ss.getSessionById(id); // check NotFound first
             final StoredProject project = rs.getProjectById(session.getProjectId()); // check NotFound first
 
-            ac.checkListAttemptsOfSession( // AccessControl
+            ac.checkGetAttemptsOfSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), session.getWorkflowName(), project.getName()),
                     getUserInfo());
 
-            // FIXME Why getListAttemptsFilterOfSession doesn't exist here?
             List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));
 
             List<RestSessionAttempt> collection = attempts.stream()
