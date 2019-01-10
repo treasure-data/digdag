@@ -137,9 +137,9 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId)
+        public List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getSchedulesByProjectId(siteId, projectId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getSchedulesByProjectId(siteId, projectId, pageSize, lastId.or(0), acFilter.getSql()));
         }
 
         @Override
@@ -293,9 +293,15 @@ public class DatabaseScheduleStoreManager
                     " and proj.site_id = :siteId" +
                 ")" +
                 " and s.id > :lastId" +
+                " and <acFilter>" +
                 " order by s.id asc" +
                 " limit :limit")
-        List<StoredSchedule> getSchedulesByProjectId(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredSchedule> getSchedulesByProjectId(
+                @Bind("siteId") int siteId,
+                @Bind("projectId") int projectId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Define("acFilter") String acFilter);
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
