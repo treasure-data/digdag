@@ -274,23 +274,13 @@ public interface AccessController
     // resource actions
 
     /**
-     * Check if the user has permissions to get attempts from a session.
+     * Check if the user has permissions to get attempts from the session.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    void checkGetAttemptsOfSession(WorkflowTarget target, Config user)
-            throws AccessControlException;
-
-    /**
-     * Check if the user has permissions to get other attempts from the same session of the attempt.
-     *
-     * @param target
-     * @param user
-     * @throws AccessControlException
-     */
-    void checkGetOtherAttemptsOfAttempt(WorkflowTarget target, Config user)
+    void checkGetAttemptsFromSession(WorkflowTarget target, Config user)
             throws AccessControlException;
 
     /**
@@ -310,7 +300,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetTasksOfAttempt(WorkflowTarget target, Config user)
+    void checkGetTasksFromAttempt(WorkflowTarget target, Config user)
             throws AccessControlException;
 
     /**
@@ -388,7 +378,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetScheduleOfWorkflow(WorkflowTarget target, Config user)
+    void checkGetScheduleFromWorkflow(WorkflowTarget target, Config user)
             throws AccessControlException;
 
     /**
