@@ -39,6 +39,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
+import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevision;
@@ -74,6 +75,7 @@ import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
@@ -91,6 +93,11 @@ import io.digdag.spi.SecretScopes;
 import io.digdag.client.api.SecretValidation;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.StorageObject;
+import io.digdag.spi.ac.AccessControlException;
+import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.ProjectTarget;
+import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.digdag.util.Md5CountInputStream;
 import io.swagger.annotations.Api;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -168,6 +175,7 @@ public class ProjectResource
     private final ArchiveManager archiveManager;
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
+    private final AccessController ac;
     private final SchedulerManager srm;
     private final TempFileManager tempFiles;
     private final SessionStoreManager ssm;
@@ -183,6 +191,7 @@ public class ProjectResource
             ArchiveManager archiveManager,
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
+            AccessController ac,
             SchedulerManager srm,
             TempFileManager tempFiles,
             SessionStoreManager ssm,
@@ -198,6 +207,7 @@ public class ProjectResource
         this.archiveManager = archiveManager;
         this.rm = rm;
         this.sm = sm;
+        this.ac = ac;
         this.tempFiles = tempFiles;
         this.ssm = ssm;
         this.tm = tm;
@@ -220,16 +230,21 @@ public class ProjectResource
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestProject, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(name != null, "name= is required");
 
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
-            StoredRevision rev = ps.getLatestRevision(proj.getId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // NotFound
+            StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+
+            ac.checkGetProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    getUserInfo());
+
             return RestModels.project(proj, rev);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -242,21 +257,29 @@ public class ProjectResource
             List<RestProject> collection;
             if (name != null) {
                 try {
-                    StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
-                    StoredRevision rev = ps.getLatestRevision(proj.getId());
+                    StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // NotFound
+                    StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+
+                    ac.checkGetProjectOfProject( // AccessControl
+                            ProjectTarget.of(getSiteId(), proj.getName()),
+                            getUserInfo());
+
                     collection = ImmutableList.of(RestModels.project(proj, rev));
                 }
-                catch (ResourceNotFoundException ex) {
+                catch (ResourceNotFoundException | AccessControlException ex) {
                     collection = ImmutableList.of();
                 }
             }
             else {
                 // TODO fix n-m db access
-                collection = ps.getProjects(100, Optional.absent())
+                collection = ps.getProjects(100, Optional.absent(),
+                        ac.getListProjectsFilterOfSite(
+                                SiteTarget.of(getSiteId()),
+                                getUserInfo()))
                         .stream()
                         .map(proj -> {
                             try {
-                                StoredRevision rev = ps.getLatestRevision(proj.getId());
+                                StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
                                 return RestModels.project(proj, rev);
                             }
                             catch (ResourceNotFoundException ex) {
@@ -274,57 +297,71 @@ public class ProjectResource
     @GET
     @Path("/api/projects/{id}")
     public RestProject getProject(@PathParam("id") int projId)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestProject, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
-            StoredRevision rev = ps.getLatestRevision(proj.getId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+            StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+
+            ac.checkGetProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    getUserInfo());
+
             return RestModels.project(proj, rev);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/revisions")
     public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestRevisionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
             List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+
+            ac.checkGetProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    getUserInfo());
+
             return RestModels.revisionCollection(proj, revs);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(name != null, "name= is required");
 
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
 
             StoredRevision rev;
             if (revName == null) {
-                rev = ps.getLatestRevision(proj.getId());
+                rev = ps.getLatestRevision(proj.getId()); // NotFound
             }
             else {
-                rev = ps.getRevisionByName(proj.getId(), revName);
+                rev = ps.getRevisionByName(proj.getId(), revName); // NotFound
             }
-            StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
+            StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // NotFound
+
+            ac.checkGetWorkflowOfWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), proj.getName(), name),
+                    getUserInfo());
 
             return RestModels.workflowDefinition(proj, rev, def);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/workflows/{name}")
     public RestWorkflowDefinition getWorkflowByName(@PathParam("id") int projId, @PathParam("name") String name, @QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
         return getWorkflow(projId, name, revName);
     }
@@ -335,24 +372,29 @@ public class ProjectResource
             @PathParam("id") int projId,
             @QueryParam("revision") String revName,
             @QueryParam("name") String name)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
 
             StoredRevision rev;
             if (revName == null) {
-                rev = ps.getLatestRevision(proj.getId());
+                rev = ps.getLatestRevision(proj.getId()); // NotFound
             }
             else {
-                rev = ps.getRevisionByName(proj.getId(), revName);
+                rev = ps.getRevisionByName(proj.getId(), revName); // NotFound
             }
 
             List<StoredWorkflowDefinition> collection;
             if (name != null) {
                 try {
-                    StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
+                    StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // NotFound
+
+                    ac.checkGetWorkflowOfWorkflow( // AccessControl
+                            WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
+                            getUserInfo());
+
                     collection = ImmutableList.of(def);
                 }
                 catch (ResourceNotFoundException ex) {
@@ -360,11 +402,20 @@ public class ProjectResource
                 }
             }
             else {
+                // of project
+
+                ac.checkListWorkflowsOfProject( // AccessControl
+                        ProjectTarget.of(getSiteId(), proj.getName()),
+                        getUserInfo());
+
                 // TODO should here support pagination?
-                collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
+                collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent(),
+                        ac.getListWorkflowsFilterOfProject(
+                                ProjectTarget.of(getSiteId(), proj.getName()),
+                                getUserInfo()));
             }
             return RestModels.workflowDefinitionCollection(proj, rev, collection);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -373,16 +424,22 @@ public class ProjectResource
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Integer lastId)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestScheduleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
             ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
 
-            ensureNotDeletedProject(projectStore.getProjectById(projectId));
+            StoredProject proj = ensureNotDeletedProject(projectStore.getProjectById(projectId)); // NotFound
 
             List<StoredSchedule> scheds;
             if (workflowName != null) {
+                // of workflow
+
+                ac.checkListSchedulesOfWorkflow( // AccessControl
+                        WorkflowTarget.of(getSiteId(), workflowName, proj.getName()),
+                        getUserInfo());
+
                 StoredSchedule sched;
                 try {
                     sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
@@ -393,11 +450,17 @@ public class ProjectResource
                 }
             }
             else {
+                // of project
+
+                ac.checkListSchedulesOfProject( // AccessControl
+                        ProjectTarget.of(getSiteId(), proj.getName()),
+                        getUserInfo());
+
                 scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
             }
 
             return RestModels.scheduleCollection(projectStore, scheds);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -407,39 +470,65 @@ public class ProjectResource
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
 
-        return tm.begin(() -> {
+        return tm.<RestSessionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             SessionStore ss = ssm.getSessionStore(getSiteId());
 
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId)); // NotFound
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId));
-            } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId));
+                // of workflow
+
+                final WorkflowTarget wfTarget = WorkflowTarget.of(getSiteId(), workflowName, proj.getName());
+                ac.checkListSessionsOfWorkflow( // AccessControl
+                        wfTarget,
+                        getUserInfo());
+
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId),
+                        ac.getListSessionsFilterOfWorkflow(
+                                wfTarget,
+                                getUserInfo()));
+            }
+            else {
+                // of project
+
+                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
+                ac.checkListSessionsOfProject( // AccessControl
+                        projTarget,
+                        getUserInfo());
+
+                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId),
+                        ac.getListSessionsFilterOfProject(
+                                projTarget,
+                                getUserInfo()));
             }
 
             return RestModels.sessionCollection(ps, sessions);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
     public Response getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<Response, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            ensureNotDeletedProject(ps.getProjectById(projId));
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
 
             Optional<ArchiveManager.StoredArchive> archiveOrNone =
-                    archiveManager.getArchive(ps, projId, revName);
+                    archiveManager.getArchive(ps, projId, revName); // NotFound
+
+            ac.checkGetProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    getUserInfo());
+
             if (!archiveOrNone.isPresent()) {
                 throw new ResourceNotFoundException("Archive is not stored");
             }
@@ -484,21 +573,27 @@ public class ProjectResource
                     }
                 }).build();
             }
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}")
     public RestProject deleteProject(@PathParam("id") int projId)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestProject, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject project = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+
+            ac.checkDeleteProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), project.getName()),
+                    getUserInfo());
+
             return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
-                StoredRevision rev = ps.getLatestRevision(proj.getId());
+                StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
                 return RestModels.project(proj, rev);
-            });
-        }, ResourceNotFoundException.class);
+            }); // NotFound
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @PUT
@@ -507,9 +602,13 @@ public class ProjectResource
     public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
             InputStream body, @HeaderParam("Content-Length") long contentLength,
             @QueryParam("schedule_from") String scheduleFromString)
-            throws ResourceConflictException, IOException, ResourceNotFoundException
+            throws ResourceConflictException, IOException, ResourceNotFoundException, AccessControlException
     {
-        return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException>begin(() -> {
+        ac.checkPutProjectOfProject( // AccessControl
+                ProjectTarget.of(getSiteId(), name),
+                getUserInfo());
+
+        return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
 
@@ -544,6 +643,13 @@ public class ProjectResource
                     if (md5Count.getCount() != contentLength) {
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
+                }
+
+                // The project itself is not permitted if some of workflows in the project archive are not permitted.
+                for (final WorkflowDefinition def : meta.getWorkflowList().get()) {
+                    ac.checkPutProjectOfWorkflow( // AccessControl
+                            WorkflowTarget.of(getSiteId(), def.getName(), name),
+                            getUserInfo());
                 }
 
                 ArchiveManager.Location location =
@@ -614,7 +720,7 @@ public class ProjectResource
                         k, v));
                 return restProject;
             }
-        }, IOException.class, ResourceConflictException.class, ResourceNotFoundException.class);
+        }, IOException.class, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     private ArchiveMetadata readArchiveMetadata(InputStream in, String projectName)
@@ -680,58 +786,70 @@ public class ProjectResource
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
     public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        tm.begin(() -> {
+        tm.<Void, ResourceNotFoundException, AccessControlException>begin(() -> {
             if (!SecretValidation.isValidSecret(key, request.value())) {
                 throw new IllegalArgumentException("Invalid secret");
             }
 
             // Verify that the project exists
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
-            StoredProject project = projectStore.getProjectById(projectId);
+            StoredProject project = projectStore.getProjectById(projectId); // NotFound
             ensureNotDeletedProject(project);
+
+            ac.checkPutProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), project.getName()),
+                    getUserInfo());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
             store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
             return null;
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
     public void deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        tm.begin(() -> {
+        tm.<Void, ResourceNotFoundException, AccessControlException>begin(() -> {
             if (!SecretValidation.isValidSecretKey(key)) {
                 throw new IllegalArgumentException("Invalid secret");
             }
 
             // Verify that the project exists
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
-            StoredProject project = projectStore.getProjectById(projectId);
+            StoredProject project = projectStore.getProjectById(projectId); // NotFound
             ensureNotDeletedProject(project);
+
+            ac.checkDeleteProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), project.getName()),
+                    getUserInfo());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
             store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
             return null;
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/projects/{id}/secrets")
     @Produces("application/json")
     public RestSecretList getProjectSecrets(@PathParam("id") int projectId)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestSecretList, ResourceNotFoundException, AccessControlException>begin(() -> {
             // Verify that the project exists
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
-            StoredProject project = projectStore.getProjectById(projectId);
+            StoredProject project = projectStore.getProjectById(projectId); // NotFound
             ensureNotDeletedProject(project);
+
+            ac.checkGetProjectOfProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), project.getName()),
+                    getUserInfo());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
             List<String> keys = store.listProjectSecrets(projectId, SecretScopes.PROJECT);
@@ -739,6 +857,6 @@ public class ProjectResource
             return RestSecretList.builder()
                     .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))
                     .build();
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 }
