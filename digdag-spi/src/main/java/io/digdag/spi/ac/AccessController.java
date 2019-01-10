@@ -16,15 +16,14 @@ public interface AccessController
     // put, delete, get
 
     /**
-     * Check if the user has permissions to put the project.
+     * Check if the user has permissions to put a project.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkPutProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkPutProject(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to delete the project.
@@ -33,9 +32,8 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkDeleteProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkDeleteProject(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to get the project.
@@ -44,47 +42,41 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetProject(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     // listing
 
     /**
-     * Check if the user has permissions to list projects.
+     * Check if the user has permissions to list projects within the site.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkListProjectsOfSite(SiteTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListProjectsOfSite(SiteTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Return a filter to check if the user has permission to list projects.
+     * Return a filter to return only allowed projects within the site.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListProjectsFilterOfSite(SiteTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListProjectsFilterOfSite(SiteTarget target, Config user);
 
     // resource actions
 
     /**
-     * Check if the user has permissions to download the project archive.
+     * Check if the user has permissions to download archive of the project.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetProjectArchive(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetProjectArchive(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to put a secret to the project.
@@ -93,31 +85,28 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkPutProjectSecret(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkPutProjectSecret(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Check if the user has permissions to delete the project secret.
+     * Check if the user has permissions to delete a project from the project.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkDeleteProjectSecret(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkDeleteProjectSecret(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Check if the user has permissions to get secrets from the project.
+     * Check if the user has permissions to get any secrets from the project.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetProjectSecrets(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetProjectSecrets(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     //
     // Workflows
@@ -132,57 +121,48 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetWorkflow(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     // listing
 
     /**
-     * Check if the user has permissions to list workflows.
+     * Check if the user has permissions to list workflows within the site.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkListWorkflowsOfSite(SiteTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListWorkflowsOfSite(SiteTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Return a filter to check if the user has permission to list workflows.
+     * Return a filter to return only allowed workflows within the site.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListWorkflowsFilterOfSite(SiteTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListWorkflowsFilterOfSite(SiteTarget target, Config user);
 
     /**
-     * Check if the user has permissions to list workflows.
+     * Check if the user has permissions to list workflows within the project.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkListWorkflowsOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListWorkflowsOfProject(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Return a filter to check if the user has permission to list workflows.
+     * Return a filter to return only allowed workflows within the project.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListWorkflowsFilterOfProject(ProjectTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListWorkflowsFilterOfProject(ProjectTarget target, Config user);
 
     // resource actions
 
@@ -193,31 +173,28 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkRunWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkRunWorkflow(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Check if the user has permissions to put log files.
+     * Check if the user has permissions to put log files to the attempt.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkPutLogFile(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkPutLogFile(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Check if the user has permissions to get any log files.
+     * Check if the user has permissions to get any log files from the attempt.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetLogFiles(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetLogFiles(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     //
     // Sessions
@@ -232,56 +209,29 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetSession(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetSession(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     // listing
 
     /**
-     * Check if the user has permissions to list sessions.
+     * Check if the user has permissions to list sessions within the site.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkListSessionsOfSite(SiteTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListSessionsOfSite(SiteTarget target, Config user)
+            throws AccessControlException;
 
     /**
+     * Return a filter to return only allowed sessions within the site.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListSessionsFilterOfSite(SiteTarget target, Config user)
-    {
-        return () -> "true";
-    }
-
-    /**
-     * Check if the user has permissions to list sessions.
-     *
-     * @param target
-     * @param user
-     * @throws AccessControlException
-     */
-    default void checkListSessionsOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
-
-    /**
-     * Return a filter to check if the user has permissions to list sessions.
-     *
-     * @param target
-     * @param user
-     * @return
-     */
-    default ListFilter getListSessionsFilterOfProject(ProjectTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListSessionsFilterOfSite(SiteTarget target, Config user);
 
     /**
      * Check if the user has permissions to list sessions.
@@ -290,43 +240,58 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkListSessionsOfWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListSessionsOfProject(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
+     * Return a filter to return only allowed sessions within the project.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListSessionsFilterOfWorkflow(WorkflowTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListSessionsFilterOfProject(ProjectTarget target, Config user);
+
+    /**
+     * Check if the user has permissions to list sessions within the workflow.
+     *
+     * @param target
+     * @param user
+     * @throws AccessControlException
+     */
+    void checkListSessionsOfWorkflow(WorkflowTarget target, Config user)
+            throws AccessControlException;
+
+    /**
+     * Return a filter to return only allowed sessions within the workflow.
+     *
+     * @param target
+     * @param user
+     * @return
+     */
+    ListFilter getListSessionsFilterOfWorkflow(WorkflowTarget target, Config user);
 
     // resource actions
 
     /**
-     * Check if the user has permissions to list attempts.
+     * Check if the user has permissions to get attempts from a session.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetAttemptsOfSession(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetAttemptsOfSession(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Check if the user has permissions to list other attempts of the attempt.     *
+     * Check if the user has permissions to get other attempts from the same session of the attempt.
+     *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetOtherAttemptsOfAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetOtherAttemptsOfAttempt(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to get the attempt.
@@ -335,20 +300,18 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetAttempt(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Check if the user has permissions to get tasks of an attempt.
+     * Check if the user has permissions to get tasks from the attempt.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetTasksOfAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetTasksOfAttempt(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to kill the attempt.
@@ -357,9 +320,8 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkKillAttempt(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkKillAttempt(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     //
     // Schedules
@@ -374,70 +336,60 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetSchedule(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetSchedule(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     // listing
 
     /**
-     * Check if the user has permissions to list schedules.
+     * Check if the user has permissions to list schedules within the site.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkListSchedulesOfSite(SiteTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListSchedulesOfSite(SiteTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Return a filter to check if the user has permissions to list schedules.
+     * Return a filter to return only allowed schedules within the site.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListSchedulesFilterOfSite(SiteTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListSchedulesFilterOfSite(SiteTarget target, Config user);
 
     /**
-     * Check if the user has permissions to list schedules.
+     * Check if the user has permissions to list schedules within the project.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkListSchedulesOfProject(ProjectTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkListSchedulesOfProject(ProjectTarget target, Config user)
+            throws AccessControlException;
 
     /**
-     * Return a filter to check if the user has permissions to list schedules.
+     * Return a filter to return only allowed schedules within the project.
      *
      * @param target
      * @param user
      * @return
      */
-    default ListFilter getListSchedulesFilterOfProject(ProjectTarget target, Config user)
-    {
-        return () -> "true";
-    }
+    ListFilter getListSchedulesFilterOfProject(ProjectTarget target, Config user);
 
     // resource actions
 
     /**
-     * Check if the user has permissions to list schedules.
+     * Check if the user has permissions to get schedules from the workflow.
      *
      * @param target
      * @param user
      * @throws AccessControlException
      */
-    default void checkGetScheduleOfWorkflow(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkGetScheduleOfWorkflow(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to skip the schedule.
@@ -446,9 +398,8 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkSkipSchedule(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkSkipSchedule(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to backfill the schedule.
@@ -457,9 +408,8 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkBackfillSchedule(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkBackfillSchedule(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to disable the schedule.
@@ -468,9 +418,8 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkDisableSchedule(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkDisableSchedule(WorkflowTarget target, Config user)
+            throws AccessControlException;
 
     /**
      * Check if the user has permissions to enable the schedule.
@@ -479,7 +428,6 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkEnableSchedule(WorkflowTarget target, Config user)
-            throws AccessControlException
-    { }
+    void checkEnableSchedule(WorkflowTarget target, Config user)
+            throws AccessControlException;
 }
