@@ -5,10 +5,11 @@ import com.google.common.base.Optional;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.spi.ac.AccessController;
 
 public interface ScheduleStore
 {
-    List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId);
+    List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId, AccessController.ListFilter filter);
 
     StoredSchedule getScheduleById(int schedId)
         throws ResourceNotFoundException;
