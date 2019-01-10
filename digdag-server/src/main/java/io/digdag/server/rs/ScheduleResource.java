@@ -74,12 +74,18 @@ public class ScheduleResource
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
+            throws AccessControlException
     {
+        final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+        ac.checkListSchedulesOfSite( // AccessControl
+                siteTarget,
+                getUserInfo());
+
         return tm.begin(() -> {
             List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
                     .getSchedules(100, Optional.fromNullable(lastId),
                             ac.getListSchedulesFilterOfSite(
-                                    SiteTarget.of(getSiteId()),
+                                    siteTarget,
                                     getUserInfo()));
 
             return RestModels.scheduleCollection(rm.getProjectStore(getSiteId()), scheds);
@@ -93,11 +99,11 @@ public class ScheduleResource
     {
         return tm.<RestSchedule, ResourceNotFoundException, AccessControlException>begin(() -> {
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id); // NotFound
+                    .getScheduleById(id); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
             StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(sched.getProjectId()); // NotFound
+                    .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkGetSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
@@ -118,9 +124,9 @@ public class ScheduleResource
                     (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
 
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id); // NotFound
+                    .getScheduleById(id); // check NotFound first
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(sched.getProjectId()); // NotFound
+                    .getProjectById(sched.getProjectId()); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
             ac.checkSkipSchedule( // AccessControl
@@ -164,16 +170,16 @@ public class ScheduleResource
         return tm.<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException>begin(() ->
         {
             final StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id); // NotFound
+                    .getScheduleById(id); // check NotFound first
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(sched.getProjectId()); // NotFound
+                    .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkBackfillSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
             List<StoredSessionAttemptWithSession> attempts =
-                    exec.backfill(getSiteId(), id,
+                    exec.backfill(getSiteId(), id,  // should never throw NotFound
                             request.getFromTime(),
                             request.getAttemptName(),
                             request.getCount(),
@@ -192,16 +198,16 @@ public class ScheduleResource
         {
             // TODO: this is racy
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id); // NotFound
+                    .getScheduleById(id); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(sched.getProjectId()); // NotFound
+                    .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkDisableSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
-            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // NotFound
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
                 lockedSched.disableSchedule();
                 return lockedSched.get();
@@ -219,16 +225,16 @@ public class ScheduleResource
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
             // TODO: this is racy
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id); // NotFound
+                    .getScheduleById(id); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(sched.getProjectId()); // NotFound
+                    .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkEnableSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
-            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // NotFound
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
                 lockedSched.enableSchedule();
                 return lockedSched.get();

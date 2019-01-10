@@ -200,8 +200,8 @@ public class ProjectResource
             Preconditions.checkArgument(name != null, "name= is required");
 
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // NotFound
-            StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // check NotFound first
+            StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
@@ -214,6 +214,7 @@ public class ProjectResource
     @GET
     @Path("/api/projects")
     public RestProjectCollection getProjects(@QueryParam("name") String name)
+            throws AccessControlException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -221,8 +222,8 @@ public class ProjectResource
             List<RestProject> collection;
             if (name != null) {
                 try {
-                    StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // NotFound
-                    StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+                    StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name)); // check NotFound first
+                    StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
 
                     ac.checkGetProject( // AccessControl
                             ProjectTarget.of(getSiteId(), proj.getName()),
@@ -231,22 +232,31 @@ public class ProjectResource
                     collection = ImmutableList.of(RestModels.project(proj, rev));
                 }
                 catch (ResourceNotFoundException | AccessControlException ex) {
+                    // Returning empty results or error should be consistent between AccessControl and NotFound.
+                    // If it can return NotFound, it can return Forbidden. Otherwise, empty list only.
                     collection = ImmutableList.of();
                 }
             }
             else {
+                final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+
+                ac.checkListProjectsOfSite( // AccessControl
+                        siteTarget,
+                        getUserInfo());
+
                 // TODO fix n-m db access
                 collection = ps.getProjects(100, Optional.absent(),
                         ac.getListProjectsFilterOfSite(
-                                SiteTarget.of(getSiteId()),
+                                siteTarget,
                                 getUserInfo()))
                         .stream()
                         .map(proj -> {
                             try {
-                                StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+                                StoredRevision rev = ps.getLatestRevision(proj.getId());
                                 return RestModels.project(proj, rev);
                             }
                             catch (ResourceNotFoundException ex) {
+                                // This exception should never happen as long as database consistency is kept.
                                 return null;
                             }
                         })
@@ -255,7 +265,7 @@ public class ProjectResource
             }
 
             return RestModels.projectCollection(collection);
-        });
+        }, AccessControlException.class);
     }
 
     @GET
@@ -265,8 +275,8 @@ public class ProjectResource
     {
         return tm.<RestProject, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
-            StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
+            StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
@@ -283,7 +293,7 @@ public class ProjectResource
     {
         return tm.<RestRevisionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
             List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
 
             ac.checkGetProject( // AccessControl
@@ -303,16 +313,16 @@ public class ProjectResource
             Preconditions.checkArgument(name != null, "name= is required");
 
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
             StoredRevision rev;
             if (revName == null) {
-                rev = ps.getLatestRevision(proj.getId()); // NotFound
+                rev = ps.getLatestRevision(proj.getId()); // check NotFound first
             }
             else {
-                rev = ps.getRevisionByName(proj.getId(), revName); // NotFound
+                rev = ps.getRevisionByName(proj.getId(), revName); // check NotFound first
             }
-            StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // NotFound
+            StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // check NotFound first
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), name),
@@ -340,20 +350,20 @@ public class ProjectResource
     {
         return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
             StoredRevision rev;
             if (revName == null) {
-                rev = ps.getLatestRevision(proj.getId()); // NotFound
+                rev = ps.getLatestRevision(proj.getId()); // check NotFound first
             }
             else {
-                rev = ps.getRevisionByName(proj.getId(), revName); // NotFound
+                rev = ps.getRevisionByName(proj.getId(), revName); // check NotFound first
             }
 
             List<StoredWorkflowDefinition> collection;
             if (name != null) {
                 try {
-                    StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // NotFound
+                    StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // check NotFound first
 
                     ac.checkGetWorkflow( // AccessControl
                             WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
@@ -361,21 +371,24 @@ public class ProjectResource
 
                     collection = ImmutableList.of(def);
                 }
-                catch (ResourceNotFoundException ex) {
+                catch (ResourceNotFoundException | AccessControlException ex) {
+                    // Returning empty results or error should be consistent between AccessControl and NotFound.
+                    // If it can return NotFound, it can return Forbidden. Otherwise, empty list only.
                     collection = ImmutableList.of();
                 }
             }
             else {
                 // of project
+                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
 
                 ac.checkListWorkflowsOfProject( // AccessControl
-                        ProjectTarget.of(getSiteId(), proj.getName()),
+                        projTarget,
                         getUserInfo());
 
                 // TODO should here support pagination?
                 collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent(),
                         ac.getListWorkflowsFilterOfProject(
-                                ProjectTarget.of(getSiteId(), proj.getName()),
+                                projTarget,
                                 getUserInfo()));
             }
             return RestModels.workflowDefinitionCollection(proj, rev, collection);
@@ -394,22 +407,24 @@ public class ProjectResource
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
             ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
 
-            StoredProject proj = ensureNotDeletedProject(projectStore.getProjectById(projectId)); // NotFound
+            StoredProject proj = ensureNotDeletedProject(projectStore.getProjectById(projectId)); // check NotFound first
 
             List<StoredSchedule> scheds;
             if (workflowName != null) {
                 // of workflow
 
-                ac.checkListSchedulesOfWorkflow( // AccessControl
-                        WorkflowTarget.of(getSiteId(), workflowName, proj.getName()),
-                        getUserInfo());
-
                 StoredSchedule sched;
                 try {
+                    ac.checkGetScheduleOfWorkflow( // AccessControl
+                            WorkflowTarget.of(getSiteId(), workflowName, proj.getName()),
+                            getUserInfo());
+
                     sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
                     scheds = ImmutableList.of(sched);
                 }
-                catch (ResourceNotFoundException e) {
+                catch (ResourceNotFoundException | AccessControlException ex) {
+                    // Returning empty results or error should be consistent between AccessControl and NotFound.
+                    // If it can return NotFound, it can return Forbidden. Otherwise, empty list only.
                     scheds = ImmutableList.of();
                 }
             }
@@ -442,7 +457,7 @@ public class ProjectResource
             ProjectStore ps = rm.getProjectStore(getSiteId());
             SessionStore ss = ssm.getSessionStore(getSiteId());
 
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId)); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId)); // check NotFound first
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
@@ -484,12 +499,12 @@ public class ProjectResource
     {
         return tm.<Response, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
             Optional<ArchiveManager.StoredArchive> archiveOrNone =
-                    archiveManager.getArchive(ps, projId, revName); // NotFound
+                    archiveManager.getArchive(ps, projId, revName); // check NotFound first
 
-            ac.checkGetProject( // AccessControl
+            ac.checkGetProjectArchive( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
                     getUserInfo());
 
@@ -547,16 +562,16 @@ public class ProjectResource
     {
         return tm.<RestProject, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject project = ensureNotDeletedProject(ps.getProjectById(projId)); // NotFound
+            StoredProject project = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
             ac.checkDeleteProject( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
             return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
-                StoredRevision rev = ps.getLatestRevision(proj.getId()); // NotFound
+                StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
                 return RestModels.project(proj, rev);
-            }); // NotFound
+            });
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
@@ -752,10 +767,10 @@ public class ProjectResource
 
             // Verify that the project exists
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
-            StoredProject project = projectStore.getProjectById(projectId); // NotFound
+            StoredProject project = projectStore.getProjectById(projectId); // check NotFound first
             ensureNotDeletedProject(project);
 
-            ac.checkPutProject( // AccessControl
+            ac.checkPutProjectSecret( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
@@ -778,10 +793,10 @@ public class ProjectResource
 
             // Verify that the project exists
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
-            StoredProject project = projectStore.getProjectById(projectId); // NotFound
+            StoredProject project = projectStore.getProjectById(projectId); // check NotFound first
             ensureNotDeletedProject(project);
 
-            ac.checkDeleteProject( // AccessControl
+            ac.checkDeleteProjectSecret( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 
@@ -801,10 +816,10 @@ public class ProjectResource
         return tm.<RestSecretList, ResourceNotFoundException, AccessControlException>begin(() -> {
             // Verify that the project exists
             ProjectStore projectStore = rm.getProjectStore(getSiteId());
-            StoredProject project = projectStore.getProjectById(projectId); // NotFound
+            StoredProject project = projectStore.getProjectById(projectId); // check NotFound first
             ensureNotDeletedProject(project);
 
-            ac.checkGetProject( // AccessControl
+            ac.checkGetProjectSecrets( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getUserInfo());
 

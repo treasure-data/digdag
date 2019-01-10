@@ -77,7 +77,7 @@ public class LogResource
             // TODO null check taskName
             // TODO null check nodeId
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkPutLogFiles(
+                    (p, a) -> ac.checkPutLogFile(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
 
@@ -100,7 +100,7 @@ public class LogResource
             // TODO null check taskName
             // TODO null check nodeId
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkPutLogFiles(
+                    (p, a) -> ac.checkPutLogFile(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
 
@@ -128,7 +128,7 @@ public class LogResource
     {
         return tm.<RestLogFileHandleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkListLogFiles(
+                    (p, a) -> ac.checkGetLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
@@ -146,7 +146,7 @@ public class LogResource
     {
         return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkGetLogFile(
+                    (p, a) -> ac.checkGetLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getUserInfo()));
             return logServer.getFile(prefix, fileName);
@@ -157,9 +157,9 @@ public class LogResource
             throws ResourceNotFoundException, AccessControlException
     {
         final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-                .getAttemptById(attemptId); // NotFound
+                .getAttemptById(attemptId); // check NotFound first
         final StoredProject project = rm.getProjectStore(getSiteId())
-                .getProjectById(attempt.getSession().getProjectId()); // NotFound
+                .getProjectById(attempt.getSession().getProjectId()); // check NotFound first
         acAction.call(project, attempt); // AccessControl
         return logFilePrefixFromSessionAttempt(attempt);
     }
