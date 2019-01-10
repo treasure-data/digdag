@@ -24,6 +24,8 @@ public interface AccessController
             throws AccessControlException
     { }
 
+    // FIXME TODO not necessary
+
     default void checkPutProjectOfWorkflow(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
@@ -88,7 +90,7 @@ public interface AccessController
             throws AccessControlException
     { }
 
-    default void checkGetSessionOfSession(SessionTarget target, Config user)
+    default void checkGetSession(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -98,15 +100,15 @@ public interface AccessController
 
     // Log
 
-    default void checkListLogFilesOfAttempt(AttemptTarget target, Config user)
+    default void checkListLogFilesOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkGetLogFileOfAttempt(AttemptTarget target, Config user)
+    default void checkGetLogFileOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkPutLogFilesOfAttempt(AttemptTarget target, Config user)
+    default void checkPutLogFilesOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -120,7 +122,7 @@ public interface AccessController
             throws AccessControlException
     { }
 
-    default void checkListAttemptsOfSession(SessionTarget target, Config user)
+    default void checkListAttemptsOfSession(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -128,7 +130,7 @@ public interface AccessController
             throws AccessControlException
     { }
 
-    default void checkListAttemptsOfAttempt(AttemptTarget target, Config user)
+    default void checkListAttemptsOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -158,7 +160,7 @@ public interface AccessController
         return () -> "true";
     }
 
-    default void checkGetAttemptOfAttempt(AttemptTarget target, Config user)
+    default void checkGetAttemptOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
@@ -169,11 +171,11 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    default void checkRunAttemptOfAttempt(AttemptTarget target, Config user)
+    default void checkRunAttemptOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 
-    default void checkKillAttemptOfAttempt(AttemptTarget target, Config user)
+    default void checkKillAttemptOfAttempt(WorkflowTarget target, Config user)
             throws AccessControlException
     { }
 

@@ -33,7 +33,6 @@ import io.digdag.client.api.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ScheduleTime;
-import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -156,7 +155,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
             ac.checkGetAttemptOfAttempt(
-                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo()); // AccessControl
 
             return RestModels.attempt(attempt, proj.getName());
@@ -175,7 +174,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
             ac.checkListAttemptsOfAttempt(
-                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo()); // AccessControl
 
             List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
@@ -197,7 +196,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
             ac.checkGetAttemptOfAttempt( // AccessControl
-                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
@@ -218,7 +217,7 @@ public class AttemptResource
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
             ac.checkRunAttemptOfAttempt( // AccessControl
-                    AttemptTarget.of(getSiteId(), request.getRetryAttemptName(), def.getProject().getName(), def.getName()),
+                    WorkflowTarget.of(getSiteId(), def.getProject().getName(), def.getName()),
                     getUserInfo());
 
             Optional<Long> resumingAttemptId = request.getResume()
@@ -336,7 +335,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
             ac.checkKillAttemptOfAttempt( // AccessControl
-                    AttemptTarget.of(getSiteId(), attempt.getRetryAttemptName(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
                     getUserInfo());
 
             boolean updated = executor.killAttemptById(getSiteId(), id); // NotFound
