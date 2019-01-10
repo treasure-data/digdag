@@ -22,7 +22,6 @@ import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
@@ -35,7 +34,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
-import java.lang.reflect.AccessibleObject;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -101,7 +99,7 @@ public class ScheduleResource
             StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(sched.getProjectId()); // NotFound
 
-            ac.checkGetScheduleOfWorkflow( // AccessControl
+            ac.checkGetSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
@@ -125,7 +123,7 @@ public class ScheduleResource
                     .getProjectById(sched.getProjectId()); // NotFound
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-            ac.checkSkipScheduleOfWorkflow( // AccessControl
+            ac.checkSkipSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
@@ -170,7 +168,7 @@ public class ScheduleResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(sched.getProjectId()); // NotFound
 
-            ac.checkBackfillScheduleOfWorkflow( // AccessControl
+            ac.checkBackfillSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
@@ -199,7 +197,7 @@ public class ScheduleResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(sched.getProjectId()); // NotFound
 
-            ac.checkDisableScheduleOfWorkflow( // AccessControl
+            ac.checkDisableSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
@@ -226,7 +224,7 @@ public class ScheduleResource
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(sched.getProjectId()); // NotFound
 
-            ac.checkEnableScheduleOfWorkflow( // AccessControl
+            ac.checkEnableSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
                     getUserInfo());
 
