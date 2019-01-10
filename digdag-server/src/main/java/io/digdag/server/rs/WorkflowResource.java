@@ -75,16 +75,16 @@ public class WorkflowResource
             Preconditions.checkArgument(wfName != null, "name= is required");
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
-            StoredProject proj = rs.getProjectByName(projName); // NotFound
+            StoredProject proj = rs.getProjectByName(projName); // check NotFound first
             StoredRevision rev;
 
             if (revName == null) {
-                rev = rs.getLatestRevision(proj.getId()); // NotFound
+                rev = rs.getLatestRevision(proj.getId()); // check NotFound first
             }
             else {
-                rev = rs.getRevisionByName(proj.getId(), revName); // NotFound
+                rev = rs.getRevisionByName(proj.getId(), revName); // check NotFound first
             }
-            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName); // NotFound
+            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName); // check NotFound first
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
@@ -101,10 +101,13 @@ public class WorkflowResource
             @QueryParam("count") Integer count)
             throws ResourceNotFoundException, AccessControlException
     {
+        final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+        ac.checkListWorkflowsOfSite(siteTarget, getUserInfo());  // AccessControl
+
         return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
-                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // NotFound
+                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // check NotFound first
                                     ac.getListWorkflowsFilterOfSite(
                                             SiteTarget.of(getSiteId()),
                                             getUserInfo()));
@@ -121,7 +124,7 @@ public class WorkflowResource
         return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id); // NotFound
+                            .getWorkflowDefinitionById(id); // check NotFound first
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
@@ -144,7 +147,7 @@ public class WorkflowResource
 
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id); // NotFound
+                            .getWorkflowDefinitionById(id); // check NotFound first
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),

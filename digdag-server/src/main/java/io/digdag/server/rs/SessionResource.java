@@ -72,8 +72,14 @@ public class SessionResource
     public RestSessionCollection getSessions(
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize)
+            throws AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+
+        final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+        ac.checkListSessionsOfSite( // AccessControl
+                siteTarget,
+                getUserInfo());
 
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -82,7 +88,7 @@ public class SessionResource
             // of site
             List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId),
                     ac.getListSessionsFilterOfSite(
-                            SiteTarget.of(getSiteId()),
+                            siteTarget,
                             getUserInfo()));
 
             return RestModels.sessionCollection(rs, sessions);
@@ -96,9 +102,9 @@ public class SessionResource
     {
         return tm.<RestSession, ResourceNotFoundException, AccessControlException>begin(() -> {
             final StoredSessionWithLastAttempt session = sm.getSessionStore(getSiteId())
-                    .getSessionById(id); // NotFound
+                    .getSessionById(id); // check NotFound first
             final StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(session.getProjectId()); // NotFound
+                    .getProjectById(session.getProjectId()); // check NotFound first
 
             ac.checkGetSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), session.getWorkflowName(), proj.getName()),
@@ -122,13 +128,14 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            final StoredSession session = ss.getSessionById(id); // NotFound
-            final StoredProject project = rs.getProjectById(session.getProjectId()); // NotFound
+            final StoredSession session = ss.getSessionById(id); // check NotFound first
+            final StoredProject project = rs.getProjectById(session.getProjectId()); // check NotFound first
 
             ac.checkListAttemptsOfSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), session.getWorkflowName(), project.getName()),
                     getUserInfo());
 
+            // FIXME Why getListAttemptsFilterOfSession doesn't exist here?
             List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));
 
             List<RestSessionAttempt> collection = attempts.stream()
