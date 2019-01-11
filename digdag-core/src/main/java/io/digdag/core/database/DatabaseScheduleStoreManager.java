@@ -286,11 +286,12 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " join projects proj proj.id = s.project_id" +
                 " where s.project_id = :projectId " +
                 " and exists (" +
-                    "select * from projects proj" +
-                    " where proj.id = s.project_id" +
-                    " and proj.site_id = :siteId" +
+                    "select p.* from projects p" +
+                    " where p.id = s.project_id" +
+                    " and p.site_id = :siteId" +
                 ")" +
                 " and s.id \\> :lastId" +
                 " and <acFilter>" +
