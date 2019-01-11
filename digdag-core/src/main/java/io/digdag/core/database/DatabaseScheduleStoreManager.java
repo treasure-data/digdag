@@ -292,7 +292,7 @@ public class DatabaseScheduleStoreManager
                     " where proj.id = s.project_id" +
                     " and proj.site_id = :siteId" +
                 ")" +
-                " and s.id > :lastId" +
+                " and s.id \\> :lastId" +
                 " and <acFilter>" +
                 " order by s.id asc" +
                 " limit :limit")
