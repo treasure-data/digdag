@@ -568,17 +568,19 @@ public class DatabaseProjectStoreManager
         @Override
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
                 " p.id as proj_id, p.name as proj_name, p.deleted_name as proj_deleted_name, p.deleted_at as proj_deleted_at, p.site_id, p.created_at as proj_created_at," +
-                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " r.name as rev_name, r.default_params as rev_default_params" +
                 " from (" +
                     // order by id and limit before join
-                    "select * from workflow_definitions wf" +
+                    "select wf.* from workflow_definitions wf" +
+                    " join revisions rev on rev.id = wf.revision_id" +
+                    " join projects proj on proj.id = rev.project_id" +
                     " where wf.revision_id = any(array(" +
                         // list id of active (non-deleted) latest revisions in this site
                         "select max(r.id)" +
                         " from revisions r" +
-                        " join projects proj on r.project_id = proj.id" +
-                        " where proj.site_id = :siteId" +
-                        " and proj.deleted_at is null" +
+                        " join projects p on r.project_id = p.id" +
+                        " where p.site_id = :siteId" +
+                        " and p.deleted_at is null" +
                         " group by r.project_id" +
                     " )) " +
                     " and wf.id \\> :lastId" +
@@ -586,8 +588,8 @@ public class DatabaseProjectStoreManager
                     " order by wf.id" +
                     " limit :limit" +
                 ") wd" +
-                " join revisions rev on rev.id = wd.revision_id" +
-                " join projects p on proj.id = rev.project_id" +
+                " join revisions r on r.id = wd.revision_id" +
+                " join projects p on proj.id = r.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " order by wd.id")
         List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
