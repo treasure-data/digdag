@@ -431,14 +431,14 @@ public class ProjectResource
             else {
                 // of project
 
-                final ProjectTarget projSite = ProjectTarget.of(getSiteId(), proj.getName());
+                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
                 ac.checkListSchedulesOfProject( // AccessControl
-                        projSite,
+                        projTarget,
                         getUserInfo());
 
                 scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId),
                         ac.getListSchedulesFilterOfProject(
-                                projSite,
+                                projTarget,
                                 getUserInfo()));
             }
 
