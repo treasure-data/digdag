@@ -9,7 +9,7 @@ import io.digdag.spi.ac.AccessController;
 
 public interface ProjectStore
 {
-    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter filter);
+    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 
     ProjectMap getProjectsByIdList(List<Integer> projIdList);
 

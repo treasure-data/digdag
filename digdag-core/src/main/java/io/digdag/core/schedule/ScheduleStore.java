@@ -9,12 +9,12 @@ import io.digdag.spi.ac.AccessController;
 
 public interface ScheduleStore
 {
-    List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId, AccessController.ListFilter filter);
+    List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 
     StoredSchedule getScheduleById(int schedId)
         throws ResourceNotFoundException;
 
-    List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId, AccessController.ListFilter filter);
+    List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 
     StoredSchedule getScheduleByProjectIdAndWorkflowName(int projectId, String workflowName)
             throws ResourceNotFoundException;
