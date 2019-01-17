@@ -30,12 +30,12 @@ public interface Authenticator
 
         static Result accept(int siteId, Config userInfo)
         {
-            return accept(siteId, Optional.fromNullable(userInfo), Optional.absent());
+            return accept(siteId, Optional.fromNullable(userInfo), Optional.of(AuthenticatedUser.of(siteId, userInfo)));
         }
 
         static Result accept(int siteId, Config userInfo, AuthenticatedUser user)
         {
-            return accept(siteId, Optional.fromNullable(userInfo), Optional.fromNullable(user));
+            return accept(siteId, Optional.fromNullable(userInfo), Optional.of(user));
         }
 
         static Result accept(int siteId, Optional<Config> userInfo, Optional<AuthenticatedUser> user)
