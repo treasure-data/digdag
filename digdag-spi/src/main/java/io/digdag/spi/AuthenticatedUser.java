@@ -3,8 +3,6 @@ package io.digdag.spi;
 import io.digdag.client.config.Config;
 import org.immutables.value.Value;
 
-import java.util.Map;
-
 @Value.Immutable
 public interface AuthenticatedUser
 {
@@ -12,14 +10,10 @@ public interface AuthenticatedUser
 
     Config getUserInfo();
 
-    Map<String, String> getHeaders();
+    Config getUserContext();
 
-    static AuthenticatedUser of(int siteId, Config userInfo, Map<String, String> headers)
+    static ImmutableAuthenticatedUser.Builder builder()
     {
-        return ImmutableAuthenticatedUser.builder()
-                .siteId(siteId)
-                .userInfo(userInfo)
-                .headers(headers)
-                .build();
+        return ImmutableAuthenticatedUser.builder();
     }
 }

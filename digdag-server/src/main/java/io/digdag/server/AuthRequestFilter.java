@@ -3,7 +3,6 @@ package io.digdag.server;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.AuthenticatedUser;
 
@@ -60,7 +59,12 @@ public class AuthRequestFilter
 
     private AuthenticatedUser getAuthenticatedUser(final Authenticator.Result result)
     {
-        final Config userInfo = result.getUserInfo().or(cf.create());
-        return result.getAuthenticatedUser().or(AuthenticatedUser.of(result.getSiteId(), userInfo, ImmutableMap.of()));
+        return result.getAuthenticatedUser()
+                .or(AuthenticatedUser.builder()
+                        .siteId(result.getSiteId())
+                        .userInfo(result.getUserInfo().or(cf.create()))
+                        .userContext(cf.create())
+                        .build()
+                );
     }
 }
