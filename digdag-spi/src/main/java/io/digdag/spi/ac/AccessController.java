@@ -1,6 +1,6 @@
 package io.digdag.spi.ac;
 
-import io.digdag.client.config.Config;
+import io.digdag.spi.AuthenticatedUser;
 
 public interface AccessController
 {
@@ -22,7 +22,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkPutProject(ProjectTarget target, Config user)
+    void checkPutProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -32,7 +32,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkDeleteProject(ProjectTarget target, Config user)
+    void checkDeleteProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -42,7 +42,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetProject(ProjectTarget target, Config user)
+    void checkGetProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     // listing
@@ -54,7 +54,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListProjectsOfSite(SiteTarget target, Config user)
+    void checkListProjectsOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -64,7 +64,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListProjectsFilterOfSite(SiteTarget target, Config user);
+    ListFilter getListProjectsFilterOfSite(SiteTarget target, AuthenticatedUser user);
 
     // resource actions
 
@@ -75,7 +75,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetProjectArchive(ProjectTarget target, Config user)
+    void checkGetProjectArchive(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -85,7 +85,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkPutProjectSecret(ProjectTarget target, Config user)
+    void checkPutProjectSecret(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -95,7 +95,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkDeleteProjectSecret(ProjectTarget target, Config user)
+    void checkDeleteProjectSecret(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -105,7 +105,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetProjectSecrets(ProjectTarget target, Config user)
+    void checkGetProjectSecrets(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     //
@@ -121,7 +121,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetWorkflow(WorkflowTarget target, Config user)
+    void checkGetWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     // listing
@@ -133,7 +133,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListWorkflowsOfSite(SiteTarget target, Config user)
+    void checkListWorkflowsOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -143,7 +143,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListWorkflowsFilterOfSite(SiteTarget target, Config user);
+    ListFilter getListWorkflowsFilterOfSite(SiteTarget target, AuthenticatedUser user);
 
     /**
      * Check if the user has permissions to list workflows within the project.
@@ -152,7 +152,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListWorkflowsOfProject(ProjectTarget target, Config user)
+    void checkListWorkflowsOfProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -162,7 +162,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListWorkflowsFilterOfProject(ProjectTarget target, Config user);
+    ListFilter getListWorkflowsFilterOfProject(ProjectTarget target, AuthenticatedUser user);
 
     // resource actions
 
@@ -173,7 +173,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkRunWorkflow(WorkflowTarget target, Config user)
+    void checkRunWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -183,7 +183,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkPutLogFile(WorkflowTarget target, Config user)
+    void checkPutLogFile(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -193,7 +193,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetLogFiles(WorkflowTarget target, Config user)
+    void checkGetLogFiles(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     //
@@ -209,7 +209,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetSession(WorkflowTarget target, Config user)
+    void checkGetSession(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     // listing
@@ -221,7 +221,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListSessionsOfSite(SiteTarget target, Config user)
+    void checkListSessionsOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -231,7 +231,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListSessionsFilterOfSite(SiteTarget target, Config user);
+    ListFilter getListSessionsFilterOfSite(SiteTarget target, AuthenticatedUser user);
 
     /**
      * Check if the user has permissions to list sessions.
@@ -240,7 +240,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListSessionsOfProject(ProjectTarget target, Config user)
+    void checkListSessionsOfProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -250,7 +250,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListSessionsFilterOfProject(ProjectTarget target, Config user);
+    ListFilter getListSessionsFilterOfProject(ProjectTarget target, AuthenticatedUser user);
 
     /**
      * Check if the user has permissions to list sessions within the workflow.
@@ -259,7 +259,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListSessionsOfWorkflow(WorkflowTarget target, Config user)
+    void checkListSessionsOfWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -269,7 +269,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListSessionsFilterOfWorkflow(WorkflowTarget target, Config user);
+    ListFilter getListSessionsFilterOfWorkflow(WorkflowTarget target, AuthenticatedUser user);
 
     // resource actions
 
@@ -280,7 +280,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetAttemptsFromSession(WorkflowTarget target, Config user)
+    void checkGetAttemptsFromSession(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -290,7 +290,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetAttempt(WorkflowTarget target, Config user)
+    void checkGetAttempt(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -300,7 +300,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetTasksFromAttempt(WorkflowTarget target, Config user)
+    void checkGetTasksFromAttempt(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -310,7 +310,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkKillAttempt(WorkflowTarget target, Config user)
+    void checkKillAttempt(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     //
@@ -326,7 +326,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetSchedule(WorkflowTarget target, Config user)
+    void checkGetSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     // listing
@@ -338,7 +338,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListSchedulesOfSite(SiteTarget target, Config user)
+    void checkListSchedulesOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -348,7 +348,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListSchedulesFilterOfSite(SiteTarget target, Config user);
+    ListFilter getListSchedulesFilterOfSite(SiteTarget target, AuthenticatedUser user);
 
     /**
      * Check if the user has permissions to list schedules within the project.
@@ -357,7 +357,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkListSchedulesOfProject(ProjectTarget target, Config user)
+    void checkListSchedulesOfProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -367,7 +367,7 @@ public interface AccessController
      * @param user
      * @return
      */
-    ListFilter getListSchedulesFilterOfProject(ProjectTarget target, Config user);
+    ListFilter getListSchedulesFilterOfProject(ProjectTarget target, AuthenticatedUser user);
 
     // resource actions
 
@@ -378,7 +378,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetScheduleFromWorkflow(WorkflowTarget target, Config user)
+    void checkGetScheduleFromWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -388,7 +388,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkSkipSchedule(WorkflowTarget target, Config user)
+    void checkSkipSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -398,7 +398,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkBackfillSchedule(WorkflowTarget target, Config user)
+    void checkBackfillSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -408,7 +408,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkDisableSchedule(WorkflowTarget target, Config user)
+    void checkDisableSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -418,6 +418,6 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkEnableSchedule(WorkflowTarget target, Config user)
+    void checkEnableSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException;
 }

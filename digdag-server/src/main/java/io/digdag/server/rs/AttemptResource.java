@@ -111,32 +111,32 @@ public class AttemptResource
                     // of workflow
 
                     final WorkflowTarget wfTarget = WorkflowTarget.of(getSiteId(), wfName, proj.getName());
-                    ac.checkListSessionsOfWorkflow(wfTarget, getUserInfo()); // AccessControl
+                    ac.checkListSessionsOfWorkflow(wfTarget, getAuthenticatedUser()); // AccessControl
                     attempts = ss.getAttemptsOfWorkflow(includeRetried, proj.getId(), wfName, validPageSize, Optional.fromNullable(lastId),
                             ac.getListSessionsFilterOfWorkflow(
                                     wfTarget,
-                                    getUserInfo()));
+                                    getAuthenticatedUser()));
                 }
                 else {
                     // of project
 
                     final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), projName);
-                    ac.checkListSessionsOfProject(projTarget, getUserInfo()); // AccessControl
+                    ac.checkListSessionsOfProject(projTarget, getAuthenticatedUser()); // AccessControl
                     attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId),
                             ac.getListSessionsFilterOfProject(
                                     projTarget,
-                                    getUserInfo()));
+                                    getAuthenticatedUser()));
                 }
             }
             else {
                 // of site
 
                 final SiteTarget siteTarget = SiteTarget.of(getSiteId());
-                ac.checkListSessionsOfSite(siteTarget, getUserInfo()); // AccessControl
+                ac.checkListSessionsOfSite(siteTarget, getAuthenticatedUser()); // AccessControl
                 attempts = ss.getAttempts(includeRetried, validPageSize, Optional.fromNullable(lastId),
                         ac.getListSessionsFilterOfSite(
                                 siteTarget,
-                                getUserInfo()));
+                                getAuthenticatedUser()));
             }
 
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
@@ -156,7 +156,7 @@ public class AttemptResource
 
             ac.checkGetAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.attempt(attempt, proj.getName());
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -175,7 +175,7 @@ public class AttemptResource
 
             ac.checkGetAttemptsFromSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
                     .getOtherAttempts(id); // should never throw NotFound
@@ -197,7 +197,7 @@ public class AttemptResource
 
             ac.checkGetTasksFromAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
                     .getTasksOfAttempt(id);
@@ -218,7 +218,7 @@ public class AttemptResource
 
             ac.checkRunWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getProject().getName(), def.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             Optional<Long> resumingAttemptId = request.getResume()
                     .transform(r -> RestModels.parseAttemptId(r.getAttemptId()));
@@ -336,7 +336,7 @@ public class AttemptResource
 
             ac.checkKillAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             boolean updated = executor.killAttemptById(getSiteId(), id); // should never throw NotFound
             if (!updated) {

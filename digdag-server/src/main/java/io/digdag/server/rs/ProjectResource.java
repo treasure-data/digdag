@@ -205,7 +205,7 @@ public class ProjectResource
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.project(proj, rev);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -227,7 +227,7 @@ public class ProjectResource
 
                     ac.checkGetProject( // AccessControl
                             ProjectTarget.of(getSiteId(), proj.getName()),
-                            getUserInfo());
+                            getAuthenticatedUser());
 
                     collection = ImmutableList.of(RestModels.project(proj, rev));
                 }
@@ -242,13 +242,13 @@ public class ProjectResource
 
                 ac.checkListProjectsOfSite( // AccessControl
                         siteTarget,
-                        getUserInfo());
+                        getAuthenticatedUser());
 
                 // TODO fix n-m db access
                 collection = ps.getProjects(100, Optional.absent(),
                         ac.getListProjectsFilterOfSite(
                                 siteTarget,
-                                getUserInfo()))
+                                getAuthenticatedUser()))
                         .stream()
                         .map(proj -> {
                             try {
@@ -280,7 +280,7 @@ public class ProjectResource
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.project(proj, rev);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -298,7 +298,7 @@ public class ProjectResource
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.revisionCollection(proj, revs);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -326,7 +326,7 @@ public class ProjectResource
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), name),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.workflowDefinition(proj, rev, def);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -367,7 +367,7 @@ public class ProjectResource
 
                     ac.checkGetWorkflow( // AccessControl
                             WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
-                            getUserInfo());
+                            getAuthenticatedUser());
 
                     collection = ImmutableList.of(def);
                 }
@@ -383,13 +383,13 @@ public class ProjectResource
 
                 ac.checkListWorkflowsOfProject( // AccessControl
                         projTarget,
-                        getUserInfo());
+                        getAuthenticatedUser());
 
                 // TODO should here support pagination?
                 collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent(),
                         ac.getListWorkflowsFilterOfProject(
                                 projTarget,
-                                getUserInfo()));
+                                getAuthenticatedUser()));
             }
             return RestModels.workflowDefinitionCollection(proj, rev, collection);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -417,7 +417,7 @@ public class ProjectResource
                 try {
                     ac.checkGetScheduleFromWorkflow( // AccessControl
                             WorkflowTarget.of(getSiteId(), workflowName, proj.getName()),
-                            getUserInfo());
+                            getAuthenticatedUser());
 
                     sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
                     scheds = ImmutableList.of(sched);
@@ -434,12 +434,12 @@ public class ProjectResource
                 final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
                 ac.checkListSchedulesOfProject( // AccessControl
                         projTarget,
-                        getUserInfo());
+                        getAuthenticatedUser());
 
                 scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId),
                         ac.getListSchedulesFilterOfProject(
                                 projTarget,
-                                getUserInfo()));
+                                getAuthenticatedUser()));
             }
 
             return RestModels.scheduleCollection(projectStore, scheds);
@@ -470,12 +470,12 @@ public class ProjectResource
                 final WorkflowTarget wfTarget = WorkflowTarget.of(getSiteId(), workflowName, proj.getName());
                 ac.checkListSessionsOfWorkflow( // AccessControl
                         wfTarget,
-                        getUserInfo());
+                        getAuthenticatedUser());
 
                 sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId),
                         ac.getListSessionsFilterOfWorkflow(
                                 wfTarget,
-                                getUserInfo()));
+                                getAuthenticatedUser()));
             }
             else {
                 // of project
@@ -483,12 +483,12 @@ public class ProjectResource
                 final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
                 ac.checkListSessionsOfProject( // AccessControl
                         projTarget,
-                        getUserInfo());
+                        getAuthenticatedUser());
 
                 sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId),
                         ac.getListSessionsFilterOfProject(
                                 projTarget,
-                                getUserInfo()));
+                                getAuthenticatedUser()));
             }
 
             return RestModels.sessionCollection(ps, sessions);
@@ -510,7 +510,7 @@ public class ProjectResource
 
             ac.checkGetProjectArchive( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             if (!archiveOrNone.isPresent()) {
                 throw new ResourceNotFoundException("Archive is not stored");
@@ -570,7 +570,7 @@ public class ProjectResource
 
             ac.checkDeleteProject( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
                 StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
@@ -589,7 +589,7 @@ public class ProjectResource
     {
         ac.checkPutProject( // AccessControl
                 ProjectTarget.of(getSiteId(), name),
-                getUserInfo());
+                getAuthenticatedUser());
 
         return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
@@ -776,7 +776,7 @@ public class ProjectResource
 
             ac.checkPutProjectSecret( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
@@ -802,7 +802,7 @@ public class ProjectResource
 
             ac.checkDeleteProjectSecret( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
@@ -825,7 +825,7 @@ public class ProjectResource
 
             ac.checkGetProjectSecrets( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
             List<String> keys = store.listProjectSecrets(projectId, SecretScopes.PROJECT);

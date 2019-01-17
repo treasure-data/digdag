@@ -79,7 +79,7 @@ public class SessionResource
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
         ac.checkListSessionsOfSite( // AccessControl
                 siteTarget,
-                getUserInfo());
+                getAuthenticatedUser());
 
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -89,7 +89,7 @@ public class SessionResource
             List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId),
                     ac.getListSessionsFilterOfSite(
                             siteTarget,
-                            getUserInfo()));
+                            getAuthenticatedUser()));
 
             return RestModels.sessionCollection(rs, sessions);
         });
@@ -108,7 +108,7 @@ public class SessionResource
 
             ac.checkGetSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), session.getWorkflowName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.session(session, proj.getName());
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -133,7 +133,7 @@ public class SessionResource
 
             ac.checkGetAttemptsFromSession( // AccessControl
                     WorkflowTarget.of(getSiteId(), session.getWorkflowName(), project.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, validPageSize, Optional.fromNullable(lastId));
 

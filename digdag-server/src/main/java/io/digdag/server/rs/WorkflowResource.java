@@ -88,7 +88,7 @@ public class WorkflowResource
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.workflowDefinition(proj, rev, def);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -102,7 +102,7 @@ public class WorkflowResource
             throws ResourceNotFoundException, AccessControlException
     {
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
-        ac.checkListWorkflowsOfSite(siteTarget, getUserInfo());  // AccessControl
+        ac.checkListWorkflowsOfSite(siteTarget, getAuthenticatedUser());  // AccessControl
 
         return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
@@ -110,7 +110,7 @@ public class WorkflowResource
                             .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // check NotFound first
                                     ac.getListWorkflowsFilterOfSite(
                                             SiteTarget.of(getSiteId()),
-                                            getUserInfo()));
+                                            getAuthenticatedUser()));
 
             return RestModels.workflowDefinitionCollection(defs);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -128,7 +128,7 @@ public class WorkflowResource
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.workflowDefinition(def);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -151,7 +151,7 @@ public class WorkflowResource
 
             ac.checkGetWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             ZoneId timeZone = def.getTimeZone();
 

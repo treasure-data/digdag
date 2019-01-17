@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import io.digdag.client.config.Config;
+import io.digdag.spi.AuthenticatedUser;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -24,19 +25,25 @@ public interface Authenticator
     {
         static Result accept(int siteId)
         {
-            return accept(siteId, Optional.absent());
+            return accept(siteId, Optional.absent(), Optional.absent());
         }
 
         static Result accept(int siteId, Config userInfo)
         {
-            return accept(siteId, Optional.fromNullable(userInfo));
+            return accept(siteId, Optional.fromNullable(userInfo), Optional.absent());
         }
 
-        static Result accept(int siteId, Optional<Config> userInfo)
+        static Result accept(int siteId, Config userInfo, AuthenticatedUser user)
+        {
+            return accept(siteId, Optional.fromNullable(userInfo), Optional.fromNullable(user));
+        }
+
+        static Result accept(int siteId, Optional<Config> userInfo, Optional<AuthenticatedUser> user)
         {
             return ImmutableResult.builder()
                     .siteId(siteId)
                     .userInfo(userInfo)
+                    .authenticatedUser(user)
                     .build();
         }
 
@@ -46,6 +53,7 @@ public interface Authenticator
                     .siteId(0)
                     .errorMessage(message)
                     .userInfo(Optional.absent())
+                    .authenticatedUser(Optional.absent())
                     .build();
         }
 
@@ -68,6 +76,8 @@ public interface Authenticator
 
         Optional<Supplier<Map<String, String>>> getSecrets();
 
+        Optional<AuthenticatedUser> getAuthenticatedUser();
+
         static Builder builder() {
             return ImmutableResult.builder();
         }
@@ -78,6 +88,7 @@ public interface Authenticator
             Builder secrets(Supplier<Map<String, String>> secrets);
             Builder isAdmin(boolean admin);
             Builder errorMessage(String errorMessage);
+            Builder authenticatedUser(AuthenticatedUser user);
             Result build();
         }
     }
