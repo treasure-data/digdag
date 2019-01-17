@@ -118,17 +118,16 @@ public class JwtAuthenticator
             }
         }
 
-        return Result.builder()
-                .siteId(siteId)
-                .isAdmin(admin)
-                .authenticatedUser(createAuthenticatedUser(siteId, requestContext))
-                .build();
+        return Result.accept(
+                createAuthenticatedUser(siteId, admin, requestContext),
+                () -> ImmutableMap.of());
     }
 
-    private AuthenticatedUser createAuthenticatedUser(final int siteId, final ContainerRequestContext requestContext)
+    private AuthenticatedUser createAuthenticatedUser(final int siteId, final boolean admin, final ContainerRequestContext requestContext)
     {
         return AuthenticatedUser.builder()
                 .siteId(siteId)
+                .isAdmin(admin)
                 .userInfo(cf.create())
                 .userContext(cf.create())
                 .build();
