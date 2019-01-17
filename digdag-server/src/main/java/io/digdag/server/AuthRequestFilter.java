@@ -61,6 +61,6 @@ public class AuthRequestFilter
     private AuthenticatedUser getAuthenticatedUser(final Authenticator.Result result)
     {
         final Config userInfo = result.getUserInfo().or(cf.create());
-        return result.getAuthenticatedUser().or(AuthenticatedUser.of(result.getSiteId(), userInfo));
+        return result.getAuthenticatedUser().or(AuthenticatedUser.of(result.getSiteId(), userInfo, ImmutableMap.of()));
     }
 }
