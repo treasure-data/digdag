@@ -3,7 +3,9 @@ package io.digdag.server;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.AuthenticatedUser;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -49,10 +51,16 @@ public class AuthRequestFilter
             requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create())); //TODO will be merged into authenticatedUser
             requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
             requestContext.setProperty("admin", result.isAdmin());
-            requestContext.setProperty("authenticatedUser", result.getAuthenticatedUser().orNull());
+            requestContext.setProperty("authenticatedUser", getAuthenticatedUser(result));
         }
         else {
             requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));
         }
+    }
+
+    private AuthenticatedUser getAuthenticatedUser(final Authenticator.Result result)
+    {
+        final Config userInfo = result.getUserInfo().or(cf.create());
+        return result.getAuthenticatedUser().or(AuthenticatedUser.of(result.getSiteId(), userInfo));
     }
 }
