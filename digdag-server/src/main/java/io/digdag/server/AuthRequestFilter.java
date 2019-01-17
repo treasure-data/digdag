@@ -4,7 +4,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.spi.AuthenticatedUser;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -46,25 +45,11 @@ public class AuthRequestFilter
 
         Authenticator.Result result = auth.authenticate(requestContext);
         if (result.isAccepted()) {
-            requestContext.setProperty("siteId", result.getSiteId()); // TODO will be merged into authenticatedUser
-            requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create())); //TODO will be merged into authenticatedUser
-            requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
-            requestContext.setProperty("admin", result.isAdmin());
-            requestContext.setProperty("authenticatedUser", getAuthenticatedUser(result));
+            requestContext.setProperty("secrets", result.getSecrets().get());
+            requestContext.setProperty("authenticatedUser", result.getAuthenticatedUser().get());
         }
         else {
-            requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));
+            requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage().get()));
         }
-    }
-
-    private AuthenticatedUser getAuthenticatedUser(final Authenticator.Result result)
-    {
-        return result.getAuthenticatedUser()
-                .or(AuthenticatedUser.builder()
-                        .siteId(result.getSiteId())
-                        .userInfo(result.getUserInfo().or(cf.create()))
-                        .userContext(cf.create())
-                        .build()
-                );
     }
 }
