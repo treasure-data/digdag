@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestApiKey;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.AuthenticatedUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.JwtException;
@@ -16,8 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.MultivaluedMap;
 
 import java.security.Key;
+import java.util.List;
 import java.util.Map;
 
 public class JwtAuthenticator
@@ -25,11 +29,12 @@ public class JwtAuthenticator
 {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticator.class);
 
+    private final ConfigFactory cf;
     private final Map<String, UserConfig> userMap;
     private final boolean allowPublicAccess;
 
     @Inject
-    public JwtAuthenticator(Config systemConfig)
+    public JwtAuthenticator(Config systemConfig, final ConfigFactory cf)
     {
         Optional<RestApiKey> apiKey = systemConfig.getOptional("server.apikey", RestApiKey.class);
 
@@ -46,6 +51,7 @@ public class JwtAuthenticator
             this.userMap = ImmutableMap.of();
             this.allowPublicAccess = true;
         }
+        this.cf = cf;
     }
 
     @Override
@@ -117,6 +123,38 @@ public class JwtAuthenticator
         return Result.builder()
                 .siteId(siteId)
                 .isAdmin(admin)
+                .authenticatedUser(createAuthenticatedUser(siteId, requestContext))
                 .build();
+    }
+
+    private AuthenticatedUser createAuthenticatedUser(final int siteId, final ContainerRequestContext requestContext)
+    {
+        // userInfo
+        final Config userInfo = cf.create();
+
+        // headers
+        final ImmutableMap.Builder<String, String> headers = ImmutableMap.builder();
+        final MultivaluedMap<String, String> headerMap = requestContext.getHeaders();
+        for (final String key : headerMap.keySet()) {
+            final List<String> values = headerMap.get(key);
+            headers.put(key, toHeaderString(values));
+        }
+
+        return AuthenticatedUser.of(siteId, userInfo, headers.build());
+    }
+
+    // ported from org.jboss.resteasy.specimpl.ResteasyHttpHeaders#getHeaderString
+    private String toHeaderString(final List<String> vals)
+    {
+        if (vals == null) return null;
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for (String val : vals)
+        {
+            if (first) first = false;
+            else builder.append(",");
+            builder.append(val);
+        }
+        return builder.toString();
     }
 }

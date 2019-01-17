@@ -30,7 +30,7 @@ public interface Authenticator
 
         static Result accept(int siteId, Config userInfo)
         {
-            return accept(siteId, Optional.fromNullable(userInfo), Optional.of(AuthenticatedUser.of(siteId, userInfo)));
+            return accept(siteId, Optional.fromNullable(userInfo), Optional.absent());
         }
 
         static Result accept(int siteId, Config userInfo, AuthenticatedUser user)
