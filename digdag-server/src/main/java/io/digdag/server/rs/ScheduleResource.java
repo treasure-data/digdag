@@ -79,14 +79,14 @@ public class ScheduleResource
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
         ac.checkListSchedulesOfSite( // AccessControl
                 siteTarget,
-                getUserInfo());
+                getAuthenticatedUser());
 
         return tm.begin(() -> {
             List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
                     .getSchedules(100, Optional.fromNullable(lastId),
                             ac.getListSchedulesFilterOfSite(
                                     siteTarget,
-                                    getUserInfo()));
+                                    getAuthenticatedUser()));
 
             return RestModels.scheduleCollection(rm.getProjectStore(getSiteId()), scheds);
         });
@@ -107,7 +107,7 @@ public class ScheduleResource
 
             ac.checkGetSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             return RestModels.schedule(sched, proj, timeZone);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -131,7 +131,7 @@ public class ScheduleResource
 
             ac.checkSkipSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             StoredSchedule updated;
             if (request.getNextTime().isPresent()) {
@@ -176,7 +176,7 @@ public class ScheduleResource
 
             ac.checkBackfillSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             List<StoredSessionAttemptWithSession> attempts =
                     exec.backfill(getSiteId(), id,  // should never throw NotFound
@@ -205,7 +205,7 @@ public class ScheduleResource
 
             ac.checkDisableSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
@@ -232,7 +232,7 @@ public class ScheduleResource
 
             ac.checkEnableSchedule( // AccessControl
                     WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
-                    getUserInfo());
+                    getAuthenticatedUser());
 
             StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);

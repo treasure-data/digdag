@@ -1,6 +1,6 @@
 package io.digdag.server.ac;
 
-import io.digdag.client.config.Config;
+import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.ProjectTarget;
@@ -11,200 +11,200 @@ public class DefaultAccessController
         implements AccessController
 {
     @Override
-    public void checkPutProject(ProjectTarget target, Config user)
+    public void checkPutProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkDeleteProject(ProjectTarget target, Config user)
+    public void checkDeleteProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetProject(ProjectTarget target, Config user)
+    public void checkGetProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkListProjectsOfSite(SiteTarget target, Config user)
+    public void checkListProjectsOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListProjectsFilterOfSite(SiteTarget target, Config user)
+    public ListFilter getListProjectsFilterOfSite(SiteTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkGetProjectArchive(ProjectTarget target, Config user)
+    public void checkGetProjectArchive(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkPutProjectSecret(ProjectTarget target, Config user)
+    public void checkPutProjectSecret(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkDeleteProjectSecret(ProjectTarget target, Config user)
+    public void checkDeleteProjectSecret(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetProjectSecrets(ProjectTarget target, Config user)
+    public void checkGetProjectSecrets(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetWorkflow(WorkflowTarget target, Config user)
+    public void checkGetWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkListWorkflowsOfSite(SiteTarget target, Config user)
+    public void checkListWorkflowsOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListWorkflowsFilterOfSite(SiteTarget target, Config user)
+    public ListFilter getListWorkflowsFilterOfSite(SiteTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkListWorkflowsOfProject(ProjectTarget target, Config user)
+    public void checkListWorkflowsOfProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListWorkflowsFilterOfProject(ProjectTarget target, Config user)
+    public ListFilter getListWorkflowsFilterOfProject(ProjectTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkRunWorkflow(WorkflowTarget target, Config user)
+    public void checkRunWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkPutLogFile(WorkflowTarget target, Config user)
+    public void checkPutLogFile(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetLogFiles(WorkflowTarget target, Config user)
+    public void checkGetLogFiles(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetSession(WorkflowTarget target, Config user)
+    public void checkGetSession(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkListSessionsOfSite(SiteTarget target, Config user)
+    public void checkListSessionsOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListSessionsFilterOfSite(SiteTarget target, Config user)
+    public ListFilter getListSessionsFilterOfSite(SiteTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkListSessionsOfProject(ProjectTarget target, Config user)
+    public void checkListSessionsOfProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListSessionsFilterOfProject(ProjectTarget target, Config user)
+    public ListFilter getListSessionsFilterOfProject(ProjectTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkListSessionsOfWorkflow(WorkflowTarget target, Config user)
+    public void checkListSessionsOfWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListSessionsFilterOfWorkflow(WorkflowTarget target, Config user)
+    public ListFilter getListSessionsFilterOfWorkflow(WorkflowTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkGetAttemptsFromSession(WorkflowTarget target, Config user)
+    public void checkGetAttemptsFromSession(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetAttempt(WorkflowTarget target, Config user)
+    public void checkGetAttempt(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetTasksFromAttempt(WorkflowTarget target, Config user)
+    public void checkGetTasksFromAttempt(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkKillAttempt(WorkflowTarget target, Config user)
+    public void checkKillAttempt(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkGetSchedule(WorkflowTarget target, Config user)
+    public void checkGetSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkListSchedulesOfSite(SiteTarget target, Config user)
+    public void checkListSchedulesOfSite(SiteTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListSchedulesFilterOfSite(SiteTarget target, Config user)
+    public ListFilter getListSchedulesFilterOfSite(SiteTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkListSchedulesOfProject(ProjectTarget target, Config user)
+    public void checkListSchedulesOfProject(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public ListFilter getListSchedulesFilterOfProject(ProjectTarget target, Config user)
+    public ListFilter getListSchedulesFilterOfProject(ProjectTarget target, AuthenticatedUser user)
     {
         return () -> "true";
     }
 
     @Override
-    public void checkGetScheduleFromWorkflow(WorkflowTarget target, Config user)
+    public void checkGetScheduleFromWorkflow(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkSkipSchedule(WorkflowTarget target, Config user)
+    public void checkSkipSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkBackfillSchedule(WorkflowTarget target, Config user)
+    public void checkBackfillSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkDisableSchedule(WorkflowTarget target, Config user)
+    public void checkDisableSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkEnableSchedule(WorkflowTarget target, Config user)
+    public void checkEnableSchedule(WorkflowTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 }

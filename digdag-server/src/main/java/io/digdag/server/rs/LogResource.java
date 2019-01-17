@@ -79,7 +79,7 @@ public class LogResource
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkPutLogFile(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
-                            getUserInfo()));
+                            getAuthenticatedUser()));
 
             byte[] data = ByteStreams.toByteArray(body);
             String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
@@ -102,7 +102,7 @@ public class LogResource
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkPutLogFile(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
-                            getUserInfo()));
+                            getAuthenticatedUser()));
 
             Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
 
@@ -130,7 +130,7 @@ public class LogResource
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkGetLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
-                            getUserInfo()));
+                            getAuthenticatedUser()));
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
             return RestModels.logFileHandleCollection(handles);
         }, ResourceNotFoundException.class, AccessControlException.class);
@@ -148,7 +148,7 @@ public class LogResource
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkGetLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
-                            getUserInfo()));
+                            getAuthenticatedUser()));
             return logServer.getFile(prefix, fileName);
         }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class, AccessControlException.class);
     }
