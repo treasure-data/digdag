@@ -63,9 +63,6 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       }, {
         test: /\.less$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
-      }, {
-        test: /\.json$/,
-        loader: 'json-loader'
       }]
     },
     resolve: {
@@ -109,13 +106,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
   // Minify, dedupe
   if (build) {
     config.plugins.push(
-      new webpack.NoEmitOnErrorsPlugin(),
       new webpack.optimize.OccurrenceOrderPlugin(),
-      new webpack.DefinePlugin({
-        'process.env': {
-          'NODE_ENV': JSON.stringify('production')
-        }
-      }),
       new ManifestPlugin({ sha, timestamp })
     )
   }

@@ -29,7 +29,6 @@
     "jquery": "3.2.1",
     "js-untar": "0.1.4",
     "js-yaml": "3.8.2",
-    "json-loader": "0.5.4",
     "lodash": "^4.17.5",
     "lru-cache": "4.0.2",
     "macaddress": "0.2.9",
