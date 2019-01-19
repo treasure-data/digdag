@@ -1,4 +1,4 @@
-const ExtractTextPlugin = require('extract-text-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
@@ -17,6 +17,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
   console.log('Timestamp:', timestamp)
   console.log('Sha:', sha)
   const config = {
+    mode: build ? 'production' : 'development',
     entry: {
       bootstrap: 'bootstrap-loader/extractStyles',
       app: './index.jsx'
@@ -30,26 +31,26 @@ module.exports = function buildWebpackConfig ({ build = false }) {
     target: 'web',
     devtool: build ? 'source-map' : 'cheap-module-source-map',
     module: {
-      loaders: [{
+      rules: [{
         test: /\.(js|jsx)$/,
         exclude: /(node_modules)/,
-        loader: 'babel'
+        loader: 'babel-loader'
       }, {
         test: /\.css$/,
-        loader: ExtractTextPlugin.extract('style', 'css'),
+        use: [MiniCssExtractPlugin.loader, 'css-loader'],
         include: [path.join(__dirname, 'node_modules'), path.join(__dirname, 'public')]
       }, {
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
-        loader: 'file'
+        loader: 'file-loader'
       }, {
         test: /\.(woff|woff2)$/,
-        loader: 'url?prefix=font/&limit=5000'
+        loader: 'url-loader?prefix=font/&limit=5000'
       }, {
         test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-        loader: 'url?limit=10000&mimetype=application/octet-stream'
+        loader: 'url-loader?limit=10000&mimetype=application/octet-stream'
       }, {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-        loader: 'url?limit=10000&mimetype=image/svg+xml'
+        loader: 'url-loader?limit=10000&mimetype=image/svg+xml'
       }, {
         test: /\.gif/,
         loader: 'url-loader?limit=10000&mimetype=image/gif'
@@ -61,14 +62,14 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         loader: 'url-loader?limit=10000&mimetype=image/png'
       }, {
         test: /\.less$/,
-        loader: ExtractTextPlugin.extract('style', 'css', 'less')
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
       }, {
         test: /\.json$/,
         loader: 'json-loader'
       }]
     },
     resolve: {
-      extensions: ['', '.js', '.jsx']
+      extensions: ['*', '.js', '.jsx']
     },
     plugins: [
       // Only include the english locale for momentjs
@@ -77,9 +78,8 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       new webpack.ContextReplacementPlugin(/moment[\\\/]locale$/, /^\.\/(en)$/),
       /* eslint-enable */
       getHtmlPlugin({ build, timestamp, filename: 'index.html', sha }),
-      new ExtractTextPlugin('[name].css', {
-        allChunks: true,
-        disable: !build
+      new MiniCssExtractPlugin({
+        filename: '[name].css',
       }),
       new webpack.ProvidePlugin({
         $: 'jquery',
@@ -109,17 +109,11 @@ module.exports = function buildWebpackConfig ({ build = false }) {
   // Minify, dedupe
   if (build) {
     config.plugins.push(
-      new webpack.NoErrorsPlugin(),
-      new webpack.optimize.DedupePlugin(),
-      new webpack.optimize.OccurenceOrderPlugin(),
+      new webpack.NoEmitOnErrorsPlugin(),
+      new webpack.optimize.OccurrenceOrderPlugin(),
       new webpack.DefinePlugin({
         'process.env': {
           'NODE_ENV': JSON.stringify('production')
-        }
-      }),
-      new webpack.optimize.UglifyJsPlugin({
-        compress: {
-          warnings: false
         }
       }),
       new ManifestPlugin({ sha, timestamp })
