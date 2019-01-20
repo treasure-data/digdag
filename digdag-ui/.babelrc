@@ -5,51 +5,19 @@
     "@babel/preset-flow"
   ],
   "env": {
-    "development": {
-      "plugins": [
-        [
-          "@babel/plugin-proposal-object-rest-spread"
-        ],
-        [
-          "@babel/plugin-transform-react-display-name"
-        ],
-        [
-          "@babel/plugin-syntax-flow"
-        ],
-        [
-          "@babel/plugin-transform-flow-strip-types"
-        ],
-        [
-          "@babel/plugin-proposal-class-properties"
-        ]
-      ]
-    },
     "production": {
       "plugins": [
-        [
-          "@babel/plugin-transform-runtime"
-        ],
-        [
-          "@babel/plugin-proposal-object-rest-spread"
-        ],
-        [
-          "@babel/plugin-transform-react-display-name"
-        ],
-        [
-          "@babel/plugin-syntax-flow"
-        ],
-        [
-          "@babel/plugin-transform-flow-strip-types"
-        ],
-        [
-          "@babel/plugin-proposal-class-properties"
-        ]
+        "@babel/plugin-transform-runtime",
       ]
     }
   },
   "plugins": [
+    "@babel/plugin-transform-react-display-name",
+    "@babel/plugin-transform-flow-strip-types",
     "@babel/plugin-syntax-dynamic-import",
     "@babel/plugin-syntax-import-meta",
+    "@babel/plugin-syntax-flow",
+    "@babel/plugin-proposal-object-rest-spread",
     "@babel/plugin-proposal-class-properties",
     "@babel/plugin-proposal-json-strings",
     [
