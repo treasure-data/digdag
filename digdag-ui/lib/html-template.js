@@ -1,4 +1,4 @@
-module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
+export default function htmlTemplate ({ htmlWebpackPlugin }) {
   const { files, options: { build, data } } = htmlWebpackPlugin
   const configPath = build ? '' : '/config'
   return `

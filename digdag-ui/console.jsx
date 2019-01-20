@@ -1,7 +1,7 @@
 // @flow
 import './style.less'
 
-import 'babel-polyfill'
+import '@babel/polyfill'
 import 'whatwg-fetch'
 
 import 'bootstrap/dist/js/bootstrap'
