@@ -12,7 +12,12 @@ module.exports = class ManifestPlugin {
     const { data } = this
 
     // Add manifest.json to output
-    compiler.plugin('emit', pluginEmit)
+    if (compiler.hooks) {
+      compiler.hooks.emit.tapAsync('ManifestPlugin', pluginEmit)
+    } else {
+      compiler.plugin('emit', pluginEmit)
+    }
+
     function pluginEmit (compilation, callback) {
       const stats = compilation.getStats().toJson({
         assets: true,

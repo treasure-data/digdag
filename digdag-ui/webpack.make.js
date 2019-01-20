@@ -1,4 +1,4 @@
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
@@ -76,7 +76,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       /* eslint-enable */
       getHtmlPlugin({ build, timestamp, filename: 'index.html', sha }),
       new MiniCssExtractPlugin({
-        filename: '[name].css',
+        filename: '[name].css'
       }),
       new webpack.ProvidePlugin({
         $: 'jquery',
