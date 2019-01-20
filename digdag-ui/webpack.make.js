@@ -62,7 +62,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         loader: 'url-loader?limit=10000&mimetype=image/png'
       }, {
         test: /\.less$/,
-        use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader']
       }]
     },
     resolve: {
