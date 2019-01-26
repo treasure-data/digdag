@@ -919,7 +919,14 @@ function task (node:Object) {
 function resolveTaskFile (taskType:string, command:string, task:Object, projectArchive:ProjectArchive):?TaskFile {
   // TODO: resolve paths relative from the workflow file
   // TODO: make operators provide information about files used in a structured way instead of this hack
-  const filename = path.normalize(command)
+  let filename = ''
+  const cmd = path.normalize(command)
+  _.forEach(projectArchive.files, function (p) {
+    // check the cmd contains filename
+    if (cmd.indexOf(p.name) !== -1) {
+      filename = p.name
+    }
+  })
   if (!projectArchive.hasFile(filename)) {
     return null
   }
