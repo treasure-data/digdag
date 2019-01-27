@@ -3,7 +3,6 @@ plugins {
     id 'com.jfrog.bintray' version '1.8.1'
     id 'com.github.kt3k.coveralls' version '2.6.3'
     id 'com.github.spotbugs' version '1.6.2'
-    id 'net.ltgt.apt-idea' version '0.19'
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -31,7 +30,6 @@ allprojects {
     apply plugin: 'jacoco'
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'maven-publish'
-    apply plugin: 'net.ltgt.apt-idea'
 
     repositories {
         mavenCentral()
