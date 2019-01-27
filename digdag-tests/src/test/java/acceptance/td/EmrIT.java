@@ -306,7 +306,7 @@ public class EmrIT
                     "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
-            expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(60), attemptSuccess(server.endpoint(), attemptId));
 
             validateTdSparkQueryOutput();
 
