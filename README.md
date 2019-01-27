@@ -61,7 +61,8 @@ Findbugs report is generated at `digdag-*/build/reports/findbugs/main.html`.
 $ CI_ACCEPTANCE_TEST=true ./gradlew digdag-tests:test --info --tests acceptance.BuiltInVariablesIT
 ```
 
-To execute single test in digdag-tests package locally, `tests` option that is provided by Gradle can be helped. Environment variable `CI_ACCEPTANCE_TEST=true` is also required.
+To execute tests in digdag-tests subproject locally, `tests` option that is provided by Gradle is useful.
+Environment variable `CI_ACCEPTANCE_TEST=true` is needed to execute digdag-tests only.
 
 ### Testing with PostgreSQL
 
