@@ -2,7 +2,7 @@
 
 import pako from 'pako'
 import untar from 'js-untar'
-import {Buffer} from 'buffer/'
+import { Buffer } from 'buffer/'
 import LRU from 'lru-cache'
 
 export type Credentials = {[key: string]: string};
@@ -483,7 +483,7 @@ export class Model {
         'Content-Length': body.byteLength.toString()
       }),
       method: 'PUT',
-      body: new global.Blob([body], {type: contentType})
+      body: new global.Blob([body], { type: contentType })
     }).then(response => {
       if (!response.ok) {
         return response.text().then(text => {
@@ -513,7 +513,7 @@ export class Model {
   }
 
   headers (): Headers {
-    return this.config.headers({credentials: this.config.credentials})
+    return this.config.headers({ credentials: this.config.credentials })
   }
 }
 

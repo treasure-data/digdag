@@ -91,7 +91,7 @@
 
 .. note::
 
-   Database permissions for the restricted users are not inherited. You need to grant permission again after ran `empty_databases`.
+    Database permissions for the restricted users are not inherited. You need to grant permission again after ran `empty_databases`.
 
 * **drop_databases**: [ARRAY OF NAMES]
 
