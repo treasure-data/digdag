@@ -2,6 +2,7 @@ package io.digdag.core.workflow;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -132,10 +133,14 @@ public class WorkflowExecutorTest
     {
         String childContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/retry_in_call_child.dig"), UTF_8);
         Path childPath = folder.getRoot().toPath().resolve("retry_in_call_child.dig");
+        System.out.println(childPath.toAbsolutePath().toString());
         Files.write(childPath, childContent.getBytes(UTF_8));
 
         String parentBase = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/retry_in_call_parent.dig"), UTF_8);
-        String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " + childPath.toString());
+
+        //Full path not work in AppVeyor
+        //String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " + childPath.toString());
+        String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " +  "retry_in_call_child.dig");
 
         Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
         runWorkflow("retry_in_call", parent);
