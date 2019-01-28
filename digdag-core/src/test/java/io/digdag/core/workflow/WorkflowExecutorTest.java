@@ -139,7 +139,7 @@ public class WorkflowExecutorTest
     public void ifOperatorDelayedEvalElseDo()
             throws Exception
     {
-        runWorkflow("if_operator", loadYamlResource("/io/digdag/core/workflow/if_operator_else_do.dig"));
+        runWorkflow("if_operator_else_do", loadYamlResource("/io/digdag/core/workflow/if_operator_else_do.dig"));
         assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("OK_else_do"));
 
     }

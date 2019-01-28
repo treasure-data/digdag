@@ -74,6 +74,7 @@ public class BuiltInVariablesIT
                 .put("next_session_tz_offset", is("+0000"))
                 .put("next_session_unixtime", is("1451779200"))
                 .put("task_name", is("+built_in_variables+get_variables+task_name"))
+                .put("attempt_id", is("1"))
                 .build();
 
         assertThat(values.entrySet().size(), is(expectedOutput.size()));
