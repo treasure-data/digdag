@@ -1,6 +1,8 @@
 _export:
   child_path: dummy
-+first:
++task1:
+  echo>: "child_path: ${child_path}"
++task2:
   echo>: ""
   append_file: out
 +call_child:
