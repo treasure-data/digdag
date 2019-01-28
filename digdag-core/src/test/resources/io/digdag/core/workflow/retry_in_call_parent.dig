@@ -1,0 +1,8 @@
+_export:
+  child_path: dummy
++first:
+  echo>: ""
+  append_file: out
++call_child:
+  call>: ${child_path}
+
