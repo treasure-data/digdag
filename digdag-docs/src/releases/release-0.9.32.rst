@@ -31,18 +31,23 @@ Fixed Issues
 * Fix default argument check on py> operator [#913]
 
 
-
+  
+Release Date
 Release Date
 ------------
-2019-01-29
+2019-01-30
 
 Contributors
 ------------
 * Aki Ariga
 * Akira Koyasu
-* Kazuhiro Serizawa
+* Hiroyuki Sato
 * Mitsunori Komatsu
 * Muga Nishizawa
+* Pierre Delagrave
+* Satoru Kamikaseda
 * Shota Suzuki
+* Y.Kentaro
 * You Yamagata
-* george
+* yoyama
+* yui-knk
