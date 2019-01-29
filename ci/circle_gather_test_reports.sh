@@ -3,8 +3,8 @@
 # XML Reports
 for dir in digdag-*/build/test-results; do
   project=$(dirname $(dirname ${dir}))
-  mkdir -p "/tmp/circleci-artifacts/build/tests/${project}"
-  cp -a "${dir}/" "/tmp/circleci-artifacts/build/tests/${project}/"
+  mkdir -p "/tmp/circleci-test-results/build/tests/${project}"
+  cp -a "${dir}/" "/tmp/circleci-test-results/build/tests/${project}/"
 done
 
 # HTML Reports

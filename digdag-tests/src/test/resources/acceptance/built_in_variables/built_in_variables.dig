@@ -52,3 +52,5 @@ schedule:
     sh>: "echo next_session_unixtime: \\'${next_session_unixtime}\\' >> output.yml"
   +task_name:
     sh>: "echo task_name: \\'${task_name}\\' >> output.yml"
+  +attempt_id:
+    sh>: "echo attempt_id: \\'${attempt_id}\\' >> output.yml"
