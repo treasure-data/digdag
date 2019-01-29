@@ -642,6 +642,60 @@ class ProjectsView extends React.Component {
   }
 }
 
+class StatusFilter extends React.Component {
+  static Status = class Status {
+    static ALL = "All";
+    static SUCCESS = "Success";
+    static FAILURE = "Failure";
+    static PENDING = "Pending";
+    static CANCELED = "Canceled";
+    static CANCELING = "Canceling";
+
+    static allStatus () {
+      return [Status.ALL, Status.SUCCESS, Status.FAILURE, Status.PENDING, Status.CANCELED, Status.CANCELING]
+    }
+  };
+
+  state = {
+    selectedStatus: StatusFilter.Status.ALL
+  };
+
+  filterSessionsByStatus(sessions, selectedStatus) {
+    switch (selectedStatus) {
+      case StatusFilter.Status.SUCCESS:
+        return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success);
+      case StatusFilter.Status.FAILURE:
+        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success);
+      case StatusFilter.Status.PENDING:
+        return sessions.filter(s => !s.lastAttempt.done);
+      case StatusFilter.Status.CANCELED:
+        return sessions.filter(s => s.lastAttempt.cancelRequested && s.lastAttempt.done);
+      case StatusFilter.Status.CANCELING:
+        return sessions.filter(s => s.lastAttempt.cancelRequested && !s.lastAttempt.done);
+      default:
+        return sessions;
+    }
+  }
+
+  render () {
+    const childrenWithProps = React.Children.map(this.props.children, child => {
+      return React.cloneElement(child, {
+        sessions: this.filterSessionsByStatus(this.props.sessions, this.state.selectedStatus)
+      });
+    });
+
+    return (
+      <div className="status-filter">
+        Status:&ensp;
+        <select onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+          {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {childrenWithProps}
+      </div>
+    )
+  }
+}
+
 class SessionsView extends React.Component {
   state = {
     sessions: []
@@ -661,7 +715,9 @@ class SessionsView extends React.Component {
     return (
       <div>
         <h2>Sessions</h2>
-        <SessionListView sessions={this.state.sessions} />
+        <StatusFilter sessions={this.state.sessions} >
+          <SessionListView />
+        </StatusFilter>
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
@@ -756,7 +812,9 @@ class ProjectView extends React.Component {
         </div>
         <div className='row'>
           <h2>Sessions</h2>
-          <SessionListView sessions={this.state.sessions} />
+          <StatusFilter sessions={this.state.sessions}>
+            <SessionListView />
+          </StatusFilter>
         </div>
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
@@ -874,7 +932,9 @@ class WorkflowView extends React.Component {
         <div><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></div>
         <div className='row'>
           <h2>Sessions</h2>
-          <SessionListView sessions={this.state.sessions} />
+          <StatusFilter sessions={this.state.sessions}>
+            <SessionListView />
+          </StatusFilter>
         </div>
         <div className='row'>
           <h2>Files</h2>
