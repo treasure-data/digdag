@@ -655,6 +655,7 @@ public class WorkflowExecutor
                 }
                 catch (TaskLimitExceededException ex) {
                     tm.reset();
+                    logger.warn("Failed to add error tasks because of task limit");
                     // addErrorTasksIfAny threw TaskLimitExceededException. Giveup adding them.
                     // TODO this is a fundamental design problem. Probably _error tasks should be removed.
                     //      use notification tasks instead.
@@ -1135,7 +1136,7 @@ public class WorkflowExecutor
         catch (TaskLimitExceededException ex) {
             tm.reset();
             errorTaskAdded = false;
-            logger.debug("Failed to add error tasks because of task limit");
+            logger.warn("Failed to add error tasks because of task limit");
         }
         catch (ConfigException ex) {
             errorTaskAdded = false;
@@ -1190,6 +1191,7 @@ public class WorkflowExecutor
         }
         catch (TaskLimitExceededException ex) {
             tm.reset();
+            logger.warn("Failed to add subtasks because of task limit");
             return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
         }
         catch (ConfigException ex) {
