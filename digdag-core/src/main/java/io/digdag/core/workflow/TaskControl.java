@@ -65,14 +65,21 @@ public class TaskControl
     }
 
     public long addGeneratedSubtasks(WorkflowTaskList tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings)
-        throws TaskLimitExceededException
+                                     List<Long> rootUpstreamIds, boolean cancelSiblings, boolean isInitialTask)
+            throws TaskLimitExceededException
     {
         checkTaskLimit(store, task.getAttemptId(), tasks);
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
-                cancelSiblings, false, false,
+                cancelSiblings, false, isInitialTask,
                 collectResumingTasks(task.getAttemptId(), tasks));
+    }
+
+    public long addGeneratedSubtasks(WorkflowTaskList tasks,
+            List<Long> rootUpstreamIds, boolean cancelSiblings)
+        throws TaskLimitExceededException
+    {
+        return addGeneratedSubtasks(tasks, rootUpstreamIds, cancelSiblings, false);
     }
 
     public long addGeneratedSubtasksWithoutLimit(WorkflowTaskList tasks,

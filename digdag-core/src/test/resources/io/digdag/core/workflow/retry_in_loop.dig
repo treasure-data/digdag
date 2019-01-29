@@ -1,0 +1,26 @@
++first:
+  echo>: ""
+  append_file: out
+
++loop1:
+  loop>: 3
+  _do:
+    +gtaks1:
+      echo>: "loop${i}:"
+      append_file: out
+    +gtask2:
+      _retry: 2
+      +task1:
+        echo>: "try1"
+        append_file: out
+      +task2:
+        +task2_nested:
+          echo>: "try2"
+          append_file: out
+      +task3:
+        if>: ${i == 2}
+        _do:
+          fail>: task failed expectedly
+        _else_do:
+          echo>: "succeeded."
+          append_file: out
