@@ -153,18 +153,7 @@ The list of release note is [here](https://github.com/treasure-data/digdag/tree/
 Digdag is using a Java annotation processor `org.immutables:value.` The combination of Java annotation processing and Gradle on IntelliJ IDEA sometimes introduces some troubles. In Digdag's case, you may run into some compile errors like `cannot find symbol: class ImmutableRestWorkflowDefinitionCollection.`
 So we'd recommend the followings to avoid those compile errors if you want to develop Digdag one the IDE.
 
-1. Generate `pom.xml` with `./gradlew pom` command
+1. There's an important configuration option to be enabled to fully have IntelliJ be fully integrated with an existing gradle build configuration: `Delegate IDE build/run actions to gradle` needs to be enabled. 
 
- Digdag can generate `pom.xml` from `build.gradle`
-
-2. Import the sources as a new Maven project on the IDE
-
-3. Build the project on the IDE
-
- This build itself should finish successfully, but you would still see some compile errors like `cannot find symbol: class ImmutableRestWorkflowDefinitionCollection`
-
-4. Execute `Maven -> Reimport` on the IDE
-
- This command should resolve the above compile errors
-
+![](https://user-images.githubusercontent.com/17990895/48221255-9706be80-e35f-11e8-8283-1ca6d713e31c.png)
 
