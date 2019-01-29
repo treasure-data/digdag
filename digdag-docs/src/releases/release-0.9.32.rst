@@ -14,6 +14,8 @@ General Changes
 
 * Show warn message when tasks failed by max task limit in WorkflowExecutor [#951]
 
+* Retry works in some generated tasks (e.g. call, loop) [#928]
+
 * Upgrade packages [#909, #940, #953]
 
 * Some document improvements
