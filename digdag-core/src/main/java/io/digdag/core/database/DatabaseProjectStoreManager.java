@@ -35,6 +35,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.Define;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import javax.activation.DataSource;
@@ -514,6 +515,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
+    @UseStringTemplate3StatementLocator
     public interface H2Dao
             extends Dao
     {
@@ -553,6 +555,7 @@ public class DatabaseProjectStoreManager
                 @Define("acFilter") String acFilter);
     }
 
+    @UseStringTemplate3StatementLocator
     public interface PgDao
             extends Dao
     {
@@ -674,7 +677,7 @@ public class DatabaseProjectStoreManager
                 " join projects proj on proj.id = rev.project_id" +
                 " where site_id = :siteId" +
                 " and rev.project_id = :projId" +
-                " and rev.id < :lastId" +
+                " and rev.id \\< :lastId" +
                 " order by rev.id desc" +
                 " limit :limit")
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") int lastId);
