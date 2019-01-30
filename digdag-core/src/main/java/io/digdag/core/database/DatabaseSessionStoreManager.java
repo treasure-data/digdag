@@ -1798,7 +1798,7 @@ public class DatabaseSessionStoreManager
                 " and s.workflow_name = :workflowName" +
                 " and sa.state_flags = 0" +
                 " and sa.site_id = :siteId" +
-                " and sa.id < :lastId" +
+                " and sa.id \\< :lastId" +
                 " order by sa.id desc" +
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1806,7 +1806,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select * from session_attempts" +
                 " where session_id = :sessionId" +
                 " and site_id = :siteId" +
-                " and id < :lastId" +
+                " and id \\< :lastId" +
                 " order by id desc" +
                 " limit :limit")
         List<StoredSessionAttempt> getAttemptsOfSessionWithRetries(@Bind("siteId") int siteId, @Bind("sessionId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -1871,7 +1871,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select * from session_attempts" +
                 " where state_flags = 0" +
                 " and created_at < :createdBefore" +
-                " and id > :lastId" +
+                " and id \\> :lastId" +
                 " order by id asc" +
                 " limit :limit")
         List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
@@ -1892,7 +1892,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select session_time from sessions" +
                 " where project_id = :projectId" +
                 " and workflow_name = :workflowName" +
-                " and session_time < :beforeThisSessionTime" +
+                " and session_time \\< :beforeThisSessionTime" +
                 " order by session_time desc" +
                 " limit 1")
         Long getLastExecutedSessionTime(@Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("beforeThisSessionTime") long beforeThisSessionTime);
@@ -1988,7 +1988,7 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select id, attempt_id, parent_id, state, updated_at" +
                 " from tasks" +
-                " where updated_at > :updatedSince" +
+                " where updated_at \\> :updatedSince" +
                 " or (updated_at = :updatedSince and id > :lastId)" +
                 " order by updated_at asc, id asc" +
                 " limit :limit")
@@ -1997,7 +1997,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select id" +
                 " from tasks" +
                 " where state = :state" +
-                " and id > :lastId" +
+                " and id \\> :lastId" +
                 " order by id asc" +
                 //" order by updated_at asc, id asc" +
                 " limit :limit")
@@ -2052,11 +2052,11 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("update tasks" +
                 " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
                 " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
-                " and retry_at <= now()")
+                " and retry_at \\<= now()")
         int trySetRetryWaitingToReady();
 
         @SqlQuery("select * from session_monitors" +
-                " where next_run_time <= :currentTime" +
+                " where next_run_time \\<= :currentTime" +
                 " limit :limit" +
                 " for update")
         List<StoredSessionMonitor> lockReadySessionMonitors(@Bind("currentTime") long currentTime, @Bind("limit") int limit);

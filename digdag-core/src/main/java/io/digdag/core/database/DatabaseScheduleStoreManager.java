@@ -19,6 +19,7 @@ import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.Define;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import javax.sql.DataSource;
@@ -242,17 +243,19 @@ public class DatabaseScheduleStoreManager
         }
     }
 
+    @UseStringTemplate3StatementLocator
     public interface H2Dao
             extends Dao
     {
     }
 
+    @UseStringTemplate3StatementLocator
     public interface PgDao
             extends Dao
     {
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
-                " where s.next_run_time <= :currentTime" +
+                " where s.next_run_time \\<= :currentTime" +
                 " and s.disabled_at is null" +
                 " limit :limit" +
                 " for update of s skip locked")
@@ -274,7 +277,7 @@ public class DatabaseScheduleStoreManager
                     " where p.id = s.project_id" +
                     " and p.site_id = :siteId" +
                 ")" +
-                " and s.id \\> :lastId" +
+                " and s.id > :lastId" +
                 " and <acFilter>" +
                 " order by s.id asc" +
                 " limit :limit")
@@ -286,14 +289,14 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
-                " join projects proj proj.id = s.project_id" +
+                " join projects proj on proj.id = s.project_id" +
                 " where s.project_id = :projectId " +
                 " and exists (" +
                     "select p.* from projects p" +
                     " where p.id = s.project_id" +
                     " and p.site_id = :siteId" +
                 ")" +
-                " and s.id \\> :lastId" +
+                " and s.id > :lastId" +
                 " and <acFilter>" +
                 " order by s.id asc" +
                 " limit :limit")
@@ -326,7 +329,7 @@ public class DatabaseScheduleStoreManager
         StoredSchedule getScheduleByProjectIdAndWorkflowName(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName);
 
         @SqlQuery("select id from schedules" +
-                " where next_run_time <= :currentTime" +
+                " where next_run_time \\<= :currentTime" +
                 " and disabled_at is null" +
                 " limit :limit" +
                 " for update")
