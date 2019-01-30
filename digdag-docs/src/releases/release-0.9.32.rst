@@ -4,11 +4,11 @@ Release 0.9.32
 General Changes
 ---------------
 
-* Add CLI option --enable-swagger for REST API document [#577, #906]
+* Add CLI option ``--enable-swagger`` for REST API document [#577, #906]
 
-* Add --task-log option in local mode [#784]
+* Add ``--task-log`` option in local mode [#784]
 
-* Add 'attempt_id' to the RuntimeParams [#900]
+* Add ``attempt_id`` to the RuntimeParams [#900]
 
 * Support type hints for Python3 on py> operator [#905]
 
