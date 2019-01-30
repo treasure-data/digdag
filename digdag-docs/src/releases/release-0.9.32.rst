@@ -6,13 +6,15 @@ General Changes
 
 * Add CLI option --enable-swagger for REST API document [#577, #906]
 
-* --task-log option in local mode [#784]
+* Add --task-log option in local mode [#784]
 
-* Added 'attempt_id' to the RuntimeParams [#900]
+* Add 'attempt_id' to the RuntimeParams [#900]
 
 * Support type hints for Python3 on py> operator [#905]
 
 * Show warn message when tasks failed by max task limit in WorkflowExecutor [#951]
+
+* Add sessions status filter [#927]
 
 * Retry works in some generated tasks (e.g. call, loop) [#928]
 
@@ -31,7 +33,6 @@ Fixed Issues
 * Fix default argument check on py> operator [#913]
 
 
-  
 Release Date
 ------------
 2019-01-30
@@ -48,4 +49,5 @@ Contributors
 * Shota Suzuki
 * Y.Kentaro
 * You Yamagata
+* tosametal
 * yui-knk
