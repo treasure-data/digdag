@@ -33,7 +33,6 @@ Fixed Issues
 
   
 Release Date
-Release Date
 ------------
 2019-01-30
 
@@ -49,5 +48,4 @@ Contributors
 * Shota Suzuki
 * Y.Kentaro
 * You Yamagata
-* yoyama
 * yui-knk
