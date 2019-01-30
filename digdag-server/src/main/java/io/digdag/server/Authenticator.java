@@ -37,6 +37,11 @@ public interface Authenticator
                     .build();
         }
 
+        default boolean isAccepted()
+        {
+            return !getErrorMessage().isPresent();
+        }
+
         @Value.Check
         default void checkNull()
         {
@@ -48,11 +53,6 @@ public interface Authenticator
                 // error message
                 Preconditions.checkState(!getSecrets().isPresent() || !getAuthenticatedUser().isPresent());
             }
-        }
-
-        default boolean isAccepted()
-        {
-            return !getErrorMessage().isPresent();
         }
 
         Optional<String> getErrorMessage();
