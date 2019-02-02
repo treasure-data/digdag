@@ -122,7 +122,7 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
         if key in params:
             args[key] = params[key]
         else:
-            if spec.defaults is None or len(spec.defaults) < idx:
+            if spec.defaults is None or idx < len(spec.args) - len(spec.defaults):
                 # this keyword is required but not in params. raising an error.
                 if hasattr(callable_type, '__qualname__'):
                     # Python 3

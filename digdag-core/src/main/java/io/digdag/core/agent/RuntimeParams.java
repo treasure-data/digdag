@@ -70,6 +70,7 @@ public class RuntimeParams
         params.set("project_id", request.getProjectId());
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
+        params.set("attempt_id", request.getAttemptId());
 
         // task_*
         params.set("task_name", request.getTaskName());

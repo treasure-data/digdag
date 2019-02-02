@@ -1,4 +1,4 @@
-module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
+export default function htmlTemplate ({ htmlWebpackPlugin }) {
   const { files, options: { build, data } } = htmlWebpackPlugin
   const configPath = build ? '' : '/config'
   return `
@@ -7,7 +7,7 @@ module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
     <head>
       <meta charset='utf-8'>
       <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
-      <link rel='icon' type='image/png' href='/digdagfavicon.ico'>
+      <link rel='icon' type='image/png' href='/images/digdagfavicon.ico'>
       <title>${data.title}</title>
     </head>
     <body>

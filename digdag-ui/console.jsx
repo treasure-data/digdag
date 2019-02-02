@@ -1,7 +1,7 @@
 // @flow
 import './style.less'
 
-import 'babel-polyfill'
+import '@babel/polyfill'
 import 'whatwg-fetch'
 
 import 'bootstrap/dist/js/bootstrap'
@@ -192,7 +192,7 @@ class CodeViewer extends React.Component {
     const {
       language,
       value
-     } = props
+    } = props
     this._editor.setValue(value, DOCUMENT_END)
     this._editor.session.setMode(`ace/mode/${language}`)
     this._editor.resize(true)
@@ -323,7 +323,7 @@ class WorkflowListView extends React.Component {
   }
 }
 
-const AttemptStatusView = ({attempt}) => {
+const AttemptStatusView = ({ attempt }) => {
   if (attempt.done) {
     if (attempt.success) {
       return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
@@ -362,7 +362,7 @@ function attemptCanBeKilled (attempt) {
   return !attempt.done && !attempt.cancelRequested
 }
 
-const SessionStatusView = ({session}:{session: Session}) => {
+const SessionStatusView = ({ session }:{session: Session}) => {
   const attempt = session.lastAttempt
   return attempt
     ? <Link to={`/attempts/${attempt.id}`}><AttemptStatusView attempt={attempt} /></Link>
@@ -406,7 +406,7 @@ class SessionRevisionView extends React.Component {
     }
     model().fetchWorkflow(id).then(workflow => {
       if (!this.ignoreLastFetch) {
-        this.setState({workflow})
+        this.setState({ workflow })
       }
     })
   }
@@ -627,7 +627,7 @@ class ProjectsView extends React.Component {
 
   fetch () {
     model().fetchProjects().then(({ projects }) => {
-      this.setState({projects})
+      this.setState({ projects })
     })
   }
 
@@ -637,6 +637,60 @@ class ProjectsView extends React.Component {
         <h2>Projects</h2>
         <ProjectListView projects={this.state.projects} />
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
+      </div>
+    )
+  }
+}
+
+class StatusFilter extends React.Component {
+  static Status = class Status {
+    static ALL = "All";
+    static SUCCESS = "Success";
+    static FAILURE = "Failure";
+    static PENDING = "Pending";
+    static CANCELED = "Canceled";
+    static CANCELING = "Canceling";
+
+    static allStatus () {
+      return [Status.ALL, Status.SUCCESS, Status.FAILURE, Status.PENDING, Status.CANCELED, Status.CANCELING]
+    }
+  };
+
+  state = {
+    selectedStatus: StatusFilter.Status.ALL
+  };
+
+  filterSessionsByStatus(sessions, selectedStatus) {
+    switch (selectedStatus) {
+      case StatusFilter.Status.SUCCESS:
+        return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success);
+      case StatusFilter.Status.FAILURE:
+        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success);
+      case StatusFilter.Status.PENDING:
+        return sessions.filter(s => !s.lastAttempt.done);
+      case StatusFilter.Status.CANCELED:
+        return sessions.filter(s => s.lastAttempt.cancelRequested && s.lastAttempt.done);
+      case StatusFilter.Status.CANCELING:
+        return sessions.filter(s => s.lastAttempt.cancelRequested && !s.lastAttempt.done);
+      default:
+        return sessions;
+    }
+  }
+
+  render () {
+    const childrenWithProps = React.Children.map(this.props.children, child => {
+      return React.cloneElement(child, {
+        sessions: this.filterSessionsByStatus(this.props.sessions, this.state.selectedStatus)
+      });
+    });
+
+    return (
+      <div className="status-filter">
+        Status:&ensp;
+        <select onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+          {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {childrenWithProps}
       </div>
     )
   }
@@ -653,7 +707,7 @@ class SessionsView extends React.Component {
 
   fetch () {
     model().fetchSessions().then(({ sessions }) => {
-      this.setState({sessions})
+      this.setState({ sessions })
     })
   }
 
@@ -661,7 +715,9 @@ class SessionsView extends React.Component {
     return (
       <div>
         <h2>Sessions</h2>
-        <SessionListView sessions={this.state.sessions} />
+        <StatusFilter sessions={this.state.sessions} >
+          <SessionListView />
+        </StatusFilter>
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
@@ -699,21 +755,21 @@ class ProjectView extends React.Component {
   fetch () {
     model().fetchProject(this.props.projectId).then(project => {
       if (!this.ignoreLastFetch) {
-        this.setState({project: project})
+        this.setState({ project: project })
       }
       return project
     }).then(project => {
       if (!this.ignoreLastFetch) {
         model().fetchProjectSessions(project.id).then(({ sessions }) => {
           if (!this.ignoreLastFetch) {
-            this.setState({sessions})
+            this.setState({ sessions })
           }
         })
       }
     })
     model().fetchProjectWorkflows(this.props.projectId).then(({ workflows }) => {
       if (!this.ignoreLastFetch) {
-        this.setState({workflows})
+        this.setState({ workflows })
       }
     })
   }
@@ -756,7 +812,9 @@ class ProjectView extends React.Component {
         </div>
         <div className='row'>
           <h2>Sessions</h2>
-          <SessionListView sessions={this.state.sessions} />
+          <StatusFilter sessions={this.state.sessions}>
+            <SessionListView />
+          </StatusFilter>
         </div>
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
@@ -794,12 +852,12 @@ class WorkflowView extends React.Component {
   fetch () {
     model().fetchProjectWorkflowSessions(this.props.workflow.project.id, this.props.workflow.name).then(({ sessions }) => {
       if (!this.ignoreLastFetch) {
-        this.setState({sessions})
+        this.setState({ sessions })
       }
     })
     model().fetchProjectArchiveWithRevision(this.props.workflow.project.id, this.props.workflow.revision).then(projectArchive => {
       if (!this.ignoreLastFetch) {
-        this.setState({projectArchive})
+        this.setState({ projectArchive })
       }
     })
   }
@@ -827,12 +885,12 @@ class WorkflowView extends React.Component {
       <div>
         <div className='row'>
           <h2>Workflow
-          <button
-            className='btn btn-sm btn-success pull-right'
-            onClick={this.runWorkflow.bind(this)}
-          >
+            <button
+              className='btn btn-sm btn-success pull-right'
+              onClick={this.runWorkflow.bind(this)}
+            >
             RUN
-          </button>
+            </button>
           </h2>
           <table className='table table-condensed'>
             <tbody>
@@ -874,7 +932,9 @@ class WorkflowView extends React.Component {
         <div><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></div>
         <div className='row'>
           <h2>Sessions</h2>
-          <SessionListView sessions={this.state.sessions} />
+          <StatusFilter sessions={this.state.sessions}>
+            <SessionListView />
+          </StatusFilter>
         </div>
         <div className='row'>
           <h2>Files</h2>
@@ -913,7 +973,7 @@ function task (node:Object) {
       command = node.application
     }
   }
-  return {taskType, command}
+  return { taskType, command }
 }
 
 function resolveTaskFile (taskType:string, command:string, task:Object, projectArchive:ProjectArchive):?TaskFile {
@@ -937,12 +997,12 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
   if (!fileType) {
     return null
   }
-  return {taskType, name: filename, fileType}
+  return { taskType, name: filename, fileType }
 }
 
 function enumerateTaskFiles (node:Object, files:Array<TaskFile>, projectArchive:ProjectArchive) {
   if (node && typeof node === 'object') {
-    let {taskType, command} = task(node)
+    let { taskType, command } = task(node)
     const taskFile = resolveTaskFile(taskType, command, node, projectArchive)
     if (taskFile) {
       files.push(taskFile)
@@ -971,7 +1031,7 @@ function fileString (file:string, projectArchive:?ProjectArchive) {
   return buffer.toString()
 }
 
-const FileView = ({file, fileType, contents}:{file: string, fileType: string, contents: string}) =>
+const FileView = ({ file, fileType, contents }:{file: string, fileType: string, contents: string}) =>
   <div>
     <h4>{file}</h4>
     <pre>
@@ -988,7 +1048,7 @@ const FileView = ({file, fileType, contents}:{file: string, fileType: string, co
     </pre>
   </div>
 
-const WorkflowFilesView = ({workflow, projectArchive}:{workflow: Workflow, projectArchive: ?ProjectArchive}) =>
+const WorkflowFilesView = ({ workflow, projectArchive }:{workflow: Workflow, projectArchive: ?ProjectArchive}) =>
   projectArchive ? <div>{
     workflowFiles(workflow, projectArchive).map(file =>
       <FileView key={file.name} file={file.name} fileType={file.fileType}
@@ -1025,15 +1085,15 @@ class AttemptView extends React.Component {
   fetch () {
     model().fetchAttempt(this.props.attemptId).then(attempt => {
       if (!this.ignoreLastFetch) {
-        this.setState({attempt: attempt, done: attempt.done})
+        this.setState({ attempt: attempt, done: attempt.done })
       }
     })
   }
 
   killAttempt () {
     model()
-        .killAttempt(this.props.attemptId)
-        .then(() => this.forceUpdate())
+      .killAttempt(this.props.attemptId)
+      .then(() => this.forceUpdate())
   }
 
   render () {
@@ -1142,7 +1202,7 @@ class SessionView extends React.Component {
             <button
               className='btn btn-success pull-right'
               onClick={this.retryFailed.bind(this)}
-              style={{marginRight: '0.5em'}}
+              style={{ marginRight: '0.5em' }}
             >
               RETRY FAILED
             </button>
@@ -1193,7 +1253,7 @@ class SessionView extends React.Component {
   }
 }
 
-const SessionTime = ({t}:{t:?string}) =>
+const SessionTime = ({ t }:{t:?string}) =>
   t ? <span>{t}</span> : null
 
 class Timestamp extends React.Component {
@@ -1225,7 +1285,7 @@ class FullTimestamp extends React.Component {
   timestamp: any;
 
   componentDidMount () {
-    jQuery(this.timestamp).tooltip({html: true})
+    jQuery(this.timestamp).tooltip({ html: true })
   }
 
   tooltipText (t, m) {
@@ -1255,7 +1315,7 @@ class FullTimestamp extends React.Component {
   }
 }
 
-const Alerts = ({alertType, message}:{alertType:string, message:string}) => {
+const Alerts = ({ alertType, message }:{alertType:string, message:string}) => {
   switch (alertType) {
     case 'success':
       return <div className='alert alert-success' role='alert'>{message}</div>
@@ -1266,7 +1326,7 @@ const Alerts = ({alertType, message}:{alertType:string, message:string}) => {
   }
 }
 
-const DurationView = ({start, end}:{start:?string, end:?string}) => {
+const DurationView = ({ start, end }:{start:?string, end:?string}) => {
   if (!start || !end) {
     return <span />
   }
@@ -1274,12 +1334,12 @@ const DurationView = ({start, end}:{start:?string, end:?string}) => {
   return <span>{duration}</span>
 }
 
-const ParamsView = ({params}:{params: Object}) =>
+const ParamsView = ({ params }:{params: Object}) =>
   _.isEmpty(params)
     ? null
-    : <CodeViewer className='params-view' language='yaml' value={yaml.safeDump(params, {sortKeys: true})} />
+    : <CodeViewer className='params-view' language='yaml' value={yaml.safeDump(params, { sortKeys: true })} />
 
-const TaskState = ({state, cancelRequested}:{state: string, cancelRequested: boolean}) => {
+const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: boolean}) => {
   if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(state) >= 0) {
     // These state won't progress once cancelRequested is set. Planned tasks won't generate tasks.
     return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
@@ -1326,7 +1386,7 @@ const TaskState = ({state, cancelRequested}:{state: string, cancelRequested: boo
   }
 }
 
-const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: Object}) => {
+const JobLink = ({ storeParams, stateParams }:{storeParams: Object, stateParams: Object}) => {
   const paramsJobId = storeParams.td && storeParams.td.last_job_id
   const stateJobId = stateParams.job && stateParams.job.jobId
   const jobId = paramsJobId || stateJobId
@@ -1351,7 +1411,7 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
 
   // First, divide tasks into rootTasks and taskGroups.
   const rootTasks: Array<Task> = []
-  const taskGroups: Map<string, Array<Task>> = new Map()  // {parentId => Array<Task>}
+  const taskGroups: Map<string, Array<Task>> = new Map() // {parentId => Array<Task>}
   const taskOrders: Map<string, Number> = new Map()
   tasks.forEach(t => {
     const parentId: ?string = t.parentId
@@ -1470,7 +1530,7 @@ class TaskTimelineRow extends React.Component {
   progressBar: any;
 
   componentDidMount () {
-    jQuery(this.progressBar).tooltip({html: true})
+    jQuery(this.progressBar).tooltip({ html: true })
   }
 
   progressBarClasses () {
@@ -1559,9 +1619,9 @@ class TaskTimelineRow extends React.Component {
     }
     return (
       <tr>
-        <td style={{whiteSpace: 'nowrap', paddingLeft: `${this.taskLevel()}em`}}>{taskName}</td>
-        <td style={{width: '100%'}}>
-          <div className='progress' style={{marginBottom: 0}}>
+        <td style={{ whiteSpace: 'nowrap', paddingLeft: `${this.taskLevel()}em` }}>{taskName}</td>
+        <td style={{ width: '100%' }}>
+          <div className='progress' style={{ marginBottom: 0 }}>
             <div ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
               className={`progress-bar ${this.progressBarClasses()}`} role='progressbar' style={style}>{duration}</div>
           </div>
@@ -1571,7 +1631,7 @@ class TaskTimelineRow extends React.Component {
   }
 }
 
-const TaskTimelineView = ({tasks, startTime, endTime}:{
+const TaskTimelineView = ({ tasks, startTime, endTime }:{
   tasks: Map<string, Task>;
   startTime: ?Object;
   endTime: ?Object;
@@ -1627,7 +1687,7 @@ class AttemptTasksView extends React.Component {
       if (!this.ignoreLastFetch) {
         const tasks = Array.from(taskMap.values())
         const done = tasks.every(task => taskDone(task))
-        this.setState({tasks: taskMap, done})
+        this.setState({ tasks: taskMap, done })
       }
     })
   }
@@ -1709,7 +1769,7 @@ class AttemptTimelineView extends React.Component {
 
   updateTime () {
     const { done, lastUpdatedAt } = this.state
-    this.setState({endTime: this.endTime(done, lastUpdatedAt)})
+    this.setState({ endTime: this.endTime(done, lastUpdatedAt) })
   }
 
   endTime (done: boolean, lastUpdatedAt: ?Object) {
@@ -1768,7 +1828,7 @@ class LogFileView extends React.Component {
   fetchFile () {
     model().fetchLogFile(this.props.attemptId, this.props.file).then(data => {
       if (!this.ignoreLastFetch) {
-        this.setState({data})
+        this.setState({ data })
       }
     }, error => console.log(error))
   }
@@ -1779,7 +1839,7 @@ class LogFileView extends React.Component {
         <div>
           <h3 id={'logs-' + this.props.file.taskName + this.props.order.toString()}
             className='log-view'>{this.props.file.taskName}</h3>
-          <pre>{pako.inflate(this.state.data, {to: 'string'})}</pre>
+          <pre>{pako.inflate(this.state.data, { to: 'string' })}</pre>
         </div>
       )
     } else {
@@ -1816,7 +1876,7 @@ class AttemptLogsView extends React.Component {
   }
 
   logFiles () {
-    const {files} = this.state
+    const { files } = this.state
     if (!files.length) {
       return <pre />
     }
@@ -1896,7 +1956,7 @@ class Navbar extends React.Component {
   logo () {
     const navbar = DIGDAG_CONFIG.navbar
     return navbar && navbar.logo
-      ? <a className='navbar-brand' href='/' style={{marginTop: '-7px'}}><img src={navbar.logo} width='36' height='36' /></a>
+      ? <a className='navbar-brand' href='/' style={{ marginTop: '-7px' }}><img src={navbar.logo} width='36' height='36' /></a>
       : null
   }
 
@@ -2004,7 +2064,7 @@ class WorkflowPage extends React.Component {
   fetch () {
     model().fetchProjectWorkflow(this.props.params.projectId, this.props.params.workflowName).then(workflow => {
       if (!this.ignoreLastFetch) {
-        this.setState({workflow})
+        this.setState({ workflow })
       }
     })
   }
@@ -2061,7 +2121,7 @@ class WorkflowRevisionPage extends React.Component {
   fetchWorkflow () {
     model().fetchWorkflow(this.props.params.workflowId).then(workflow => {
       if (!this.ignoreLastFetch) {
-        this.setState({workflow})
+        this.setState({ workflow })
       }
     })
   }
@@ -2130,11 +2190,11 @@ class FileEditor extends React.Component {
             { ({ width }) =>
               <CodeEditor
                 className='editor'
-                language='yaml'  // TODO how to let ace guess language?
+                language='yaml' // TODO how to let ace guess language?
                 value={file ? fileString(file.name, this.props.projectArchive) : ''}
                 style={{ width }}
                 ref={(value) => { this.editor = value }}
-                />
+              />
             }
           </Measure>
         </pre>
@@ -2144,7 +2204,7 @@ class FileEditor extends React.Component {
   }
 
   handleNameChange (event) {
-    this.setState({name: event.target.value})
+    this.setState({ name: event.target.value })
   }
 }
 
@@ -2169,7 +2229,7 @@ class ProjectArchiveEditor extends React.Component {
 
   handleDelete (key) {
     _.remove(this.state.entries, (file) => file.key === key)
-    this.setState({entries: this.state.entries})
+    this.setState({ entries: this.state.entries })
   }
 
   handleAddFile () {
@@ -2183,7 +2243,7 @@ class ProjectArchiveEditor extends React.Component {
       },
       ...this.state.entries
     ]
-    this.setState({entries})
+    this.setState({ entries })
   }
 
   setInitialEntries () {
@@ -2194,7 +2254,7 @@ class ProjectArchiveEditor extends React.Component {
       file: file,
       projectArchive: this.props.projectArchive
     }))
-    this.setState({entries})
+    this.setState({ entries })
   }
 
   componentDidMount () {
@@ -2217,8 +2277,8 @@ class ProjectArchiveEditor extends React.Component {
         file={entry.file}
         projectArchive={entry.projectArchive}
         onDelete={this.handleDelete.bind(this, entry.key)}
-        />
-      )
+      />
+    )
     return (
       <div>
         <div className='btn-group'>
@@ -2232,7 +2292,7 @@ class ProjectArchiveEditor extends React.Component {
   getFiles (): Array<TarEntry> {
     return this.state.entries.map(entry => {
       const editor = this._editors[entry.key]
-      return ({name: editor.getName(), buffer: editor.getFileContents()})
+      return ({ name: editor.getName(), buffer: editor.getFileContents() })
     })
   }
 }
@@ -2274,14 +2334,14 @@ class ProjectEditor extends React.Component {
     if (projectId) {
       model().fetchProject(projectId).then(project => {
         if (!this.ignoreLastFetch) {
-          this.setState({project: project, projectName: project.name})
+          this.setState({ project: project, projectName: project.name })
         }
         return project
       }).then(project => {
         if (!this.ignoreLastFetch) {
           model().fetchProjectArchiveWithRevision(project.id, project.revision).then(projectArchive => {
             if (!this.ignoreLastFetch) {
-              this.setState({projectArchive})
+              this.setState({ projectArchive })
             }
           })
         }
@@ -2345,18 +2405,18 @@ class ProjectEditor extends React.Component {
         <h2>{title}</h2>
         {header}
         <Alerts alertType={this.state.alertType} message={this.state.saveMessage} />
-        <button style={{marginBottom: '0.5em'}} className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
+        <button style={{ marginBottom: '0.5em' }} className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
         <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref={(value) => { this._editor = value }} />
       </div>
     )
   }
 
   handleNameChange (event) {
-    this.setState({projectName: event.target.value})
+    this.setState({ projectName: event.target.value })
   }
 
   handleRevisionChange (event) {
-    this.setState({revisionName: event.target.value})
+    this.setState({ revisionName: event.target.value })
   }
 
   save () {
@@ -2371,7 +2431,7 @@ class ProjectEditor extends React.Component {
       this.setState({
         projectId: project.id,
         project: project,
-        revisionName: uuidv4(),  // generate new revision name
+        revisionName: uuidv4(), // generate new revision name
         alertType: 'success',
         saveMessage: `Revision ${this.state.revisionName} is saved.`
       })
@@ -2395,7 +2455,7 @@ const EditProjectPage = (props:{params: {projectId: string}}) =>
     <ProjectEditor projectId={props.params.projectId} />
   </div>
 
-const AttemptPage = ({params}:{params: {attemptId: string}}) =>
+const AttemptPage = ({ params }:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
     <AttemptView attemptId={params.attemptId} />
     <AttemptTimelineView attemptId={params.attemptId} />
@@ -2444,12 +2504,12 @@ class SessionPage extends React.Component {
   fetch () {
     model().fetchSession(this.props.params.sessionId).then(session => {
       if (!this.ignoreLastFetch) {
-        this.setState({session})
+        this.setState({ session })
       }
     })
     model().fetchSessionAttempts(this.props.params.sessionId).then(({ attempts }) => {
       if (!this.ignoreLastFetch) {
-        this.setState({attempts})
+        this.setState({ attempts })
       }
     })
   }
@@ -2549,7 +2609,7 @@ class LoginPage extends React.Component {
     for (let item of DIGDAG_CONFIG.auth.items) {
       const key = item.key
       const scrub:Scrubber = item.scrub ? item.scrub : (args:{key: string, value: string}) => value
-      const value:string = scrub({key, value: this.state[key]})
+      const value:string = scrub({ key, value: this.state[key] })
       item.validate({
         key,
         value,
@@ -2597,7 +2657,7 @@ class WorkflowsView extends React.Component {
 
   fetch () {
     model().fetchWorkflows().then(({ workflows }) => {
-      this.setState({workflows})
+      this.setState({ workflows })
     })
   }
 
@@ -2741,15 +2801,15 @@ export default class Console extends React.Component {
   constructor (props:any) {
     super(props)
     if (!DIGDAG_CONFIG.auth.items.length) {
-      this.state = {authenticated: true}
+      this.state = { authenticated: true }
       this.setup({})
     } else {
       const credentials = window.localStorage.getItem('digdag.credentials')
       if (credentials) {
         this.setup(JSON.parse(credentials))
-        this.state = {authenticated: true}
+        this.state = { authenticated: true }
       } else {
-        this.state = {authenticated: false}
+        this.state = { authenticated: false }
       }
     }
   }
@@ -2766,7 +2826,7 @@ export default class Console extends React.Component {
   handleCredentialsSubmit:(credentials:Credentials) => void = (credentials:Credentials) => {
     window.localStorage.setItem('digdag.credentials', JSON.stringify(credentials))
     this.setup(credentials)
-    this.setState({authenticated: true})
+    this.setState({ authenticated: true })
   };
 
   render () {

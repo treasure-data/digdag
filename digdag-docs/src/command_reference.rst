@@ -235,7 +235,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.31
+    $ digdag selfupdate 0.9.32
 
 Server-mode commands
 ----------------------------------
@@ -635,7 +635,7 @@ attempts
 
     $ digdag attempts [project-name] [+name]
 
-Shows list of attempts. This command shows shows all attempts including attempts retried by another attempt. Examples:
+Shows list of attempts. This command shows all attempts including attempts retried by another attempt. Examples:
 
 .. code-block:: console
 

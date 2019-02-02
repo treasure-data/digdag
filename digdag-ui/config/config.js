@@ -9,7 +9,7 @@ var DIGDAG_CONFIG = {
   },
   logoutUrl: '/',
   navbar: {
-    logo: '/logo.png',
+    logo: '/images/logo.png',
     brand: 'Digdag',
     className: 'navbar-inverse',
     style: {
