@@ -262,7 +262,7 @@ public class DigdagClientTest
 
         RecordedRequest request = mockWebServer.takeRequest();
 
-        assertThat(request.getHeader(ACCEPT_ENCODING), is("gzip"));
+        assertThat(request.getHeader(ACCEPT_ENCODING), is("gzip, deflate"));
     }
 
     @Test

@@ -45,6 +45,9 @@ import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPFilter;
+import org.jboss.resteasy.plugins.interceptors.encoding.GZIPDecodingInterceptor;
+import org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
@@ -216,18 +219,7 @@ public class DigdagClient implements AutoCloseable
             }
         }
 
-        // Set "Accept-Encoding: gzip". This is necessary to override "Accept-Encoding: gzip, deflate"
-        // header set by org.apache.httpcomponents:httpclient automatically. If server returns response
-        // with deflate compression, this client throws an exception (JsonParseException). It's because
-        // response body parsing is parsed by RESTEasy's GZIPDecodingInterceptor and it apparently runs
-        // before httpclient's decompression. It means that this client actually doesn't support
-        // deflate compression.
-        ImmutableMap.Builder<String, String> baseHeadersBuilder = ImmutableMap.builder();
-        baseHeadersBuilder.put("Accept-Encoding", "gzip");
-        baseHeadersBuilder.putAll(builder.baseHeaders);
-
-        final Map<String, String> baseHeaders = baseHeadersBuilder.build();
-
+        final Map<String, String> baseHeaders = builder.baseHeaders;
         final Function<Map<String, String>, Map<String, String>> headerBuilder = builder.headerBuilder;
 
         if (headerBuilder != null) {
@@ -241,6 +233,9 @@ public class DigdagClient implements AutoCloseable
         ObjectMapper mapper = objectMapper();
 
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
+                .register(AcceptEncodingGZIPFilter.class)
+                .register(GZIPDecodingInterceptor.class)
+                .register(GZIPEncodingInterceptor.class)
                 .register(new UserAgentFilter("DigdagClient/" + buildVersion()))
                 .register(new JacksonJsonProvider(mapper));
 
