@@ -87,6 +87,13 @@ public class DockerCommandExecutor
             command.add("-v").add(String.format(ENGLISH,
                         "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
+            if (dockerConfig.has("volume_host") && dockerConfig.has("volume_guest")) {
+                // mount Linking folders between host and guest
+                command.add("-v").add(String.format(ENGLISH,
+                        "%s:%s:rw", dockerConfig.get("volume_host", String.class),
+                        dockerConfig.get("volume_guest", String.class)));
+            }
+
             // workdir
             Path workdir = (pb.directory() == null) ? Paths.get("") : pb.directory().toPath();
             command.add("-w").add(workdir.normalize().toAbsolutePath().toString());
