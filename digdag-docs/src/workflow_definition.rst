@@ -167,6 +167,15 @@ You can set variables programmably using language API. For example, Python API p
 
 ``digdag.env.store(dict)`` stores variables so that all following tasks (including tasks which are not children of the task) can use them.
 
+.. code-block:: python
+
+    import digdag
+
+    class MyWorkflow(object):
+      def export_and_call_child(self):
+        digdag.env.export({"my_param": 2})
+        digdag.env.add_subtask({'_type': 'call', '_command': 'child1.dig'})
+
 ``digdag.env.export(dict)`` is same with "_export" directive in YAML file. It defines variables for their children.
 
 See language API documents for details:
