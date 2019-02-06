@@ -1,7 +1,7 @@
 timezone: UTC
 
 _error:
-  py>: examples.error_task.show_error
+  py>: tasks.error_task.show_error
 
 +test:
-  py>: examples.error_task.fails
+  py>: tasks.error_task.fails

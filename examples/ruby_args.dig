@@ -2,7 +2,7 @@ timezone: UTC
 
 _export:
   rb:
-    require: "examples/ruby_args"
+    require: "tasks/ruby_args"
 
 +task1:
   rb>: Test.task1

@@ -4,14 +4,14 @@ timezone: UTC
   +try:
     _parallel: true
     +zlib:
-      py>: examples.conditions.Algorithm.zlib
+      py>: tasks.conditions.Algorithm.zlib
     +gzip:
-      py>: examples.conditions.Algorithm.deflate
+      py>: tasks.conditions.Algorithm.deflate
     +bzip2:
-      py>: examples.conditions.Algorithm.bzip2
+      py>: tasks.conditions.Algorithm.bzip2
   +decide:
-    py>: examples.conditions.Algorithm.decide_algorithm
+    py>: tasks.conditions.Algorithm.decide_algorithm
 
 +show:
-  py>: examples.conditions.show_algorithm
+  py>: tasks.conditions.show_algorithm
 
