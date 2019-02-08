@@ -103,7 +103,7 @@ public class TdLoadOperatorFactory
                 this.embulkConfig = Optional.absent();
                 this.sessionName = name;
             }
-            else (config.isPresent()) {
+            else {
                 this.embulkConfig = Optional.of(config.get().getInternalObjectNode());
                 this.sessionName = Optional.absent();
             }
