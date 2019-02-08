@@ -749,12 +749,10 @@ public class AccessControllerIT
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
             // Delete the project
-            final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-            final RequestBody body = RequestBody.create(JSON, "null");
             final HttpUrl.Builder httpBuider = HttpUrl.parse(server.endpoint() + "/api/projects/2").newBuilder();
             final Response response = httpClient.newCall(new Request.Builder()
                     .url(httpBuider.build())
-                    .put(body)
+                    .delete()
                     .build()
             ).execute();
             assertThat(response.code(), is(403));
