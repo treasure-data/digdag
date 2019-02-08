@@ -34,8 +34,18 @@ public class RetryControl
     private final int retryInterval;
     private final RetryIntervalType retryIntervalType;
 
+    private int intValueTextual(JsonNode node){
+        if(node.isTextual()){
+            return Integer.parseInt(node.asText());
+        }
+        else {
+            return node.intValue();
+        }
+    }
+
     private RetryControl(Config config, Config stateParams, boolean enableByDefault)
     {
+
         this.stateParams = stateParams;
         this.retryCount = stateParams.get("retry_count", int.class, 0);
 
@@ -46,15 +56,16 @@ public class RetryControl
                 this.retryInterval = 0;
                 this.retryIntervalType = RetryIntervalType.CONSTATNT;
             }
-            else if (retry.isNumber()) {  // Only limit is set
-                this.retryLimit = retry.intValue();
+            else if (retry.isNumber() || retry.isTextual()) {  // Only limit is set.
+                //If set as variable ${..}, the value become text. So text data is also accepted.
+                this.retryLimit = intValueTextual(retry);
                 this.retryInterval = 0;
                 this.retryIntervalType = RetryIntervalType.CONSTATNT;
             }
             else if (retry.isObject()) {  // json format
-                this.retryLimit = retry.get("limit").intValue();
+                this.retryLimit = intValueTextual(retry.get("limit"));
                 if (retry.has("interval")) {
-                    this.retryInterval = retry.get("interval").intValue();
+                    this.retryInterval = intValueTextual(retry.get("interval"));
                 }
                 else {
                     this.retryInterval = 0;
@@ -67,7 +78,7 @@ public class RetryControl
                 }
             }
             else {  // Unknown format
-                throw new ConfigException("Invalid _retry format");
+                throw new ConfigException(String.format("Invalid _retry format:%s", retry.toString()));
             }
         }
         catch(NumberFormatException nfe) {
