@@ -39,8 +39,10 @@ import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.junit.Assert;
 import org.junit.Before;
@@ -160,11 +162,6 @@ public class AccessControllerIT
             extends DefaultAccessController
     {
         @Override
-        public void checkPutProject(final ProjectTarget target, final AuthenticatedUser user)
-                throws AccessControlException
-        { }
-
-        @Override
         public void checkGetProject(ProjectTarget target, AuthenticatedUser user)
                 throws AccessControlException
         {
@@ -209,6 +206,43 @@ public class AccessControllerIT
                     return; // ok
             }
         }
+
+        @Override
+        public void checkGetProjectArchive(ProjectTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getName()) {
+                case "get_project_archive_with_rev_403":
+                    throw new AccessControlException("not allow"); // not allow
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkDeleteProject(ProjectTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getName()) {
+                case "delete_project_403":
+                    throw new AccessControlException("not allow"); // not allow
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkPutProject(ProjectTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getName()) {
+                case "put_project_403":
+                    throw new AccessControlException("not allow"); // not allow
+                default:
+                    return; // ok
+            }
+        }
+
     }
 
     @Rule
@@ -595,13 +629,14 @@ public class AccessControllerIT
         }
     }
 
-    /**
     @Test
-    public void putProject() // ProjectResource#putProject
+    public void getArchive() // ProjectResource#getArchive()
             throws Exception
     {
-        { // ok
-            final Path projectDir = folder.getRoot().toPath().resolve("put_project_ok");
+        { // ok with rev
+            final String projectName = "get_project_archive_with_rev_ok";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
             // Create new project
             CommandStatus initStatus = main("init",
@@ -612,16 +647,149 @@ public class AccessControllerIT
             // Push the project
             CommandStatus pushStatus = main("push",
                     "--project", projectDir.toString(),
-                    "foobar",
+                    projectName,
                     "-c", config.toString(),
                     "-e", server.endpoint(),
                     "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
+            // Get the project archive
+            CommandStatus downloadStatus = main("download",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(downloadStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        { // 403 with rev
+            final String projectName = "get_project_archive_with_rev_403";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Get the project archive
+            final HttpUrl.Builder httpBuider = HttpUrl.parse(server.endpoint() + "/api/projects/2/archive").newBuilder()
+                    .addQueryParameter("revision", "4711");
+            final Response response = httpClient.newCall(new Request.Builder()
+                    .url(httpBuider.build())
+                    .get()
+                    .build()
+            ).execute();
+            System.out.println(response.body().string());
+            assertThat(response.code(), is(403));
+        }
+    }
+
+    @Test
+    public void deleteProject() // ProjectResource#deleteProject()
+            throws Exception
+    {
+        { // ok
+            final String projectName = "delete_project_ok";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Delete the project
+            CommandStatus downloadStatus = main("delete",
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(downloadStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        { // 403
+            final String projectName = "delete_project_403";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Delete the project
+            final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+            final RequestBody body = RequestBody.create(JSON, "null");
+            final HttpUrl.Builder httpBuider = HttpUrl.parse(server.endpoint() + "/api/projects/2").newBuilder();
+            final Response response = httpClient.newCall(new Request.Builder()
+                    .url(httpBuider.build())
+                    .put(body)
+                    .build()
+            ).execute();
+            assertThat(response.code(), is(403));
+        }
+    }
+
+    @Test
+    public void putProject() // ProjectResource#putProject()
+            throws Exception
+    {
+        { // ok
+            final String projectName = "put_project_ok";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         }
 
         { // 403
-            final Path projectDir = folder.getRoot().toPath().resolve("put_project_403");
+            final String projectName = "put_project_ok";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
             // Create new project
             CommandStatus initStatus = main("init",
@@ -632,12 +800,11 @@ public class AccessControllerIT
             // Push the project
             CommandStatus pushStatus = main("push",
                     "--project", projectDir.toString(),
-                    "foobar",
+                    projectName,
                     "-c", config.toString(),
                     "-e", server.endpoint(),
                     "-r", "4711");
-            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(403));
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(1));
         }
     }
-    */
 }
