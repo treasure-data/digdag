@@ -311,7 +311,7 @@ coveralls {
 
 wrapper {
     // Find the latest version at https://gradle.org/releases/
-    gradleVersion = '4.8'
+    gradleVersion = '5.2'
 }
 
 project(':digdag-ui') {
