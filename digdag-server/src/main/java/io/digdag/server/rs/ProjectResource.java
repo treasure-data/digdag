@@ -352,9 +352,9 @@ public class ProjectResource
             @PathParam("id") int projId,
             @QueryParam("revision") String revName,
             @QueryParam("name") String name)
-            throws ResourceNotFoundException, AccessControlException
+            throws ResourceNotFoundException
     {
-        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
+        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
@@ -387,18 +387,25 @@ public class ProjectResource
                 // of project
                 final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
 
-                ac.checkListWorkflowsOfProject( // AccessControl
-                        projTarget,
-                        getAuthenticatedUser());
+                try {
+                    ac.checkListWorkflowsOfProject( // AccessControl
+                            projTarget,
+                            getAuthenticatedUser());
 
-                // TODO should here support pagination?
-                collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent(),
-                        ac.getListWorkflowsFilterOfProject(
-                                projTarget,
-                                getAuthenticatedUser()));
+                    // TODO should here support pagination?
+                    collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent(),
+                            ac.getListWorkflowsFilterOfProject(
+                                    projTarget,
+                                    getAuthenticatedUser()));
+                }
+                catch (AccessControlException ex) {
+                    // Returning empty results or error should be consistent between AccessControl and NotFound.
+                    // If it can return NotFound, it can return Forbidden. Otherwise, empty list only.
+                    collection = ImmutableList.of();
+                }
             }
             return RestModels.workflowDefinitionCollection(proj, rev, collection);
-        }, ResourceNotFoundException.class, AccessControlException.class);
+        }, ResourceNotFoundException.class);
     }
 
     @GET
