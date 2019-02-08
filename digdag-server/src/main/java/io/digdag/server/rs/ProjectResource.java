@@ -214,7 +214,6 @@ public class ProjectResource
     @GET
     @Path("/api/projects")
     public RestProjectCollection getProjects(@QueryParam("name") String name)
-            throws AccessControlException
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -240,32 +239,39 @@ public class ProjectResource
             else {
                 final SiteTarget siteTarget = SiteTarget.of(getSiteId());
 
-                ac.checkListProjectsOfSite( // AccessControl
-                        siteTarget,
-                        getAuthenticatedUser());
+                try {
+                    ac.checkListProjectsOfSite( // AccessControl
+                            siteTarget,
+                            getAuthenticatedUser());
 
-                // TODO fix n-m db access
-                collection = ps.getProjects(100, Optional.absent(),
-                        ac.getListProjectsFilterOfSite(
-                                siteTarget,
-                                getAuthenticatedUser()))
-                        .stream()
-                        .map(proj -> {
-                            try {
-                                StoredRevision rev = ps.getLatestRevision(proj.getId());
-                                return RestModels.project(proj, rev);
-                            }
-                            catch (ResourceNotFoundException ex) {
-                                // This exception should never happen as long as database consistency is kept.
-                                return null;
-                            }
-                        })
-                        .filter(proj -> proj != null)
-                        .collect(Collectors.toList());
+                    // TODO fix n-m db access
+                    collection = ps.getProjects(100, Optional.absent(),
+                            ac.getListProjectsFilterOfSite(
+                                    siteTarget,
+                                    getAuthenticatedUser()))
+                            .stream()
+                            .map(proj -> {
+                                try {
+                                    StoredRevision rev = ps.getLatestRevision(proj.getId());
+                                    return RestModels.project(proj, rev);
+                                }
+                                catch (ResourceNotFoundException ex) {
+                                    // This exception should never happen as long as database consistency is kept.
+                                    return null;
+                                }
+                            })
+                            .filter(proj -> proj != null)
+                            .collect(Collectors.toList());
+                }
+                catch (AccessControlException ex) {
+                    // Returning empty results or error should be consistent between AccessControl and NotFound.
+                    // If it can return NotFound, it can return Forbidden. Otherwise, empty list only.
+                    collection =  ImmutableList.of();
+                }
             }
 
             return RestModels.projectCollection(collection);
-        }, AccessControlException.class);
+        });
     }
 
     @GET
