@@ -69,12 +69,16 @@ jobs:
 workflows:
   version: 2
 
-  test:
+  test_and_docs_deployment:
     jobs:
-      - test
-      - docs_deployment:
+      - test: # master and v0_10 branches only
           filters:
             branches:
               only:
                 - master
                 - v0_10
+      - docs_deployment: # master branch only
+          filters:
+            branches:
+              only:
+                - master
