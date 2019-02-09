@@ -77,3 +77,4 @@ workflows:
             branches:
               only:
                 - master
+                - v0_10
