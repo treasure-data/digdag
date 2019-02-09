@@ -433,7 +433,7 @@ public class AccessControllerIT
     }
 
     @Test
-    public void getProjectId() // ProjectResource#getProject
+    public void getProjectById() // ProjectResource#getProject
             throws Exception
     {
         { // ok with id
