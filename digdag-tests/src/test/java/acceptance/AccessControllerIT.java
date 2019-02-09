@@ -12,6 +12,7 @@ import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.api.RestWorkflowDefinitionCollection;
 import io.digdag.client.config.Config;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
@@ -187,8 +188,10 @@ public class AccessControllerIT
                 throws AccessControlException
         {
             switch (target.getProjectName()) {
-                case "get_workflow_403":
-                case "get_workflows_with_name_403":
+                case "get_workflow_in_project_403":
+                case "get_workflows_with_name_in_project_403":
+                case "get_workflow_in_workflow_403":
+                case "get_workflow_with_id_in_workflow_403":
                     throw new AccessControlException("not allow"); // not allow
                 default:
                     return; // ok
@@ -200,7 +203,7 @@ public class AccessControllerIT
                 throws AccessControlException
         {
             switch (target.getName()) {
-                case "get_workflows_without_name_403":
+                case "get_workflows_without_name_in_project_403":
                     throw new AccessControlException("not allow"); // not allow
                 default:
                     return; // ok
@@ -243,6 +246,12 @@ public class AccessControllerIT
             }
         }
 
+        @Override
+        public void checkListWorkflowsOfSite(SiteTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            throw new AccessControlException("not allow"); // not allow
+        }
     }
 
     @Rule
@@ -307,11 +316,10 @@ public class AccessControllerIT
                     .get()
                     .build()
             ).execute();
-            System.out.println(response.body().string());
             assertThat(response.code(), is(200));
         }
 
-        {
+        { // 403
             final String projectName = "get_project_403";
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
@@ -339,7 +347,6 @@ public class AccessControllerIT
                     .get()
                     .build()
             ).execute();
-            System.out.println(response.body().string());
             assertThat(response.code(), is(403));
         }
     }
@@ -482,11 +489,11 @@ public class AccessControllerIT
     }
 
     @Test
-    public void getWorkflow() // ProjectResource#getWorkflow
+    public void getProjectWorkflow() // ProjectResource#getWorkflow
             throws Exception
     {
         { // ok
-            final String projectName = "get_workflow_ok";
+            final String projectName = "get_workflow_in_project_ok";
             final String wfName = projectName;
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
@@ -517,7 +524,7 @@ public class AccessControllerIT
         }
 
         { // 403
-            final String projectName = "get_workflow_403";
+            final String projectName = "get_workflow_in_project_403";
             final String wfName = projectName;
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
@@ -544,17 +551,16 @@ public class AccessControllerIT
                     .get()
                     .build()
             ).execute();
-            System.out.println(response.body().string());
             assertThat(response.code(), is(403));
         }
     }
 
     @Test
-    public void getWorkflows() // ProjectResource#getWorkflows
+    public void getProjectWorkflowsResource() // ProjectResource#getWorkflows
             throws Exception
     {
         { // ok with name
-            final String projectName = "get_workflows_with_name_ok";
+            final String projectName = "get_workflows_with_name_in_project_ok";
             final String wfName = projectName;
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
@@ -579,7 +585,7 @@ public class AccessControllerIT
         }
 
         { // 403 with name
-            final String projectName = "get_workflows_with_name_403";
+            final String projectName = "get_workflows_with_name_in_project_403";
             final String wfName = projectName;
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
@@ -606,7 +612,7 @@ public class AccessControllerIT
         }
 
         { // 403 without name
-            final String projectName = "get_workflows_without_name_403";
+            final String projectName = "get_workflows_without_name_in_project_403";
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
             // Create new project
@@ -691,7 +697,6 @@ public class AccessControllerIT
                     .get()
                     .build()
             ).execute();
-            System.out.println(response.body().string());
             assertThat(response.code(), is(403));
         }
     }
@@ -803,6 +808,166 @@ public class AccessControllerIT
                     "-e", server.endpoint(),
                     "-r", "4711");
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(1));
+        }
+    }
+
+    @Test
+    public void getWorkflowDefinition() // WorkflowResource#getWorkflowDefinition
+            throws Exception
+    {
+        { // ok
+            final String projectName = "get_workflow_in_workflow_ok";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // get the workflow
+            final HttpUrl.Builder httpBuider = HttpUrl.parse(server.endpoint() + "/api/workflow").newBuilder()
+                    .addQueryParameter("project", projectName)
+                    .addQueryParameter("name", wfName);
+            final Response response = httpClient.newCall(new Request.Builder()
+                    .url(httpBuider.build())
+                    .get()
+                    .build()
+            ).execute();
+            assertThat(response.code(), is(200));
+        }
+
+        { // 403
+            final String projectName = "get_workflow_in_workflow_403";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // get the workflow
+            final HttpUrl.Builder httpBuider = HttpUrl.parse(server.endpoint() + "/api/workflow").newBuilder()
+                    .addQueryParameter("project", projectName)
+                    .addQueryParameter("name", wfName);
+            final Response response = httpClient.newCall(new Request.Builder()
+                    .url(httpBuider.build())
+                    .get()
+                    .build()
+            ).execute();
+            assertThat(response.code(), is(403));
+        }
+    }
+
+    @Test
+    public void getWorkflowDefinitions() // WorkflowResource#getWorkflowDefinitions
+            throws Exception
+    {
+        { // 403
+            final String projectName = "get_workflows_in_workflow_403";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // get workflows
+            try {
+                client.getWorkflowDefinitions(); // call /api/workflows
+                fail();
+            }
+            catch (ForbiddenException e) { }
+        }
+    }
+
+    @Test
+    public void getWorkflowDefinitionById() // WorkflowResource#getWorkflowDefinition
+            throws Exception
+    {
+        { // ok
+            final String projectName = "get_workflow_with_id_in_workflow_ok";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // get workflow
+            RestWorkflowDefinition wf = client.getWorkflowDefinition(Id.of("1"));
+            assertThat(wf.getName(), is(wfName));
+        }
+
+        { // 403
+            final String projectName = "get_workflow_with_id_in_workflow_403";
+            final String wfName = projectName;
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // get workflow
+            try {
+                client.getWorkflowDefinition(Id.of("2"));
+                fail();
+            }
+            catch (ForbiddenException e) { }
         }
     }
 }
