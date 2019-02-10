@@ -1,6 +1,7 @@
 package acceptance;
 
 import com.beust.jcommander.JCommander;
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
@@ -11,8 +12,8 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestWorkflowDefinition;
-import io.digdag.client.api.RestWorkflowDefinitionCollection;
 import io.digdag.client.config.Config;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
@@ -40,10 +41,8 @@ import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import okhttp3.HttpUrl;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.junit.Assert;
 import org.junit.Before;
@@ -62,6 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
+import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 
 public class AccessControllerIT
@@ -170,7 +170,7 @@ public class AccessControllerIT
                 case "get_project_403":
                 case "get_projects_with_name_403":
                 case "get_projects_with_id_403":
-                    throw new AccessControlException("not allow"); // not allow
+                    throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
             }
@@ -192,7 +192,19 @@ public class AccessControllerIT
                 case "get_workflows_with_name_in_project_403":
                 case "get_workflow_in_workflow_403":
                 case "get_workflow_with_id_in_workflow_403":
-                    throw new AccessControlException("not allow"); // not allow
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkRunWorkflow(WorkflowTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getName()) {
+                case "run_workflow_in_attempt_403":
+                    throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
             }
@@ -204,7 +216,7 @@ public class AccessControllerIT
         {
             switch (target.getName()) {
                 case "get_workflows_without_name_in_project_403":
-                    throw new AccessControlException("not allow"); // not allow
+                    throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
             }
@@ -216,7 +228,7 @@ public class AccessControllerIT
         {
             switch (target.getName()) {
                 case "get_project_archive_with_rev_403":
-                    throw new AccessControlException("not allow"); // not allow
+                    throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
             }
@@ -228,7 +240,7 @@ public class AccessControllerIT
         {
             switch (target.getName()) {
                 case "delete_project_403":
-                    throw new AccessControlException("not allow"); // not allow
+                    throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
             }
@@ -240,7 +252,7 @@ public class AccessControllerIT
         {
             switch (target.getName()) {
                 case "put_project_403":
-                    throw new AccessControlException("not allow"); // not allow
+                    throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
             }
@@ -250,7 +262,79 @@ public class AccessControllerIT
         public void checkListWorkflowsOfSite(SiteTarget target, AuthenticatedUser user)
                 throws AccessControlException
         {
-            throw new AccessControlException("not allow"); // not allow
+            throw new AccessControlException("not allow"); // 403
+        }
+
+        @Override
+        public void checkGetSession(WorkflowTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getProjectName()) {
+                case "get_session_in_session_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkGetAttemptsFromSession(WorkflowTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getProjectName()) {
+                case "get_session_attempts_in_session_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkKillAttempt(WorkflowTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getProjectName()) {
+                case "kill_attempt_in_session_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkGetTasksFromAttempt(WorkflowTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getProjectName()) {
+                case "get_attempts_tasks_in_attempt_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkListSessionsOfProject(ProjectTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getName()) {
+                case "get_session_attempts_by_project_in_attempt_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkListSessionsOfWorkflow(WorkflowTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getProjectName()) {
+                case "get_session_attempts_by_workflow_in_attempt_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
         }
     }
 
@@ -556,7 +640,7 @@ public class AccessControllerIT
     }
 
     @Test
-    public void getProjectWorkflowsResource() // ProjectResource#getWorkflows
+    public void getProjectWorkflows() // ProjectResource#getWorkflows
             throws Exception
     {
         { // ok with name
@@ -966,6 +1050,309 @@ public class AccessControllerIT
             try {
                 client.getWorkflowDefinition(Id.of("2"));
                 fail();
+            }
+            catch (ForbiddenException e) { }
+        }
+    }
+
+
+    @Test
+    public void getSession() // SessionResource#getSession
+            throws Exception
+    {
+        { // ok
+            final String projectName = "get_session_in_session_ok";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            // Get the session
+            RestSession s = client.getSession(Id.of("1")); // /api/sessions/{id}
+            assertThat(s.getWorkflow().getName(), is("hourly_sleep"));
+        }
+
+        { // 403
+            final String projectName = "get_session_in_session_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            // Get the session
+            try {
+                client.getSession(Id.of("2")); // /api/sessions/{id}
+                fail();
+            }
+            catch (ForbiddenException e) { }
+        }
+    }
+
+    @Test
+    public void getSessionAttempts() // SessionResource#getSessionAttempts
+            throws Exception
+    {
+        { // 403
+            final String projectName = "get_session_attempts_in_session_ok";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            // Get the attempt sessions
+            try {
+                client.getSessionAttempts(Id.of("1"), Optional.absent(), Optional.absent());
+            }
+            catch (ForbiddenException e) { }
+        }
+    }
+
+    @Test
+    public void getAttemptAttempts() // AttemptResource#getAttempts
+            throws Exception
+    {
+        { // 403
+            final String projectName = "get_session_attempts_by_workflow_in_attempt_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            // Get the attempts
+            try {
+                client.getSessionAttempts(projectName, "hourly_sleep", Optional.absent()); // /api/attempts
+            }
+            catch (ForbiddenException e) { }
+        }
+
+        { // 403
+            final String projectName = "get_session_attempts_by_project_in_attempt_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            // Get the attempts
+            try {
+                client.getSessionAttempts(projectName, Optional.absent()); // /api/attempts
+            }
+            catch (ForbiddenException e) { }
+        }
+    }
+
+    @Test
+    public void getAttemptsTasks()
+            throws Exception
+    {
+        { // 403
+            final String projectName = "get_attempts_tasks_in_attempt_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            // Get the attempts tasks
+            try {
+                client.getTasks(Id.of("1")); // /api/attempts/{id}/tasks
+            }
+            catch (ForbiddenException e) { }
+        }
+    }
+
+    @Test
+    public void startAttempt()
+            throws Exception
+    {
+        { // 403
+            final String projectName = "run_workflow_in_attempt_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(1));
+        }
+    }
+
+    @Test
+    public void killAttempt()
+            throws Exception
+    {
+        { // 403
+            final String projectName = "kill_attempt_in_session_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            copyResource("acceptance/attempt_limit/hourly_sleep.dig", projectDir.resolve("hourly_sleep.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+            // Start a session
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    projectName, "hourly_sleep",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+            try {
+                client.killSessionAttempt(Id.of("1"));
             }
             catch (ForbiddenException e) { }
         }
