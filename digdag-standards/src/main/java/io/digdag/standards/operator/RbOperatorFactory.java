@@ -127,8 +127,9 @@ public class RbOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
+            final String ruby = params.get("ruby", String.class, "ruby");
             ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-            cmdline.add("ruby");
+            cmdline.add(ruby);
             cmdline.add("-I").add(workspace.getPath().toString());
             if (feature.isPresent()) {
                 cmdline.add("-r").add(feature.get());
