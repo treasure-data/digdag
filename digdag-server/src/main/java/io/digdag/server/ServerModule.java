@@ -27,6 +27,7 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
+import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.SecretControlStoreManager;
@@ -232,8 +233,8 @@ public class ServerModule
             }
 
             // Only allow admin users
-            Boolean admin = (Boolean) request.getAttribute("admin");
-            if (admin == null || !admin) {
+            final AuthenticatedUser user = (AuthenticatedUser) request.getAttribute("authenticatedUser");
+            if (user == null || !user.isAdmin()) {
                 throw new ForbiddenException();
             }
         }
