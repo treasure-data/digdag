@@ -1870,7 +1870,7 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select * from session_attempts" +
                 " where state_flags = 0" +
-                " and created_at < :createdBefore" +
+                " and created_at \\< :createdBefore" +
                 " and id \\> :lastId" +
                 " order by id asc" +
                 " limit :limit")
