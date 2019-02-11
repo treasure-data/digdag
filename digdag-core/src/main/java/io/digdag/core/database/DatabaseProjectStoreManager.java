@@ -592,7 +592,7 @@ public class DatabaseProjectStoreManager
                     " limit :limit" +
                 ") wd" +
                 " join revisions r on r.id = wd.revision_id" +
-                " join projects p on proj.id = r.project_id" +
+                " join projects p on p.id = r.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " order by wd.id")
         List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
