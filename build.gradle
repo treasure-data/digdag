@@ -1,5 +1,5 @@
 plugins {
-    id 'com.github.johnrengelman.shadow' version '2.0.3'
+    id 'com.github.johnrengelman.shadow' version '4.0.4'
     id 'com.jfrog.bintray' version '1.8.1'
     id 'com.github.kt3k.coveralls' version '2.6.3'
     id 'com.github.spotbugs' version '1.6.9'
@@ -394,7 +394,7 @@ task cli(dependsOn: ':digdag-cli:shadowJar') {
         file('pkg').mkdirs()
         cliBuildFile.write("")
         cliBuildFile.append(file("digdag-cli/src/main/sh/selfrun.sh").readBytes())
-        cliBuildFile.append(file("digdag-cli/build/libs/digdag-cli-${project.version}-all.jar").readBytes())
+        cliBuildFile.append(file("digdag-cli/build/libs/digdag-cli-${project.version}.jar").readBytes())
         cliBuildFile.setExecutable(true)
     }
 }
