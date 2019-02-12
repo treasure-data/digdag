@@ -45,17 +45,8 @@ timezone: UTC
     py>: examples.params.export_params_step3
 
 # To carry parameters to dependent tasks, you can set parameters
-# to "digdag.task.export_params". Those export_params are global
-# parameters that affect all following tasks.
+# to "digdag.env.export". Those parameters are global parameters
+# that affect all child tasks.
 +export_params_2:
-  +set_export:
-    py>: examples.params.set_export
-
-  # dependent tasks use carried parameters
-  +dependent1:
-    py>: examples.params.show_export
-
-# all following dependent tasks also use carried parameters
-+dependent2:
-  py>: examples.params.show_export
-
+  +set_export_and_call_child:
+    py>: examples.params.set_export_and_call_child

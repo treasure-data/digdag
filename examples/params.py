@@ -18,8 +18,9 @@ def export_params_step3(mysql):
 def export_overwrite(mysql):
     print("export_overwrite: mysql = "+str(mysql))
 
-def set_export():
+def set_export_and_call_child():
     digdag.env.export({"table": "carried information"})
+    digdag.env.add_subtask({'_type': 'call', '_command': 'params_child.dig'})
 
 def show_export(table=None):
     print("show_export: table = " + str(table))
