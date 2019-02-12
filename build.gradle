@@ -1,6 +1,6 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.4'
-    id 'com.jfrog.bintray' version '1.8.1'
+    id 'com.jfrog.bintray' version '1.8.4'
     id 'com.github.kt3k.coveralls' version '2.6.3'
     id 'com.github.spotbugs' version '1.6.9'
     id 'net.ltgt.apt-idea' version '0.19'
