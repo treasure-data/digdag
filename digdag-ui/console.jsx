@@ -686,10 +686,12 @@ class StatusFilter extends React.Component {
 
     return (
       <div className="status-filter">
-        Status:&ensp;
-        <select onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
-          {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <form className="form-inline">
+          <label className="control-label">Status:&ensp;</label>
+          <select className="form-control input-sm" onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+            {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </form>
         {childrenWithProps}
       </div>
     )
