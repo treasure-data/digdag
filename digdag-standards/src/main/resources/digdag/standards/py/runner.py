@@ -53,7 +53,7 @@ class Env(object):
                 command = ".".join([function.im_class.__module__, function.im_class.__name__, function.__name__])
             else:
                 # Python 3
-                command = ".".join([function.__module__, function.__name__])
+                command = ".".join([function.__module__, function.__qualname__])
             config = params
             config["py>"] = command
         else:
