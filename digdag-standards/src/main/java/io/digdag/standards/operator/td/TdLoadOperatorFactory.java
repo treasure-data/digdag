@@ -81,8 +81,12 @@ public class TdLoadOperatorFactory
                 throw new ConfigException("The parameters config and name cannot both be set");
             }
 
-            if (Stream.of(command, name, config).filter(Optional::isPresent).count() > 1) {
+            long numExistParams = Stream.of(command, name, config).filter(Optional::isPresent).count();
+            if ( numExistParams > 1) {
                 throw new ConfigException("Only the command or one of the config and name params may be set");
+            }
+            else if (numExistParams == 0) {
+                throw new ConfigException("No parameter is set");
             }
 
             if (command.isPresent()) {
@@ -99,12 +103,9 @@ public class TdLoadOperatorFactory
                 this.embulkConfig = Optional.absent();
                 this.sessionName = name;
             }
-            else if (config.isPresent()) {
+            else {
                 this.embulkConfig = Optional.of(config.get().getInternalObjectNode());
                 this.sessionName = Optional.absent();
-            }
-            else {
-                throw new AssertionError();
             }
         }
 
