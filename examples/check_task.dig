@@ -1,12 +1,12 @@
 timezone: UTC
 
 +generate_methods:
-  py>: examples.check_task.generate
+  py>: tasks.check_task.generate
   _check:
-    py>: examples.check_task.check_generated
+    py>: tasks.check_task.check_generated
 
 +generate_class_and_params:
-  py>: examples.check_task.Generator.run
+  py>: tasks.check_task.Generator.run
   _check:
-    py>: examples.check_task.Generator.check
+    py>: tasks.check_task.Generator.check
 
