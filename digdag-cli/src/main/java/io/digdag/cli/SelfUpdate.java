@@ -90,7 +90,7 @@ public class SelfUpdate
         err.println("");
         err.println("  Examples:");
         err.println("    $ " + programName + " selfupdate");
-        err.println("    $ " + programName + " selfupdate 0.9.32");
+        err.println("    $ " + programName + " selfupdate 0.9.33");
         err.println("");
         return systemExit(error);
     }
