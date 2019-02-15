@@ -117,7 +117,7 @@ Options:
   Example: ``-p environment=staging``
 
 :command:`-P, --params-file PATH`
-  Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
+  Read parameters from a YAML/JSON file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
   Example: ``-P params.yml``
 
