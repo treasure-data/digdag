@@ -196,7 +196,7 @@ public class Run
         err.println("    -o, --save DIR                   uses this directory to read and write status files (default: .digdag/status)");
         err.println("        --no-save                    doesn't save status files at .digdag/status");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file < PATH.yml | PATH.json >  reads parameters from a YAML/JSON file");
+        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
