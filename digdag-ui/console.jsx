@@ -644,12 +644,12 @@ class ProjectsView extends React.Component {
 
 class StatusFilter extends React.Component {
   static Status = class Status {
-    static ALL = "All";
-    static SUCCESS = "Success";
-    static FAILURE = "Failure";
-    static PENDING = "Pending";
-    static CANCELED = "Canceled";
-    static CANCELING = "Canceling";
+    static ALL = 'All';
+    static SUCCESS = 'Success';
+    static FAILURE = 'Failure';
+    static PENDING = 'Pending';
+    static CANCELED = 'Canceled';
+    static CANCELING = 'Canceling';
 
     static allStatus () {
       return [Status.ALL, Status.SUCCESS, Status.FAILURE, Status.PENDING, Status.CANCELED, Status.CANCELING]
@@ -660,20 +660,20 @@ class StatusFilter extends React.Component {
     selectedStatus: StatusFilter.Status.ALL
   };
 
-  filterSessionsByStatus(sessions, selectedStatus) {
+  filterSessionsByStatus (sessions, selectedStatus) {
     switch (selectedStatus) {
       case StatusFilter.Status.SUCCESS:
-        return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success);
+        return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success)
       case StatusFilter.Status.FAILURE:
-        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success);
+        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success)
       case StatusFilter.Status.PENDING:
-        return sessions.filter(s => !s.lastAttempt.done);
+        return sessions.filter(s => !s.lastAttempt.done)
       case StatusFilter.Status.CANCELED:
-        return sessions.filter(s => s.lastAttempt.cancelRequested && s.lastAttempt.done);
+        return sessions.filter(s => s.lastAttempt.cancelRequested && s.lastAttempt.done)
       case StatusFilter.Status.CANCELING:
-        return sessions.filter(s => s.lastAttempt.cancelRequested && !s.lastAttempt.done);
+        return sessions.filter(s => s.lastAttempt.cancelRequested && !s.lastAttempt.done)
       default:
-        return sessions;
+        return sessions
     }
   }
 
@@ -681,15 +681,17 @@ class StatusFilter extends React.Component {
     const childrenWithProps = React.Children.map(this.props.children, child => {
       return React.cloneElement(child, {
         sessions: this.filterSessionsByStatus(this.props.sessions, this.state.selectedStatus)
-      });
-    });
+      })
+    })
 
     return (
-      <div className="status-filter">
-        Status:&ensp;
-        <select onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
-          {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+      <div className='status-filter'>
+        <form className='form-inline'>
+          <label className='control-label'>Status:&ensp;</label>
+          <select className='form-control input-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+            {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </form>
         {childrenWithProps}
       </div>
     )
