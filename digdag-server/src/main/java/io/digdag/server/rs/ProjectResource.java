@@ -158,6 +158,7 @@ public class ProjectResource
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
     private static final int DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
+    private static final int DEFAULT_ARCHIVE_FILE_SIZE_LIMIT = DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT;
     private static int MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
     private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
