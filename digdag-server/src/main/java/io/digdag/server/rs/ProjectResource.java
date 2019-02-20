@@ -159,6 +159,8 @@ public class ProjectResource
     private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
     private static int MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
     private static final int DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
+    // TODO: we may want to limit bytes of one file for `MAX_ARCHIVE_FILE_SIZE_LIMIT ` in the future instead of total size limit.
+    // See also: https://github.com/treasure-data/digdag/pull/994#discussion_r258402647
     private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
