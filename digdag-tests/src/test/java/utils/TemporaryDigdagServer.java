@@ -292,7 +292,6 @@ public class TemporaryDigdagServer
 
         ImmutableList.Builder<String> argsBuilder = ImmutableList.builder();
         argsBuilder.addAll(ImmutableList.of(
-                commandMainClassName,
                 "server",
                 "--port", "0",
                 "--bind", host,
@@ -338,6 +337,7 @@ public class TemporaryDigdagServer
                 processArgs.add(JACOCO_JVM_ARG);
             }
             processArgs.add(Trampoline.class.getName());
+            processArgs.add(commandMainClassName);
             processArgs.addAll(args);
 
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
