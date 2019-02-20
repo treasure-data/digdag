@@ -348,6 +348,7 @@ public class Main
         err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         err.println("    -X KEY=VALUE                     add a performance system config");
         err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(env) + ")");
+        err.println("    --version                        show client version");
         err.println("");
     }
 }
