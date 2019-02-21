@@ -633,15 +633,14 @@ attempts
 
 .. code-block:: console
 
-    $ digdag attempts [project-name] [+name]
+    $ digdag attempts [session-id]
 
 Shows list of attempts. This command shows all attempts including attempts retried by another attempt. Examples:
 
 .. code-block:: console
 
     $ digdag attempts
-    $ digdag attempts myproj
-    $ digdag attempts myproj +main
+    $ digdag attempts <session-id>
 
 :command:`-i, --last-id ID`
   Shows more attempts older than this id.
