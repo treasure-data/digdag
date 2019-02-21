@@ -649,6 +649,19 @@ Shows list of attempts. This command shows all attempts including attempts retri
 :command:`-s, --page-size N`
   Shows more attempts of the number of N (in default up to 100).
 
+attempt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag attempt [attempt-id]
+
+Shows a single attempt. Examples:
+
+.. code-block:: console
+
+    $ digdag attempt <attempt-id>
+
 tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
