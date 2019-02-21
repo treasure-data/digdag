@@ -68,6 +68,10 @@ Example queries:
   engine: presto
   ```
 
+* **interval**: 30s
+
+  Set Interval (default: 30s (30 second)).
+
 * **priority**: 0
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
