@@ -557,6 +557,52 @@ schedules
 Shows list of schedules.
 
 
+disable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag disable [project-name]
+
+Disable all workflow schedules in a project.
+
+.. code-block:: console
+
+    $ digdag disable [schedule-id]
+    $ digdag disable [project-name] [name]
+
+Disable a workflow schedule.
+
+.. code-block:: console
+
+    $ digdag disable <schedule-id>
+    $ digdag disable myproj
+    $ digdag disable myproj main
+
+
+enable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag enable [project-name]
+
+Enable all workflow schedules in a project.
+
+.. code-block:: console
+
+    $ digdag enable [schedule-id]
+    $ digdag enable [project-name] [name]
+
+Enable a workflow schedule.
+
+.. code-block:: console
+
+    $ digdag enable <schedule-id>
+    $ digdag enable myproj
+    $ digdag enable myproj main
+
+
 backfill
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
