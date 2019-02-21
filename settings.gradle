@@ -1,4 +1,5 @@
 rootProject.name = 'digdag'
+enableFeaturePreview('STABLE_PUBLISHING')
 
 include 'digdag-core'
 include 'digdag-spi'
