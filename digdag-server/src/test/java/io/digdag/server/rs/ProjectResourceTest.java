@@ -25,8 +25,9 @@ public class ProjectResourceTest
     public void setUp()
             throws Exception
     {
-        // TODO create projectDir/sub
-        projectDir = folder.getRoot().toPath();
+        String subDir = "project_resource_test";
+        folder.newFolder(subDir);
+        projectDir = folder.getRoot().toPath().resolve(subDir);
     }
 
     @Test
