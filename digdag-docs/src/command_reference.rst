@@ -628,6 +628,19 @@ Shows list of sessions. This command shows only the latest attempts of sessions 
 :command:`-s, --page-size N`
   Shows more sessions of the number of N (in default up to 100).
 
+session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag session [session-id]
+
+Show a single session. Examples:
+
+.. code-block:: console
+
+    $ digdag session <session-id>
+
 attempts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
