@@ -1,4 +1,4 @@
-package io.digdag.server.rs;
+package acceptance;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.is;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 
-public class ProjectResourceTest
+public class LimitProjectArchiveFileSizeIT
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
