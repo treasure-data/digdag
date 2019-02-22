@@ -95,8 +95,7 @@ For example, if you run a query `select email, name from users` and the query re
 
 ## Output parameters
 
-* **td.last_job_id**
-* **td.last_job.id**
+* **td.last_job_id** or **td.last_job.id**
 
   The job id this task executed.
 
