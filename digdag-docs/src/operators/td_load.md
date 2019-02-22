@@ -21,12 +21,16 @@
 
 * **td_load>**: FILE.yml
 
-  Path to a YAML template file. This configuration needs to be guessed using td command. If you saved DataConnector job on Treasure Data, you can use job name instead of YAML path.
+  Path to a YAML template file. This configuration needs to be guessed using td command. If you saved DataConnector job on Treasure Data, you can use [Unique ID](https://support.treasuredata.com/hc/en-us/articles/360001474328-Reference-an-Input-Data-Transfer#Configuring%20your%20Unique%20ID%20Incremental%20Data%20Transfer) instead of YAML path.
 
   Examples:
 
   ```
   td_load>: imports/load.yml
+  ```
+
+  ```
+  td_load>: unique_id
   ```
 
 * **database**: NAME
@@ -60,7 +64,6 @@
 
 ## Output parameters
 
-* **td.last_job_id**
 * **td.last_job.id**
 
   The job id this task executed.
