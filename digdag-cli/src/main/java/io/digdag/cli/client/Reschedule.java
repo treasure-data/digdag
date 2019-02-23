@@ -68,8 +68,10 @@ public class Reschedule
         err.println("Usage: " + programName + " reschedule <schedule-id> | <project-name> [name]");
         err.println("  Options:");
         err.println("    -s, --skip N                     skips specified number of schedules from now");
-        err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
-        err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
+        err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z' | 'now'");
+        err.println("                                     skips schedules until the specified time (exclusive)");
+        err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'");
+        err.println("                                     set next run time to this time");
         err.println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
         showCommonOptions();
         return systemExit(error);
@@ -132,8 +134,11 @@ public class Reschedule
 
         RestScheduleSummary updated;
         if (toTime != null) {
+            Instant time = "now".equals(toTime) ?
+                now :
+                TimeUtil.parseTime(toTime, "-t, --skip-to");
             updated = client.skipSchedulesToTime(schedId,
-                    TimeUtil.parseTime(toTime, "-t, --skip-to"),
+                    time,
                     runAt,
                     dryRun);
         }
