@@ -18,7 +18,7 @@ public class EnableSchedule
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " enable <id> | <project-name> [name]");
+        err.println("Usage: " + programName + " enable <schedule-id> | <project-name> [name]");
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
