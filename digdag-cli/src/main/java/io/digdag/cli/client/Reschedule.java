@@ -6,8 +6,12 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 
+import java.io.IOException;
+import java.util.List;
 import java.time.Instant;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -32,23 +36,36 @@ public class Reschedule
     public void mainWithClientException()
         throws Exception
     {
-        if (args.size() != 1) {
-            throw usage(null);
-        }
-        Id schedId = parseScheduleIdOrUsage(args.get(0));
-
         if (toTime != null && skipCount > 0) {
             throw systemExit("-s and -t can't be set together");
         }
         else if (toTime == null && skipCount <= 0) {
             throw usage("-s or -t is required");
         }
-        reschedule(schedId);
+
+        // Schedule id?
+        if (args.size() == 1) {
+            Id schedId = tryParseScheduleId(args.get(0));
+            if (schedId != null) {
+                reschedule(schedId);
+            }
+            else {
+                // Project name?
+                rescheduleProjectSchedules(args.get(0));
+            }
+        }
+        else if (args.size() == 2) {
+            // Single workflow
+            rescheduleWorkflowSchedule(args.get(0), args.get(1));
+        }
+        else {
+            throw usage(null);
+        }
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " reschedule <schedule-id>");
+        err.println("Usage: " + programName + " reschedule <schedule-id> | <project-name> [name]");
         err.println("  Options:");
         err.println("    -s, --skip N                     skips specified number of schedules from now");
         err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
@@ -58,16 +75,61 @@ public class Reschedule
         return systemExit(error);
     }
 
+    private static Id tryParseScheduleId(String s)
+    {
+        try {
+            return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
+        }
+        catch (NumberFormatException ignore) {
+            return null;
+        }
+    }
+
+    private void rescheduleWorkflowSchedule(String projectName, String workflowName)
+            throws Exception
+    {
+        DigdagClient client = buildClient();
+        RestProject project = client.getProject(projectName);
+        RestSchedule schedule = client.getSchedule(project.getId(), workflowName);
+        Instant now = Instant.now();
+        reschedule(schedule.getId(), client, now);
+    }
+
+    private void rescheduleProjectSchedules(String projectName)
+            throws Exception
+    {
+        Instant now = Instant.now();
+        DigdagClient client = buildClient();
+        RestProject project = client.getProject(projectName);
+        List<RestSchedule> schedules;
+        Optional<Id> lastId = Optional.absent();
+        while (true) {
+            schedules = client.getSchedules(project.getId(), lastId).getSchedules();
+            if (schedules.isEmpty()) {
+                return;
+            }
+            for (RestSchedule schedule : schedules) {
+                reschedule(schedule.getId(), client, now);
+            }
+            lastId = Optional.of(schedules.get(schedules.size() - 1).getId());
+        }
+    }
+
     private void reschedule(Id schedId)
         throws Exception
     {
+        DigdagClient client = buildClient();
         Instant now = Instant.now();
+        reschedule(schedId, client, now);
+    }
 
+    private void reschedule(Id schedId, DigdagClient client, Instant now)
+        throws Exception
+    {
         Optional<Instant> runAt = runAtTime == null ? Optional.absent() : Optional.of(
                 TimeUtil.parseTime(runAtTime, "-a, --run-at")
                 );
 
-        DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
             updated = client.skipSchedulesToTime(schedId,
