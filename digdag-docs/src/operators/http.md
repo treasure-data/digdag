@@ -16,7 +16,7 @@
 
 ```
 +notify:
-  http>: https://api.example.com/data/sessions/{$session_uuid}
+  http>: https://api.example.com/data/sessions/${session_uuid}
   method: POST
   content:
     status: RUNNING
@@ -54,7 +54,7 @@
   ```
 
   ```
-  http>: https://api.example.com/data/sessions/{$session_uuid}
+  http>: https://api.example.com/data/sessions/${session_uuid}
   ```
 
 * **method**: STRING
