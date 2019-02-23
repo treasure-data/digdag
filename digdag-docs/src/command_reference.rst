@@ -790,6 +790,9 @@ Deletes a project. Sessions of the deleted project are kept retained so that we 
 
     $ digdag delete myproj
 
+:command:`--force`
+  Skip y/N prompt
+
 secrets
 ~~~~~~~
 
