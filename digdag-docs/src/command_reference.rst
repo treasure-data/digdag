@@ -817,6 +817,15 @@ The above command sets the local secret `foo`.
 
 The above command deletes the local secrets `foo` and `bar`.
 
+version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag version
+
+Show client and server version.
+
 Common options
 ----------------------------------
 
