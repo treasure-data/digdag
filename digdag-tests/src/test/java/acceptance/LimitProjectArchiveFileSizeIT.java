@@ -21,45 +21,68 @@ public class LimitProjectArchiveFileSizeIT
     public TemporaryFolder folder = new TemporaryFolder();
 
     private Path projectDir;
+    private Path config;
 
     @Before
     public void setUp()
             throws Exception
     {
-        String subDir = "project_resource_test";
-        folder.newFolder(subDir);
-        projectDir = folder.getRoot().toPath().resolve(subDir);
-        copyResource("acceptance/basic.dig", projectDir.resolve("basic.dig"));
+        projectDir = folder.getRoot().toPath().resolve("foobar");
+        config = folder.newFile().toPath();
     }
 
     @Test
     public void uploadProject()
             throws Exception
     {
-        TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-                .build();
-        server.start();
+        try (final TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+                .build()) {
+            server.start();
 
-        CommandStatus pushStatus = main("push", "--project", projectDir.toString(), "foobar", "-e", server.endpoint());
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
 
-        assertThat(pushStatus.code(),is(0));
-        server.close();
+            copyResource("acceptance/basic.dig", projectDir.resolve("basic.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main(
+                    "push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.code(), is(0));
+        }
     }
 
     @Test
     public void uploadProjectLargerThanLimit()
             throws Exception
     {
-        TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+        try (final TemporaryDigdagServer server = TemporaryDigdagServer.builder()
                 .configuration("api.max_archive_total_size_limit = 1")
-                .build();
-        server.start();
+                .build()) {
+            server.start();
 
-        String expectMessage = "Size of the uploaded archive file exceeds limit";
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
 
-        CommandStatus pushStatus = main("push", "--project", projectDir.toString(), "foobar", "-e", server.endpoint());
+            copyResource("acceptance/basic.dig", projectDir.resolve("basic.dig"));
 
-        assertThat(pushStatus.errUtf8(), containsString(expectMessage));
-        server.close();
+            CommandStatus pushStatus = main(
+                    "push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.code(), is(1));
+            assertThat(pushStatus.errUtf8(), containsString("Size of the uploaded archive file exceeds limit"));
+        }
     }
 }
