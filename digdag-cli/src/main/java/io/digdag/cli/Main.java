@@ -310,6 +310,8 @@ public class Main
         err.println("    kill <attempt-id>                  kill a running session attempt");
         err.println("    backfill <project-name> <name>     start sessions of a schedule for past times");
         err.println("    reschedule <schedule-id>           skip sessions of a schedule to a future time");
+        err.println("    reschedule <project-name>          skip sessions of all schedules in a project to a future time");
+        err.println("    reschedule <project-name> <name>   skip sessions of a schedule to a future time");
         err.println("    log <attempt-id>                   show logs of a session attempt");
         err.println("    workflows [project-name] [name]    show registered workflow definitions");
         err.println("    schedules                          show registered schedules");
