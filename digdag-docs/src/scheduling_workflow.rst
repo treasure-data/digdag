@@ -47,6 +47,11 @@ cron>: ``CRON``                 Use cron format for complex scheduling      cron
 
 .. note::
 
+    When you use ``daily``, ``hourly``, ``weekly`` or ``monthly``, a session time may not be same with actual run time.
+    The session time is actual run day's 00:00:00 (in case ``hourly``, hour's 00:00).
+
+.. note::
+
     When a field is starting with ``*`` , enclosing in quotes is necessary by a limitasion to be a vaild YAML.
 
 
