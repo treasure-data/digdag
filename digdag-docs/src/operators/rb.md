@@ -58,3 +58,19 @@ See [Ruby API documents](../../ruby_api.html) for details including best practic
     rb:
       ruby: /usr/local/bin/ruby
   ```
+
+## TIPS: Run ruby with bundler
+
+It is possible to run ruby scripts with [bundler](https://bundler.io/) using `BUNDLE_GEMFILE` environment variable and `-rbundler/setup` option as:
+
+    _export:
+      BUNDLE_GEMFILE: /path/to/Gemfile
+      rb:
+        require: tasks/my_workflow
+        ruby: ["ruby", "-rbundler/setup"]
+
+    +step1:
+      rb>: my_step1_method
+    +step2:
+      rb>: Task::MyWorkflow.step2
+
