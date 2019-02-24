@@ -637,13 +637,9 @@ reschedule
 .. code-block:: console
 
     $ digdag reschedule <schedule-id>
-    $ digdag reschedule <project-name> [name]
+    $ digdag reschedule <project-name> <name>
 
 Skips a workflow schedule forward to a future time. To run past schedules, use backfill instead.
-
-    $ digdag reschedule <project-name>
-
-Skips all workflow schedules in a project forward to a future time.
 
 :command:`-s, --skip N`
   Skips specified number of schedules from now. This number "N" doesn't mean number of sessions to be skipped. "N" is the number of sessions to be skipped.

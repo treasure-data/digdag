@@ -10,8 +10,6 @@ import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 
-import java.io.IOException;
-import java.util.List;
 import java.time.Instant;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -45,18 +43,12 @@ public class Reschedule
 
         // Schedule id?
         if (args.size() == 1) {
-            Id schedId = tryParseScheduleId(args.get(0));
-            if (schedId != null) {
-                reschedule(schedId);
-            }
-            else {
-                // Project name?
-                rescheduleProjectSchedules(args.get(0));
-            }
+            Id schedId = parseScheduleId(args.get(0));
+            rescheduleScheduleId(schedId);
         }
         else if (args.size() == 2) {
             // Single workflow
-            rescheduleWorkflowSchedule(args.get(0), args.get(1));
+            rescheduleWorkflow(args.get(0), args.get(1));
         }
         else {
             throw usage(null);
@@ -65,7 +57,7 @@ public class Reschedule
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " reschedule <schedule-id> | <project-name> [name]");
+        err.println("Usage: " + programName + " reschedule <schedule-id> | <project-name> <name>");
         err.println("  Options:");
         err.println("    -s, --skip N                     skips specified number of schedules from now");
         err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z' | 'now'");
@@ -77,17 +69,18 @@ public class Reschedule
         return systemExit(error);
     }
 
-    private static Id tryParseScheduleId(String s)
+    private Id parseScheduleId(String s)
+            throws SystemExitException
     {
         try {
             return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
         }
         catch (NumberFormatException ignore) {
-            return null;
+            throw usage(null);
         }
     }
 
-    private void rescheduleWorkflowSchedule(String projectName, String workflowName)
+    private void rescheduleWorkflow(String projectName, String workflowName)
             throws Exception
     {
         DigdagClient client = buildClient();
@@ -97,27 +90,7 @@ public class Reschedule
         reschedule(schedule.getId(), client, now);
     }
 
-    private void rescheduleProjectSchedules(String projectName)
-            throws Exception
-    {
-        Instant now = Instant.now();
-        DigdagClient client = buildClient();
-        RestProject project = client.getProject(projectName);
-        List<RestSchedule> schedules;
-        Optional<Id> lastId = Optional.absent();
-        while (true) {
-            schedules = client.getSchedules(project.getId(), lastId).getSchedules();
-            if (schedules.isEmpty()) {
-                return;
-            }
-            for (RestSchedule schedule : schedules) {
-                reschedule(schedule.getId(), client, now);
-            }
-            lastId = Optional.of(schedules.get(schedules.size() - 1).getId());
-        }
-    }
-
-    private void reschedule(Id schedId)
+    private void rescheduleScheduleId(Id schedId)
         throws Exception
     {
         DigdagClient client = buildClient();
