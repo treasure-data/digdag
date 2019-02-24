@@ -34,3 +34,27 @@ See [Ruby API documents](../../ruby_api.html) for details including best practic
   ```
   require: task/my_workflow
   ```
+
+* **ruby**: PATH STRING or COMMAND ARGUMENTS LIST
+
+  The ruby defaults to `ruby`. If an alternate ruby and options are desired, use the `ruby` option.
+
+  Examples:
+
+  ```
+  ruby: /usr/local/bin/ruby
+  ```
+
+  ```
+  ruby: ["ruby", "-rbundler/setup"]
+  ```
+
+  It is also possible to configure in `_export` section.
+
+  Examples:
+
+  ```
+  _export:
+    rb:
+      ruby: /usr/local/bin/ruby
+  ```
