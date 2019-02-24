@@ -1,6 +1,7 @@
 package io.digdag.standards.operator;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
@@ -26,6 +27,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.util.BaseOperator;
 import static io.digdag.standards.operator.ShOperatorFactory.collectEnvironmentVariables;
 
@@ -124,11 +126,26 @@ public class PyOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
-            final String python = params.get("python", String.class, "python");
+            List<String> python;
+            try {
+                // String?
+                final String path  = params.get("python", String.class, "python");
+                python = ImmutableList.of(path);
+            } catch (ConfigException ex) {
+                // List?
+                python = params.getListOrEmpty("python", String.class);
+                // Default
+                if (python.isEmpty()) {
+                    python = ImmutableList.of("python");
+                }
+            }
+
             List<String> cmdline = ImmutableList.<String>builder()
-                .add(python).add("-")  // script is fed from stdin
+                .addAll(python).add("-")  // script is fed from stdin
                 .addAll(args)
                 .build();
+
+            logger.trace("Running py operator: {}", cmdline.stream().collect(Collectors.joining(" ")));
 
             ProcessBuilder pb = new ProcessBuilder(cmdline);
             pb.directory(workspace.getPath().toFile());
