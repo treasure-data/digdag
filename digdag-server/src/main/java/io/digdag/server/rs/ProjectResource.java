@@ -1,6 +1,8 @@
 package io.digdag.server.rs;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.net.URI;
 import java.time.Instant;
@@ -74,6 +76,8 @@ import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
@@ -82,9 +86,12 @@ import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
 import io.digdag.core.storage.ArchiveManager;
+import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.spi.DirectDownloadHandle;
+import io.digdag.spi.Scheduler;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretScopes;
@@ -549,6 +556,28 @@ public class ProjectResource
                     if (md5Count.getCount() != contentLength) {
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
+                    WorkflowDefinitionList defs = meta.getWorkflowList();
+                    for (WorkflowDefinition def : defs.get()) {
+                        Workflow wf = compiler.compile(def.getName(), def.getConfig());
+
+                        // validate workflow and schedule
+//                        Set<String> required = new HashSet<>();
+                        for (WorkflowTask task : wf.getTasks()) {
+                            // raise an exception if task doesn't valid.
+                            task.getConfig();
+//                            String require = config.getOptional("require>", String.class).orNull();
+//                            if (require != null && required.add(require)) {
+//                                f.ln("  -> %s", require);
+//                            }
+                        }
+                        Revision rev = Revision.builderFromArchive("check", meta, getUserInfo())
+                                .archiveType(ArchiveType.NONE)
+                                .build();
+                        // raise an exception if "schedule:" is invalid.
+                        srm.tryGetScheduler(rev, def);
+
+                    }
+
                 }
 
                 ArchiveManager.Location location =
