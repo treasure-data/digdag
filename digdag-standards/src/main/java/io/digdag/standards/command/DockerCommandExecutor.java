@@ -61,22 +61,23 @@ public class DockerCommandExecutor
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
+        final String dockerCommand = dockerConfig.get("docker", String.class, "docker");
 
         String imageName;
         if (dockerConfig.has("build")) {
             List<String> buildCommands = dockerConfig.getList("build", String.class);
             imageName = uniqueImageName(request, baseImageName, buildCommands);
-            buildImage(imageName, projectPath, baseImageName, buildCommands);
+            buildImage(dockerCommand, imageName, projectPath, baseImageName, buildCommands);
         }
         else {
             imageName = baseImageName;
             if (dockerConfig.get("pull_always", Boolean.class, false)) {
-                pullImage(imageName);
+                pullImage(dockerCommand, imageName);
             }
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
-        command.add("docker").add("run");
+        command.add(dockerCommand).add("run");
 
         try {
             // misc
@@ -148,7 +149,7 @@ public class DockerCommandExecutor
         return name + ':' + tag;
     }
 
-    private void buildImage(String imageName, Path projectPath,
+    private void buildImage(final String dockerCommand, String imageName, Path projectPath,
             String baseImageName, List<String> buildCommands)
     {
         try {
@@ -164,7 +165,7 @@ public class DockerCommandExecutor
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                ProcessBuilder pb = new ProcessBuilder("docker", "images");
+                ProcessBuilder pb = new ProcessBuilder(dockerCommand, "images");
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
 
@@ -237,12 +238,12 @@ public class DockerCommandExecutor
         }
     }
 
-    private void pullImage(String imageName)
+    private void pullImage(final String dockerCommand, String imageName)
     {
         logger.info("Pulling docker image {}", imageName);
         try {
             ImmutableList.Builder<String> command = ImmutableList.builder();
-            command.add("docker").add("pull").add(imageName);
+            command.add(dockerCommand).add("pull").add(imageName);
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
