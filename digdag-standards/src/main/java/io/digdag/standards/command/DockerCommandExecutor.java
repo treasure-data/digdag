@@ -60,24 +60,28 @@ public class DockerCommandExecutor
     private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
+        Config optionConfig = dockerConfig.getNestedOrGetEmpty("options");
         String baseImageName = dockerConfig.get("image", String.class);
-        final String dockerCommand = dockerConfig.get("docker", String.class, "docker");
+        String dockerCommand = dockerConfig.get("docker", String.class, "docker");
 
         String imageName;
         if (dockerConfig.has("build")) {
             List<String> buildCommands = dockerConfig.getList("build", String.class);
+            List<String> buildOptions = optionConfig.getListOrEmpty("build", String.class);
             imageName = uniqueImageName(request, baseImageName, buildCommands);
-            buildImage(dockerCommand, imageName, projectPath, baseImageName, buildCommands);
+            buildImage(dockerCommand, buildOptions, imageName, projectPath, baseImageName, buildCommands);
         }
         else {
             imageName = baseImageName;
             if (dockerConfig.get("pull_always", Boolean.class, false)) {
-                pullImage(dockerCommand, imageName);
+                List<String> pullOptions = optionConfig.getListOrEmpty("pull", String.class);
+                pullImage(dockerCommand, pullOptions, imageName);
             }
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
-        command.add(dockerCommand).add("run");
+        List<String> runOptions = optionConfig.getListOrEmpty("run", String.class);
+        command.add(dockerCommand).add("run").addAll(runOptions);
 
         try {
             // misc
@@ -149,7 +153,8 @@ public class DockerCommandExecutor
         return name + ':' + tag;
     }
 
-    private void buildImage(final String dockerCommand, String imageName, Path projectPath,
+    private void buildImage(String dockerCommand, List<String> buildOptions,
+            String imageName, Path projectPath,
             String baseImageName, List<String> buildCommands)
     {
         try {
@@ -216,11 +221,13 @@ public class DockerCommandExecutor
             }
 
             ImmutableList.Builder<String> command = ImmutableList.builder();
-            command.add("docker").add("build");
+            command.add(dockerCommand).add("build").addAll(buildOptions);
             command.add("-f").add(dockerFilePath.toString());
             command.add("--force-rm");
             command.add("-t").add(imageName);
             command.add(projectPath.toString());
+
+            logger.debug("Building docker image: {}", command.build().stream().collect(Collectors.joining(" ")));
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
@@ -238,12 +245,15 @@ public class DockerCommandExecutor
         }
     }
 
-    private void pullImage(final String dockerCommand, String imageName)
+    private void pullImage(String dockerCommand, List<String> pullOptions,
+            String imageName)
     {
         logger.info("Pulling docker image {}", imageName);
         try {
             ImmutableList.Builder<String> command = ImmutableList.builder();
-            command.add(dockerCommand).add("pull").add(imageName);
+            command.add(dockerCommand).add("pull").addAll(pullOptions).add(imageName);
+
+            logger.debug("Pulling docker image: {}", command.build().stream().collect(Collectors.joining(" ")));
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
