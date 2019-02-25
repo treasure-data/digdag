@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.spi.CommandRuntimeException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Locale.ENGLISH;
@@ -34,6 +35,14 @@ public class TaskExecutionException
     public static ConfigElement buildExceptionErrorConfig(Throwable ex)
     {
         return buildExceptionErrorConfig(formatExceptionMessage(ex), ex);
+    }
+
+    public static ConfigElement buildExceptionErrorConfig(CommandRuntimeException ex)
+    {
+        Map<String, String> map = ImmutableMap.of(
+                "message", formatExceptionMessage(ex),
+                "stacktrace", ex.getStacktrace());
+        return ConfigElement.ofMap(map);
     }
 
     public static ConfigElement buildExceptionErrorConfig(String message, Throwable ex)

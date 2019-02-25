@@ -19,10 +19,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.standards.operator.RbRuntimeException;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TaskRequest;
@@ -179,6 +181,20 @@ public class RbOperatorFactory
             int ecode = p.waitFor();
 
             if (ecode != 0) {
+                // If a ruby error message and stacktrace are available in outFile, throw it.
+                // Otherwise, fallback to RuntimeException.
+                try {
+                    Config out = mapper.readValue(workspace.getFile(outFile), Config.class);
+                    Config err = out.getNestedOrGetEmpty("error");
+                    Optional<String> message = err.getOptional("message", String.class);
+                    Optional<String> stacktrace = err.getOptional("stacktrace", String.class);
+                    if (message.isPresent() && stacktrace.isPresent()) {
+                        throw new RbRuntimeException(message.get(), stacktrace.get());
+                    }
+                }
+                catch (JsonMappingException ex) {
+                    // if runner.rb fails before writing outFile.
+                }
                 throw new RuntimeException("Ruby command failed with code " + ecode);
             }
 
