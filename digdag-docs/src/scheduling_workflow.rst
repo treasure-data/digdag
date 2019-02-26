@@ -32,6 +32,10 @@ minutes_interval>: ``M``        Run this job every this number of minutes   minu
 cron>: ``CRON``                 Use cron format for complex scheduling      cron>: 42 4 1 * *
 =============================== =========================================== ==========================
 
+.. note::
+
+    When a field is starting with ``*`` , enclosing in quotes is necessary by a limitasion to be a vaild YAML.
+
 ``digdag check`` command shows when the first schedule will start:
 
 .. code-block:: console
@@ -60,24 +64,6 @@ cron>: ``CRON``                 Use cron format for complex scheduling      cron
         weekly>: "2,10:32:32"   2019-02-26 00:00:00 +0900 2019-02-24 14:32:32 +0900
         monthly>: "2,10:32:32"  2019-03-02 00:00:00 +0900 2019-03-02 10:32:32 +0900
         ======================= ========================= =========================
-
-    You can see them by ``digdag check`` command.
-
-    .. code-block:: console
-
-        $ ./digdag check
-        2019-02-24 14:20:10 +0900: Digdag v0.9.33
-          ...
-
-          Schedules (1 entries):
-            weekly_job:
-              weekly>: "2,10:32:32"
-              first session time: 2019-02-26 00:00:00 +0900
-              first scheduled to run at: 2019-02-26 10:32:32 +0900 (in 44h 12m 22s)
-
-.. note::
-
-    When a field is starting with ``*`` , enclosing in quotes is necessary by a limitasion to be a vaild YAML.
 
 
 Running scheduler
