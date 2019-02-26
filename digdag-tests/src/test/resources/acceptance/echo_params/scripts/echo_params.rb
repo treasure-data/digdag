@@ -1,4 +1,3 @@
-
 class EchoParams
   def echo_params
     puts 'digdag params'
