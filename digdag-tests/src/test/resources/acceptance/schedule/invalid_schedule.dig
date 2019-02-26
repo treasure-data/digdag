@@ -1,0 +1,8 @@
+timezone: UTC
+
+schedule:
+  hourly>: "10:11:12" # correct format is "MM:SS"
+
++foo:
+  sh>: "touch foo.out"
+
