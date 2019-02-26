@@ -1,0 +1,9 @@
+# For tests of python: option
+
++python_string_option:
+  py>: scripts.echo_params.echo_params
+  python: "python"
+
++python_array_option:
+  py>: scripts.echo_params.echo_params
+  python: ["python", "-v"]
