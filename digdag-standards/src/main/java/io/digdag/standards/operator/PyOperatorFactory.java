@@ -10,11 +10,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
@@ -127,17 +129,19 @@ public class PyOperatorFactory
             }
 
             List<String> python;
-            try {
-                // String?
-                final String path  = params.get("python", String.class, "python");
+            final JsonNode pythonJsonNode = params.getInternalObjectNode().get("python");
+            if (pythonJsonNode == null) {
+                python = ImmutableList.of("python");
+            }
+            else if (pythonJsonNode.isTextual()) {
+                final String path = pythonJsonNode.asText();
                 python = ImmutableList.of(path);
-            } catch (ConfigException ex) {
-                // List?
-                python = params.getListOrEmpty("python", String.class);
-                // Default
-                if (python.isEmpty()) {
-                    python = ImmutableList.of("python");
-                }
+            }
+            else if (pythonJsonNode.isArray()) {
+                python = Arrays.asList(mapper.readValue(pythonJsonNode.traverse(), String[].class));
+            }
+            else {
+                throw new ConfigException("Invalid python: " + pythonJsonNode.asText());
             }
 
             List<String> cmdline = ImmutableList.<String>builder()
