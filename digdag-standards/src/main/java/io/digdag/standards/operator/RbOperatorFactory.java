@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -130,18 +132,21 @@ public class RbOperatorFactory
             }
 
             List<String> ruby;
-            try {
-                // String?
-                final String path  = params.get("ruby", String.class, "ruby");
-                ruby = ImmutableList.of(path);
-            } catch (ConfigException ex) {
-                // List?
-                ruby = params.getListOrEmpty("ruby", String.class);
-                // Default
-                if (ruby.isEmpty()) {
-                    ruby = ImmutableList.of("ruby");
-                }
+            final JsonNode rubyJsonNode = params.getInternalObjectNode().get("ruby");
+            if (rubyJsonNode == null) {
+                ruby = ImmutableList.of("ruby");
             }
+            else if (rubyJsonNode.isTextual()) {
+                final String path = rubyJsonNode.asText();
+                ruby = ImmutableList.of(path);
+            }
+            else if (rubyJsonNode.isArray()) {
+                ruby = Arrays.asList(mapper.readValue(rubyJsonNode.traverse(), String[].class));
+            }
+            else {
+                throw new ConfigException("Invalid ruby: " + rubyJsonNode.asText());
+            }
+
             ImmutableList.Builder<String> cmdline = ImmutableList.builder();
             cmdline.addAll(ruby);
             cmdline.add("-I").add(workspace.getPath().toString());
