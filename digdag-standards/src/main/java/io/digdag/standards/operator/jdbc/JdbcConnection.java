@@ -33,8 +33,8 @@ interface JdbcConnection
 
     String escapeIdent(String ident);
 
-    void setDebug(Boolean debug);
-    Boolean getDebug();
+    void setDebug(boolean debug);
+    boolean getDebug();
 
     void close();
 }

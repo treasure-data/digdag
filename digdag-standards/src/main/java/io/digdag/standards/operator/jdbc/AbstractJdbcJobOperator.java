@@ -37,7 +37,7 @@ public abstract class AbstractJdbcJobOperator<C>
     private final long maxStoreLastResultsRows;
     private final int maxStoreLastResultsColumns;
     private final int maxStoreLastResultsValueSize;
-    private Boolean isDebug;
+    private boolean isDebug;
 
     private <T> Optional<T> getConfigValue(Config systemConfig, String key, Class<T> clazz)
     {
@@ -57,7 +57,7 @@ public abstract class AbstractJdbcJobOperator<C>
     protected TaskResult run(Config params, Config state, C connectionConfig)
     {
         String query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
-        isDebug = params.get("debug",Boolean.class,false);
+        isDebug = params.get("debug",boolean.class,false);
 
         Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
         Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);

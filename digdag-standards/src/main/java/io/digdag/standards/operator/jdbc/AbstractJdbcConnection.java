@@ -23,7 +23,7 @@ public abstract class AbstractJdbcConnection
 
     private String quoteString;
 
-    private Boolean enableDebug;
+    private boolean enableDebug;
 
     protected AbstractJdbcConnection(Connection connection)
     {
@@ -152,11 +152,11 @@ public abstract class AbstractJdbcConnection
     }
 
     @Override
-    public void setDebug(Boolean debug){
+    public void setDebug(boolean debug){
         enableDebug = debug;
     }
     @Override
-    public Boolean getDebug(){ return enableDebug; }
+    public boolean getDebug(){ return enableDebug; }
 
     protected void loggingExecuteSQL(String sql)
     {

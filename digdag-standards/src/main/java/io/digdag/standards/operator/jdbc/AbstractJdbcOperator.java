@@ -45,7 +45,7 @@ abstract class AbstractJdbcOperator<C>
 
     protected boolean strictTransaction(Config params)
     {
-        return params.get("strict_transaction", Boolean.class, true);
+        return params.get("strict_transaction", boolean.class, true);
     }
 
     protected abstract TaskResult run(Config params, Config state, C connectionConfig);
