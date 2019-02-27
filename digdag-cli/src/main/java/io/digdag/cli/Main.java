@@ -308,6 +308,7 @@ public class Main
         err.println("    start <project-name> <name>        start a new session attempt of a workflow");
         err.println("    retry <attempt-id>                 retry a session");
         err.println("    kill <attempt-id>                  kill a running session attempt");
+        err.println("    backfill <schedule-id>             start sessions of a schedule for past times");
         err.println("    backfill <project-name> <name>     start sessions of a schedule for past times");
         err.println("    reschedule <schedule-id>           skip sessions of a schedule to a future time");
         err.println("    log <attempt-id>                   show logs of a session attempt");
