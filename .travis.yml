@@ -17,7 +17,7 @@ env:
   global:
     - TERM=dumb
     - CI_NODE_TOTAL=8
-    - BUILD_IMAGE=digdag/digdag-build:20180921T191208-befdec51e47abfa34143ee63a8c8929cbfc7c759
+    - BUILD_IMAGE=digdag/digdag-build:20190226T204642-f12ed87c03e63d1c7204ee0fbda21b9f4f697d91
   matrix:
     - CI_NODE_INDEX=0
     - CI_NODE_INDEX=1

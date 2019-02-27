@@ -6,7 +6,7 @@ jobs:
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-      - image: digdag/digdag-build:20180921T102000-413301ee05f9660e41af70cdcddf0c6e747f0cc1
+      - image: digdag/digdag-build:20190226T204642-f12ed87c03e63d1c7204ee0fbda21b9f4f697d91
         # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
         environment:
           TERM: dumb
