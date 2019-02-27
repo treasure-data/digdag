@@ -41,6 +41,7 @@ public class PgConnection
         try {
             execute("SET TRANSACTION READ ONLY");
             try (Statement stmt = connection.createStatement()) {
+                loggingExecuteSQL(sql);
                 ResultSet rs = stmt.executeQuery(sql);  // executeQuery throws exception if given query includes multiple statements
                 resultHandler.accept(new PgResultSet(rs));
             }
@@ -143,11 +144,12 @@ public class PgConnection
                 throws LockConflictException
         {
             try (Statement stmt = connection.createStatement()) {
-                ResultSet rs = stmt.executeQuery(String.format(ENGLISH,
-                            "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
-                            escapeTableReference(statusTableReference()),
-                            queryId.toString())
-                        );
+                String sql = String.format(ENGLISH,
+                        "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
+                        escapeTableReference(statusTableReference()),
+                        queryId.toString());
+                loggingExecuteSQL(sql);
+                ResultSet rs = stmt.executeQuery(sql);
                 if (rs.next()) {
                     // status row exists and locked. get status of it.
                     rs.getTimestamp(1);

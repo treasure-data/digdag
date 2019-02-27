@@ -23,6 +23,8 @@ public abstract class AbstractJdbcConnection
 
     private String quoteString;
 
+    private Boolean enableDebug;
+
     protected AbstractJdbcConnection(Connection connection)
     {
         this.connection = connection;
@@ -32,6 +34,7 @@ public abstract class AbstractJdbcConnection
         catch (SQLException ex) {
             throw new DatabaseException("Failed to set auto-commit mode to the connection", ex);
         }
+        this.enableDebug = false;
     }
 
     @Override
@@ -78,6 +81,7 @@ public abstract class AbstractJdbcConnection
     {
         try {
             try (Statement stmt = connection.createStatement()) {
+                loggingExecuteSQL(sql);
                 boolean hasResults = stmt.execute(sql);
                 while (hasResults) {
                     ResultSet rs = stmt.getResultSet();
@@ -103,6 +107,7 @@ public abstract class AbstractJdbcConnection
     public void executeUpdate(String sql)
     {
         try {
+            loggingExecuteSQL(sql);
             execute(sql);
         }
         catch (SQLException ex) {
@@ -115,6 +120,7 @@ public abstract class AbstractJdbcConnection
             throws SQLException
     {
         try (Statement stmt = connection.createStatement()) {
+            loggingExecuteSQL(sql);
             stmt.executeUpdate(sql);
         }
     }
@@ -144,4 +150,22 @@ public abstract class AbstractJdbcConnection
             logger.warn("Failed to close a database connection. Ignoring.", ex);
         }
     }
+
+    @Override
+    public void setDebug(Boolean debug){
+        enableDebug = debug;
+    }
+    @Override
+    public Boolean getDebug(){ return enableDebug; }
+
+    protected void loggingExecuteSQL(String sql)
+    {
+        if( enableDebug == false ) {
+            return;
+        }
+        for(String line: sql.split("\r?\n")) {
+            logger.info(line);
+        }
+    }
+
 }
