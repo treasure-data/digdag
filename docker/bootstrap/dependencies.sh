@@ -33,6 +33,9 @@ pip install pip --upgrade && hash -r pip # rehashed https://github.com/pypa/pip/
 # Using sphinx==1.4.9 because sphinx_rtd_theme with sphinx 1.5.x has a problem with search and its fix is not released: https://github.com/snide/sphinx_rtd_theme/pull/346
 pip install sphinx==1.4.9 recommonmark sphinx_rtd_theme
 
+# Ruby
+apt-get -y install ruby-full
+
 # Redis
 apt-get -y install redis-server
 
