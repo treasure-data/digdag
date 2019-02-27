@@ -157,3 +157,6 @@
 
   *Note:* Enabling retries might cause the target endpoint to receive multiple duplicate HTTP requests. Thus retries should only be enabled if duplicated requests are tolerable. E.g. when the outcome of the HTTP request is *idempotent*.
 
+* **timeout**: INTEGER
+
+  The timeout value used for http operations. *Default*: `30`(30 seconds).
