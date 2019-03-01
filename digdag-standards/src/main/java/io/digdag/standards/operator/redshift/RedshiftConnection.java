@@ -355,11 +355,11 @@ public class RedshiftConnection
                 // List up status tables
                 List<TableReference> statusTables = new ArrayList<>();
                 {
-                    ResultSet rs = stmt.executeQuery(
-                            String.format(ENGLISH,
-                                    "SELECT schemaname, tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
-                                    escapeParam(statusTableNamePrefix))
-                    );
+                    String sql = String.format(ENGLISH,
+                            "SELECT schemaname, tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
+                            escapeParam(statusTableNamePrefix));
+                    loggingExecuteSQL(sql);
+                    ResultSet rs = stmt.executeQuery(sql);
                     while (rs.next()) {
                         statusTables.add(TableReference.of(rs.getString(1), rs.getString(2)));
                     }
@@ -369,14 +369,15 @@ public class RedshiftConnection
                 statusTables.forEach(
                         statusTable -> {
                             try {
-                                ResultSet rs = stmt.executeQuery(
-                                        String.format(ENGLISH,
-                                                "SELECT query_id FROM %s WHERE completed_at < SYSDATE - INTERVAL '%d SECOND'",
-                                                escapeTableReference(statusTable),
-                                                cleanupDuration.getSeconds())
-                                );
+                                String sql = String.format(ENGLISH,
+                                        "SELECT query_id FROM %s WHERE completed_at < SYSDATE - INTERVAL '%d SECOND'",
+                                        escapeTableReference(statusTable),
+                                        cleanupDuration.getSeconds());
+                                loggingExecuteSQL(sql);
+                                ResultSet rs = stmt.executeQuery(sql);
                                 if (rs.next()) {
-                                    stmt.executeUpdate(String.format("DROP TABLE %s", escapeTableReference(statusTable)));
+                                    sql = String.format("DROP TABLE %s", escapeTableReference(statusTable));
+                                    stmt.executeUpdate(sql);
                                 }
                             }
                             catch (SQLException e) {
