@@ -23,7 +23,7 @@ public abstract class AbstractJdbcConnection
 
     private String quoteString;
 
-    private boolean enableDebug;
+    private boolean showQuery;
 
     protected AbstractJdbcConnection(Connection connection)
     {
@@ -34,7 +34,7 @@ public abstract class AbstractJdbcConnection
         catch (SQLException ex) {
             throw new DatabaseException("Failed to set auto-commit mode to the connection", ex);
         }
-        this.enableDebug = false;
+        this.showQuery = false;
     }
 
     @Override
@@ -152,15 +152,16 @@ public abstract class AbstractJdbcConnection
     }
 
     @Override
-    public void setDebug(boolean debug){
-        enableDebug = debug;
+    public void setShowQuery(boolean query){
+        showQuery = query;
     }
+
     @Override
-    public boolean getDebug(){ return enableDebug; }
+    public boolean getShowQuery(){ return showQuery; }
 
     protected void loggingExecuteSQL(String sql)
     {
-        if( enableDebug == false ) {
+        if( showQuery == false ) {
             return;
         }
         for(String line: sql.split("\r?\n")) {

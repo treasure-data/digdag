@@ -37,7 +37,7 @@ public abstract class AbstractJdbcJobOperator<C>
     private final long maxStoreLastResultsRows;
     private final int maxStoreLastResultsColumns;
     private final int maxStoreLastResultsValueSize;
-    private boolean isDebug;
+    private boolean showQuery;
 
     private <T> Optional<T> getConfigValue(Config systemConfig, String key, Class<T> clazz)
     {
@@ -57,7 +57,7 @@ public abstract class AbstractJdbcJobOperator<C>
     protected TaskResult run(Config params, Config state, C connectionConfig)
     {
         String query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
-        isDebug = params.get("debug",boolean.class,false);
+        showQuery = params.get("show_query",boolean.class,false);
 
         Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
         Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);
@@ -104,7 +104,7 @@ public abstract class AbstractJdbcJobOperator<C>
         }
 
         try (JdbcConnection connection = connect(connectionConfig)) {
-            connection.setDebug(isDebug);
+            connection.setShowQuery(showQuery);
             Exception statementError = connection.validateStatement(query);
             if (statementError != null) {
                 throw new ConfigException("Given query is invalid", statementError);
