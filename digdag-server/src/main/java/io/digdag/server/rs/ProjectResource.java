@@ -827,7 +827,7 @@ public class ProjectResource
     @GET
     @Path("/api/projects/{id}/secrets")
     @Produces("application/json")
-    public RestSecretList getProjectSecrets(@PathParam("id") int projectId)
+    public RestSecretList getProjectSecretList(@PathParam("id") int projectId)
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestSecretList, ResourceNotFoundException, AccessControlException>begin(() -> {
