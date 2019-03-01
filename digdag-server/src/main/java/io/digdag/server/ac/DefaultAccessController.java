@@ -52,7 +52,7 @@ public class DefaultAccessController
     { }
 
     @Override
-    public void checkGetProjectSecrets(ProjectTarget target, AuthenticatedUser user)
+    public void checkGetProjectSecretList(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
