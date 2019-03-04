@@ -836,7 +836,7 @@ public class ProjectResource
             StoredProject project = projectStore.getProjectById(projectId); // check NotFound first
             ensureNotDeletedProject(project);
 
-            ac.checkGetProjectSecrets( // AccessControl
+            ac.checkGetProjectSecretList( // AccessControl
                     ProjectTarget.of(getSiteId(), project.getName()),
                     getAuthenticatedUser());
 

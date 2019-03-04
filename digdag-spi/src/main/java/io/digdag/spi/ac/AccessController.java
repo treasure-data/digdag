@@ -105,7 +105,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkGetProjectSecrets(ProjectTarget target, AuthenticatedUser user)
+    void checkGetProjectSecretList(ProjectTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     //
