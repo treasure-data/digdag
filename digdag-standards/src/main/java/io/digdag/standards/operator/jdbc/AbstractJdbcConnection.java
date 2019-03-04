@@ -125,6 +125,15 @@ public abstract class AbstractJdbcConnection
         }
     }
 
+    protected ResultSet executeQuery(String sql)
+            throws SQLException
+    {
+        try ( Statement stmt = connection.createStatement() ) {
+            loggingExecuteSQL(sql);
+            return stmt.executeQuery(sql); // executeQuery throws exception if given query includes multiple statements
+        }
+    }
+
     @Override
     public String escapeIdent(String ident)
     {
@@ -169,10 +178,4 @@ public abstract class AbstractJdbcConnection
         }
     }
 
-    protected ResultSet executeQueryWithLogging(String sql) throws SQLException
-    {
-        Statement stmt = connection.createStatement();
-        loggingExecuteSQL(sql);
-        return stmt.executeQuery(sql);  // executeQuery throws exception if given query includes multiple statements
-    }
 }

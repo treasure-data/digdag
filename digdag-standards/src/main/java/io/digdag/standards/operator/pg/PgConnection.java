@@ -40,7 +40,7 @@ public class PgConnection
     {
         try {
             execute("SET TRANSACTION READ ONLY");
-            ResultSet rs = executeQueryWithLogging(sql);
+            ResultSet rs = executeQuery(sql);
             resultHandler.accept(new PgResultSet(rs));
             execute("SET TRANSACTION READ WRITE");
         }
@@ -144,7 +144,7 @@ public class PgConnection
                     "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
                     escapeTableReference(statusTableReference()),
                     queryId.toString());
-            try (ResultSet rs = executeQueryWithLogging(sql)) {
+            try (ResultSet rs = executeQuery(sql)) {
                 if (rs.next()) {
                     // status row exists and locked. get status of it.
                     rs.getTimestamp(1);
