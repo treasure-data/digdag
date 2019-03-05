@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -27,6 +30,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.util.BaseOperator;
 import static io.digdag.standards.operator.ShOperatorFactory.collectEnvironmentVariables;
 
@@ -127,15 +131,32 @@ public class RbOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
-            final String ruby = params.get("ruby", String.class, "ruby");
+            List<String> ruby;
+            final JsonNode rubyJsonNode = params.getInternalObjectNode().get("ruby");
+            if (rubyJsonNode == null) {
+                ruby = ImmutableList.of("ruby");
+            }
+            else if (rubyJsonNode.isTextual()) {
+                final String path = rubyJsonNode.asText();
+                ruby = ImmutableList.of(path);
+            }
+            else if (rubyJsonNode.isArray()) {
+                ruby = Arrays.asList(mapper.readValue(rubyJsonNode.traverse(), String[].class));
+            }
+            else {
+                throw new ConfigException("Invalid ruby: " + rubyJsonNode.asText());
+            }
+
             ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-            cmdline.add(ruby);
+            cmdline.addAll(ruby);
             cmdline.add("-I").add(workspace.getPath().toString());
             if (feature.isPresent()) {
                 cmdline.add("-r").add(feature.get());
             }
             cmdline.add("--").add("-");  // script is fed from stdin  TODO: this doesn't work with jruby
             cmdline.addAll(args);
+
+            logger.trace("Running rb operator: {}", cmdline.build().stream().collect(Collectors.joining(" ")));
 
             ProcessBuilder pb = new ProcessBuilder(cmdline.build());
             pb.directory(workspace.getPath().toFile());

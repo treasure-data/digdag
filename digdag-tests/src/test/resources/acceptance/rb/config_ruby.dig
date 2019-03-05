@@ -1,0 +1,13 @@
+# For tests of ruby: option
+
+_export:
+  rb:
+    require: 'scripts/echo_params'
+
++ruby_string_option:
+  rb>: EchoParams.echo_params
+  ruby: "ruby"
+
++ruby_array_option:
+  rb>: EchoParams.echo_params
+  ruby: ["ruby", "-w"]
