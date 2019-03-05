@@ -268,6 +268,7 @@ public class ThreadLocalTransactionManager
             Throwables.propagateIfInstanceOf(e, e1);
             Throwables.propagateIfInstanceOf(e, e2);
             Throwables.propagateIfInstanceOf(e, e3);
+            Throwables.propagateIfInstanceOf(e, e4);
             throw Throwables.propagate(e);
         }
         finally {
