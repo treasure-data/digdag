@@ -102,3 +102,15 @@
   engine: hive
   hive_pool_name: poc
   ```
+
+* **engine_version**: NAME
+
+  Specify engine version for Hive and Presto.
+
+  Examples:
+
+  ```
+  engine: hive
+  engine_version: stable
+  ```
+

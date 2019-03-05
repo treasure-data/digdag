@@ -15,7 +15,7 @@ dependencies {
     compile 'com.sun.mail:javax.mail:1.5.6'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
 
     // td
-    compile ('com.treasuredata.client:td-client:0.8.6') {
+    compile ('com.treasuredata.client:td-client:0.8.11') {
         // digdag depends on guava 0.19.0
         exclude group: 'com.google.guava', module: 'guava'
     }
