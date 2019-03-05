@@ -37,8 +37,8 @@ interface JdbcConnection
     // Digdag <= v0.9.34
     // Previous versions doesn't have those methods for backward compatibility.
     //
-    default void setShowQuery(boolean query){ new RuntimeException("Subclass need to implement this method."); };
-    default boolean getShowQuery(){ return false; };
+    default void setShowQuery(boolean query) { new RuntimeException("Subclass need to implement this method."); }
+    default boolean getShowQuery() { return false; }
 
     void close();
 }
