@@ -38,10 +38,12 @@ public class PgConnection
     public void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler)
         throws NotReadOnlyException
     {
-        try (Statement stmt = connection.createStatement()) {
+        try {
             execute("SET TRANSACTION READ ONLY");
-            ResultSet rs = executeQuery(stmt, sql);
-            resultHandler.accept(new PgResultSet(rs));
+            try (Statement stmt = connection.createStatement()) {
+                ResultSet rs = executeQuery(stmt, sql);
+                resultHandler.accept(new PgResultSet(rs));
+            }
             execute("SET TRANSACTION READ WRITE");
         }
         catch (SQLException ex) {
