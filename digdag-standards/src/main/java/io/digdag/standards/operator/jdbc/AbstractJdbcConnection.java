@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;
 
 public abstract class AbstractJdbcConnection
-    implements JdbcConnection
+        implements JdbcConnection
 {
     private static final Logger logger = LoggerFactory.getLogger(JdbcConnection.class);
 
@@ -125,13 +125,11 @@ public abstract class AbstractJdbcConnection
         }
     }
 
-    protected ResultSet executeQuery(String sql)
+    protected ResultSet executeQuery(Statement stmt, String sql)
             throws SQLException
     {
-        try (Statement stmt = connection.createStatement()) {
-            loggingExecuteSQL(sql);
-            return stmt.executeQuery(sql); // executeQuery throws exception if given query includes multiple statements
-        }
+        loggingExecuteSQL(sql);
+        return stmt.executeQuery(sql); // executeQuery throws exception if given query includes multiple statements
     }
 
     @Override
@@ -177,5 +175,4 @@ public abstract class AbstractJdbcConnection
             logger.info(line);
         }
     }
-
 }

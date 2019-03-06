@@ -38,9 +38,9 @@ public class PgConnection
     public void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler)
         throws NotReadOnlyException
     {
-        try {
+        try (Statement stmt = connection.createStatement()) {
             execute("SET TRANSACTION READ ONLY");
-            ResultSet rs = executeQuery(sql);
+            ResultSet rs = executeQuery(stmt, sql);
             resultHandler.accept(new PgResultSet(rs));
             execute("SET TRANSACTION READ WRITE");
         }
@@ -140,11 +140,12 @@ public class PgConnection
         protected StatusRow lockStatusRow(UUID queryId)
                 throws LockConflictException
         {
-            String sql = String.format(ENGLISH,
-                    "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
-                    escapeTableReference(statusTableReference()),
-                    queryId.toString());
-            try (ResultSet rs = executeQuery(sql)) {
+            try (Statement stmt = connection.createStatement()) {
+                String sql = String.format(ENGLISH,
+                        "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
+                        escapeTableReference(statusTableReference()),
+                        queryId.toString());
+                ResultSet rs = executeQuery(stmt, sql);
                 if (rs.next()) {
                     // status row exists and locked. get status of it.
                     rs.getTimestamp(1);

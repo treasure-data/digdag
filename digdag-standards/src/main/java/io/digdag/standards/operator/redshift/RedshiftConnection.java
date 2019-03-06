@@ -351,14 +351,14 @@ public class RedshiftConnection
         @Override
         public void cleanup()
         {
-            try {
+            try (Statement stmt = connection.createStatement()) {
                 // List up status tables
                 List<TableReference> statusTables = new ArrayList<>();
                 {
                     String sql = String.format(ENGLISH,
                             "SELECT schemaname, tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
                             escapeParam(statusTableNamePrefix));
-                    ResultSet rs = executeQuery(sql);
+                    ResultSet rs = executeQuery(stmt,sql);
                     while (rs.next()) {
                         statusTables.add(TableReference.of(rs.getString(1), rs.getString(2)));
                     }
@@ -372,7 +372,7 @@ public class RedshiftConnection
                                         "SELECT query_id FROM %s WHERE completed_at < SYSDATE - INTERVAL '%d SECOND'",
                                         escapeTableReference(statusTable),
                                         cleanupDuration.getSeconds());
-                                ResultSet rs = executeQuery(sql);
+                                ResultSet rs = executeQuery(stmt,sql);
                                 if (rs.next()) {
                                     sql = String.format("DROP TABLE %s", escapeTableReference(statusTable));
                                     executeUpdate(sql);
