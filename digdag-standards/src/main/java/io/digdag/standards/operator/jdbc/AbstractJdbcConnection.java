@@ -159,19 +159,20 @@ public abstract class AbstractJdbcConnection
     }
 
     @Override
-    public void setShowQuery(boolean query){
+    public void setShowQuery(boolean query)
+    {
         showQuery = query;
     }
 
     @Override
-    public boolean getShowQuery(){ return showQuery; }
+    public boolean getShowQuery() { return showQuery; }
 
     protected void loggingExecuteSQL(String sql)
     {
-        if( showQuery == false ) {
+        if (showQuery == false) {
             return;
         }
-        for(String line: sql.split("\r?\n")) {
+        for (String line : sql.split("\r?\n")) {
             logger.info(line);
         }
     }
