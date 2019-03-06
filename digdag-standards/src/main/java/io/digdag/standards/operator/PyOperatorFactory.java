@@ -1,6 +1,7 @@
 package io.digdag.standards.operator;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
@@ -9,11 +10,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
@@ -26,6 +29,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.util.BaseOperator;
 import static io.digdag.standards.operator.ShOperatorFactory.collectEnvironmentVariables;
 
@@ -124,11 +128,28 @@ public class PyOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
-            final String python = params.get("python", String.class, "python");
+            List<String> python;
+            final JsonNode pythonJsonNode = params.getInternalObjectNode().get("python");
+            if (pythonJsonNode == null) {
+                python = ImmutableList.of("python");
+            }
+            else if (pythonJsonNode.isTextual()) {
+                final String path = pythonJsonNode.asText();
+                python = ImmutableList.of(path);
+            }
+            else if (pythonJsonNode.isArray()) {
+                python = Arrays.asList(mapper.readValue(pythonJsonNode.traverse(), String[].class));
+            }
+            else {
+                throw new ConfigException("Invalid python: " + pythonJsonNode.asText());
+            }
+
             List<String> cmdline = ImmutableList.<String>builder()
-                .add(python).add("-")  // script is fed from stdin
+                .addAll(python).add("-")  // script is fed from stdin
                 .addAll(args)
                 .build();
+
+            logger.trace("Running py operator: {}", cmdline.stream().collect(Collectors.joining(" ")));
 
             ProcessBuilder pb = new ProcessBuilder(cmdline);
             pb.directory(workspace.getPath().toFile());
