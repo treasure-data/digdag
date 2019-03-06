@@ -49,7 +49,6 @@ public class PyIT
             throws Exception
     {
         Path tempdir = folder.getRoot().toPath().toAbsolutePath();
-        Path configDir = folder.getRoot().toPath().toAbsolutePath();
         Path projectDir = tempdir.resolve("py");
         Path scriptsDir = projectDir.resolve("scripts");
 
