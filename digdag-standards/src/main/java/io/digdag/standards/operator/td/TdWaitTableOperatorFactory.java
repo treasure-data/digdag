@@ -1,8 +1,10 @@
 package io.digdag.standards.operator.td;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientException;
+import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -72,7 +74,8 @@ public class TdWaitTableOperatorFactory
         return new TdWaitTableOperator(context);
     }
 
-    private class TdWaitTableOperator
+    @VisibleForTesting
+    class TdWaitTableOperator
             extends BaseOperator
     {
         private final Config params;
@@ -81,6 +84,7 @@ public class TdWaitTableOperatorFactory
         private final int tableExistencePollInterval;
         private final int rows;
         private final String engine;
+        private final Optional<String> engineVersion;
         private final int priority;
         private final Optional<String> poolName;
         private final int jobRetry;
@@ -104,6 +108,7 @@ public class TdWaitTableOperatorFactory
             this.poolName = poolNameOfEngine(params, engine);
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
+            this.engineVersion = params.getOptional("engine_version", String.class);
         }
 
         @Override
@@ -189,7 +194,8 @@ public class TdWaitTableOperatorFactory
             return BigInteger.valueOf(rows).compareTo(actualRows.asBigInteger()) <= 0;
         }
 
-        private String startJob(TDOperator op, String domainKey)
+        @VisibleForTesting
+        String startJob(TDOperator op, String domainKey)
         {
             String query = createQuery();
 
@@ -201,6 +207,7 @@ public class TdWaitTableOperatorFactory
                     .setPriority(priority)
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainKey)
+                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);

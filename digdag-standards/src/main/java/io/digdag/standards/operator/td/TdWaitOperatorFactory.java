@@ -1,8 +1,10 @@
 package io.digdag.standards.operator.td;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientException;
+import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -68,13 +70,15 @@ public class TdWaitOperatorFactory
         return new TdWaitOperator(context);
     }
 
-    private class TdWaitOperator
+    @VisibleForTesting
+    class TdWaitOperator
             extends BaseOperator
     {
         private final Config params;
         private final String query;
         private final int queryPollInterval;
         private final String engine;
+        private final Optional<String> engineVersion;
         private final Optional<String> poolName;
         private final int priority;
         private final int jobRetry;
@@ -96,6 +100,7 @@ public class TdWaitOperatorFactory
             this.poolName = poolNameOfEngine(params, engine);
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
+            this.engineVersion = params.getOptional("engine_version", String.class);
         }
 
         @Override
@@ -124,7 +129,8 @@ public class TdWaitOperatorFactory
             }
         }
 
-        private String startJob(TDOperator op, String domainKey)
+        @VisibleForTesting
+        String startJob(TDOperator op, String domainKey)
         {
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
@@ -135,6 +141,7 @@ public class TdWaitOperatorFactory
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainKey)
+                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);

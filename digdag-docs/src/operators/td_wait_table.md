@@ -20,7 +20,7 @@
 
 ## Options
 
-* **td_wait_table>**: FILE.sql
+* **td_wait_table>**: NAME
 
   Name of a table.
 
@@ -102,3 +102,15 @@
   engine: hive
   hive_pool_name: poc
   ```
+
+* **engine_version**: NAME
+
+  Specify engine version for Hive and Presto.
+
+  Examples:
+
+  ```
+  engine: hive
+  engine_version: stable
+  ```
+

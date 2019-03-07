@@ -24,7 +24,7 @@ For example, if you run a query `select email, name from users` and the query re
 
 ## Options
 
-* **td>**: FILE.sql
+* **td_for_each>**: FILE.sql
 
   Path to a query template file. This file can contain `${...}` syntax to embed variables.
 
@@ -91,6 +91,17 @@ For example, if you run a query `select email, name from users` and the query re
   ```
   engine: hive
   pool_name: poc
+  ```
+
+* **engine_version**: NAME
+
+  Specify engine version for Hive and Presto.
+
+  Examples:
+
+  ```
+  engine: hive
+  engine_version: stable
   ```
 
 ## Output parameters
