@@ -6,6 +6,8 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 
 import java.time.Instant;
@@ -32,46 +34,84 @@ public class Reschedule
     public void mainWithClientException()
         throws Exception
     {
-        if (args.size() != 1) {
-            throw usage(null);
-        }
-        Id schedId = parseScheduleIdOrUsage(args.get(0));
-
         if (toTime != null && skipCount > 0) {
             throw systemExit("-s and -t can't be set together");
         }
         else if (toTime == null && skipCount <= 0) {
             throw usage("-s or -t is required");
         }
-        reschedule(schedId);
+
+        // Schedule id?
+        if (args.size() == 1) {
+            Id schedId = parseScheduleId(args.get(0));
+            rescheduleScheduleId(schedId);
+        }
+        else if (args.size() == 2) {
+            // Single workflow
+            rescheduleWorkflow(args.get(0), args.get(1));
+        }
+        else {
+            throw usage(null);
+        }
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " reschedule <schedule-id>");
+        err.println("Usage: " + programName + " reschedule <schedule-id> | <project-name> <name>");
         err.println("  Options:");
         err.println("    -s, --skip N                     skips specified number of schedules from now");
-        err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
-        err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
+        err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z' | 'now'");
+        err.println("                                     skips schedules until the specified time (exclusive)");
+        err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'");
+        err.println("                                     set next run time to this time");
         err.println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
         showCommonOptions();
         return systemExit(error);
     }
 
-    private void reschedule(Id schedId)
+    private Id parseScheduleId(String s)
+            throws SystemExitException
+    {
+        try {
+            return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
+        }
+        catch (NumberFormatException ignore) {
+            throw usage(null);
+        }
+    }
+
+    private void rescheduleWorkflow(String projectName, String workflowName)
+            throws Exception
+    {
+        DigdagClient client = buildClient();
+        RestProject project = client.getProject(projectName);
+        RestSchedule schedule = client.getSchedule(project.getId(), workflowName);
+        Instant now = Instant.now();
+        reschedule(schedule.getId(), client, now);
+    }
+
+    private void rescheduleScheduleId(Id schedId)
         throws Exception
     {
+        DigdagClient client = buildClient();
         Instant now = Instant.now();
+        reschedule(schedId, client, now);
+    }
 
+    private void reschedule(Id schedId, DigdagClient client, Instant now)
+        throws Exception
+    {
         Optional<Instant> runAt = runAtTime == null ? Optional.absent() : Optional.of(
                 TimeUtil.parseTime(runAtTime, "-a, --run-at")
                 );
 
-        DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
+            Instant time = "now".equals(toTime) ?
+                now :
+                TimeUtil.parseTime(toTime, "-t, --skip-to");
             updated = client.skipSchedulesToTime(schedId,
-                    TimeUtil.parseTime(toTime, "-t, --skip-to"),
+                    time,
                     runAt,
                     dryRun);
         }
