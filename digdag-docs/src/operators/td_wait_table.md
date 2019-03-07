@@ -20,7 +20,7 @@
 
 ## Options
 
-* **td_wait_table>**: FILE.sql
+* **td_wait_table>**: NAME
 
   Name of a table.
 
