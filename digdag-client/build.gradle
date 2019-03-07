@@ -4,7 +4,7 @@ dependencies {
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-annotations:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-core:${project.ext.jacksonVersion}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${project.ext.jacksonVersion}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${project.ext.jacksonDatabindVersion}"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${project.ext.jacksonVersion}"
 
     compile("com.github.rholder:guava-retrying:2.0.0") {
