@@ -73,8 +73,7 @@ public class DockerCommandExecutor
         else {
             imageName = baseImageName;
             if (dockerConfig.get("pull_always", Boolean.class, false)) {
-                List<String> pullOptions = dockerConfig.getListOrEmpty("pull_options", String.class);
-                pullImage(dockerCommand, pullOptions, imageName);
+                pullImage(dockerCommand, imageName);
             }
         }
 
@@ -244,13 +243,12 @@ public class DockerCommandExecutor
         }
     }
 
-    private void pullImage(String dockerCommand, List<String> pullOptions,
-            String imageName)
+    private void pullImage(String dockerCommand, String imageName)
     {
         logger.info("Pulling docker image {}", imageName);
         try {
             ImmutableList.Builder<String> command = ImmutableList.builder();
-            command.add(dockerCommand).add("pull").addAll(pullOptions).add(imageName);
+            command.add(dockerCommand).add("pull").add(imageName);
 
             logger.debug("Pulling docker image: {}", command.build().stream().collect(Collectors.joining(" ")));
 

@@ -1,8 +1,0 @@
-_export:
-  docker:
-    docker: /usr/local/bin/docker
-    image: alpine:latest
-    pull_options: ["--disable-content-trust"]
-
-+check_pull_options:
-  sh>: echo hello
