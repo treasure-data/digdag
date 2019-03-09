@@ -60,27 +60,26 @@ public class DockerCommandExecutor
     private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
-        Config optionConfig = dockerConfig.getNestedOrGetEmpty("options");
         String baseImageName = dockerConfig.get("image", String.class);
         String dockerCommand = dockerConfig.get("docker", String.class, "docker");
 
         String imageName;
         if (dockerConfig.has("build")) {
             List<String> buildCommands = dockerConfig.getList("build", String.class);
-            List<String> buildOptions = optionConfig.getListOrEmpty("build", String.class);
+            List<String> buildOptions = dockerConfig.getListOrEmpty("build_options", String.class);
             imageName = uniqueImageName(request, baseImageName, buildCommands);
             buildImage(dockerCommand, buildOptions, imageName, projectPath, baseImageName, buildCommands);
         }
         else {
             imageName = baseImageName;
             if (dockerConfig.get("pull_always", Boolean.class, false)) {
-                List<String> pullOptions = optionConfig.getListOrEmpty("pull", String.class);
+                List<String> pullOptions = dockerConfig.getListOrEmpty("pull_options", String.class);
                 pullImage(dockerCommand, pullOptions, imageName);
             }
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
-        List<String> runOptions = optionConfig.getListOrEmpty("run", String.class);
+        List<String> runOptions = dockerConfig.getListOrEmpty("run_options", String.class);
         command.add(dockerCommand).add("run").addAll(runOptions);
 
         try {

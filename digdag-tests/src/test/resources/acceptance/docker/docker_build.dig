@@ -2,8 +2,7 @@ _export:
   docker:
     docker: /usr/local/bin/docker
     image: alpine:latest
-    options:
-      build: ["--ulimit", "nofile=65536:65536"]
+    build_options: ["--ulimit", "nofile=65536:65536"]
     build:
       - ulimit -n > /tmp/ulimit.txt
 
