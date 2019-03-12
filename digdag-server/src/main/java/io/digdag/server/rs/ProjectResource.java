@@ -1,8 +1,6 @@
 package io.digdag.server.rs;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.net.URI;
 import java.time.Instant;
@@ -91,7 +89,6 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.spi.DirectDownloadHandle;
-import io.digdag.spi.Scheduler;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretScopes;
