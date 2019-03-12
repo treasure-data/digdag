@@ -58,6 +58,7 @@ When Digdag runs as a server, it has 3 major thread pools:
 By default, `digdag server` runs all of them. There're some options to disable the components:
 
 * ``--disable-executor-loop`` disables workflow executor and schedule executor.
+* ``--disable-scheduler`` disables schedule executor.
 * ``--disable-local-agent`` disables agent.
 
 API server, workflow executor, and schedule executor use database (H2 or PostgreSQL) to communicate each other.

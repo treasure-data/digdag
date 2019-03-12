@@ -63,6 +63,9 @@ public class Server
     @Parameter(names = {"--disable-executor-loop"})
     boolean disableExecutorLoop = false;
 
+    @Parameter(names = {"--disable-scheduler"})
+    boolean disableScheduler = false;
+
     @Parameter(names = {"--enable-swagger"})
     boolean enableSwagger = false;
 
@@ -112,6 +115,7 @@ public class Server
         err.println("    -A, --access-log DIR             store access logs files to this path");
         err.println("        --max-task-threads N         limit maximum number of task execution threads");
         err.println("        --disable-executor-loop      disable workflow executor loop");
+        err.println("        --disable-scheduler          disable scheduler");
         err.println("        --disable-local-agent        disable local task execution");
         err.println("        --enable-swagger             enable swagger api");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
@@ -182,6 +186,10 @@ public class Server
 
         if (disableExecutorLoop) {
             props.setProperty("server.executor.enabled", Boolean.toString(false));
+        }
+
+        if (disableScheduler) {
+            props.setProperty("schedule.enabled", Boolean.toString(false));
         }
 
         if (enableSwagger) {

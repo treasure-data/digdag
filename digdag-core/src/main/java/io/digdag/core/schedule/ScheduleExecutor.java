@@ -66,6 +66,7 @@ public class ScheduleExecutor
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor workflowExecutor;
     private final ConfigFactory cf;
+    private final ScheduleConfig scheduleConfig;
     private ScheduledExecutorService executor;
 
     @Inject(optional = true)
@@ -80,7 +81,8 @@ public class ScheduleExecutor
             SessionStoreManager sessionStoreManager,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor workflowExecutor,
-            ConfigFactory cf)
+            ConfigFactory cf,
+            ScheduleConfig scheduleConfig)
     {
         this.rm = rm;
         this.sm = sm;
@@ -90,25 +92,36 @@ public class ScheduleExecutor
         this.attemptBuilder = attemptBuilder;
         this.workflowExecutor = workflowExecutor;
         this.cf = cf;
+        this.scheduleConfig = scheduleConfig;
+    }
+
+    @VisibleForTesting
+    boolean isStarted()
+    {
+        return executor != null;
     }
 
     @PostConstruct
     public synchronized void start()
     {
-        if (executor == null) {
-            executor = Executors.newScheduledThreadPool(1,
-                    new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .setNameFormat("scheduler-%d")
-                    .build()
-                    );
+        if (scheduleConfig.getEnabled()) {
+            if (executor == null) {
+                executor = Executors.newScheduledThreadPool(1,
+                        new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("scheduler-%d")
+                        .build()
+                        );
+            }
+            // TODO make interval configurable?
+            executor.scheduleWithFixedDelay(() -> runSchedules(),
+                    1, 1, TimeUnit.SECONDS);
+            // TODO make interval configurable?
+            executor.scheduleWithFixedDelay(() -> runDelayedAttempts(),
+                    1, 1, TimeUnit.SECONDS);
+        } else {
+            logger.debug("Scheduler is disabled.");
         }
-        // TODO make interval configurable?
-        executor.scheduleWithFixedDelay(() -> runSchedules(),
-                1, 1, TimeUnit.SECONDS);
-        // TODO make interval configurable?
-        executor.scheduleWithFixedDelay(() -> runDelayedAttempts(),
-                1, 1, TimeUnit.SECONDS);
     }
 
     @PreDestroy

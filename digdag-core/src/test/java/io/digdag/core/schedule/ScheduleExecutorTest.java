@@ -29,6 +29,7 @@ import javax.sql.DataSource;
 import java.time.Instant;
 
 import static java.time.ZoneOffset.UTC;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -65,6 +66,7 @@ public class ScheduleExecutorTest
     @Mock AttemptBuilder attemptBuilder;
     @Mock WorkflowExecutor workflowExecutor;
     @Mock DataSource dataSource;
+    @Mock ScheduleConfig scheduleConfig;
 
     private ScheduleExecutor scheduleExecutor;
 
@@ -85,7 +87,8 @@ public class ScheduleExecutorTest
                         sessionStoreManager,
                         attemptBuilder,
                         workflowExecutor,
-                        CONFIG_FACTORY
+                        CONFIG_FACTORY,
+                        scheduleConfig
                 ));
 
         now = Instant.now();
@@ -232,4 +235,17 @@ public class ScheduleExecutorTest
         verify(scs).updateNextScheduleTimeAndLastSessionTime(SCHEDULE_ID, nextScheduleTime, now);
     }
 
+    @Test
+    public void testDisabled()
+            throws Exception
+    {
+        // Disable scheduler
+        when(scheduleConfig.getEnabled()).thenReturn(false);
+
+        // Trying to start the schedule executor.
+        scheduleExecutor.start();
+
+        // Executor is not started.
+        assertFalse(scheduleExecutor.isStarted());
+    }
 }
