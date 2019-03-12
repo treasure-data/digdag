@@ -561,14 +561,9 @@ public class ProjectResource
                         Workflow wf = compiler.compile(def.getName(), def.getConfig());
 
                         // validate workflow and schedule
-//                        Set<String> required = new HashSet<>();
                         for (WorkflowTask task : wf.getTasks()) {
                             // raise an exception if task doesn't valid.
                             task.getConfig();
-//                            String require = config.getOptional("require>", String.class).orNull();
-//                            if (require != null && required.add(require)) {
-//                                f.ln("  -> %s", require);
-//                            }
                         }
                         Revision rev = Revision.builderFromArchive("check", meta, getUserInfo())
                                 .archiveType(ArchiveType.NONE)
