@@ -7,7 +7,7 @@ General Changes
 * Enhance ruby option in rb>: operator  [#1022]
 * Enhance python option in py>: operator [#1023]
 * Support reschedule command with <project-name> <name> in CLI [#1023]
-* Support engine_version parameter in TD operators.
+* Support engine_version parameter in TD operators. [#1045]
 
 Fixed Issues
 ------------
