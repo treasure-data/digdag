@@ -33,7 +33,7 @@ before_install:
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/redis-server stop
   - |
-    docker run \
+    DOCKER_HOST=unix:///var/run/docker.sock DOCKER_TLS_VERIFY= docker run \
     -w /digdag \
     -v `pwd`/:/digdag \
     -v $HOME/.gradle:/root/.gradle \

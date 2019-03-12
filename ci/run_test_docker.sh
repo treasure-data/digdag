@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 
 docker run \
+-v /var/run/docker.sock:/var/run/docker.sock \ # test on docker-in-docker
 -w /digdag \
 -v `pwd`/:/digdag \
 -v ~/.gradle:/root/.gradle \

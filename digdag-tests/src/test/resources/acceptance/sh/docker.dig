@@ -1,0 +1,6 @@
+_export:
+  docker:
+    image: alpine:latest
+
++docker_run:
+  sh>: echo "test sh operator by _export.docker"

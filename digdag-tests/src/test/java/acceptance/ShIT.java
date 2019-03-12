@@ -80,6 +80,20 @@ public class ShIT
         assertThat(runStatus.errUtf8(), containsString("Secret not found"));
     }
 
+    @Test
+    public void runOnDockerCommandExecutor()
+            throws Exception
+    {
+        copyResource("acceptance/sh/docker.dig", projectDir.resolve("sh_docker.dig"));
+
+        CommandStatus runStatus = main("run",
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                "sh_docker.dig");
+
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
+    }
+
     private boolean runEcho()
         throws Exception
     {
