@@ -32,6 +32,8 @@ public interface ServerConfig
 
     public Optional<String> getServerRuntimeInfoPath();
 
+    public Optional<String> getUiConfigJsPath();
+
     public int getPort();
 
     public String getBind();
