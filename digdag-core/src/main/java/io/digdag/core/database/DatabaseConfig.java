@@ -45,6 +45,8 @@ public interface DatabaseConfig
 
     int getValidationTimeout();  // seconds
 
+    boolean getEnableJMX();
+
     static ImmutableDatabaseConfig.Builder builder()
     {
         return ImmutableDatabaseConfig.builder();
@@ -103,7 +105,8 @@ public interface DatabaseConfig
         builder.maximumPoolSize(maximumPoolSize);
         builder.minimumPoolSize(
                 config.get(keyPrefix + "." + "minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
-
+        builder.enableJMX(
+                config.get(keyPrefix + "." + "enableJMX", boolean.class, false));  // HikariCP default: false
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
         for (String key : config.getKeys()) {
@@ -158,6 +161,7 @@ public interface DatabaseConfig
         config.set(keyPrefix + "." + "validationTimeout", databaseConfig.getValidationTimeout());
         config.set(keyPrefix + "." + "maximumPoolSize", databaseConfig.getMaximumPoolSize());
         config.set(keyPrefix + "." + "minimumPoolSize", databaseConfig.getMinimumPoolSize());
+        config.set(keyPrefix + "." + "enableJMX", databaseConfig.getEnableJMX());
 
         // database.opts.*
         Map<String, String> options = databaseConfig.getOptions();
