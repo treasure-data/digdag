@@ -1,6 +1,5 @@
 package io.digdag.core.schedule;
 
-import java.lang.management.ManagementFactory;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.digdag.client.config.Config;
