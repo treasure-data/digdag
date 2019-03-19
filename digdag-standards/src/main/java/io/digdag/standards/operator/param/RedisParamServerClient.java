@@ -98,7 +98,7 @@ public class RedisParamServerClient
             if (!msetTarget.isEmpty()) {
                 Transaction multi = connection.multi();
                 for (Map.Entry<String, String> entry : msetTarget.entrySet()) {
-                    multi.setex(entry.getKey(), DEFAULT_TTL, entry.getValue());
+                    multi.setex(entry.getKey(), DEFAULT_TTL_IN_SEC, entry.getValue());
                 }
                 multi.exec();
             }

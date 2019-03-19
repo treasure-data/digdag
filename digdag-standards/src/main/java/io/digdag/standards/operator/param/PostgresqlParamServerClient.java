@@ -44,7 +44,7 @@ public class PostgresqlParamServerClient
                         "select key, value, value_type" +
                                 " from params" +
                                 " where key = :key and site_id = :site_id" +
-                                " and updated_at + INTERVAL '" + String.valueOf(DEFAULT_TTL) + " seconds' >= now()" +
+                                " and updated_at + INTERVAL '" + String.valueOf(DEFAULT_TTL_IN_SEC) + " seconds' >= now()" +
                                 " limit 1")
                 .bind("key", key)
                 .bind("site_id", siteId)

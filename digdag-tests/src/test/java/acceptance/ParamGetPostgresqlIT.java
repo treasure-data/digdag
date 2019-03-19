@@ -77,13 +77,13 @@ public class ParamGetPostgresqlIT
         SecretProvider secrets = getDatabaseSecrets();
         try (
                 PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
-            int expiredUpdatedAt = 60 * 24 * 90 + 1;
+            int expiredUpdatedAt = 60 * 60 * 24 * 90 + 1;
             // expired param(last update is 90 days + 1second ago)
             conn.executeUpdate(String.format(
                     "insert into params (key, value, value_type, site_id, created_at, updated_at) " +
                             "values ('%s', '%s', %d, %d, now(), now() - interval '" + String.valueOf(expiredUpdatedAt) + " second')",
                     "key1", "{\"value\": \"value1\"}", 0, 0));
-            int notExpiredUpdatedAt = 60 * 24 * 89;
+            int notExpiredUpdatedAt = 60 * 60 * 24 * 89;
             // not expired param(last update is 89 days ago)
             conn.executeUpdate(String.format(
                     "insert into params (key, value, value_type, site_id, created_at, updated_at) " +
