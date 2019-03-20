@@ -171,7 +171,7 @@ _export:
 
   Whether this operator uses a strict transaction to prevent generating unexpected duplicated records just in case. *Default*: `true`.
   This operator creates and uses a status table in the database to make an operation idempotent. But if creating a table isn't allowed, this option should be false.
-  If the query that created the status table completed 24 hours ago, this operator drop the table in the cleanup step.
+  If the query that created the status table completed 24 hours ago, this operator drop the table in the cleanup step. We can set the value of duration with `status_table_cleanup`.
 
   Examples:
 
@@ -197,6 +197,17 @@ _export:
 
   ```
   status_table: customized_status_table
+  ```
+
+* **status_table_cleanup**: NAME
+
+  The duration value to cleanup(drop) status tables.
+  *Default*: `24h`(24 hours).
+
+  Examples:
+
+  ```
+  status_table_cleanup: 40s
   ```
 
 * **connect_timeout**: NAME
