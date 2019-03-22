@@ -186,6 +186,15 @@ public class TemporaryDigdagServer
         adminDataSource = dsp.get();
     }
 
+    /**
+     * Get DataSource for Test DB. (Not admin DB)
+     * @return
+     */
+    public DataSource getTestDBDataSource()
+    {
+        return new DataSourceProvider(testDatabaseConfig).get();
+    }
+
     private static class Trampoline
     {
         private static final String NAME = ManagementFactory.getRuntimeMXBean().getName();
@@ -254,15 +263,22 @@ public class TemporaryDigdagServer
         }
         start();
     }
-
     public void start()
+            throws Exception
+    {
+        start(false);
+    }
+
+    public void start(boolean skipSetupDatabase)
             throws Exception
     {
         started = true;
 
         temporaryFolder.create();
 
-        setupDatabase();
+        if (!skipSetupDatabase) {
+            setupDatabase();
+        }
 
         Path runtimeInfoPath = temporaryFolder.newFolder().toPath().resolve("runtime-info");
         configuration.add("server.runtime-info.path = " + runtimeInfoPath.toAbsolutePath().normalize());
@@ -514,7 +530,7 @@ public class TemporaryDigdagServer
         return p.getClass().getName().equals("java.lang.UNIXProcess");
     }
 
-    private void setupDatabase()
+    public void setupDatabase()
             throws SQLException
     {
         if (testDatabaseConfig == null) {
@@ -769,4 +785,5 @@ public class TemporaryDigdagServer
                 ", port=" + port +
                 '}';
     }
+
 }
