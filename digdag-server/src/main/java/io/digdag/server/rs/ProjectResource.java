@@ -82,7 +82,6 @@ import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.ac.ProjectSecretTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -789,7 +788,7 @@ public class ProjectResource
             ensureNotDeletedProject(project);
 
             ac.checkPutProjectSecret( // AccessControl
-                    ProjectSecretTarget.of(getSiteId(), key, project.getName()),
+                    ProjectTarget.of(getSiteId(), project.getName(), Optional.of(key)),
                     getAuthenticatedUser());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
@@ -815,7 +814,7 @@ public class ProjectResource
             ensureNotDeletedProject(project);
 
             ac.checkDeleteProjectSecret( // AccessControl
-                    ProjectSecretTarget.of(getSiteId(), key, project.getName()),
+                    ProjectTarget.of(getSiteId(), project.getName(), Optional.of(key)),
                     getAuthenticatedUser());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
