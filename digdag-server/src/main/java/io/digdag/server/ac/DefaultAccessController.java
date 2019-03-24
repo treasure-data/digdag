@@ -3,6 +3,7 @@ package io.digdag.server.ac;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.ProjectSecretTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -42,12 +43,12 @@ public class DefaultAccessController
     { }
 
     @Override
-    public void checkPutProjectSecret(ProjectTarget target, AuthenticatedUser user)
+    public void checkPutProjectSecret(ProjectSecretTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkDeleteProjectSecret(ProjectTarget target, AuthenticatedUser user)
+    public void checkDeleteProjectSecret(ProjectSecretTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
