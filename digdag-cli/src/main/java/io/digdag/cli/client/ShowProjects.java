@@ -4,31 +4,25 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
-import io.digdag.client.api.RestWorkflowDefinition;
-
-import javax.ws.rs.NotFoundException;
-
-import java.util.List;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowProjects
-    extends ClientCommand
+        extends ClientCommand
 {
     @Override
     public void mainWithClientException()
-        throws Exception
+            throws Exception
     {
         DigdagClient client = buildClient();
 
         RestProjectCollection projects = client.getProjects();
-        for( RestProject proj: projects.getProjects() ) {
-            ln(" %s",proj.getName());
+        for (RestProject proj : projects.getProjects()) {
+            ln(" %s", proj.getName());
         }
 
         ln("");
         err.println("Use `" + programName + " workflows <project-name>` to show details.");
-
     }
 
     public SystemExitException usage(String error)
@@ -37,5 +31,4 @@ public class ShowProjects
         showCommonOptions();
         return systemExit(error);
     }
-
 }
