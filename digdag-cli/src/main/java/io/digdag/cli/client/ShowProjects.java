@@ -18,7 +18,7 @@ public class ShowProjects
 
         RestProjectCollection projects = client.getProjects();
         for (RestProject proj : projects.getProjects()) {
-            ln(" " + proj.getName());
+            ln(proj.getName());
             ln("  id: " + proj.getId());
             ln("  revision: " + proj.getRevision());
             ln("  archive type: " + proj.getArchiveType());
