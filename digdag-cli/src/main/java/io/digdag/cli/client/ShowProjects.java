@@ -22,17 +22,10 @@ public class ShowProjects
             ln("  id: " + proj.getId());
             ln("  revision: " + proj.getRevision());
             ln("  archive type: " + proj.getArchiveType());
-
-            if (proj.getDeletedAt().isPresent()) {
-                ln("  project deleted at:" + proj.getDeletedAt());
-            }
-            else {
-                ln("  project created at: " + proj.getCreatedAt());
-                ln("  revision updated at: " + proj.getUpdatedAt());
-            }
+            ln("  project created at: " + proj.getCreatedAt());
+            ln("  revision updated at: " + proj.getUpdatedAt());
+            ln("");
         }
-
-        ln("");
         err.println("Use `" + programName + " workflows <project-name>` to show details.");
     }
 
