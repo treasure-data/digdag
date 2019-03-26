@@ -18,7 +18,18 @@ public class ShowProjects
 
         RestProjectCollection projects = client.getProjects();
         for (RestProject proj : projects.getProjects()) {
-            ln(" %s", proj.getName());
+            ln(" " + proj.getName());
+            ln("  id: " + proj.getId());
+            ln("  revision: " + proj.getRevision());
+            ln("  archive type: " + proj.getArchiveType());
+
+            if (proj.getDeletedAt().isPresent()) {
+                ln("  project deleted at:" + proj.getDeletedAt());
+            }
+            else {
+                ln("  project created at: " + proj.getCreatedAt());
+                ln("  revision updated at: " + proj.getUpdatedAt());
+            }
         }
 
         ln("");
