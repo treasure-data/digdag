@@ -1,6 +1,7 @@
 package io.digdag.cli.client;
 
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
@@ -17,13 +18,14 @@ public class ShowProjects
         DigdagClient client = buildClient();
 
         RestProjectCollection projects = client.getProjects();
+        ln("Projects");
         for (RestProject proj : projects.getProjects()) {
-            ln(proj.getName());
-            ln("  id: " + proj.getId());
-            ln("  revision: " + proj.getRevision());
-            ln("  archive type: " + proj.getArchiveType());
-            ln("  project created at: " + proj.getCreatedAt());
-            ln("  revision updated at: " + proj.getUpdatedAt());
+            ln("  name: %s", proj.getName());
+            ln("  id: %s", proj.getId());
+            ln("  revision: %s", proj.getRevision());
+            ln("  archive type: %s", proj.getArchiveType());
+            ln("  project created at: %s", TimeUtil.formatTime(proj.getCreatedAt()));
+            ln("  revision updated at: %s", TimeUtil.formatTime(proj.getUpdatedAt()));
             ln("");
         }
         err.println("Use `" + programName + " workflows <project-name>` to show details.");
