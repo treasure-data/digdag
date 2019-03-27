@@ -192,7 +192,12 @@ public class TemporaryDigdagServer
      */
     public DataSource getTestDBDataSource()
     {
-        return new DataSourceProvider(testDatabaseConfig).get();
+        if (isRemoteDatabase()) {
+            return new DataSourceProvider(testDatabaseConfig).get();
+        }
+        else {
+            return null;
+        }
     }
 
     private static class Trampoline

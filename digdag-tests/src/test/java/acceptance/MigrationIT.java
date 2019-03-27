@@ -15,6 +15,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 
 public class MigrationIT
@@ -43,6 +44,8 @@ public class MigrationIT
     @Test
     public void checkDatabaseUpgrade()
     {
+        assumeTrue(server.isRemoteDatabase());
+
         try {
             server.setupDatabase();
             DataSource ds = server.getTestDBDataSource();
@@ -61,6 +64,7 @@ public class MigrationIT
             server.start(true);
         }
         catch (Exception e) {
+            e.printStackTrace();
             fail(e.toString());
         }
     }
@@ -72,6 +76,8 @@ public class MigrationIT
     @Test
     public void checkMigration_20190318175338_AddIndexToSessionAttempts()
     {
+        assumeTrue(server.isRemoteDatabase());
+
         try {
             server.start();
             DataSource ds = server.getTestDBDataSource();
@@ -81,6 +87,5 @@ public class MigrationIT
         catch (Exception e) {
             fail(e.toString());
         }
-
     }
 }
