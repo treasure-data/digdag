@@ -78,6 +78,8 @@ Name                                 Example (hourly schedule)  Example (daily s
 **last_session_local_time**          2016-01-29 23:00:00        2016-01-29 00:00:00
 **last_session_tz_offset**           -0800                      -0800
 **last_session_unixtime**            1454137200                 1454054400
+**last_executed_session_time**       2016-01-29T23:00:00-08:00  2016-01-29T00:00:00-08:00
+**last_executed_session_unixtime**   1454137200                 1454054400
 **next_session_time**                2016-01-30T01:00:00-08:00  2016-01-31T00:00:00-08:00
 **next_session_date**                2016-01-30                 2016-01-31
 **next_session_date_compact**        20160130                   20160131
@@ -87,6 +89,7 @@ Name                                 Example (hourly schedule)  Example (daily s
 ==================================== ========================== ==========================
 
 last_session_time is the timestamp of the last schedule. If the schedule is hourly, it's the last hour. If the schedule is daily, it's yesterday. It doesn't matter whether the last schedule actually ran or not. It's simply set to the last timestamp calculated from the current session time.
+last_executed_session_time variable is the previously executed session time.
 
 Calculating variables
 ----------------------------------
