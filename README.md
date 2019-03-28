@@ -92,6 +92,9 @@ You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY
 3. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
 4. run `./gradlew clean cli site check releaseCheck`.
 5. if it succeeded, run `./gradlew release`.
+6. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
+7. push to master.
+8. create a release in [GitHub releases](https://github.com/treasure-data/digdag/releases).
 
 If major version is incremented, also update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
 
