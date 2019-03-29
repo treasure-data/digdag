@@ -11,6 +11,10 @@
       key2: value2
       key3: value3
 
+
+(Note: Each parameter has expired time (TTL).
+The value is 7,776,000 seconds (90days: 60sec * 60min * 24hours * 90days)).
+
 ## System configurations
 
 ### Common
