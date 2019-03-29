@@ -319,6 +319,7 @@ public final class RestModels
             .updatedAt(task.getUpdatedAt())
             .retryAt(task.getRetryAt())
             .startedAt(task.getStartedAt())
+            .error(task.getError())
             .build();
     }
 

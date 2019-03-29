@@ -46,6 +46,8 @@ public interface RestTask
 
     Optional<Instant> getStartedAt();
 
+    Config getError();
+
     // TODO in out Report
 
     static ImmutableRestTask.Builder builder()

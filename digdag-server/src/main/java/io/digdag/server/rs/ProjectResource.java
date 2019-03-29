@@ -74,6 +74,8 @@ import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
@@ -82,7 +84,9 @@ import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
 import io.digdag.core.storage.ArchiveManager;
+import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.SecretControlStore;
@@ -549,6 +553,8 @@ public class ProjectResource
                     if (md5Count.getCount() != contentLength) {
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
+
+                    validateWorkflowAndSchedule(meta);
                 }
 
                 ArchiveManager.Location location =
@@ -678,6 +684,26 @@ public class ProjectResource
             throw new IllegalArgumentException(String.format(ENGLISH,
                         "Size of a file in the archive exceeds limit (%d > %d bytes): %s",
                         entry.getSize(), MAX_ARCHIVE_FILE_SIZE_LIMIT, entry.getName()));
+        }
+    }
+
+    private void validateWorkflowAndSchedule(ArchiveMetadata meta)
+    {
+        WorkflowDefinitionList defs = meta.getWorkflowList();
+        for (WorkflowDefinition def : defs.get()) {
+            Workflow wf = compiler.compile(def.getName(), def.getConfig());
+
+            // validate workflow and schedule
+            for (WorkflowTask task : wf.getTasks()) {
+                // raise an exception if task doesn't valid.
+                task.getConfig();
+            }
+            Revision rev = Revision.builderFromArchive("check", meta, getUserInfo())
+                    .archiveType(ArchiveType.NONE)
+                    .build();
+            // raise an exception if "schedule:" is invalid.
+            srm.tryGetScheduler(rev, def);
+
         }
     }
 

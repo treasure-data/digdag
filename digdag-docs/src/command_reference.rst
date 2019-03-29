@@ -304,6 +304,13 @@ Runs a digdag server. --memory or --database option is required. Examples:
 
   Example: ``--disable-executor-loop``
 
+:command:`--disable-scheduler`
+  Disable a schedule executor on this server.
+
+  This option is useful when you want to disable all schedules without modifying workflow files. See also ``--disable-executor-loop`` option.
+
+  Example: ``--disable-scheduler``
+
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
