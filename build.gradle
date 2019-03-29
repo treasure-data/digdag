@@ -322,7 +322,7 @@ project(':digdag-ui') {
 
         doFirst {
             exec {
-                commandLine System.env.NPM ?: "npm", "install"
+                commandLine System.env.NPM ?: "npm", "ci"
             }
             exec {
                 commandLine System.env.NPM ?: "npm", "run", "build"
