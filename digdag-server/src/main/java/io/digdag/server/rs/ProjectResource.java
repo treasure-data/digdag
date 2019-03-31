@@ -582,7 +582,7 @@ public class ProjectResource
                 RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
                         Project.of(name),
                         (store, storedProject) -> {
-                            ProjectControl lockedProj = new ProjectControl(store, storedProject, CAN_UPDATE_SCHEDULES);
+                            ProjectControl lockedProj = new ProjectControl(store, storedProject);
                             StoredRevision rev;
                             if (storeInDb) {
                                 // store data in db
@@ -613,10 +613,17 @@ public class ProjectResource
                                 );
                             }
 
-                            List<StoredWorkflowDefinition> defs =
+                            if (CAN_UPDATE_SCHEDULES) {
+                                List<StoredWorkflowDefinition> defs =
                                     lockedProj.insertWorkflowDefinitions(rev,
                                             meta.getWorkflowList().get(),
                                             srm, scheduleFrom);
+                            }
+                            else {
+                                List<StoredWorkflowDefinition> defs =
+                                    lockedProj.insertWorkflowDefinitionsWithoutSchedules(rev,
+                                            meta.getWorkflowList().get());
+                            }
                             return RestModels.project(storedProject, rev);
                         });
 
