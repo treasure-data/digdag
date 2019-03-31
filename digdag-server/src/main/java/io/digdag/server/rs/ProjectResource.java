@@ -168,6 +168,7 @@ public class ProjectResource
     private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
+    private static boolean CAN_UPDATE_SCHEDULES;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -213,6 +214,7 @@ public class ProjectResource
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
         MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
+        CAN_UPDATE_SCHEDULES = systemConfig.get("api.update-schedules", Boolean.class, true).booleanValue();
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -580,7 +582,7 @@ public class ProjectResource
                 RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
                         Project.of(name),
                         (store, storedProject) -> {
-                            ProjectControl lockedProj = new ProjectControl(store, storedProject);
+                            ProjectControl lockedProj = new ProjectControl(store, storedProject, CAN_UPDATE_SCHEDULES);
                             StoredRevision rev;
                             if (storeInDb) {
                                 // store data in db

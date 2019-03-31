@@ -307,9 +307,18 @@ Runs a digdag server. --memory or --database option is required. Examples:
 :command:`--disable-scheduler`
   Disable a schedule executor on this server.
 
-  This option is useful when you want to disable all schedules without modifying workflow files. See also ``--disable-executor-loop`` option.
+  This option is useful when you want to disable all schedules without modifying workflow files.
+  Unlike ``--ignore-schedules`` option, this option allows to register schedules, but any schedules will not be executed.
 
   Example: ``--disable-scheduler``
+
+:command:`--ignore-schedules`
+  Ignore workflow schedules to be registered on this server.
+
+  This option is useful when you want to disable all schedules without modifying workflow files.
+  Unlike ``--disable-scheduler`` option, this option ignores to register any schdules.
+
+  Example: ``--ignore-schedules``
 
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.

@@ -38,11 +38,18 @@ public class ProjectControl
 
     private final ProjectControlStore store;
     private final StoredProject project;
+    private final boolean canUpdateSchedules;
 
     public ProjectControl(ProjectControlStore store, StoredProject project)
     {
+        this(store, project, true);
+    }
+
+    public ProjectControl(ProjectControlStore store, StoredProject project, boolean canUpdateSchedules)
+    {
         this.store = store;
         this.project = project;
+        this.canUpdateSchedules = canUpdateSchedules;
     }
 
     public StoredProject get()
@@ -68,7 +75,9 @@ public class ProjectControl
         throws ResourceConflictException
     {
         List<StoredWorkflowDefinition> list = insertWorkflowDefinitionsWithoutSchedules(revision, defs);
-        updateSchedules(revision, list, srm, currentTime);
+        if (this.canUpdateSchedules) {
+            updateSchedules(revision, list, srm, currentTime);
+        }
         return list;
     }
 
