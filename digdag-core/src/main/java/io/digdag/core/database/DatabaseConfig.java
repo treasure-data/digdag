@@ -105,8 +105,7 @@ public interface DatabaseConfig
         builder.maximumPoolSize(maximumPoolSize);
         builder.minimumPoolSize(
                 config.get(keyPrefix + "." + "minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
-        builder.enableJMX(
-                config.get(keyPrefix + "." + "enableJMX", boolean.class, false));  // HikariCP default: false
+        builder.enableJMX(isJMXEnable(config));
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
         for (String key : config.getKeys()) {
@@ -124,6 +123,19 @@ public interface DatabaseConfig
                 config.get(keyPrefix + "." + "queue.expireLockInterval", int.class, 10));
 
         return builder.build();
+    }
+
+    /**
+     * If server.jmx.port > 0 then JMX is enable
+     * TODO this method should move to proper class?
+     * @param config
+     * @return
+     */
+    static boolean isJMXEnable(Config config)
+    {
+        return config.getOptional("server.jmx.port", Integer.class)
+                .transform((port) -> port > 0)
+                .or(false);
     }
 
     static Config toConfig(DatabaseConfig databaseConfig, ConfigFactory cf) {
