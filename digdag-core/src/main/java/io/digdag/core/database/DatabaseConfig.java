@@ -47,6 +47,8 @@ public interface DatabaseConfig
 
     boolean getEnableJMX();
 
+    long getLeakDetectionThreshold();  // milliseconds
+
     static ImmutableDatabaseConfig.Builder builder()
     {
         return ImmutableDatabaseConfig.builder();
@@ -105,7 +107,11 @@ public interface DatabaseConfig
         builder.maximumPoolSize(maximumPoolSize);
         builder.minimumPoolSize(
                 config.get(keyPrefix + "." + "minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
+
         builder.enableJMX(isJMXEnable(config));
+        builder.leakDetectionThreshold(
+                config.get(keyPrefix + "." + "leakDetectionThreshold", long.class, 0L));  // HikariCP default: 0
+
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
         for (String key : config.getKeys()) {
