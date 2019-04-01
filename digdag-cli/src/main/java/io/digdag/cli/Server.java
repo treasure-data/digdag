@@ -197,7 +197,7 @@ public class Server
         }
 
         if (ignoreSchedules) {
-            props.setProperty("api.update-schedules", Boolean.toString(false));
+            props.setProperty("api.ignore-schedules", Boolean.toString(true));
         }
 
         if (enableSwagger) {

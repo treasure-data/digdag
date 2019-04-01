@@ -168,7 +168,7 @@ public class ProjectResource
     private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
-    private static boolean CAN_UPDATE_SCHEDULES;
+    private static boolean SHOULD_IGNORE_SCHEDULES;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -214,7 +214,7 @@ public class ProjectResource
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
         MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
-        CAN_UPDATE_SCHEDULES = systemConfig.get("api.update-schedules", Boolean.class, true).booleanValue();
+        SHOULD_IGNORE_SCHEDULES = systemConfig.get("api.ignore-schedules", Boolean.class, false).booleanValue();
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -613,16 +613,17 @@ public class ProjectResource
                                 );
                             }
 
-                            if (CAN_UPDATE_SCHEDULES) {
+                            if (SHOULD_IGNORE_SCHEDULES) {
+                                List<StoredWorkflowDefinition> defs =
+                                    lockedProj.insertWorkflowDefinitionsWithoutSchedules(rev,
+                                            meta.getWorkflowList().get());
+                                lockedProj.deleteSchedules();
+                            }
+                            else {
                                 List<StoredWorkflowDefinition> defs =
                                     lockedProj.insertWorkflowDefinitions(rev,
                                             meta.getWorkflowList().get(),
                                             srm, scheduleFrom);
-                            }
-                            else {
-                                List<StoredWorkflowDefinition> defs =
-                                    lockedProj.insertWorkflowDefinitionsWithoutSchedules(rev,
-                                            meta.getWorkflowList().get());
                             }
                             return RestModels.project(storedProject, rev);
                         });
