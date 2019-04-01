@@ -25,6 +25,7 @@ import javax.management.ObjectName;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
 import static utils.TestUtils.expect;
@@ -37,7 +38,9 @@ public class ServerJmxIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .inProcess(false)
             .configuration(
-                    "server.jmx.port=0")
+                    "server.jmx.port=0",
+                    "database.leakDetectionThreshold=60000",
+                    "database.maximumPoolSize=3")
             .build();
 
     private static JMXConnector connectJmx(TemporaryDigdagServer server)
@@ -68,6 +71,22 @@ public class ServerJmxIT
 
             Object enqueueCount = beans.getAttribute(ObjectName.getInstance("io.digdag.core.workflow", "name", "TaskQueueDispatcher"), "EnqueueCount");
             assertThat(enqueueCount, is(0L));
+        }
+    }
+
+    @Test
+    public void verifyHikariCP()
+            throws Exception
+    {
+        assumeThat(server.isRemoteDatabase(), is(true));
+        try (JMXConnector con = connectJmx(server)) {
+            MBeanServerConnection beans = con.getMBeanServerConnection();
+
+            Object leakDetectionThreshold = beans.getAttribute(ObjectName.getInstance("com.zaxxer.hikari", "type", "PoolConfig (HikariPool-1)"), "LeakDetectionThreshold");
+            assertThat(leakDetectionThreshold, is(60000L));
+
+            Object numConnection = beans.getAttribute(ObjectName.getInstance("com.zaxxer.hikari", "type", "Pool (HikariPool-1)"), "TotalConnections");
+            assertTrue((int)numConnection >= 0);
         }
     }
 

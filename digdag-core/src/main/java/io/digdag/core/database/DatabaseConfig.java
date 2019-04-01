@@ -132,7 +132,7 @@ public interface DatabaseConfig
     }
 
     /**
-     * If server.jmx.port > 0 then JMX is enable
+     * If server.jmx.port exists, then JMX is enable
      * TODO this method should move to proper class?
      * @param config
      * @return
@@ -140,7 +140,7 @@ public interface DatabaseConfig
     static boolean isJMXEnable(Config config)
     {
         return config.getOptional("server.jmx.port", Integer.class)
-                .transform((port) -> port > 0)
+                .transform((port) -> true)
                 .or(false);
     }
 
