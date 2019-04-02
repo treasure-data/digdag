@@ -356,7 +356,7 @@ In the config file, following parameters are available
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
-* database.leakDetectionThreshold (HikariCP leakDetectionThreshold in integer. default: 0. To enable, set to >= 2000.)
+* database.leakDetectionThreshold (HikariCP leakDetectionThreshold milliseconds in integer. default: 0. To enable, set to >= 2000.)
 * archive.type (type of project archiving, "db" or "s3". default: "db")
 * archive.s3.endpoint (string. default: "s3.amazonaws.com")
 * archive.s3.bucket (string)
