@@ -336,7 +336,7 @@ public class Main
         err.println("  Options:");
         showCommonOptions(env, err);
         err.println("  Client options:");
-        showClientCommonOptions(env, err);
+        showClientCommonOptions(err);
         if (error == null) {
             err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
@@ -356,7 +356,7 @@ public class Main
         err.println("");
     }
 
-    public static void showClientCommonOptions(Map<String, String> env, PrintStream err)
+    public static void showClientCommonOptions(PrintStream err)
     {
         err.println("    -e, --endpoint URL               Server endpoint (default: http://127.0.0.1:65432)");
         err.println("    -H, --header  KEY=VALUE          Additional headers");
