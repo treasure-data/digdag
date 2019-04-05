@@ -84,8 +84,8 @@ public class DatabaseMigrator
 
     public void migrateWithRetry()
     {
-        final int max_retry = 3;
-        for (int i = 0; i < max_retry; i++) {
+        final int maxRetry = 3;
+        for (int i = 0; i < maxRetry; i++) {
             try {
                 logger.info("Database migration started");
                 migrate();
@@ -94,7 +94,7 @@ public class DatabaseMigrator
             }
             catch (RuntimeException re) {
                 logger.warn(re.toString());
-                if (i == max_retry - 1) {
+                if (i == maxRetry - 1) {
                     logger.error("Critical error!!. Database migration failed.");
                 }
                 else {
@@ -111,7 +111,7 @@ public class DatabaseMigrator
         logger.error("Database migration aborted.");
     }
 
-    public void migrate()
+    private void migrate()
     {
         MigrationContext context = new MigrationContext(databaseType);
         try (Handle handle = dbi.open()) {
@@ -182,6 +182,7 @@ public class DatabaseMigrator
         handle.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
     }
 
+    @VisibleForTesting
     public String getDatabaseType()
     {
         return databaseType;
