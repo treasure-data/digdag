@@ -86,6 +86,8 @@ public class DataSourceProvider
         hikari.setValidationTimeout(config.getValidationTimeout() * 1000);
         hikari.setMaximumPoolSize(config.getMaximumPoolSize());
         hikari.setMinimumIdle(config.getMinimumPoolSize());
+        hikari.setRegisterMbeans(config.getEnableJMX());
+        hikari.setLeakDetectionThreshold(config.getLeakDetectionThreshold());
 
         // Here should not set connectionTestQuery (that overrides isValid) because
         // ThreadLocalTransactionManager.commit assumes that Connection.isValid returns

@@ -59,6 +59,8 @@ public class DatabaseTestingUtils
                 .validationTimeout(5)
                 .minimumPoolSize(0)
                 .maximumPoolSize(10)
+                .enableJMX(false)
+                .leakDetectionThreshold(0)
                 .build();
         }
     }

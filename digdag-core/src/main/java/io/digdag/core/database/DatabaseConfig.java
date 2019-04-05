@@ -45,6 +45,10 @@ public interface DatabaseConfig
 
     int getValidationTimeout();  // seconds
 
+    boolean getEnableJMX();
+
+    long getLeakDetectionThreshold();  // milliseconds
+
     static ImmutableDatabaseConfig.Builder builder()
     {
         return ImmutableDatabaseConfig.builder();
@@ -104,6 +108,10 @@ public interface DatabaseConfig
         builder.minimumPoolSize(
                 config.get(keyPrefix + "." + "minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
 
+        builder.enableJMX(isJMXEnable(config));
+        builder.leakDetectionThreshold(
+                config.get(keyPrefix + "." + "leakDetectionThreshold", long.class, 0L));  // HikariCP default: 0
+
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
         for (String key : config.getKeys()) {
@@ -121,6 +129,19 @@ public interface DatabaseConfig
                 config.get(keyPrefix + "." + "queue.expireLockInterval", int.class, 10));
 
         return builder.build();
+    }
+
+    /**
+     * If server.jmx.port exists, then JMX is enable
+     * TODO this method should move to proper class?
+     * @param config
+     * @return
+     */
+    static boolean isJMXEnable(Config config)
+    {
+        return config.getOptional("server.jmx.port", Integer.class)
+                .transform((port) -> true)
+                .or(false);
     }
 
     static Config toConfig(DatabaseConfig databaseConfig, ConfigFactory cf) {
@@ -158,6 +179,7 @@ public interface DatabaseConfig
         config.set(keyPrefix + "." + "validationTimeout", databaseConfig.getValidationTimeout());
         config.set(keyPrefix + "." + "maximumPoolSize", databaseConfig.getMaximumPoolSize());
         config.set(keyPrefix + "." + "minimumPoolSize", databaseConfig.getMinimumPoolSize());
+        config.set(keyPrefix + "." + "enableJMX", databaseConfig.getEnableJMX());
 
         // database.opts.*
         Map<String, String> options = databaseConfig.getOptions();
