@@ -335,6 +335,8 @@ public class Main
         err.println("");
         err.println("  Options:");
         showCommonOptions(env, err);
+        err.println("  Client options:");
+        showClientCommonOptions(err);
         if (error == null) {
             err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
@@ -353,4 +355,14 @@ public class Main
         err.println("    --version                        show client version");
         err.println("");
     }
+
+    public static void showClientCommonOptions(PrintStream err)
+    {
+        err.println("    -e, --endpoint URL               Server endpoint (default: http://127.0.0.1:65432)");
+        err.println("    -H, --header  KEY=VALUE          Additional headers");
+        err.println("    --disable-version-check          Disable server version check");
+        err.println("    --disable-cert-validation        Disable certificate verification");
+        err.println("");
+    }
+
 }
