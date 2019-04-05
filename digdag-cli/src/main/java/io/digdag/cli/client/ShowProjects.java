@@ -15,11 +15,30 @@ public class ShowProjects
     public void mainWithClientException()
             throws Exception
     {
+        switch (args.size()) {
+            case 0:
+                showProjects(null);
+                break;
+            case 1:
+                showProjects(args.get(0));
+                break;
+            default:
+                throw usage(null);
+        }
+    }
+
+    private void showProjects(String project)
+            throws Exception
+    {
         DigdagClient client = buildClient();
 
         RestProjectCollection projects = client.getProjects();
         ln("Projects");
         for (RestProject proj : projects.getProjects()) {
+            if (project != null && proj.getName().equals(project) == false ) {
+                continue;
+            }
+
             ln("  name: %s", proj.getName());
             ln("  id: %s", proj.getId());
             ln("  revision: %s", proj.getRevision());
@@ -33,7 +52,7 @@ public class ShowProjects
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " projects");
+        err.println("Usage: " + programName + " projects [project]");
         showCommonOptions();
         return systemExit(error);
     }
