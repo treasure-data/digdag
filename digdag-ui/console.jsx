@@ -1160,6 +1160,10 @@ class AttemptView extends React.Component {
               <td>Status</td>
               <td><AttemptStatusView attempt={attempt} /></td>
             </tr>
+            <tr>
+              <td>Params</td>
+              <td><ParamsView params={attempt.params} /></td>
+            </tr>
           </tbody>
         </table>
         <ReactInterval timeout={refreshIntervalMillis} enabled={!this.state.done} callback={() => this.fetch()} />
@@ -1254,6 +1258,10 @@ class SessionView extends React.Component {
             <tr>
               <td>Last Attempt Duration:</td>
               <td><DurationView start={lastAttempt && lastAttempt.createdAt} end={lastAttempt && lastAttempt.finishedAt} /></td>
+            </tr>
+            <tr>
+              <td>Last Attempt Params:</td>
+              <td><ParamsView params={lastAttempt && lastAttempt.params} /></td>
             </tr>
           </tbody>
         </table>
