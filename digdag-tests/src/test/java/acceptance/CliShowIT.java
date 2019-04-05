@@ -1,6 +1,5 @@
 package acceptance;
 
-import io.digdag.client.DigdagClient;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,6 +76,5 @@ public class CliShowIT
         assertThat(showProjectStatus.errUtf8(), showProjectStatus.code(), is(0));
         assertThat(showProjectStatus.outUtf8(), containsString(" name: foo"));
         assertThat(showProjectStatus.outUtf8(), containsString(" name: bar"));
-        ;
     }
 }
