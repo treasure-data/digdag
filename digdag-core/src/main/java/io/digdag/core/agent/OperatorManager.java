@@ -158,7 +158,7 @@ public class OperatorManager
                                 ex.getError(cf).get());  // TODO is error set?
                     }
                 }
-                catch (RuntimeException ex) {
+                catch (RuntimeException | AssertionError ex) { // Avoid infinite task retry cause of AssertionError by Operators
                     if (ex instanceof ConfigException) {
                         logger.error("Configuration error at task {}: {}", request.getTaskName(), formatExceptionMessage(ex));
                     }
@@ -202,6 +202,9 @@ public class OperatorManager
         }
         catch (RuntimeException ex) {
             throw new RuntimeException("Failed to process variables", ex);
+        }
+        catch (AssertionError ex) { // Avoid infinite task retry cause of AssertionError by ConfigEvalEngine(nashorn)
+            throw new RuntimeException("Unexpected error happened in ConfigEvalEngine: " + ex.getMessage(), ex);
         }
         logger.debug("evaluated config: {}", config);
 
