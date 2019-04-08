@@ -123,4 +123,47 @@ public class CliShowIT
         // This assert expect `digdag projects foo` doesn't show project `bar` detail.
         assertThat(showProjectStatus.outUtf8(), not(containsString(" name: bar")));
     }
+    @Test
+    public void showProjectWithNonRegisteredProject()
+            throws Exception
+    {
+
+        // Create new project
+        CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.code(), is(0));
+
+        copyResource("acceptance/basic.dig", projectDir.resolve("basic.dig"));
+
+        // digdag push first project. (named: foo)
+        {
+            CommandStatus pushStatus = main(
+                    "push",
+                    "--project", projectDir.toString(),
+                    "foo",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        // digdag push second project. (named: bar)
+        {
+            CommandStatus pushStatus = main(
+                    "push",
+                    "--project", projectDir.toString(),
+                    "bar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        CommandStatus showProjectStatus = main("projects","not_exist_project",
+                "-c", config.toString(),
+                "-e", server.endpoint());
+
+        assertThat(showProjectStatus.errUtf8(), showProjectStatus.code(), is(0));
+        assertThat(showProjectStatus.outUtf8(), containsString(" Not found"));
+    }
+
 }
