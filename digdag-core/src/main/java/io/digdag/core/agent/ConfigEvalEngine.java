@@ -145,6 +145,12 @@ public class ConfigEvalEngine
             throws TemplateException
         {
             ObjectNode built = local.objectNode();
+            return evalObjectRecursive(built, built, local);
+        }
+
+        private ObjectNode evalObjectRecursive(ObjectNode built, ObjectNode reference, ObjectNode local)
+            throws TemplateException
+        {
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 JsonNode value = pair.getValue();
                 JsonNode evaluated;
@@ -153,7 +159,7 @@ public class ConfigEvalEngine
                     evaluated = value;
                 }
                 else if (value.isObject()) {
-                    evaluated = evalObjectRecursive((ObjectNode) value);
+                    evaluated = evalObjectRecursive(local.objectNode(), built, (ObjectNode) value);
                 }
                 else if (value.isArray()) {
                     evaluated = evalArrayRecursive(built, (ArrayNode) value);
@@ -161,7 +167,7 @@ public class ConfigEvalEngine
                 else if (value.isTextual()) {
                     // eval using template engine
                     String code = value.textValue();
-                    evaluated = evalValue(built, code);
+                    evaluated = evalValue(reference, code);
                 }
                 else {
                     evaluated = value;

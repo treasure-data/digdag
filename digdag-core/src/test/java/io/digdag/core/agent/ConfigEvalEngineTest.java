@@ -41,6 +41,15 @@ public class ConfigEvalEngineTest
     }
 
     @Test
+    public void testNestedVars()
+            throws Exception
+    {
+        assertThat(
+                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/nested_vars.dig"), params()),
+                is(loadYamlResource("/io/digdag/core/agent/eval/nested_vars_expected.dig")));
+    }
+
+    @Test
     public void testLiteral()
             throws Exception
     {
