@@ -16,7 +16,7 @@ import static org.hamcrest.Matchers.not;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 
-public class CliShowIT
+public class CliShowProjectsIT
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();

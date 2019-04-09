@@ -70,7 +70,7 @@ public class ShowProjects
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " projects [project]");
+        err.println("Usage: " + programName + " projects [name]");
         showCommonOptions();
         return systemExit(error);
     }

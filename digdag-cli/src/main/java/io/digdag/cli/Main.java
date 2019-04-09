@@ -134,7 +134,7 @@ public class Main
         jc.addCommand("upload", injector.getInstance(Upload.class));
         jc.addCommand("download", injector.getInstance(Download.class));
 
-        jc.addCommand("projects", injector.getInstance(ShowProjects.class), "projects");
+        jc.addCommand("project", injector.getInstance(ShowProjects.class), "projects");
         jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
         jc.addCommand("start", injector.getInstance(Start.class));
         jc.addCommand("retry", injector.getInstance(Retry.class));
@@ -315,7 +315,7 @@ public class Main
         err.println("    reschedule <schedule-id>           skip sessions of a schedule to a future time");
         err.println("    reschedule <project-name> <name>   skip sessions of a schedule to a future time");
         err.println("    log <attempt-id>                   show logs of a session attempt");
-        err.println("    projects                           show projects");
+        err.println("    projects [name]                    show projects");
         err.println("    workflows [project-name] [name]    show registered workflow definitions");
         err.println("    schedules                          show registered schedules");
         err.println("    disable <schedule-id>              disable a workflow schedule");
