@@ -2,7 +2,6 @@ package io.digdag.core.workflow;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,7 +14,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -25,11 +23,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.client.config.ConfigUtils.newConfig;
-import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 public class WorkflowExecutorTest
 {
@@ -181,10 +178,27 @@ public class WorkflowExecutorTest
 
     }
 
-
     private void runWorkflow(String workflowName, Config config)
             throws Exception
     {
         WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
+    }
+
+    // variables of sibling task should not be referable.
+    @Test
+    public void unscopedVariableReference()
+            throws Exception
+    {
+        runWorkflow("unscoped_variable_reference", loadYamlResource("/io/digdag/core/workflow/unscoped_variable_ref.dig"));
+        assertFalse(folder.getRoot().toPath().resolve("out").toFile().exists()); // workflow failed and no output file generated
+    }
+
+    // nested variables should be substituted and should be referable from correct scope
+    @Test
+    public void scopedNestedVariableReference()
+            throws Exception
+    {
+        runWorkflow("scoped_nested_variable_reference", loadYamlResource("/io/digdag/core/workflow/scoped_nested_variable_ref.dig"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("1970-01-01")); //should be substituted correctly
     }
 }

@@ -1,0 +1,8 @@
++task1:
+  _export:
+    date1: ${moment(0).utc().format('YYYY-MM-DD')}
+    nested:
+      date2: ${date1}
++task2:
+  echo>: ${nested.date2}
+  append_file: out
