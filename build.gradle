@@ -322,6 +322,7 @@ project(':digdag-ui') {
 
         doFirst {
             exec {
+                // npm ci requires npm version 5.7 or more.
                 commandLine System.env.NPM ?: "npm", "ci"
             }
             exec {
