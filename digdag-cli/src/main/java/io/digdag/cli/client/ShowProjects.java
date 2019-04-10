@@ -46,14 +46,14 @@ public class ShowProjects
             throws Exception
     {
         DigdagClient client = buildClient();
-        ln("Projects");
         try {
             RestProject project = client.getProject(name);
+            ln("Projects");
             showProjectDetail(project);
             err.println("Use `" + programName + " workflows <project-name>` to show details.");
         }
         catch (NotFoundException ex) {
-            ln("  Not found");
+            throw systemExit("Project '" + name + "' does not exist.");
         }
     }
 

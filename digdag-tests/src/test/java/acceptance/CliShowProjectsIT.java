@@ -162,8 +162,8 @@ public class CliShowProjectsIT
                 "-c", config.toString(),
                 "-e", server.endpoint());
 
-        assertThat(showProjectStatus.errUtf8(), showProjectStatus.code(), is(0));
-        assertThat(showProjectStatus.outUtf8(), containsString(" Not found"));
+        assertThat(showProjectStatus.errUtf8(), showProjectStatus.code(), is(1));
+        assertThat(showProjectStatus.errUtf8(), containsString("does not exist."));
     }
 
 }
