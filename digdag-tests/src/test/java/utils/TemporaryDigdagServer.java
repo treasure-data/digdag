@@ -200,6 +200,10 @@ public class TemporaryDigdagServer
         }
     }
 
+    public DatabaseConfig getTestDatabaseConfig() { return testDatabaseConfig; }
+
+
+
     private static class Trampoline
     {
         private static final String NAME = ManagementFactory.getRuntimeMXBean().getName();

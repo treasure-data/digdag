@@ -6,10 +6,7 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.StatementException;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -111,8 +108,10 @@ public class DatabaseMigrator
         logger.error("Database migration aborted.");
     }
 
-    private void migrate()
+    // Call from cli
+    public int migrate()
     {
+        int numApplied = 0;
         MigrationContext context = new MigrationContext(databaseType);
         try (Handle handle = dbi.open()) {
             boolean isInitial = !existsSchemaMigrationsTable(handle);
@@ -124,6 +123,7 @@ public class DatabaseMigrator
                 Set<String> appliedSet = getAppliedMigrationNames(handle);
                 if (appliedSet.add(m.getVersion())) {
                     logger.info("Applying database migration:" + m.getVersion());
+                    numApplied++;
                     if (m.noTransaction()) {
                         // In no transaction we can't lock schema_migrations table
                         applyMigration(m, handle, context);
@@ -142,6 +142,33 @@ public class DatabaseMigrator
                 }
             }
         }
+        return numApplied;
+    }
+
+    // Called from cli migrate
+
+    /**
+     * Called from cli migrate
+     * @return no applicated migrations.
+     */
+    public List<Migration> getApplicableMigration()
+    {
+        List<Migration> applicableMigrations = new ArrayList<>();
+        MigrationContext context = new MigrationContext(databaseType);
+        try (Handle handle = dbi.open()) {
+            boolean isInitial = !existsSchemaMigrationsTable(handle);
+            if (isInitial) {
+                return applicableMigrations;
+            }
+
+            Set<String> appliedSet = getAppliedMigrationNames(handle);
+            for (Migration m : migrations) {
+                if (!appliedSet.contains(m.getVersion())) {
+                    applicableMigrations.add(m);
+                }
+            }
+        }
+        return applicableMigrations;
     }
 
     Set<String> getAppliedMigrationNames(Handle handle)
@@ -160,6 +187,14 @@ public class DatabaseMigrator
                 .addString("name", "not null")
                 .addTimestamp("created_at", "not null")
                 .build());
+    }
+
+    // Called from cli migrate
+    public boolean existsSchemaMigrationsTable()
+    {
+        try (Handle handle = dbi.open()) {
+            return existsSchemaMigrationsTable(handle);
+        }
     }
 
     private boolean existsSchemaMigrationsTable(Handle handle)
