@@ -540,6 +540,20 @@ Kills a session attempt. Examples:
     $ digdag kill 32
 
 
+projects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag projects [name]
+
+Shows list of projects or details of a project. Examples:
+
+.. code-block:: console
+
+    $ digdag projects
+    $ digdag projects myproj
+
 workflows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
