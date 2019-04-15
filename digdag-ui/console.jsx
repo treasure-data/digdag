@@ -257,9 +257,9 @@ class CacheLoader extends React.Component {
     const { children } = this.props
     if (!hasCache) {
       return (
-        <div className='loadingContainer'>
           <span className='glyphicon glyphicon-refresh spinning' />
-          <span className='loadingText'>Loading ...</span>
+        <div className='loading-container'>
+          <span className='loading-text'>Loading...</span>
         </div>
       )
     }
