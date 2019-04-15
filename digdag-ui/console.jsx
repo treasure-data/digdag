@@ -168,12 +168,12 @@ class CodeViewer extends React.Component {
     const token = session.getTokenAt(docPos.row, docPos.column)
     const openTab = (url) => window.open(url)
     if (token && token.type === TD_LOAD_VALUE_TOKEN) {
-      const queryId = model().getTDQueryIdFromName(token.valuke)
-      if (queryId) {
-        openTab(DIGDAG_CONFIG.td.queryUrl(queryId))
-      }
-    } else if (token && token.type === TD_RUN_VALUE_TOKEN) {
       openTab(DIGDAG_CONFIG.td.connectorUrl(token.value))
+    } else if (token && token.type === TD_RUN_VALUE_TOKEN) {
+      // td_run> can take SAVED_QUERY_ID or SAVED_QUERY_NAME argument
+      // If getTDQueryIdFromName() return undefined, token.value is queryId
+      const queryId = model().getTDQueryIdFromName(token.value) || token.value
+      openTab(DIGDAG_CONFIG.td.queryUrl(queryId))
     }
   }
 
