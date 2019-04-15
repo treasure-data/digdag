@@ -119,7 +119,8 @@ class CodeViewer extends React.Component {
       showGutter: false,
       showPrintMargin: false,
       tabSize: 2,
-      useSoftTabs: true
+      useSoftTabs: true,
+      maxLines: Infinity
     }
   }
 
@@ -157,6 +158,7 @@ class CodeViewer extends React.Component {
     require('./ace-digdag')
     this._editor = Ace.edit(this.editor)
     this._editor.setOptions(this.props.editorOptions)
+    this._editor.$blockScrolling = Infinity
     this._editor.on('click', this.editorClick.bind(this))
     this._updateEditor(this.props)
   }
