@@ -22,7 +22,7 @@ Fixed Issues
 
 Release Date
 ------------
-2019-04-17
+2019-04-16
 
 Contributors
 ------------
