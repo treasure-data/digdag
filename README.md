@@ -86,17 +86,31 @@ It makes an executable in `pkg/`, e.g. `pkg/digdag-$VERSION.jar`.
 ### Releasing a new version
 
 You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY` environment variables.
+In the following instructions, assumed that `upstream` is set to `treasure-data/digdag` and `origin` is set to your private repository.
 
-1. run `git pull origin --tags`.
-2. run `./gradlew setVersion -Pto=<version>` command.
-3. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
-4. run `./gradlew clean cli site check releaseCheck`.
-5. if it succeeded, run `./gradlew release`.
-6. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
-7. push to master.
-8. create a release in [GitHub releases](https://github.com/treasure-data/digdag/releases).
+1. run `git pull upstream --tags`.
+1. run `./gradlew setVersion -Pto=<version>` command.
+1. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
+1. run `./gradlew clean cli site check releaseCheck`.
+1. make a release branch. `git checkout -b release_v<version>` and commit. 
+1. push the release branch to origin and create a PR.
+1. after the PR is merged to master, checkout master and pull latest upstream/master.
+1. run `./gradlew clean cli site check releaseCheck` agian.
+1. if it succeeded, run `./gradlew release`.
+1. a few minutes later, run `digdag selfupdate` and confirm the version.
 
 If major version is incremented, also update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
+
+If you are expert, skip 5. to 7. and directly update master branch.
+
+### Post-process of new release
+
+You also need following steps after new version has been released.
+
+1. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
+1. push to master.
+1. create a tag `git tag -a v<version>` and push `git push upstream v<version>`
+1. create a release in [GitHub releases](https://github.com/treasure-data/digdag/releases).
 
 
 ### Releasing a SNAPSHOT version
