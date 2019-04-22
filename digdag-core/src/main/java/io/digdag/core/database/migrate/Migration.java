@@ -17,5 +17,12 @@ public interface Migration
         return m.group(1);
     }
 
+    /**
+     * If true, this Migration apply without transaction.
+     * This is introduced because 'create index concurrently' cannot run in transaction.
+     * @return
+     */
+    default boolean noTransaction() { return false; }
+
     void migrate(Handle handle, MigrationContext context);
 }

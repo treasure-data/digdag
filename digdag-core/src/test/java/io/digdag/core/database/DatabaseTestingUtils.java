@@ -78,7 +78,7 @@ public class DatabaseTestingUtils
         DBI dbi = new DBI(dsp.get());
         TransactionManager tm = new ThreadLocalTransactionManager(dsp.get(), autoAutoCommit);
         // FIXME
-        new DatabaseMigrator(dbi, config).migrate();
+        new DatabaseMigrator(dbi, config).migrateWithRetry();
 
         cleanDatabase(config.getType(), dbi);
 

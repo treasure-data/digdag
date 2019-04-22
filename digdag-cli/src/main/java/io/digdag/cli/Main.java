@@ -152,6 +152,8 @@ public class Main
         jc.addCommand("delete", injector.getInstance(Delete.class));
         jc.addCommand("secrets", injector.getInstance(Secrets.class), "secret");
         jc.addCommand("version", injector.getInstance(Version.class), "version");
+        jc.addCommand("migrate", injector.getInstance(Migrate.class));
+
 
         jc.addCommand("selfupdate", injector.getInstance(SelfUpdate.class));
 
@@ -299,6 +301,7 @@ public class Main
         err.println("    r[un] <workflow.dig>               run a workflow");
         err.println("    c[heck]                            show workflow definitions");
         err.println("    sched[uler]                        run a scheduler server");
+        err.println("    migrate (run|check)                migrate database");
         err.println("    selfupdate                         update cli to the latest version");
         err.println("");
         err.println("  Server-mode commands:");
