@@ -66,6 +66,8 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -633,10 +635,14 @@ public class DigdagClient implements AutoCloseable
 
     public RestLogFileHandleCollection getLogFileHandlesOfTask(Id attemptId, String taskName)
     {
-        return doGet(RestLogFileHandleCollection.class,
-                target("/api/logs/{id}/files")
-                .resolveTemplate("id", attemptId)
-                .queryParam("task", taskName));
+        try {
+            return doGet(RestLogFileHandleCollection.class,
+                    target("/api/logs/{id}/files")
+                    .resolveTemplate("id", attemptId)
+                    .queryParam("task", URLEncoder.encode(taskName, "UTF-8")));
+        } catch (UnsupportedEncodingException ex) {
+            throw Throwables.propagate(ex);
+        }
     }
 
     public InputStream getLogFile(Id attemptId, RestLogFileHandle handle)

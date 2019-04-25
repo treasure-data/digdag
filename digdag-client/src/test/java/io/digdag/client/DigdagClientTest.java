@@ -146,6 +146,43 @@ public class DigdagClientTest
     }
 
     @Test
+    public void getLogFileHandlesOfTaskURLEncodedTaskName()
+            throws Exception
+    {
+        RestLogFileHandleCollection expectedLogFileHandles = RestLogFileHandleCollection.builder()
+                .addFiles(
+                        RestLogFileHandle.builder()
+                                .agentId("test-agent")
+                                .fileName("test-task-%{}-1.log")
+                                .fileSize(4711)
+                                .fileTime(Instant.now().truncatedTo(SECONDS))
+                                .taskName("test-task-%{}-1")
+                                .build(),
+                        RestLogFileHandle.builder()
+                                .agentId("test-agent")
+                                .fileName("test-task-%{}-2.log")
+                                .fileSize(4712)
+                                .fileTime(Instant.now().truncatedTo(SECONDS))
+                                .taskName("test-task-%{}-2")
+                                .build()
+                ).build();
+
+        mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(objectMapper.writeValueAsString(expectedLogFileHandles))
+                .setHeader(CONTENT_TYPE, APPLICATION_JSON));
+
+        RestLogFileHandleCollection receivedLogFileHandles = client.getLogFileHandlesOfTask(Id.of("17"), "test-task-%{}");
+
+        assertThat(receivedLogFileHandles, is(expectedLogFileHandles));
+
+        assertThat(mockWebServer.getRequestCount(), is(2));
+        assertThat(mockWebServer.takeRequest().getPath(), is("/api/logs/17/files?task=test-task-%25%7B%7D"));
+        assertThat(mockWebServer.takeRequest().getPath(), is("/api/logs/17/files?task=test-task-%25%7B%7D"));
+    }
+
+    @Test
     public void getLogFileDirect()
             throws Exception
     {
