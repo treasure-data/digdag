@@ -203,6 +203,7 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
+    // TODO should be changed naming of this method
     public <T> T autoCommit(AutoCommitAction<T, D> action)
     {
         Handle handle = transactionManager.getHandle(configMapper);
