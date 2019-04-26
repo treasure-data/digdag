@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import io.digdag.client.Version;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
@@ -133,7 +134,7 @@ public class Server
         Properties props = buildServerProperties();
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig serverConfig = ServerConfig.convertFrom(ce);
-        ServerBootstrap.start(new ServerBootstrap(version, serverConfig));
+        ServerBootstrap.start(buildServerBootstrap(version, serverConfig));
     }
 
     protected Properties buildServerProperties()
@@ -211,5 +212,10 @@ public class Server
         env.forEach((key, value) -> props.setProperty("server.environment." + key, value));
 
         return props;
+    }
+
+    protected ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig)
+    {
+        return new ServerBootstrap(version, serverConfig);
     }
 }
