@@ -3,11 +3,13 @@ package io.digdag.core.repository;
 import java.util.List;
 import java.util.Map;
 import java.time.ZoneId;
+
 import com.google.common.base.Optional;
+import io.digdag.spi.ac.AccessController;
 
 public interface ProjectStore
 {
-    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId);
+    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 
     ProjectMap getProjectsByIdList(List<Integer> projIdList);
 
@@ -51,7 +53,7 @@ public interface ProjectStore
             throws ResourceNotFoundException;
 
 
-    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId);
+    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId, AccessController.ListFilter acFilter);
 
     StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
         throws ResourceNotFoundException;
@@ -62,7 +64,7 @@ public interface ProjectStore
     StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(int projId, String name)
         throws ResourceNotFoundException;
 
-    List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int pageSize, Optional<Long> lastId)
+    List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int pageSize, Optional<Long> lastId, AccessController.ListFilter acFilter)
         throws ResourceNotFoundException;
 
     TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList);
