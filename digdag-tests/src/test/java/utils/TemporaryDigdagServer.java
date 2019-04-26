@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.Version;
@@ -85,6 +84,7 @@ public class TemporaryDigdagServer
 
     private final Optional<Version> version;
 
+    private final String commandMainClassName;
     private final String host;
     private final List<String> extraArgs;
 
@@ -120,6 +120,7 @@ public class TemporaryDigdagServer
     {
         this.version = builder.version;
 
+        this.commandMainClassName = builder.commandMainClassName;
         this.host = "127.0.0.1";
         this.configuration = new ArrayList<>(Objects.requireNonNull(builder.configuration, "configuration"));
         this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
@@ -241,12 +242,25 @@ public class TemporaryDigdagServer
             }
         }
 
-        public static void main(String... args)
+        public static void main(final String... args)
         {
             err("child process started");
             Watchdog watchdog = new Watchdog();
             watchdog.start();
-            Main.main(args);
+
+            try {
+                final String commandMainClassName = args[0];
+                final String[] methodArgs = new String[args.length - 1];
+                System.arraycopy(args, 1, methodArgs, 0, methodArgs.length);
+
+                TemporaryDigdagServer.class.getClassLoader()
+                        .loadClass(commandMainClassName)
+                        .getDeclaredMethod("main", String[].class)
+                        .invoke(null, (Object)methodArgs);
+            }
+            catch (Throwable t) {
+                t.printStackTrace();
+            }
             err("child process server started");
             System.err.flush();
         }
@@ -348,6 +362,7 @@ public class TemporaryDigdagServer
                 processArgs.add(JACOCO_JVM_ARG);
             }
             processArgs.add(Trampoline.class.getName());
+            processArgs.add(commandMainClassName);
             processArgs.addAll(args);
 
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
@@ -712,6 +727,7 @@ public class TemporaryDigdagServer
         {
         }
 
+        private String commandMainClassName = io.digdag.cli.Main.class.getName();
         private List<String> args = new ArrayList<>();
         private Optional<Version> version = Optional.absent();
         private List<String> configuration = new ArrayList<>();
@@ -740,6 +756,12 @@ public class TemporaryDigdagServer
         public Builder environment(Map<String, String> environment)
         {
             this.environment.putAll(environment);
+            return this;
+        }
+
+        public Builder commandMainClassName(final String className)
+        {
+            this.commandMainClassName = className;
             return this;
         }
 
