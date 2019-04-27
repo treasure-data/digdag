@@ -1,29 +1,28 @@
 package io.digdag.standards.command;
 
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-import java.io.File;
-import java.io.OutputStreamWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.Files;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandContext;
+import io.digdag.spi.CommandRequest;
+import io.digdag.spi.CommandLogger;
+import io.digdag.spi.CommandStatus;
 import io.digdag.spi.TaskRequest;
 import io.digdag.client.config.Config;
 import org.slf4j.Logger;
@@ -32,34 +31,61 @@ import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class DockerCommandExecutor
-    implements CommandExecutor
+        implements CommandExecutor
 {
-    private final SimpleCommandExecutor simple;
-
     private static Logger logger = LoggerFactory.getLogger(DockerCommandExecutor.class);
 
+    private final CommandLogger clog;
+    private final SimpleCommandExecutor simple;
+
     @Inject
-    public DockerCommandExecutor(SimpleCommandExecutor simple)
+    public DockerCommandExecutor(final CommandLogger clog, final SimpleCommandExecutor simple)
     {
+        this.clog = clog;
         this.simple = simple;
     }
 
-    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-        throws IOException
+    @Override
+    public CommandStatus run(final CommandContext context, final CommandRequest request)
+            throws IOException
     {
-        // TODO set TZ environment variable
-        Config config = request.getConfig();
+        final Config config = context.getTaskRequest().getConfig();
         if (config.has("docker")) {
-            return startWithDocker(projectPath, request, pb);
+            return runWithDocker(context, request);
         }
         else {
-            return simple.start(projectPath.toAbsolutePath(), request, pb);
+            return simple.run(context, request);
         }
     }
 
-    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
+    private CommandStatus runWithDocker(final CommandContext context, final CommandRequest request)
+            throws IOException
     {
-        Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
+        // TODO set TZ environment variable
+        final Process p = startDockerProcess(context, request);
+
+        // copy stdout to System.out and logger
+        clog.copyStdout(p, System.out);
+
+        // Need waiting and blocking. Because the process is running on a single instance.
+        // The command task could not be taken by other digdag-servers on other instances.
+        try {
+            p.waitFor();
+        }
+        catch (InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
+
+        return SimpleCommandStatus.of(p, request.getIoDirectory());
+    }
+
+    private Process startDockerProcess(final CommandContext context,
+            final CommandRequest request)
+            throws IOException
+    {
+        final TaskRequest taskRequest = context.getTaskRequest();
+        final Path projectPath = context.getLocalProjectPath();
+        final Config dockerConfig = taskRequest.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
         String dockerCommand = dockerConfig.get("docker", String.class, "docker");
 
@@ -67,7 +93,7 @@ public class DockerCommandExecutor
         if (dockerConfig.has("build")) {
             List<String> buildCommands = dockerConfig.getList("build", String.class);
             List<String> buildOptions = dockerConfig.getListOrEmpty("build_options", String.class);
-            imageName = uniqueImageName(request, baseImageName, buildCommands);
+            imageName = uniqueImageName(taskRequest, baseImageName, buildCommands);
             buildImage(dockerCommand, buildOptions, imageName, projectPath, baseImageName, buildCommands);
         }
         else {
@@ -83,16 +109,15 @@ public class DockerCommandExecutor
 
         try {
             // misc
-            command.add("-i");  // enable stdin
             command.add("--rm");  // remove container when exits
 
             // mount
             command.add("-v").add(String.format(ENGLISH,
                         "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
-            // workdir
-            Path workdir = (pb.directory() == null) ? Paths.get("") : pb.directory().toPath();
-            command.add("-w").add(workdir.normalize().toAbsolutePath().toString());
+            // working directory
+            final Path workingDirectory = getAbsoluteWorkingDirectory(context, request); // absolute
+            command.add("-w").add(workingDirectory.toString());
 
             logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
 
@@ -110,7 +135,7 @@ public class DockerCommandExecutor
             //    }
             //}
             //command.add("--env-file").add(envFile.toAbsolutePath().toString());
-            for (Map.Entry<String, String> pair : pb.environment().entrySet()) {
+            for (Map.Entry<String, String> pair : request.getEnvironments().entrySet()) {
                 command.add("-e").add(pair.getKey() + "=" + pair.getValue());
             }
 
@@ -118,20 +143,22 @@ public class DockerCommandExecutor
             command.add(imageName);
 
             // command and args
-            command.addAll(pb.command());
+            command.addAll(request.getCommandLine());
 
-            ProcessBuilder docker = new ProcessBuilder(command.build());
-            docker.redirectError(pb.redirectError());
-            docker.redirectErrorStream(pb.redirectErrorStream());
-            docker.redirectInput(pb.redirectInput());
-            docker.redirectOutput(pb.redirectOutput());
-            docker.directory(projectPath.toFile());
+            final ProcessBuilder pb = new ProcessBuilder(command.build());
+            pb.directory(workingDirectory.toFile());
+            pb.redirectErrorStream(true);
 
-            return docker.start();
+            return pb.start();
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
+    }
+
+    private static Path getAbsoluteWorkingDirectory(CommandContext context, CommandRequest request)
+    {
+        return context.getLocalProjectPath().resolve(request.getWorkingDirectory()).normalize();
     }
 
     private static String uniqueImageName(TaskRequest request,
@@ -265,5 +292,16 @@ public class DockerCommandExecutor
         catch (IOException | InterruptedException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    /**
+     * This method is never called. The status of the task that is executed by the executor cannot be
+     * polled by non-blocking.
+     */
+    @Override
+    public CommandStatus poll(final CommandContext context, final ObjectNode previousStatusJson)
+            throws IOException
+    {
+        throw new UnsupportedOperationException("This method is never called.");
     }
 }
