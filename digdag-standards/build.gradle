@@ -38,6 +38,9 @@ dependencies {
     // gcs
     compile ('com.google.apis:google-api-services-storage:v1-rev88-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
 
+    // kubernetes
+    compile ('io.fabric8:kubernetes-client:3.1.5')
+
     // dependency conflict resolution
     compile 'joda-time:joda-time:2.9.4'
 
