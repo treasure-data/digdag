@@ -1,6 +1,5 @@
 _export:
   docker:
-    docker: /usr/local/bin/docker
     image: alpine:latest
     run_options: ["--ulimit", "nofile=65536:65536"]
 
