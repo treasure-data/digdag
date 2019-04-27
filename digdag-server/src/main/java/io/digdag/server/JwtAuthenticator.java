@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestApiKey;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.AuthenticatedUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.JwtException;
@@ -25,11 +27,12 @@ public class JwtAuthenticator
 {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticator.class);
 
+    private final ConfigFactory cf;
     private final Map<String, UserConfig> userMap;
     private final boolean allowPublicAccess;
 
     @Inject
-    public JwtAuthenticator(Config systemConfig)
+    public JwtAuthenticator(Config systemConfig, final ConfigFactory cf)
     {
         Optional<RestApiKey> apiKey = systemConfig.getOptional("server.apikey", RestApiKey.class);
 
@@ -46,6 +49,7 @@ public class JwtAuthenticator
             this.userMap = ImmutableMap.of();
             this.allowPublicAccess = true;
         }
+        this.cf = cf;
     }
 
     @Override
@@ -114,9 +118,18 @@ public class JwtAuthenticator
             }
         }
 
-        return Result.builder()
+        return Result.accept(
+                createAuthenticatedUser(siteId, admin, requestContext),
+                () -> ImmutableMap.of());
+    }
+
+    private AuthenticatedUser createAuthenticatedUser(final int siteId, final boolean admin, final ContainerRequestContext requestContext)
+    {
+        return AuthenticatedUser.builder()
                 .siteId(siteId)
                 .isAdmin(admin)
+                .userInfo(cf.create())
+                .userContext(cf.create())
                 .build();
     }
 }
