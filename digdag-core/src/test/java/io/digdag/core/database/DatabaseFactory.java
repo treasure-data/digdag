@@ -34,7 +34,7 @@ public class DatabaseFactory
         return tm;
     }
 
-    public <T> T begin(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException> func)
+    public <T> T begin(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException, RuntimeException> func)
             throws Exception
     {
         return tm.begin(func, Exception.class);
@@ -55,7 +55,7 @@ public class DatabaseFactory
         void run() throws Exception;
     }
 
-    public <T> T autoCommit(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException> func)
+    public <T> T autoCommit(TransactionManager.SupplierInTransaction<T, Exception, RuntimeException, RuntimeException, RuntimeException> func)
             throws Exception
     {
         return tm.autoCommit(func, Exception.class);
