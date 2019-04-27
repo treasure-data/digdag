@@ -194,25 +194,25 @@ public class DatabaseProjectStoreManagerTest
             ////
             // public simple listings
             //
-            assertEquals(ImmutableList.of(proj1, proj2), store.getProjects(100, Optional.absent()));
-            assertEquals(ImmutableList.of(proj1), store.getProjects(1, Optional.absent()));
-            assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId())));
-            assertEmpty(anotherSite.getProjects(100, Optional.absent()));
+            assertEquals(ImmutableList.of(proj1, proj2), store.getProjects(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj1), store.getProjects(1, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId()), () -> "true"));
+            assertEmpty(anotherSite.getProjects(100, Optional.absent(), () -> "true"));
 
             assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(proj2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
             assertEquals(ImmutableList.of(rev3), store.getRevisions(proj2.getId(), 1, Optional.absent()));
             assertEquals(ImmutableList.of(rev2), store.getRevisions(proj2.getId(), 100, Optional.of(rev3.getId())));
             assertEmpty(anotherSite.getRevisions(proj2.getId(), 100, Optional.absent()));
 
-            assertEquals(ImmutableList.of(wf3, wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent()));
-            assertEquals(ImmutableList.of(wf3), store.getWorkflowDefinitions(rev3.getId(), 1, Optional.absent()));
-            assertEquals(ImmutableList.of(wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.of(wf3.getId())));
-            assertEmpty(anotherSite.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent()));
+            assertEquals(ImmutableList.of(wf3, wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wf3), store.getWorkflowDefinitions(rev3.getId(), 1, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.of(wf3.getId()), () -> "true"));
+            assertEmpty(anotherSite.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent(), () -> "true"));
 
-            assertEquals(ImmutableList.of(wfDetails1, wfDetails3, wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
-            assertEquals(ImmutableList.of(wfDetails1), store.getLatestActiveWorkflowDefinitions(1, Optional.absent()));
-            assertEquals(ImmutableList.of(wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.of(wfDetails3.getId())));
-            assertEmpty(anotherSite.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
+            assertEquals(ImmutableList.of(wfDetails1, wfDetails3, wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails1), store.getLatestActiveWorkflowDefinitions(1, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.of(wfDetails3.getId()), () -> "true"));
+            assertEmpty(anotherSite.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
 
             ////
             // public simple getters
@@ -327,14 +327,14 @@ public class DatabaseProjectStoreManagerTest
             assertNotFound(() -> store.getProjectByName(deletingProject.getName()));
 
             // listing doesn't include deleted projects
-            assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent()));
-            assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
+            assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
 
             // lookup by project/revision id succeeds and deletedAt is set
             StoredProject deletedProj = store.getProjectById(deletingProject.getId());
             assertTrue(deletedProj.getDeletedAt().isPresent());
 
-            List<StoredWorkflowDefinition> defs = store.getWorkflowDefinitions(rev.getId(), 100, Optional.absent());
+            List<StoredWorkflowDefinition> defs = store.getWorkflowDefinitions(rev.getId(), 100, Optional.absent(), () -> "true");
             assertEquals(1, defs.size());
             assertEquals(srcWf1, ImmutableWorkflowDefinition.builder().from(defs.get(0)).build());
             assertEquals(rev.getId(), defs.get(0).getRevisionId());
