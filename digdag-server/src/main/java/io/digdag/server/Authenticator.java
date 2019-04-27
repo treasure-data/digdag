@@ -3,11 +3,11 @@ package io.digdag.server;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
-import io.digdag.client.config.Config;
+import io.digdag.spi.AuthenticatedUser;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;
 
 import java.util.Map;
@@ -22,64 +22,44 @@ public interface Authenticator
     @JsonDeserialize(as = ImmutableResult.class)
     interface Result
     {
-        static Result accept(int siteId)
-        {
-            return accept(siteId, Optional.absent());
-        }
-
-        static Result accept(int siteId, Config userInfo)
-        {
-            return accept(siteId, Optional.fromNullable(userInfo));
-        }
-
-        static Result accept(int siteId, Optional<Config> userInfo)
+        static Result accept(AuthenticatedUser user, Supplier<Map<String, String>> secrets)
         {
             return ImmutableResult.builder()
-                    .siteId(siteId)
-                    .userInfo(userInfo)
+                    .secrets(secrets)
+                    .authenticatedUser(user)
                     .build();
         }
 
         static Result reject(String message)
         {
             return ImmutableResult.builder()
-                    .siteId(0)
                     .errorMessage(message)
-                    .userInfo(Optional.absent())
                     .build();
         }
 
         default boolean isAccepted()
         {
-            return getErrorMessage() == null;
+            return !getErrorMessage().isPresent();
         }
 
-        int getSiteId();
-
-        @Value.Default
-        default boolean isAdmin() {
-            return false;
+        @Value.Check
+        default void checkNull()
+        {
+            if (isAccepted()) {
+                // authenticated user
+                Preconditions.checkState(getSecrets().isPresent() && getAuthenticatedUser().isPresent());
+            }
+            else {
+                // error message
+                Preconditions.checkState(!getSecrets().isPresent() || !getAuthenticatedUser().isPresent());
+            }
         }
 
-        @Nullable
-        String getErrorMessage();
-
-        Optional<Config> getUserInfo();
+        Optional<String> getErrorMessage();
 
         Optional<Supplier<Map<String, String>>> getSecrets();
 
-        static Builder builder() {
-            return ImmutableResult.builder();
-        }
-
-        interface Builder {
-            Builder siteId(int siteId);
-            Builder userInfo(Config userInfo);
-            Builder secrets(Supplier<Map<String, String>> secrets);
-            Builder isAdmin(boolean admin);
-            Builder errorMessage(String errorMessage);
-            Result build();
-        }
+        Optional<AuthenticatedUser> getAuthenticatedUser();
     }
 
     Result authenticate(ContainerRequestContext requestContext);
