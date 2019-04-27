@@ -20,6 +20,10 @@ import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.spi.ac.AccessControlException;
+import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.Consumes;
@@ -49,6 +53,7 @@ public class ScheduleResource
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final TransactionManager tm;
+    private final AccessController ac;
     private final ScheduleExecutor exec;
 
     @Inject
@@ -56,21 +61,32 @@ public class ScheduleResource
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             TransactionManager tm,
+            AccessController ac,
             ScheduleExecutor exec)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
+        this.ac = ac;
         this.exec = exec;
     }
 
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
+            throws AccessControlException
     {
+        final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+        ac.checkListSchedulesOfSite( // AccessControl
+                siteTarget,
+                getAuthenticatedUser());
+
         return tm.begin(() -> {
             List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
-                    .getSchedules(100, Optional.fromNullable(lastId));
+                    .getSchedules(100, Optional.fromNullable(lastId),
+                            ac.getListSchedulesFilterOfSite(
+                                    siteTarget,
+                                    getAuthenticatedUser()));
 
             return RestModels.scheduleCollection(rm.getProjectStore(getSiteId()), scheds);
         });
@@ -79,31 +95,43 @@ public class ScheduleResource
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestSchedule, ResourceNotFoundException, AccessControlException>begin(() -> {
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id);
+                    .getScheduleById(id); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
             StoredProject proj = rm.getProjectStore(getSiteId())
-                    .getProjectById(sched.getProjectId());
+                    .getProjectById(sched.getProjectId()); // check NotFound first
+
+            ac.checkGetSchedule( // AccessControl
+                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    getAuthenticatedUser());
+
             return RestModels.schedule(sched, proj, timeZone);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
     public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
-            throws ResourceConflictException, ResourceNotFoundException
+            throws ResourceConflictException, ResourceNotFoundException, AccessControlException
     {
-        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() -> {
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(request.getNextTime().isPresent() ||
                     (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
 
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id);
+                    .getScheduleById(id); // check NotFound first
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(sched.getProjectId()); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
+            ac.checkSkipSchedule( // AccessControl
+                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    getAuthenticatedUser());
 
             StoredSchedule updated;
             if (request.getNextTime().isPresent()) {
@@ -121,7 +149,7 @@ public class ScheduleResource
             }
 
             return RestModels.scheduleSummary(updated, timeZone);
-        }, ResourceConflictException.class, ResourceNotFoundException.class);
+        }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     private ZoneId getTimeZoneOfSchedule(StoredSchedule sched)
@@ -129,7 +157,7 @@ public class ScheduleResource
     {
         // TODO optimize
         return rm.getProjectStore(getSiteId())
-                .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
+                .getWorkflowDefinitionById(sched.getWorkflowDefinitionId()) // NotFound
                 .getTimeZone();
     }
 
@@ -137,60 +165,82 @@ public class ScheduleResource
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
     public RestSessionAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
-            throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException
+            throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException
     {
-        return tm.<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException>begin(() ->
+        return tm.<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException>begin(() ->
         {
+            final StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id); // check NotFound first
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(sched.getProjectId()); // check NotFound first
+
+            ac.checkBackfillSchedule( // AccessControl
+                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    getAuthenticatedUser());
+
             List<StoredSessionAttemptWithSession> attempts =
-                    exec.backfill(getSiteId(), id,
+                    exec.backfill(getSiteId(), id,  // should never throw NotFound
                             request.getFromTime(),
                             request.getAttemptName(),
                             request.getCount(),
                             request.getDryRun());
+
             return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
-        }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class);
+        }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @POST
     @Path("/api/schedules/{id}/disable")
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
-            throws ResourceNotFoundException, ResourceConflictException
+            throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
-        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() ->
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() ->
         {
             // TODO: this is racy
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id);
+                    .getScheduleById(id); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(sched.getProjectId()); // check NotFound first
 
-            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
+            ac.checkDisableSchedule( // AccessControl
+                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    getAuthenticatedUser());
+
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
                 lockedSched.disableSchedule();
                 return lockedSched.get();
             });
 
             return RestModels.scheduleSummary(updated, timeZone);
-        }, ResourceConflictException.class, ResourceNotFoundException.class);
+        }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @POST
     @Path("/api/schedules/{id}/enable")
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)
-            throws ResourceNotFoundException, ResourceConflictException
+            throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
-        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() -> {
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
             // TODO: this is racy
             StoredSchedule sched = sm.getScheduleStore(getSiteId())
-                    .getScheduleById(id);
+                    .getScheduleById(id); // check NotFound first
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(sched.getProjectId()); // check NotFound first
 
-            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
+            ac.checkEnableSchedule( // AccessControl
+                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    getAuthenticatedUser());
+
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
                 lockedSched.enableSchedule();
                 return lockedSched.get();
             });
 
             return RestModels.scheduleSummary(updated, timeZone);
-        }, ResourceConflictException.class, ResourceNotFoundException.class);
+        }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 }
