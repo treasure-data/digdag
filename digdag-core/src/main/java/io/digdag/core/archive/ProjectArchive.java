@@ -72,7 +72,7 @@ public class ProjectArchive
     }
 
     // reused by WorkflowResourceMatcher.ofSingleFile
-    static String realPathToResourceName(Path projectPath, Path realPath)
+    public static String realPathToResourceName(Path projectPath, Path realPath)
     {
         checkArgument(projectPath.isAbsolute(), "project path must be absolute: %s", projectPath);
         checkArgument(realPath.isAbsolute(), "real path must be absolute: %s", realPath);
