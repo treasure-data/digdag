@@ -45,13 +45,11 @@ public class AuthRequestFilter
 
         Authenticator.Result result = auth.authenticate(requestContext);
         if (result.isAccepted()) {
-            requestContext.setProperty("siteId", result.getSiteId());
-            requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create()));
-            requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
-            requestContext.setProperty("admin", result.isAdmin());
+            requestContext.setProperty("secrets", result.getSecrets().get());
+            requestContext.setProperty("authenticatedUser", result.getAuthenticatedUser().get());
         }
         else {
-            requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));
+            requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage().get()));
         }
     }
 }
