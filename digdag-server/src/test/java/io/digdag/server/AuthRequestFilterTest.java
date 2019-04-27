@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.AuthenticatedUser;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,14 +109,17 @@ public class AuthRequestFilterTest
         reset(containerRequestContext);
 
         // Accept
-        Config userInfo = CONFIG_FACTORY.create();
-        Supplier<Map<String, String>> secrets = () -> ImmutableMap.of("secret", "value");
-        Authenticator.Result acceptance = Authenticator.Result.builder()
+        final Config userInfo = CONFIG_FACTORY.create();
+        final Config userContext = CONFIG_FACTORY.create();
+        final Supplier<Map<String, String>> secrets = () -> ImmutableMap.of("secret", "value");
+        final AuthenticatedUser user = AuthenticatedUser.builder()
                 .siteId(17)
-                .userInfo(userInfo)
-                .secrets(secrets)
                 .isAdmin(true)
+                .userInfo(userInfo)
+                .userContext(userContext)
                 .build();
+        final Authenticator.Result acceptance = Authenticator.Result.accept(user, secrets);
+
         when(containerRequestContext.getUriInfo()).thenReturn(uriInfo);
         when(authenticator.authenticate(containerRequestContext)).thenReturn(acceptance);
         when(containerRequestContext.getMethod()).thenReturn(method);
@@ -123,9 +127,7 @@ public class AuthRequestFilterTest
         verify(containerRequestContext).getMethod();
         verify(authenticator).authenticate(containerRequestContext);
         verify(containerRequestContext, never()).abortWith(any(Response.class));
-        verify(containerRequestContext).setProperty("siteId", 17);
-        verify(containerRequestContext).setProperty("userInfo", userInfo);
+        verify(containerRequestContext).setProperty("authenticatedUser", user);
         verify(containerRequestContext).setProperty("secrets", secrets);
-        verify(containerRequestContext).setProperty("admin", true);
     }
 }
