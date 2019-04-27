@@ -102,16 +102,16 @@ public class DatabaseScheduleStoreManagerTest
                     });
             StoredWorkflowDefinition wf1Rev1 = wfRefA.get();
             StoredWorkflowDefinition wf2 = wfRefB.get();
-            List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent());
+            List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent(), () -> "true");
             assertEquals(2, schedList1.size());
             StoredSchedule sched1 = schedList1.get(0);
             StoredSchedule sched2 = schedList1.get(1);
 
-            assertThat(schedStore.getSchedulesByProjectId(proj1.getId(), 100, Optional.absent()), is(schedList1));
+            assertThat(schedStore.getSchedulesByProjectId(proj1.getId(), 100, Optional.absent(), () -> "true"), is(schedList1));
             assertThat(schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), srcWf1Rev1.getName()), is(sched1));
             assertThat(schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), srcWf2.getName()), is(sched2));
 
-            assertThat(schedStore.getSchedulesByProjectId(4711, 100, Optional.absent()), is(empty()));
+            assertThat(schedStore.getSchedulesByProjectId(4711, 100, Optional.absent(), () -> "true"), is(empty()));
 
             try {
                 schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), "non-existent-workflow");
@@ -158,7 +158,7 @@ public class DatabaseScheduleStoreManagerTest
                     });
             StoredWorkflowDefinition wf1Rev2 = wfRefA.get();
             StoredWorkflowDefinition wf3 = wfRefB.get();
-            List<StoredSchedule> schedList2 = schedStore.getSchedules(100, Optional.absent());
+            List<StoredSchedule> schedList2 = schedStore.getSchedules(100, Optional.absent(), () -> "true");
             assertEquals(2, schedList2.size());
             StoredSchedule sched3 = schedList2.get(0);
             StoredSchedule sched4 = schedList2.get(1);
@@ -268,7 +268,7 @@ public class DatabaseScheduleStoreManagerTest
             });
             assertEquals(ImmutableList.of(sched1.getId()), updated);
 
-            StoredSchedule updatedSched1 = schedStore.getSchedules(100, Optional.absent()).get(0);
+            StoredSchedule updatedSched1 = schedStore.getSchedules(100, Optional.absent(), () -> "true").get(0);
             assertEquals(sched1.getId(), updatedSched1.getId());
             assertEquals(runTime4, updatedSched1.getNextRunTime());
             assertEquals(schedTime4, updatedSched1.getNextScheduleTime());
@@ -320,7 +320,7 @@ public class DatabaseScheduleStoreManagerTest
 
             StoredWorkflowDefinition wf1 = wfRefA.get();
             StoredWorkflowDefinition wf2 = wfRefB.get();
-            List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent());
+            List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent(), () -> "true");
             assertEquals(2, schedList1.size());
             StoredSchedule sched1 = schedList1.get(0);
             StoredSchedule sched2 = schedList1.get(1);
@@ -358,9 +358,9 @@ public class DatabaseScheduleStoreManagerTest
                 assertThat((double) s1.getDisabledAt().get().getEpochSecond(), is(closeTo(now, 30)));
                 assertThat(s2.getDisabledAt(), is(Optional.absent()));
 
-                assertThat(schedStore.getSchedules(100, Optional.absent()),
+                assertThat(schedStore.getSchedules(100, Optional.absent(), () -> "true"),
                         containsInAnyOrder(s1, s2));
-                assertThat(schedStore.getSchedulesByProjectId(proj1.getId(), 100, Optional.absent()),
+                assertThat(schedStore.getSchedulesByProjectId(proj1.getId(), 100, Optional.absent(), () -> "true"),
                         containsInAnyOrder(s1, s2));
             }
 
