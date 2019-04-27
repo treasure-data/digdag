@@ -3,7 +3,6 @@ package io.digdag.server;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import io.digdag.client.DigdagVersion;
@@ -12,14 +11,12 @@ import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.database.DatabaseSecretControlStoreManager;
 import io.digdag.core.database.DatabaseSecretStoreManager;
-import io.digdag.core.database.ThreadLocalTransactionManager;
-import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
-import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -30,20 +27,19 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
+import io.digdag.spi.AuthenticatedUser;
+import io.digdag.spi.ac.AccessControlException;
+import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
-import io.swagger.jaxrs.Reader;
 import io.swagger.jaxrs.config.BeanConfig;
-import io.swagger.jaxrs.config.DefaultJaxrsConfig;
 import io.swagger.jaxrs.listing.ApiListingResource;
 import io.swagger.jaxrs.listing.SwaggerSerializers;
-import io.swagger.models.Swagger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.sql.DataSource;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -52,14 +48,10 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.ReaderInterceptorContext;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.net.InetSocketAddress;
-import static java.util.stream.Collectors.toList;
+
 import static io.digdag.guice.rs.GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_ATTRIBUTE;
 
 public class ServerModule
@@ -83,6 +75,7 @@ public class ServerModule
             .addProvider(AdminRestrictedFilter.class)
             ;
         bindResources(builder);
+        bindAuthorization();
         bindAuthenticator();
         bindExceptionhandlers(builder);
         bindSecrets();
@@ -119,9 +112,15 @@ public class ServerModule
         binder().bind(Authenticator.class).to(JwtAuthenticator.class);
     }
 
+    protected void bindAuthorization()
+    {
+        binder().bind(AccessController.class).to(DefaultAccessController.class);
+    }
+
     protected void bindExceptionhandlers(ApplicationBindingBuilder builder)
     {
         builder
+            .addProviderInstance(new GenericJsonExceptionHandler<AccessControlException>(Response.Status.FORBIDDEN) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
             .addProviderInstance(new GenericJsonExceptionHandler<StorageFileNotFoundException>(Response.Status.NOT_FOUND) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
@@ -234,8 +233,8 @@ public class ServerModule
             }
 
             // Only allow admin users
-            Boolean admin = (Boolean) request.getAttribute("admin");
-            if (admin == null || !admin) {
+            final AuthenticatedUser user = (AuthenticatedUser) request.getAttribute("authenticatedUser");
+            if (user == null || !user.isAdmin()) {
                 throw new ForbiddenException();
             }
         }
