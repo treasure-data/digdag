@@ -1,10 +1,31 @@
 package io.digdag.spi;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
-import java.nio.file.Path;
 
 public interface CommandExecutor
 {
-    Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
-        throws IOException;
+    /**
+     * Starts a command and returns its state. Caller must check isFinished of the returned CommandStatus.
+     * If it's true, the command is done. CommandStatus.getStatusCode() is ready to call. Otherwise,
+     * caller must call poll method repeatedly with toJson of the returned CommandStatus until CommandStatus
+     * is returned with isFinished == true.
+     *
+     * @param context
+     * @param request
+     * @return
+     * @throws IOException
+     */
+    CommandStatus run(CommandContext context, CommandRequest request)
+            throws IOException;
+
+    /**
+     * Polls the command status by non-blocking and return CommandStatus.
+     * @param context
+     * @param previousStatusJson
+     * @return
+     * @throws IOException
+     */
+    CommandStatus poll(CommandContext context, ObjectNode previousStatusJson)
+            throws IOException;
 }
