@@ -1,49 +1,31 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.function.Supplier;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.FileOutputStream;
-import java.io.ByteArrayInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import javax.ws.rs.Consumes;
+
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
+
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
-import com.google.common.collect.*;
-import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
-import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
+import io.digdag.spi.ac.AccessControlException;
+import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.SiteTarget;
+import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 @Api("Workflow")
 @Path("/")
@@ -63,18 +45,21 @@ public class WorkflowResource
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TransactionManager tm;
+    private final AccessController ac;
 
     @Inject
     public WorkflowResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            TransactionManager tm)
+            TransactionManager tm,
+            AccessController ac)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.tm = tm;
+        this.ac = ac;
     }
 
     @GET
@@ -83,24 +68,30 @@ public class WorkflowResource
             @QueryParam("project") String projName,
             @QueryParam("revision") String revName,
             @QueryParam("name") String wfName)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(projName != null, "project= is required");
             Preconditions.checkArgument(wfName != null, "name= is required");
 
             ProjectStore rs = rm.getProjectStore(getSiteId());
-            StoredProject proj = rs.getProjectByName(projName);
+            StoredProject proj = rs.getProjectByName(projName); // check NotFound first
             StoredRevision rev;
+
             if (revName == null) {
-                rev = rs.getLatestRevision(proj.getId());
+                rev = rs.getLatestRevision(proj.getId()); // check NotFound first
             }
             else {
-                rev = rs.getRevisionByName(proj.getId(), revName);
+                rev = rs.getRevisionByName(proj.getId(), revName); // check NotFound first
             }
-            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
+            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName); // check NotFound first
+
+            ac.checkGetWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), def.getName(), proj.getName()),
+                    getAuthenticatedUser());
+
             return RestModels.workflowDefinition(proj, rev, def);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -108,27 +99,39 @@ public class WorkflowResource
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
             @QueryParam("last_id") Long lastId,
             @QueryParam("count") Integer count)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        final SiteTarget siteTarget = SiteTarget.of(getSiteId());
+        ac.checkListWorkflowsOfSite(siteTarget, getAuthenticatedUser());  // AccessControl
+
+        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
-                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId));
+                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // check NotFound first
+                                    ac.getListWorkflowsFilterOfSite(
+                                            SiteTarget.of(getSiteId()),
+                                            getAuthenticatedUser()));
+
             return RestModels.workflowDefinitionCollection(defs);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id);
+                            .getWorkflowDefinitionById(id); // check NotFound first
+
+            ac.checkGetWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
+                    getAuthenticatedUser());
+
             return RestModels.workflowDefinition(def);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @GET
@@ -137,14 +140,18 @@ public class WorkflowResource
             @PathParam("id") long id,
             @QueryParam("session_time") LocalTimeOrInstant localTime,
             @QueryParam("mode") SessionTimeTruncate mode)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.begin(() -> {
+        return tm.<RestWorkflowSessionTime, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(localTime != null, "session_time= is required");
 
             StoredWorkflowDefinitionWithProject def =
                     rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id);
+                            .getWorkflowDefinitionById(id); // check NotFound first
+
+            ac.checkGetWorkflow( // AccessControl
+                    WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
+                    getAuthenticatedUser());
 
             ZoneId timeZone = def.getTimeZone();
 
@@ -160,7 +167,7 @@ public class WorkflowResource
 
             return RestModels.workflowSessionTime(
                     def, truncated, timeZone);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     private Instant truncateSessionTime(
