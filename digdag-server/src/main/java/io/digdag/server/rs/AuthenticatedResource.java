@@ -2,6 +2,7 @@ package io.digdag.server.rs;
 
 import com.google.common.base.Supplier;
 import io.digdag.client.config.Config;
+import io.digdag.spi.AuthenticatedUser;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
@@ -17,12 +18,17 @@ public abstract class AuthenticatedResource
     {
         // siteId is set by JwtAuthInterceptor
         // TODO validate before causing NPE. Improve guice-rs to call @PostConstruct
-        return (int) request.getAttribute("siteId");
+        return getAuthenticatedUser().getSiteId();
     }
 
     protected Config getUserInfo()
     {
-        return (Config) request.getAttribute("userInfo");
+        return getAuthenticatedUser().getUserInfo();
+    }
+
+    protected AuthenticatedUser getAuthenticatedUser()
+    {
+        return (AuthenticatedUser) request.getAttribute("authenticatedUser");
     }
 
     /**
