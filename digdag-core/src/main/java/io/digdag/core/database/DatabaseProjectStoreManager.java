@@ -26,6 +26,7 @@ import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStatus;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.ac.AccessController;
 import org.immutables.value.Value;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
@@ -33,6 +34,8 @@ import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.sqlobject.customizers.Define;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import javax.activation.DataSource;
@@ -124,9 +127,9 @@ public class DatabaseProjectStoreManager
         //}
 
         @Override
-        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId)
+        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0), acFilter.getSql()));
         }
 
         @Override
@@ -269,16 +272,23 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int pageSize, Optional<Long> lastId)
+        public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
+                int pageSize,
+                Optional<Long> lastId,
+                AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
-            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L)));
+            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L), acFilter.getSql()));
         }
 
         @Override
-        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId)
+        public List<StoredWorkflowDefinition> getWorkflowDefinitions(
+                int revId,
+                int pageSize,
+                Optional<Long> lastId,
+                AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0L)));
+            return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0L), acFilter.getSql()));
         }
 
         @Override
@@ -505,6 +515,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
+    @UseStringTemplate3StatementLocator
     public interface H2Dao
             extends Dao
     {
@@ -533,12 +544,18 @@ public class DatabaseProjectStoreManager
                 " join revisions rev on a.revision_id = rev.id" +
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
-                " where wd.id > :lastId" +
+                " where wd.id \\> :lastId" +
+                " and <acFilter>" +
                 " order by wd.id" +
                 " limit :limit")
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") long lastId,
+                @Define("acFilter") String acFilter);
     }
 
+    @UseStringTemplate3StatementLocator
     public interface PgDao
             extends Dao
     {
@@ -553,11 +570,13 @@ public class DatabaseProjectStoreManager
 
         @Override
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
-                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " p.id as proj_id, p.name as proj_name, p.deleted_name as proj_deleted_name, p.deleted_at as proj_deleted_at, p.site_id, p.created_at as proj_created_at," +
+                " r.name as rev_name, r.default_params as rev_default_params" +
                 " from (" +
                     // order by id and limit before join
-                    "select * from workflow_definitions wf" +
+                    "select wf.* from workflow_definitions wf" +
+                    " join revisions rev on rev.id = wf.revision_id" +
+                    " join projects proj on proj.id = rev.project_id" +
                     " where wf.revision_id = any(array(" +
                         // list id of active (non-deleted) latest revisions in this site
                         "select max(r.id)" +
@@ -567,26 +586,36 @@ public class DatabaseProjectStoreManager
                         " and p.deleted_at is null" +
                         " group by r.project_id" +
                     " )) " +
-                    " and wf.id > :lastId" +
+                    " and wf.id \\> :lastId" +
+                    " and <acFilter>" +
                     " order by wf.id" +
                     " limit :limit" +
                 ") wd" +
-                " join revisions rev on rev.id = wd.revision_id" +
-                " join projects proj on proj.id = rev.project_id" +
+                " join revisions r on r.id = wd.revision_id" +
+                " join projects p on p.id = r.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " order by wd.id")
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") long lastId,
+                @Define("acFilter") String acFilter);
     }
 
     public interface Dao
     {
-        @SqlQuery("select * from projects" +
-                " where site_id = :siteId" +
-                " and name is not null" +
-                " and id > :lastId" +
-                " order by id asc" +
+        @SqlQuery("select proj.* from projects proj" +
+                " where proj.site_id = :siteId" +
+                " and proj.name is not null" +
+                " and proj.id \\> :lastId" +
+                " and <acFilter>" +
+                " order by proj.id asc" +
                 " limit :limit")
-        List<StoredProject> getProjects(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredProject> getProjects(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Define("acFilter") String acFilter);
 
         @SqlUpdate("update projects" +
                 " set deleted_name = name, deleted_at = now(), name = NULL" +
@@ -648,7 +677,7 @@ public class DatabaseProjectStoreManager
                 " join projects proj on proj.id = rev.project_id" +
                 " where site_id = :siteId" +
                 " and rev.project_id = :projId" +
-                " and rev.id < :lastId" +
+                " and rev.id \\< :lastId" +
                 " order by rev.id desc" +
                 " limit :limit")
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") int lastId);
@@ -673,7 +702,7 @@ public class DatabaseProjectStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String acFilter);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
@@ -739,11 +768,17 @@ public class DatabaseProjectStoreManager
                 " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.revision_id = :revId" +
-                " and wd.id > :lastId" +
+                " and wd.id \\> :lastId" +
                 " and proj.site_id = :siteId" +
+                " and <acFilter>" +
                 " order by wd.id asc" +
                 " limit :limit")
-        List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredWorkflowDefinition> getWorkflowDefinitions(
+                @Bind("siteId") int siteId,
+                @Bind("revId") int revId,
+                @Bind("limit") int limit,
+                @Bind("lastId") long lastId,
+                @Define("acFilter") String acFilter);
 
         @SqlUpdate("insert into revision_archives" +
                 " (id, archive_data)" +
