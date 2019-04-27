@@ -209,6 +209,9 @@ public class ThreadLocalTransactionManager
         if (transaction == null) {
             transaction = threadLocalAutoCommitTransaction.get();
             if (transaction == null) {
+		// TODO
+		// refactoring and make source code simple.
+		// better to create ready-only-transaction to remove explicit begin() call.
                 throw new IllegalStateException("Not in transaction");
             }
         }
@@ -216,29 +219,37 @@ public class ThreadLocalTransactionManager
     }
 
     @Override
-    public <T> T begin(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException> func)
+    public <T> T begin(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException, RuntimeException> func)
     {
-        return begin(func, RuntimeException.class, RuntimeException.class, RuntimeException.class);
+        return begin(func, RuntimeException.class, RuntimeException.class, RuntimeException.class, RuntimeException.class);
     }
 
     @Override
-    public <T, E1 extends Exception> T begin(SupplierInTransaction<T, E1, RuntimeException, RuntimeException> func, Class<E1> e1)
+    public <T, E1 extends Exception> T begin(SupplierInTransaction<T, E1, RuntimeException, RuntimeException, RuntimeException> func, Class<E1> e1)
             throws E1
     {
-        return begin(func, e1, RuntimeException.class, RuntimeException.class);
+        return begin(func, e1, RuntimeException.class, RuntimeException.class, RuntimeException.class);
     }
 
     @Override
     public <T, E1 extends Exception, E2 extends Exception>
-    T begin(SupplierInTransaction<T, E1, E2, RuntimeException> func, Class<E1> e1, Class<E2> e2)
+    T begin(SupplierInTransaction<T, E1, E2, RuntimeException, RuntimeException> func, Class<E1> e1, Class<E2> e2)
             throws E1, E2
     {
-        return begin(func, e1, e2, RuntimeException.class);
+        return begin(func, e1, e2, RuntimeException.class, RuntimeException.class);
     }
 
+    @Override
     public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception>
-    T begin(SupplierInTransaction<T, E1, E2, E3> func, Class<E1> e1, Class<E2> e2, Class<E3> e3)
+    T begin(SupplierInTransaction<T, E1, E2, E3, RuntimeException> func, Class<E1> e1, Class<E2> e2, Class<E3> e3)
             throws E1, E2, E3
+    {
+        return begin(func, e1, e2, e3, RuntimeException.class);
+    }
+
+    public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception, E4 extends Exception>
+    T begin(SupplierInTransaction<T, E1, E2, E3, E4> func, Class<E1> e1, Class<E2> e2, Class<E3> e3, Class<E4> e4)
+            throws E1, E2, E3, E4
     {
         if (threadLocalTransaction.get() != null) {
             throw new IllegalStateException("Nested transaction is not allowed: " + threadLocalTransaction.get());
@@ -257,6 +268,7 @@ public class ThreadLocalTransactionManager
             Throwables.propagateIfInstanceOf(e, e1);
             Throwables.propagateIfInstanceOf(e, e2);
             Throwables.propagateIfInstanceOf(e, e3);
+            Throwables.propagateIfInstanceOf(e, e4);
             throw Throwables.propagate(e);
         }
         finally {
@@ -273,13 +285,13 @@ public class ThreadLocalTransactionManager
     }
 
     @Override
-    public <T> T autoCommit(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException> func)
+    public <T> T autoCommit(SupplierInTransaction<T, RuntimeException, RuntimeException, RuntimeException, RuntimeException> func)
     {
         return autoCommit(func, RuntimeException.class, RuntimeException.class, RuntimeException.class);
     }
 
     @Override
-    public <T, E1 extends Exception> T autoCommit(SupplierInTransaction<T, E1, RuntimeException, RuntimeException> func, Class<E1> e1)
+    public <T, E1 extends Exception> T autoCommit(SupplierInTransaction<T, E1, RuntimeException, RuntimeException, RuntimeException> func, Class<E1> e1)
             throws E1
     {
         return autoCommit(func, e1, RuntimeException.class, RuntimeException.class);
@@ -287,7 +299,7 @@ public class ThreadLocalTransactionManager
 
     @Override
     public <T, E1 extends Exception, E2 extends Exception>
-    T autoCommit(SupplierInTransaction<T, E1, E2, RuntimeException> func, Class<E1> e1, Class<E2> e2)
+    T autoCommit(SupplierInTransaction<T, E1, E2, RuntimeException, RuntimeException> func, Class<E1> e1, Class<E2> e2)
             throws E1, E2
     {
         return autoCommit(func, e1, e2, RuntimeException.class);
@@ -295,7 +307,7 @@ public class ThreadLocalTransactionManager
 
     @Override
     public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception>
-    T autoCommit(SupplierInTransaction<T, E1, E2, E3> func, Class<E1> e1, Class<E2> e2, Class<E3> e3)
+    T autoCommit(SupplierInTransaction<T, E1, E2, E3, RuntimeException> func, Class<E1> e1, Class<E2> e2, Class<E3> e3)
             throws E1, E2, E3
     {
         try {
