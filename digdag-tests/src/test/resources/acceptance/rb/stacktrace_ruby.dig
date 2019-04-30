@@ -1,0 +1,6 @@
++stacktrace_ruby:
+  rb>: StacktraceRuby.run
+  require: 'scripts/stacktrace_ruby'
+
+_error:
+  echo>: ERROR_MESSAGE_BEGIN ${error.message} ERROR_MESSAGE_END

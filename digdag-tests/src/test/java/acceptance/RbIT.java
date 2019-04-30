@@ -144,4 +144,57 @@ public class RbIT
         assertThat(logs, containsString("ruby ruby"));
         assertThat(logs, containsString("ruby [\"ruby\", \"-w\"]"));
     }
+
+    @Test
+    public void testRubyErrorMessageAndStacktrace()
+            throws Exception
+    {
+        final Path tempdir = folder.getRoot().toPath().toAbsolutePath();
+        final Path projectDir = tempdir.resolve("rb");
+        final Path scriptsDir = projectDir.resolve("scripts");
+
+        // Create new project
+        final CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.code(), is(0));
+        Files.createDirectories(scriptsDir);
+        copyResource("acceptance/rb/stacktrace_ruby.dig", projectDir.resolve("stacktrace_ruby.dig"));
+        copyResource("acceptance/rb/scripts/stacktrace_ruby.rb", scriptsDir.resolve("stacktrace_ruby.rb"));
+
+        // Push the project
+        final CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "rb",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+        // Start the workflow
+        final CommandStatus startStatus = main("start",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "rb", "stacktrace_ruby",
+                "--session", "now");
+        assertThat(startStatus.code(), is(0));
+        final Id attemptId = getAttemptId(startStatus);
+
+        // Wait for the attempt to complete
+        RestSessionAttempt attempt = null;
+        for (int i = 0; i < 30; i++) {
+            attempt = client.getSessionAttempt(attemptId);
+            if (attempt.getDone()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+
+        final String logs = getAttemptLogs(client, attemptId);
+        assertThat(logs, containsString("Task failed with unexpected error: Ruby command failed with code 1 and error message: my error message"));
+        assertThat(logs, containsString(":in `private_run': my error message (StacktraceRuby::MyErrorClass)"));
+        assertThat(logs, containsString(":in `run'"));
+        assertThat(logs, containsString(":in `<main>'"));
+        assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Ruby command failed with code 1 and error message: my error message"));
+    }
 }
