@@ -258,31 +258,21 @@ def digdag_symbolize_keys(hash)
 end
 
 klass, method_name, is_instance_method = digdag_inspect_command(command)
-error = nil
 
 if klass.nil?
   method_args = digdag_inspect_arguments(nil, method_name, DigdagEnv::PARAMS)
-  begin
-    result = send(method_name, *method_args)
-  rescue => error
-  end
+  result = send(method_name, *method_args)
 
 elsif is_instance_method
   new_args = digdag_inspect_arguments(klass, :new, DigdagEnv::PARAMS)
   instance = klass.new(*new_args)
 
   method_args = digdag_inspect_arguments(instance, method_name, DigdagEnv::PARAMS)
-  begin
-    result = instance.send(method_name, *method_args)
-  rescue => error
-  end
+  result = instance.send(method_name, *method_args)
 
 else
   method_args = digdag_inspect_arguments(klass, method_name, DigdagEnv::PARAMS)
-  begin
-    result = klass.send(method_name, *method_args)
-  rescue => error
-  end
+  result = klass.send(method_name, *method_args)
 end
 
 out = {
@@ -292,16 +282,5 @@ out = {
   #'state_params' => DigdagEnv::STATE_PARAMS,  # only for retrying
 }
 
-if error
-  # format like ruby standard outputs
-  stacktrace = "#{error.backtrace.first}: #{error.message} (#{error.class})\n"
-  error.backtrace[1..-1].each {|m| stacktrace << "\tfrom #{m}\n" }
-  out['error'] = {
-    'message' => error.message,
-    'stacktrace' => stacktrace,
-  }
-end
-
 File.open(out_file, "w") {|f| f.write out.to_json }
 
-raise error if error

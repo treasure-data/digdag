@@ -13,7 +13,6 @@ import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.ErrorReporter;
-import io.digdag.spi.CommandRuntimeException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -158,14 +157,6 @@ public class OperatorManager
                                 request.getTaskId(), request.getLockId(), agentId,
                                 ex.getError(cf).get());  // TODO is error set?
                     }
-                }
-                catch (CommandRuntimeException ex) {
-                    logger.error("Command task failed with unexpected error: {}\n{}",
-                            ex.getMessage(),
-                            ex.getStacktrace());
-                    callback.taskFailed(request.getSiteId(),
-                            request.getTaskId(), request.getLockId(), agentId,
-                            buildExceptionErrorConfig(ex).toConfig(cf));  // no retry
                 }
                 catch (RuntimeException | AssertionError ex) { // Avoid infinite task retry cause of AssertionError by Operators
                     if (ex instanceof ConfigException) {
