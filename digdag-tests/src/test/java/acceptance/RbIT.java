@@ -191,10 +191,10 @@ public class RbIT
         }
 
         final String logs = getAttemptLogs(client, attemptId);
-        assertThat(logs, containsString("Task failed with unexpected error: Ruby command failed with code 1 and error message: my error message"));
-        assertThat(logs, containsString(":in `private_run': my error message (StacktraceRuby::MyErrorClass)"));
+        assertThat(logs, containsString("Task failed with unexpected error: Ruby command failed with code 1: my error message (StacktraceRuby::MyErrorClass)"));
+        assertThat(logs, containsString(":in `private_run'"));
         assertThat(logs, containsString(":in `run'"));
         assertThat(logs, containsString(":in `<main>'"));
-        assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Ruby command failed with code 1 and error message: my error message"));
+        assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Ruby command failed with code 1: my error message (StacktraceRuby::MyErrorClass)"));
     }
 }

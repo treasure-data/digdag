@@ -293,12 +293,10 @@ out = {
 }
 
 if error
-  # format like ruby standard outputs
-  stacktrace = "#{error.backtrace.first}: #{error.message} (#{error.class})\n"
-  error.backtrace[1..-1].each {|m| stacktrace << "\tfrom #{m}\n" }
   out['error'] = {
+    'class' => error.class.to_s,
     'message' => error.message,
-    'stacktrace' => stacktrace,
+    'backtrace' => error.backtrace,
   }
 end
 
