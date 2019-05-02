@@ -22,5 +22,5 @@ $ digdag push resttest
 $ curl -X PUT "http://localhost:65432/api/attempts" \
        -H  "accept: application/json" \
        -H  "Content-Type: application/json" \
-       -d "{ \"params\": { \"msg\": \"Hello from REST API.\" }, \"sessionTime\": \"$(date -Iseconds | sed -e 's|\([0-9]\{2\}\)\([0-9]\{2\}\)$|\1:\2|')\", \"workflowId\": \"1\"}"
+       -d "{ \"params\": { \"msg\": \"Hello from REST API.\" }, \"sessionTime\": \"2019-05-01T13:38:52+09:00\", \"workflowId\": \"1\"}"
 ```
