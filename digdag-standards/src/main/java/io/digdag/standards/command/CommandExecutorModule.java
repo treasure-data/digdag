@@ -11,7 +11,6 @@ public class CommandExecutorModule
     @Override
     public void configure(Binder binder)
     {
-        //binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
         binder.bind(CommandExecutor.class).to(DockerCommandExecutor.class).in(Scopes.SINGLETON);
         binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
     }

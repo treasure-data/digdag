@@ -177,7 +177,7 @@ public class RbOperatorFactory
             }
 
             final String ruby = params.get("ruby", String.class, "ruby");
-            ImmutableList.Builder<String> cmdline = ImmutableList.builder();
+            final ImmutableList.Builder<String> cmdline = ImmutableList.builder();
             cmdline.add(ruby);
             cmdline.add("-I").add(workspace.getPath().toString());
 
