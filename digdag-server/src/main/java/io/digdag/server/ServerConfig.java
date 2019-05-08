@@ -13,6 +13,8 @@ import io.digdag.guice.rs.server.undertow.UndertowListenAddress;
 import io.digdag.server.rs.AdminRestricted;
 import org.immutables.value.Value;
 
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
@@ -49,6 +51,8 @@ public interface ServerConfig
     public ConfigElement getSystemConfig();
 
     public Map<String,String> getEnvironment();
+
+    public List<String> getApiDisabled();
 
     public static ImmutableServerConfig.Builder defaultBuilder()
     {
@@ -91,6 +95,10 @@ public interface ServerConfig
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .environment(readPrefixed.apply("server.environment."))
+            .apiDisabled(config
+                    .getOptional("server.api.disabled", String.class)
+                    .transform( x -> new ArrayList<String>(Arrays.asList((x.split(",")))))
+                    .or(new ArrayList<String>()))
             .build();
     }
 

@@ -335,6 +335,7 @@ In the config file, following parameters are available
 * server.admin.port (integer)
 * server.access-log.path (string. same with --access-log)
 * server.access-log.pattern (string, "json", "combined" or "common")
+* server.api.disabled (disabled api list. ex. "GET_/api/attempts,PUT_/api/projects")
 * server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores or 2, whichever is greater)
 * server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)
 * server.http.no-request-timeout (maximum allowed time for clients to keep a connection open without sending requests or receiving responses in seconds. default: 60)

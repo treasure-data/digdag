@@ -3,7 +3,6 @@ package io.digdag.server;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import io.digdag.client.DigdagVersion;
@@ -12,14 +11,11 @@ import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.database.DatabaseSecretControlStoreManager;
 import io.digdag.core.database.DatabaseSecretStoreManager;
-import io.digdag.core.database.ThreadLocalTransactionManager;
-import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
-import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -33,17 +29,14 @@ import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
-import io.swagger.jaxrs.Reader;
 import io.swagger.jaxrs.config.BeanConfig;
-import io.swagger.jaxrs.config.DefaultJaxrsConfig;
 import io.swagger.jaxrs.listing.ApiListingResource;
 import io.swagger.jaxrs.listing.SwaggerSerializers;
-import io.swagger.models.Swagger;
+import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.sql.DataSource;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -52,14 +45,12 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.ReaderInterceptorContext;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-import java.net.InetSocketAddress;
-import static java.util.stream.Collectors.toList;
+
 import static io.digdag.guice.rs.GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_ATTRIBUTE;
 
 public class ServerModule
@@ -81,6 +72,7 @@ public class ServerModule
             .addProvider(AuthRequestFilter.class)
             .addProvider(CustomHeaderFilter.class)
             .addProvider(AdminRestrictedFilter.class)
+            .addProvider(DisabledByPathFilter.class)
             ;
         bindResources(builder);
         bindAuthenticator();
@@ -241,6 +233,34 @@ public class ServerModule
         }
     }
 
+    @Provider
+    public static class DisabledByPathFilter
+            implements ContainerRequestFilter
+    {
+        private final List<String> filters;  // ex. package.ClassName.method
+        @Context
+        private HttpServletRequest request;
+
+        @Inject
+        public DisabledByPathFilter(ServerConfig config)
+        {
+            filters = config.getApiDisabled();
+        }
+
+        @Override
+        public void filter(ContainerRequestContext requestContext)
+                throws IOException
+        {
+            ResourceMethodInvoker methodInvoker = (ResourceMethodInvoker) requestContext.getProperty("org.jboss.resteasy.core.ResourceMethodInvoker");
+            Method method = methodInvoker.getMethod();
+            Path path = method.getAnnotation(Path.class);
+            String target = String.format("%s_%s", requestContext.getMethod(), path.value());
+            if( filters.contains(target)) {
+                throw new NotFoundException();
+            }
+        }
+    }
+    
     @Path("/api/swagger.{type:json|yaml}")
     public static class SwaggerApiListingResource extends ApiListingResource
     {
