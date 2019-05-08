@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.Authenticator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

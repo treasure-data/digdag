@@ -114,7 +114,7 @@ Extension needs least code to make some extension possible. But it's the hardest
 
 A typical use case is for system integrators to customize digdag for their internal use.
 
-Many of customization points in digdag are assuming Extension to override (e.g. `io.digdag.server.Authenticator`) because it needs less code. But for ease of use, they should also accept system plugins, eventually.
+Many of customization points in digdag are assuming Extension to override (i.e. most of what's bound using guice) because it needs less code. But for ease of use, they should also accept system plugins, eventually.
 
 
 ### System plugins

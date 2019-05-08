@@ -10,6 +10,7 @@ import io.digdag.client.Version;
 import io.digdag.client.config.Config;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.server.undertow.UndertowServer;
 import io.digdag.guice.rs.server.undertow.UndertowServerControl;
@@ -30,11 +31,18 @@ public class ServerBootstrap
 
     protected final Version version;
     protected final ServerConfig serverConfig;
+    private final PluginSet systemPlugins;
 
-    public ServerBootstrap(Version version, ServerConfig serverConfig)
+    public ServerBootstrap(Version version, ServerConfig serverConfig, PluginSet systemPlugins)
     {
         this.version = version;
         this.serverConfig = serverConfig;
+        this.systemPlugins = systemPlugins;
+    }
+
+    public ServerBootstrap(Version version, ServerConfig serverConfig)
+    {
+        this(version, serverConfig, PluginSet.empty());
     }
 
     @Override
@@ -49,7 +57,7 @@ public class ServerBootstrap
         return new DigdagEmbed.Bootstrap()
             .setEnvironment(serverConfig.getEnvironment())
             .setSystemConfig(serverConfig.getSystemConfig())
-            //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
+            .setSystemPlugins(systemPlugins)
             .overrideModulesWith((binder) -> {
                 binder.bind(WorkspaceManager.class).to(ExtractArchiveWorkspaceManager.class).in(Scopes.SINGLETON);
                 binder.bind(Version.class).toInstance(version);
