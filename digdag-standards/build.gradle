@@ -28,6 +28,8 @@ dependencies {
     // aws
     compile "com.amazonaws:aws-java-sdk-kms:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-sts:${project.ext.awsJavaSdkVersion}"
+    compile "com.amazonaws:aws-java-sdk-ecs:${project.ext.awsJavaSdkVersion}"
+    compile "com.amazonaws:aws-java-sdk-logs:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-s3:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-emr:${project.ext.awsJavaSdkVersion}"
     compile "com.amazonaws:aws-java-sdk-dynamodb:${project.ext.awsJavaSdkVersion}"
