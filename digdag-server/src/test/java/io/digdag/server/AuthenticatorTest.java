@@ -5,7 +5,11 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+<<<<<<< HEAD
 import io.digdag.spi.AuthenticatedUser;
+=======
+import io.digdag.spi.Authenticator;
+>>>>>>> 66de22c8f5... Issue #1079: Moved the Authenticator interface to the SPI module.
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;

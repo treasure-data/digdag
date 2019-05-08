@@ -1,12 +1,11 @@
-package io.digdag.server;
+package io.digdag.standards.auth.jwt;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestApiKey;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.AuthenticatedUser;
+import io.digdag.spi.Authenticator;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.JwtException;
@@ -27,28 +26,13 @@ public class JwtAuthenticator
 {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticator.class);
 
+    private final JwtAuthenticatorConfig config;
     private final ConfigFactory cf;
-    private final Map<String, UserConfig> userMap;
-    private final boolean allowPublicAccess;
 
     @Inject
-    public JwtAuthenticator(Config systemConfig, final ConfigFactory cf)
+    public JwtAuthenticator(JwtAuthenticatorConfig config, ConfigFactory cf)
     {
-        Optional<RestApiKey> apiKey = systemConfig.getOptional("server.apikey", RestApiKey.class);
-
-        if (apiKey.isPresent()) {
-            UserConfig user = UserConfig.builder()
-                .siteId(0)
-                .isAdmin(true)
-                .apiKey(apiKey.get())
-                .build();
-            this.userMap = ImmutableMap.of(user.getApiKey().getIdString(), user);
-            this.allowPublicAccess = false;
-        }
-        else {
-            this.userMap = ImmutableMap.of();
-            this.allowPublicAccess = true;
-        }
+        this.config = config;
         this.cf = cf;
     }
 
@@ -60,7 +44,7 @@ public class JwtAuthenticator
 
         String auth = requestContext.getHeaderString("Authorization");
         if (auth == null) {
-            if (allowPublicAccess) {
+            if (config.isAllowPublicAccess()) {
                 // OK
                 siteId = 0;
                 admin = true;
@@ -79,6 +63,8 @@ public class JwtAuthenticator
             }
             String token = typeData[1];
             try {
+                Map<String, UserConfig> userMap = config.getUserMap();
+
                 String subject = Jwts.parser().setSigningKeyResolver(new SigningKeyResolver() {
                     @Override
                     public Key resolveSigningKey(JwsHeader header, Claims claims)

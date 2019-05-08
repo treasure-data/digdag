@@ -216,6 +216,6 @@ public class Server
 
     protected ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig)
     {
-        return new ServerBootstrap(version, serverConfig);
+        return new ServerBootstrap(version, serverConfig, loadSystemPlugins(props));
     }
 }
