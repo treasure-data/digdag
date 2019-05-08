@@ -150,6 +150,10 @@
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
+* **job_retry**: 0
+
+  Set automatic job retry count (From `0` to `10` times , default: 0).
+
 * **result_connection**: NAME
 
   Use a connection to write the query results to an external system.

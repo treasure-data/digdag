@@ -76,6 +76,10 @@ Example queries:
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
 
+* **job_retry**: 0
+
+  Set automatic job retry count (From `0` to `10` times , default: 0).
+
 * **presto_pool_name**: NAME
 
   Name of a resource pool to run the queries in.
