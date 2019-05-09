@@ -404,6 +404,26 @@ In the config file, following parameters are available
 * eval.js-engine-type (type of ConfigEvalEngine. "nashorn" or "graal". "nashorn" is default on Java8 and "graal" is default on Java11)
 * eval.extended-syntax (boolean, default: true. Enable or disable extended syntax in graal. If true, nested ``{..}`` is allowed)
 
+Authenticator Plugins
+*********************
+
+**Basic Auth**
+
+Enabled by setting the config parameter ``server.authenticator-class`` to ``io.digdag.standards.auth.basic.BasicAuthenticator``.
+
+Configuration:
+
+* basicauth.username (string) *required*
+* basicauth.password (string) *required*
+* basicauth.admin (boolean) optional, default ``false``
+
+
+**Jwt**
+
+Undocumented.
+
+>>>>>>> 8989deb68d... Added a Basic Auth Authenticator plugin for the server. Added a --basic-auth CLI client option.
+
 Secret Encryption Key
 *********************
 
@@ -430,6 +450,9 @@ Client-mode common options:
 
 :command:`-H, --header KEY=VALUE`
   Add a custom HTTP header. Use multiple times to set multiple headers.
+
+:command:`--basic-auth <user:pass>`
+  Add an Authorization header with the provided username and password.
 
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
