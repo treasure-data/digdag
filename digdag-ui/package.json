@@ -22,7 +22,7 @@
     "buffer": "5.0.5",
     "cryptiles": "4.1.2",
     "duration": "^0.2.0",
-    "jquery": "3.2.1",
+    "jquery": "3.4.0",
     "js-untar": "0.1.4",
     "js-yaml": "3.8.2",
     "lodash": "^4.17.5",
