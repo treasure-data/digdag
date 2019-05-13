@@ -248,7 +248,6 @@ public class RbOperatorFactory
             }
 
             final Map<String, String> environments = Maps.newHashMap();
-            environments.putAll(System.getenv());
             CommandOperators.collectEnvironmentVariables(environments, context.getPrivilegedVariables());
 
             final CommandRequest commandRequest = buildCommandRequest(commandContext, workingDirectory, tempDir, environments, cmdline.build());

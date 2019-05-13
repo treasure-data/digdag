@@ -156,7 +156,6 @@ public class ShOperatorFactory
                     .format(context.getSecrets());
 
             final Map<String, String> environments = Maps.newHashMap();
-            environments.putAll(System.getenv());
             params.getKeys()
                 .forEach(key -> {
                     if (CommandOperators.isValidEnvKey(key)) {
