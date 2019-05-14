@@ -115,6 +115,8 @@ Options:
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
+  
+  Note: Variable defined in _export is not overwritable by --param option.
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML/JSON file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
@@ -156,6 +158,8 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
   Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
+  
+  Note: Variable defined in _export is not overwritable by --param option.
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
@@ -212,6 +216,8 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
+  
+  Note: Variable defined in _export is not overwritable by --param option.
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
@@ -315,6 +321,8 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
+  
+  Note: Variable defined in _export is not overwritable by --param option.
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
@@ -454,6 +462,8 @@ Starts a new session. This command requires project name, workflow name, and ses
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is available using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: ``-p environment=staging``
+  
+  Note: Variable defined in _export is not overwritable by --param option.
 
 :command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
