@@ -1,0 +1,8 @@
++retrying:
+  _retry:
+    interval_type: exponential
+    limit: 6
+    interval: 1
+    max_interval: 2
+  +fail:
+    fail>: task failed expectedly at ${moment().valueOf() / 1000}
