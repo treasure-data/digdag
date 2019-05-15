@@ -7,6 +7,7 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.LocalTimeOrInstant;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestSessionAttempt;
@@ -40,20 +41,38 @@ public class Backfill
     public void mainWithClientException()
         throws Exception
     {
-        if (args.size() != 2) {
-            throw usage(null);
-        }
-
         if (fromTimeString == null) {
             throw new ParameterException("--from option is required");
         }
 
-        backfill(args.get(0), args.get(1));
+        if (args.size() == 1) {
+            // Schedule id?
+            Id scheduleId = parseScheduleId(args.get(0));
+            backfillScheduleId(scheduleId);
+        }
+        else if (args.size() == 2) {
+            // Single workflow
+            backfillWorkflow(args.get(0), args.get(1));
+        }
+        else {
+            throw usage(null);
+        }
+    }
+
+    private Id parseScheduleId(String s)
+        throws SystemExitException
+    {
+        try {
+            return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
+        }
+        catch (NumberFormatException ignore) {
+            throw usage(null);
+        }
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " backfill <project-name> <name>");
+        err.println("Usage: " + programName + " backfill <schedule-id> | <project-name> <name>");
         err.println("  Options:");
         err.println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
         err.println("        --name NAME                  retry attempt name");
@@ -63,23 +82,29 @@ public class Backfill
         return systemExit(error);
     }
 
-    private void backfill(String projName, String workflowName)
+    private void backfillScheduleId(Id scheduleId)
+        throws Exception
+    {
+        DigdagClient client = buildClient();
+        RestSchedule sched = client.getSchedule(scheduleId);
+        backfill(sched, client);
+    }
+
+    private void backfillWorkflow(String projectName, String workflowName)
+        throws Exception
+    {
+        DigdagClient client = buildClient();
+        RestProject project = client.getProject(projectName);
+        RestSchedule sched = client.getSchedule(project.getId(), workflowName);
+        backfill(sched, client);
+    }
+
+    private void backfill(RestSchedule sched, DigdagClient client)
         throws Exception
     {
         LocalTimeOrInstant fromTime = LocalTimeOrInstant.of(
                     TimeUtil.parseLocalTime(fromTimeString,
-                        "--from must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
-
-        DigdagClient client = buildClient();
-
-        RestSchedule sched = findScheduleByWorkflowName(client, projName, workflowName);
-
-        if (sched == null) {
-            // confirm that project and workflow exist, otherwise throws an exception
-            RestProject proj = client.getProject(projName);
-            RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), workflowName);
-            throw systemExit("Schedule is not set to the workflow");
-        }
+                        "--from must be \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
 
         RestWorkflowSessionTime truncatedTime = client.getWorkflowTruncatedSessionTime(sched.getWorkflow().getId(), fromTime);
 
@@ -115,17 +140,5 @@ public class Backfill
             err.println("Backfill session attempts started.");
             err.println("Use `" + programName + " sessions` to show the session attempts.");
         }
-    }
-
-    private static RestSchedule findScheduleByWorkflowName(DigdagClient client,
-            String projName, String workflowName)
-    {
-        for (RestSchedule sched : client.getSchedules(Optional.absent()).getSchedules()) {  // TODO use pagination (last_id) to get all schedules
-            if (projName.equals(sched.getProject().getName()) &&
-                    workflowName.equals(sched.getWorkflow().getName())) {
-                return sched;
-            }
-        }
-        return null;
     }
 }

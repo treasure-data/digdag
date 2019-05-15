@@ -68,6 +68,10 @@ Example queries:
   engine: presto
   ```
 
+* **interval**: 30s
+
+  Set Interval (default: 30s (30 second)).
+
 * **priority**: 0
 
   Set Priority (From `-2` (VERY LOW) to `2` (VERY HIGH) , default: 0 (NORMAL)).
@@ -97,8 +101,7 @@ Example queries:
 
 ## Output parameters
 
-* **td.last_job_id**
-* **td.last_job.id**
+* **td.last_job_id** or **td.last_job.id**
 
   The job id this task executed.
 

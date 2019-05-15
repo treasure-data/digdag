@@ -117,7 +117,7 @@ Options:
   Example: ``-p environment=staging``
 
 :command:`-P, --params-file PATH`
-  Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
+  Read parameters from a YAML/JSON file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
   Example: ``-P params.yml``
 
@@ -235,7 +235,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.33
+    $ digdag selfupdate 0.9.34
 
 Server-mode commands
 ----------------------------------
@@ -369,6 +369,7 @@ In the config file, following parameters are available
 * executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
 * api.max_attempts_page_size (integer. The max number of rows of attempts in api response)
 * api.max_sessions_page_size (integer. The max number of rows of sessions in api response)
+* api.max_archive_total_size_limit (integer. The maximum size of an archived project. i.e. ``digdag push`` size. default: 2MB(2\*1024\*1024))
 
 
 Secret Encryption Key
@@ -557,11 +558,58 @@ schedules
 Shows list of schedules.
 
 
+disable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag disable [project-name]
+
+Disable all workflow schedules in a project.
+
+.. code-block:: console
+
+    $ digdag disable [schedule-id]
+    $ digdag disable [project-name] [name]
+
+Disable a workflow schedule.
+
+.. code-block:: console
+
+    $ digdag disable <schedule-id>
+    $ digdag disable myproj
+    $ digdag disable myproj main
+
+
+enable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag enable [project-name]
+
+Enable all workflow schedules in a project.
+
+.. code-block:: console
+
+    $ digdag enable [schedule-id]
+    $ digdag enable [project-name] [name]
+
+Enable a workflow schedule.
+
+.. code-block:: console
+
+    $ digdag enable <schedule-id>
+    $ digdag enable myproj
+    $ digdag enable myproj main
+
+
 backfill
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
+    $ digdag backfill <schedule-id>
     $ digdag backfill <project-name> <name>
 
 Starts sessions of a schedule for past session times.
@@ -628,26 +676,51 @@ Shows list of sessions. This command shows only the latest attempts of sessions 
 :command:`-s, --page-size N`
   Shows more sessions of the number of N (in default up to 100).
 
+session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag session [session-id]
+
+Show a single session. Examples:
+
+.. code-block:: console
+
+    $ digdag session <session-id>
+
 attempts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
-    $ digdag attempts [project-name] [+name]
+    $ digdag attempts [session-id]
 
 Shows list of attempts. This command shows all attempts including attempts retried by another attempt. Examples:
 
 .. code-block:: console
 
     $ digdag attempts
-    $ digdag attempts myproj
-    $ digdag attempts myproj +main
+    $ digdag attempts <session-id>
 
 :command:`-i, --last-id ID`
   Shows more attempts older than this id.
 
 :command:`-s, --page-size N`
   Shows more attempts of the number of N (in default up to 100).
+
+attempt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag attempt [attempt-id]
+
+Shows a single attempt. Examples:
+
+.. code-block:: console
+
+    $ digdag attempt <attempt-id>
 
 tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -731,6 +804,9 @@ Deletes a project. Sessions of the deleted project are kept retained so that we 
 .. code-block:: console
 
     $ digdag delete myproj
+
+:command:`--force`
+  Skip y/N prompt
 
 secrets
 ~~~~~~~
@@ -816,6 +892,15 @@ The above command sets the local secret `foo`.
     $ digdag secrets --local --delete foo bar
 
 The above command deletes the local secrets `foo` and `bar`.
+
+version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag version
+
+Show client and server version.
 
 Common options
 ----------------------------------

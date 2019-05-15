@@ -125,8 +125,7 @@ NOTE: We're limiting export capability to only us-east region S3 bucket. In gene
 
 ## Output parameters
 
-* **td.last_job_id**
-* **td.last_job.id**
+* **td.last_job_id** or **td.last_job.id**
 
   The job id this task executed.
 

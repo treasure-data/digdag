@@ -128,8 +128,11 @@ public class ProjectResource
     // GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
-    private static final int ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
-    private static final int ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
+    private static int MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
+    private static final int DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
+    // TODO: we may want to limit bytes of one file for `MAX_ARCHIVE_FILE_SIZE_LIMIT ` in the future instead of total size limit.
+    // See also: https://github.com/treasure-data/digdag/pull/994#discussion_r258402647
+    private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
 
@@ -178,6 +181,8 @@ public class ProjectResource
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
+        MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
+        MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -621,10 +626,10 @@ public class ProjectResource
                 }
             }
 
-            if (contentLength > ARCHIVE_TOTAL_SIZE_LIMIT) {
+            if (contentLength > MAX_ARCHIVE_TOTAL_SIZE_LIMIT) {
                 throw new IllegalArgumentException(String.format(ENGLISH,
                         "Size of the uploaded archive file exceeds limit (%d bytes)",
-                        ARCHIVE_TOTAL_SIZE_LIMIT));
+                        MAX_ARCHIVE_TOTAL_SIZE_LIMIT));
             }
             int size = (int) contentLength;
 
@@ -722,10 +727,10 @@ public class ProjectResource
                 totalSize = extractConfigFiles(dir.get(), archive);
             }
 
-            if (totalSize > ARCHIVE_TOTAL_SIZE_LIMIT) {
+            if (totalSize > MAX_ARCHIVE_TOTAL_SIZE_LIMIT) {
                 throw new IllegalArgumentException(String.format(ENGLISH,
                             "Total size of the archive exceeds limit (%d > %d bytes)",
-                            totalSize, ARCHIVE_TOTAL_SIZE_LIMIT));
+                            totalSize, MAX_ARCHIVE_TOTAL_SIZE_LIMIT));
             }
 
             ProjectArchive archive = projectArchiveLoader.load(dir.get(), WorkflowResourceMatcher.defaultMatcher(), cf.create());
@@ -764,10 +769,10 @@ public class ProjectResource
 
     private void validateTarEntry(TarArchiveEntry entry)
     {
-        if (entry.getSize() > ARCHIVE_FILE_SIZE_LIMIT) {
+        if (entry.getSize() > MAX_ARCHIVE_FILE_SIZE_LIMIT) {
             throw new IllegalArgumentException(String.format(ENGLISH,
                         "Size of a file in the archive exceeds limit (%d > %d bytes): %s",
-                        entry.getSize(), ARCHIVE_FILE_SIZE_LIMIT, entry.getName()));
+                        entry.getSize(), MAX_ARCHIVE_FILE_SIZE_LIMIT, entry.getName()));
         }
     }
 

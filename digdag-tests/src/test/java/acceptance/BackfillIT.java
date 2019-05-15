@@ -57,7 +57,55 @@ public class BackfillIT
     }
 
     @Test
-    public void initPushBackfill()
+    public void initPushBackfillScheduleId()
+            throws Exception
+    {
+        // Create new project
+        {
+            CommandStatus cmd = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(cmd.code(), is(0));
+        }
+
+        copyResource("acceptance/backfill/backfill.dig", projectDir.resolve("backfill.dig"));
+
+        // Push
+        {
+            CommandStatus cmd = main("push",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--project", projectDir.toString(),
+                    "backfill-test");
+            assertThat(cmd.errUtf8(), cmd.code(), is(0));
+        }
+
+        // Backfill the workflow
+        {
+            CommandStatus cmd = main("backfill",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "1",
+                    "--from", "2016-01-01",
+                    "--count", "2");
+            assertThat(cmd.errUtf8(), cmd.code(), is(0));
+        }
+
+        // Verify that 2 sessions are started
+        List<RestSession> sessions = client.getSessions().getSessions();
+        assertThat(sessions.size(), is(2));
+
+        // sessions API return results in reversed order
+
+        RestSession session1 = sessions.get(1);
+        assertThat(session1.getSessionTime(), is(OffsetDateTime.parse("2016-01-01T00:00:00+09:00")));
+
+        RestSession session2 = sessions.get(0);
+        assertThat(session2.getSessionTime(), is(OffsetDateTime.parse("2016-01-02T00:00:00+09:00")));
+    }
+
+    @Test
+    public void initPushBackfillWorkflow()
             throws Exception
     {
         // Create new project
