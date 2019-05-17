@@ -36,10 +36,8 @@ import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttemp
 public class LogResource
     extends AuthenticatedResource
 {
-    // PUT  /api/logs/{attempt_id}/files?task=<name>&file_time=<unixtime sec>&node_id=<node_id>
     // GET  /api/logs/{attempt_id}/files[?task=<name>]
     // GET  /api/logs/{attempt_id}/files/{file_name}
-    // GET  /api/logs/{attempt_id}/upload_handle?task=<name>&file_time=<unixtime sec>&node_id=<nodeId>
 
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
