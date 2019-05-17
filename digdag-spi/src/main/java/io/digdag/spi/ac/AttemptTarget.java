@@ -11,11 +11,11 @@ public interface AttemptTarget
 
     String getWorkflowName();
 
-    int getSessionId();
+    long getSessionId();
 
-    int getId();
+    long getId();
 
-    static AttemptTarget of(int siteId, String projectName, String workflowName, int sessionId, int id)
+    static AttemptTarget of(int siteId, String projectName, String workflowName, long sessionId, long id)
     {
         return ImmutableAttemptTarget.builder()
                 .siteId(siteId)
