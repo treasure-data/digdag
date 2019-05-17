@@ -208,11 +208,12 @@ public final class RestModels
     }
 
 
-    public static RestScheduleSummary scheduleSummary(StoredSchedule sched, ZoneId timeZone)
+    public static RestScheduleSummary scheduleSummary(StoredSchedule sched, StoredProject proj, ZoneId timeZone)
     {
         return RestScheduleSummary.builder()
             .id(id(sched.getId()))
             .workflow(IdAndName.of(id(sched.getWorkflowDefinitionId()), sched.getWorkflowName()))
+            .project(IdAndName.of(id(sched.getWorkflowDefinitionId()), proj.getName()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())

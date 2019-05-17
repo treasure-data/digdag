@@ -725,7 +725,7 @@ public class DigdagClient implements AutoCloseable
 
     public void killSessionAttempt(Id attemptId)
     {
-        doPost(void.class,
+        doPost(RestSessionAttempt.class,
                 new HashMap<String, String>(),
                 target("/api/attempts/{id}/kill")
                 .resolveTemplate("id", attemptId));
