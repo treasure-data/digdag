@@ -85,7 +85,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkPutProjectSecret(ProjectTarget target, AuthenticatedUser user)
+    void checkPutProjectSecret(SecretTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -95,7 +95,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkDeleteProjectSecret(ProjectTarget target, AuthenticatedUser user)
+    void checkDeleteProjectSecret(SecretTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
