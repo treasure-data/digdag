@@ -217,7 +217,7 @@ public class ProjectResource
             StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
 
             ac.checkGetProject( // AccessControl
-                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
                     getAuthenticatedUser());
 
             return RestModels.project(proj, rev);
@@ -238,7 +238,7 @@ public class ProjectResource
                     StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
 
                     ac.checkGetProject( // AccessControl
-                            ProjectTarget.of(getSiteId(), proj.getName()),
+                            ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
                             getAuthenticatedUser());
 
                     collection = ImmutableList.of(RestModels.project(proj, rev));
@@ -298,7 +298,7 @@ public class ProjectResource
             StoredRevision rev = ps.getLatestRevision(proj.getId()); // check NotFound first
 
             ac.checkGetProject( // AccessControl
-                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
                     getAuthenticatedUser());
 
             return RestModels.project(proj, rev);
@@ -316,7 +316,7 @@ public class ProjectResource
             List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
 
             ac.checkGetProject( // AccessControl
-                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
                     getAuthenticatedUser());
 
             return RestModels.revisionCollection(proj, revs);
@@ -398,7 +398,7 @@ public class ProjectResource
             }
             else {
                 // of project
-                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
+                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName(), proj.getId());
 
                 try {
                     ac.checkListWorkflowsOfProject( // AccessControl
@@ -457,7 +457,7 @@ public class ProjectResource
             else {
                 // of project
 
-                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
+                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName(), proj.getId());
                 ac.checkListSchedulesOfProject( // AccessControl
                         projTarget,
                         getAuthenticatedUser());
@@ -506,7 +506,7 @@ public class ProjectResource
             else {
                 // of project
 
-                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName());
+                final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), proj.getName(), proj.getId());
                 ac.checkListSessionsOfProject( // AccessControl
                         projTarget,
                         getAuthenticatedUser());
@@ -535,7 +535,7 @@ public class ProjectResource
                     archiveManager.getArchive(ps, projId, revName); // check NotFound first
 
             ac.checkGetProjectArchive( // AccessControl
-                    ProjectTarget.of(getSiteId(), proj.getName()),
+                    ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
                     getAuthenticatedUser());
 
             if (!archiveOrNone.isPresent()) {
@@ -595,7 +595,7 @@ public class ProjectResource
             StoredProject project = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
             ac.checkDeleteProject( // AccessControl
-                    ProjectTarget.of(getSiteId(), project.getName()),
+                    ProjectTarget.of(getSiteId(), project.getName(), project.getId()),
                     getAuthenticatedUser());
 
             return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
@@ -874,7 +874,7 @@ public class ProjectResource
             ensureNotDeletedProject(project);
 
             ac.checkGetProjectSecretList( // AccessControl
-                    ProjectTarget.of(getSiteId(), project.getName()),
+                    ProjectTarget.of(getSiteId(), project.getName(), project.getId()),
                     getAuthenticatedUser());
 
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
