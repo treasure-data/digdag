@@ -12,6 +12,8 @@ public interface RestScheduleSummary
 {
     Id getId();
 
+    IdAndName getProject();
+
     IdAndName getWorkflow();
 
     Instant getNextRunTime();

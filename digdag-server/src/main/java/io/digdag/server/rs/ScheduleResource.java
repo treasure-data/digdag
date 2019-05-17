@@ -148,7 +148,7 @@ public class ScheduleResource
                         request.getDryRun());
             }
 
-            return RestModels.scheduleSummary(updated, timeZone);
+            return RestModels.scheduleSummary(updated, proj, timeZone);
         }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
@@ -213,7 +213,7 @@ public class ScheduleResource
                 return lockedSched.get();
             });
 
-            return RestModels.scheduleSummary(updated, timeZone);
+            return RestModels.scheduleSummary(updated, proj, timeZone);
         }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
@@ -240,7 +240,7 @@ public class ScheduleResource
                 return lockedSched.get();
             });
 
-            return RestModels.scheduleSummary(updated, timeZone);
+            return RestModels.scheduleSummary(updated, proj, timeZone);
         }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 }

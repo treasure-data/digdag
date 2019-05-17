@@ -325,14 +325,16 @@ public class AttemptResource
     @POST
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")
-    public void killAttempt(@PathParam("id") long id)
+    public Response killAttempt(@PathParam("id") long id)
             throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
-        tm.<Void, ResourceNotFoundException, ResourceConflictException, AccessControlException>begin(() -> {
+        return tm.<Response, ResourceNotFoundException, ResourceConflictException, AccessControlException>begin(() -> {
+            ProjectStore rs = rm.getProjectStore(getSiteId());
             final StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
                     .getAttemptById(id); // check NotFound first
             final StoredProject proj = rm.getProjectStore(getSiteId())
                     .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
+            final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( attempt.getWorkflowDefinitionId().or(-1L));
 
             ac.checkKillAttempt( // AccessControl
                     WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
@@ -342,7 +344,8 @@ public class AttemptResource
             if (!updated) {
                 throw new ResourceConflictException("Session attempt already killed or finished");
             }
-            return null;
+            RestSessionAttempt res = RestModels.attempt(attempt, def.getProject().getName());
+            return Response.ok(res).build();
         }, ResourceNotFoundException.class, ResourceConflictException.class, AccessControlException.class);
     }
 }
