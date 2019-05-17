@@ -120,7 +120,7 @@ public class AttemptResource
                 else {
                     // of project
 
-                    final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), projName);
+                    final ProjectTarget projTarget = ProjectTarget.of(getSiteId(), projName, proj.getId());
                     ac.checkListSessionsOfProject(projTarget, getAuthenticatedUser()); // AccessControl
                     attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), validPageSize, Optional.fromNullable(lastId),
                             ac.getListSessionsFilterOfProject(
