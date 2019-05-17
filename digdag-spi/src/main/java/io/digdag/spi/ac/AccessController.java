@@ -388,7 +388,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkSkipSchedule(WorkflowTarget target, AuthenticatedUser user)
+    void checkSkipSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -398,7 +398,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkBackfillSchedule(WorkflowTarget target, AuthenticatedUser user)
+    void checkBackfillSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -408,7 +408,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkDisableSchedule(WorkflowTarget target, AuthenticatedUser user)
+    void checkDisableSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     /**
@@ -418,6 +418,6 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkEnableSchedule(WorkflowTarget target, AuthenticatedUser user)
+    void checkEnableSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException;
 }

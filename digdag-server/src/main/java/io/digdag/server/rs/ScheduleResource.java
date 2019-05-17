@@ -22,6 +22,7 @@ import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.ScheduleTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.swagger.annotations.Api;
@@ -130,7 +131,7 @@ public class ScheduleResource
             ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
             ac.checkSkipSchedule( // AccessControl
-                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
                     getAuthenticatedUser());
 
             StoredSchedule updated;
@@ -175,7 +176,7 @@ public class ScheduleResource
                     .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkBackfillSchedule( // AccessControl
-                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
                     getAuthenticatedUser());
 
             List<StoredSessionAttemptWithSession> attempts =
@@ -204,7 +205,7 @@ public class ScheduleResource
                     .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkDisableSchedule( // AccessControl
-                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
                     getAuthenticatedUser());
 
             StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
@@ -231,7 +232,7 @@ public class ScheduleResource
                     .getProjectById(sched.getProjectId()); // check NotFound first
 
             ac.checkEnableSchedule( // AccessControl
-                    WorkflowTarget.of(getSiteId(), sched.getWorkflowName(), proj.getName()),
+                    ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
                     getAuthenticatedUser());
 
             StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
