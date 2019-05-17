@@ -62,63 +62,6 @@ public class LogResource
         this.logServer = lm.getLogServer();
     }
 
-    @PUT
-    @Consumes("application/gzip")
-    @Path("/api/logs/{attempt_id}/files")
-    public RestLogFilePutResult putFile(
-            @PathParam("attempt_id") long attemptId,
-            @QueryParam("task") String taskName,
-            @QueryParam("file_time") long unixFileTime,
-            @QueryParam("node_id") String nodeId,
-            InputStream body)
-            throws ResourceNotFoundException, IOException, AccessControlException
-    {
-        return tm.<RestLogFilePutResult, ResourceNotFoundException, IOException, AccessControlException>begin(() -> {
-            // TODO null check taskName
-            // TODO null check nodeId
-            final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkPutLogFile(
-                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
-                            getAuthenticatedUser()));
-
-            byte[] data = ByteStreams.toByteArray(body);
-            String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
-            return RestLogFilePutResult.of(fileName);
-        }, ResourceNotFoundException.class, IOException.class, AccessControlException.class);
-    }
-
-    @GET
-    @Path("/api/logs/{attempt_id}/upload_handle")
-    public DirectUploadHandle getFileHandles(
-            @PathParam("attempt_id") long attemptId,
-            @QueryParam("task") String taskName,
-            @QueryParam("file_time") long unixFileTime,
-            @QueryParam("node_id") String nodeId)
-            throws ResourceNotFoundException, AccessControlException
-    {
-        return tm.<DirectUploadHandle, ResourceNotFoundException, AccessControlException>begin(() -> {
-            // TODO null check taskName
-            // TODO null check nodeId
-            final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
-                    (p, a) -> ac.checkPutLogFile(
-                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
-                            getAuthenticatedUser()));
-
-            Optional<DirectUploadHandle> handle = logServer.getDirectUploadHandle(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId);
-
-            if (handle.isPresent()) {
-                return handle.get();
-            }
-            else {
-                throw new ServerErrorException(
-                        Response.status(Response.Status.NOT_IMPLEMENTED)
-                                .type("application/json")
-                                .entity("{\"message\":\"Direct upload handle is not available for this log server implementation\",\"status\":501}")
-                                .build());
-            }
-        }, ResourceNotFoundException.class, AccessControlException.class);
-    }
-
     @GET
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
