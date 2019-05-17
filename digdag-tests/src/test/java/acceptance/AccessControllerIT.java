@@ -37,6 +37,7 @@ import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -290,7 +291,7 @@ public class AccessControllerIT
         }
 
         @Override
-        public void checkKillAttempt(WorkflowTarget target, AuthenticatedUser user)
+        public void checkKillAttempt(AttemptTarget target, AuthenticatedUser user)
                 throws AccessControlException
         {
             switch (target.getProjectName()) {

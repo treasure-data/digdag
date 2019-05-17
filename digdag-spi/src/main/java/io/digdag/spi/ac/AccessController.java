@@ -310,7 +310,7 @@ public interface AccessController
      * @param user
      * @throws AccessControlException
      */
-    void checkKillAttempt(WorkflowTarget target, AuthenticatedUser user)
+    void checkKillAttempt(AttemptTarget target, AuthenticatedUser user)
             throws AccessControlException;
 
     //
