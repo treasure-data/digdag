@@ -5,6 +5,7 @@ import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
+import io.digdag.spi.ac.ScheduleTarget;
 import io.digdag.spi.ac.SecretTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -191,22 +192,22 @@ public class DefaultAccessController
     { }
 
     @Override
-    public void checkSkipSchedule(WorkflowTarget target, AuthenticatedUser user)
+    public void checkSkipSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkBackfillSchedule(WorkflowTarget target, AuthenticatedUser user)
+    public void checkBackfillSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkDisableSchedule(WorkflowTarget target, AuthenticatedUser user)
+    public void checkDisableSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 
     @Override
-    public void checkEnableSchedule(WorkflowTarget target, AuthenticatedUser user)
+    public void checkEnableSchedule(ScheduleTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 }
