@@ -33,6 +33,7 @@ import io.digdag.client.api.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -337,7 +338,7 @@ public class AttemptResource
             final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( attempt.getWorkflowDefinitionId().or(-1L));
 
             ac.checkKillAttempt( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    AttemptTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName(), attempt.getSessionId(), attempt.getId()),
                     getAuthenticatedUser());
 
             boolean updated = executor.killAttemptById(getSiteId(), id); // should never throw NotFound
