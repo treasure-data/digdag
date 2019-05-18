@@ -14,6 +14,7 @@ import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSecret;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
@@ -96,6 +97,14 @@ public final class RestModels
         return RestRevisionCollection.builder()
             .revisions(collection)
             .build();
+    }
+
+    public static RestSecret secret(StoredProject proj, String key)
+    {
+        return RestSecret.builder()
+                .key(key)
+                .project(IdAndName.of(RestModels.id(proj.getId()), proj.getName()))
+                .build();
     }
 
     public static RestWorkflowDefinition workflowDefinition(StoredProject proj, Revision rev,
