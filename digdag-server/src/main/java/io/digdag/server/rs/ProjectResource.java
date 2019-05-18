@@ -809,10 +809,10 @@ public class ProjectResource
     @PUT
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
-    public Response putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
+    public RestSecret putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
             throws ResourceNotFoundException, AccessControlException
     {
-        return tm.<Response, ResourceNotFoundException, AccessControlException>begin(() -> {
+        return tm.<RestSecret, ResourceNotFoundException, AccessControlException>begin(() -> {
             if (!SecretValidation.isValidSecret(key, request.value())) {
                 throw new IllegalArgumentException("Invalid secret");
             }
@@ -829,17 +829,16 @@ public class ProjectResource
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
             store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
-            RestSecret res = RestSecret.builder().key(key).project(IdAndName.of(RestModels.id(project.getId()), project.getName())).build();
-            return Response.ok(res).build();
+            return RestModels.secret(project, key);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
-    public Response deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
+    public RestSecret deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
             throws ResourceNotFoundException, AccessControlException
     {
-        return tm.<Response, ResourceNotFoundException, AccessControlException>begin(() -> {
+        return tm.<RestSecret, ResourceNotFoundException, AccessControlException>begin(() -> {
             if (!SecretValidation.isValidSecretKey(key)) {
                 throw new IllegalArgumentException("Invalid secret");
             }
@@ -856,8 +855,7 @@ public class ProjectResource
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
             store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
-            RestSecret res = RestSecret.builder().key(key).project(IdAndName.of(RestModels.id(project.getId()), project.getName())).build();
-            return Response.ok(res).build();
+            return RestModels.secret(project, key);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 

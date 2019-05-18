@@ -28,6 +28,7 @@ import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSecret;
 import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionCollection;
@@ -847,6 +848,8 @@ public class DigdagClient implements AutoCloseable
         if (response.getStatusInfo().getFamily() != SUCCESSFUL) {
             throw new WebApplicationException("Failed to set project secret: " + response.getStatusInfo());
         }
+
+        response.readEntity(RestSecret.class);
     }
 
     public void deleteProjectSecret(Id projectId, String key)
@@ -865,6 +868,8 @@ public class DigdagClient implements AutoCloseable
         if (response.getStatusInfo().getFamily() != SUCCESSFUL) {
             throw new WebApplicationException("Failed to delete project secret: " + response.getStatusInfo());
         }
+
+        response.readEntity(RestSecret.class);
     }
 
     public RestSecretList listProjectSecrets(Id projectId)

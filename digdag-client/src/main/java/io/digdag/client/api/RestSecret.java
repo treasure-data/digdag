@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
-@JsonDeserialize(as = ImmutableRestSecretMetadata.class)
+@JsonDeserialize(as = ImmutableRestSecret.class)
 public interface RestSecret
 {
     String key();
