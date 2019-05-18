@@ -31,10 +31,13 @@ import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import io.digdag.client.api.Id;
+import io.digdag.client.api.IdAndName;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestScheduleCollection;
+import io.digdag.client.api.RestSecret;
 import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSecretMetadata;
 import io.digdag.client.api.RestSessionCollection;
@@ -780,10 +783,10 @@ public class ProjectResource
     @PUT
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
-    public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
+    public RestSecret putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
             throws ResourceNotFoundException, AccessControlException
     {
-        tm.<Void, ResourceNotFoundException, AccessControlException>begin(() -> {
+        return tm.<RestSecret, ResourceNotFoundException, AccessControlException>begin(() -> {
             if (!SecretValidation.isValidSecret(key, request.value())) {
                 throw new IllegalArgumentException("Invalid secret");
             }
@@ -800,16 +803,16 @@ public class ProjectResource
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
             store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
-            return null;
+            return RestModels.secret(project, key);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
-    public void deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
+    public RestSecret deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
             throws ResourceNotFoundException, AccessControlException
     {
-        tm.<Void, ResourceNotFoundException, AccessControlException>begin(() -> {
+        return tm.<RestSecret, ResourceNotFoundException, AccessControlException>begin(() -> {
             if (!SecretValidation.isValidSecretKey(key)) {
                 throw new IllegalArgumentException("Invalid secret");
             }
@@ -826,7 +829,7 @@ public class ProjectResource
             SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
             store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
-            return null;
+            return RestModels.secret(project, key);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 

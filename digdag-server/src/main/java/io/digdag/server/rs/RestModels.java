@@ -14,6 +14,7 @@ import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSecret;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
@@ -96,6 +97,14 @@ public final class RestModels
         return RestRevisionCollection.builder()
             .revisions(collection)
             .build();
+    }
+
+    public static RestSecret secret(StoredProject proj, String key)
+    {
+        return RestSecret.builder()
+                .key(key)
+                .project(IdAndName.of(RestModels.id(proj.getId()), proj.getName()))
+                .build();
     }
 
     public static RestWorkflowDefinition workflowDefinition(StoredProject proj, Revision rev,
@@ -208,11 +217,12 @@ public final class RestModels
     }
 
 
-    public static RestScheduleSummary scheduleSummary(StoredSchedule sched, ZoneId timeZone)
+    public static RestScheduleSummary scheduleSummary(StoredSchedule sched, StoredProject proj, ZoneId timeZone)
     {
         return RestScheduleSummary.builder()
             .id(id(sched.getId()))
             .workflow(IdAndName.of(id(sched.getWorkflowDefinitionId()), sched.getWorkflowName()))
+            .project(IdAndName.of(id(sched.getWorkflowDefinitionId()), proj.getName()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())
