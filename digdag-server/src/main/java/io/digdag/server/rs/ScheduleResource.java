@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleAttemptCollection;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
@@ -165,10 +166,10 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
-    public RestSessionAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
+    public RestScheduleAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
             throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException
     {
-        return tm.<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException>begin(() ->
+        return tm.<RestScheduleAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException>begin(() ->
         {
             final StoredSchedule sched = sm.getScheduleStore(getSiteId())
                     .getScheduleById(id); // check NotFound first
@@ -186,7 +187,7 @@ public class ScheduleResource
                             request.getCount(),
                             request.getDryRun());
 
-            return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
+            return RestModels.attemptCollection(sched, proj, rm.getProjectStore(getSiteId()), attempts);
         }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
