@@ -12,6 +12,7 @@ import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleAttemptCollection;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSecret;
@@ -222,7 +223,7 @@ public final class RestModels
         return RestScheduleSummary.builder()
             .id(id(sched.getId()))
             .workflow(IdAndName.of(id(sched.getWorkflowDefinitionId()), sched.getWorkflowName()))
-            .project(IdAndName.of(id(sched.getWorkflowDefinitionId()), proj.getName()))
+            .project(IdAndName.of(id(proj.getId()), proj.getName()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())
@@ -397,6 +398,42 @@ public final class RestModels
             .attempts(collection)
             .build();
     }
+
+    static RestScheduleAttemptCollection attemptCollection(
+            StoredSchedule sched, StoredProject prj, ProjectStore ps, List<StoredSessionAttemptWithSession> attempts)
+    {
+        ProjectMap projs = ps
+                .getProjectsByIdList(
+                        attempts.stream()
+                                .map(attempt -> attempt.getSession().getProjectId())
+                                .collect(Collectors.toList()));
+
+        List<RestSessionAttempt> collection = attempts.stream()
+                .map(attempt -> {
+                    try {
+                        return attempt(attempt, projs.get(attempt.getSession().getProjectId()).getName());
+                    }
+                    catch (ResourceNotFoundException ex) {
+                        throw new IllegalStateException(String.format(ENGLISH,
+                                "An attempt id=%d references a nonexistent project id=%d",
+                                attempt.getId(), attempt.getSession().getProjectId()));
+                    }
+                })
+                .collect(Collectors.toList());
+        return attemptCollection(sched, prj, collection);
+    }
+
+    static RestScheduleAttemptCollection attemptCollection(
+            StoredSchedule sched, StoredProject prj, List<RestSessionAttempt> collection)
+    {
+        return RestScheduleAttemptCollection.builder()
+                .id(id(sched.getId()))
+                .workflow(IdAndName.of(id(sched.getWorkflowDefinitionId()), sched.getWorkflowName()))
+                .project(IdAndName.of(id(prj.getId()),prj.getName()))
+                .attempts(collection)
+                .build();
+    }
+
 
     static Id id(int id)
     {
