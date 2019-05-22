@@ -34,6 +34,11 @@ setx PATH "%PATH%;%USERPROFILE%\bin"
 
 Please reopen your command window. If `digdag --help` command shows usage message, Digdag is installed successfully.
 
+### Using packages?
+
+Digdag has already been packaged for multiple platforms.
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/digdag.svg)](https://repology.org/project/digdag/versions)
 
 ### curl did not work?
 
