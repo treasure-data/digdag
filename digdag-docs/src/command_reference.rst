@@ -391,7 +391,9 @@ Example:
 .. code-block:: none
 
   digdag.secret-encryption-key = MDEyMzQ1Njc4OTAxMjM0NQ==
-
+  # example
+  echo -n '16_bytes_phrase!' | openssl base64
+  MTZfYnl0ZXNfcGhyYXNlIQ==
 
 Client-mode commands
 ----------------------------------
