@@ -665,9 +665,9 @@ class StatusFilter extends React.Component {
       case StatusFilter.Status.SUCCESS:
         return sessions.filter(s => s.lastAttempt.done && s.lastAttempt.success)
       case StatusFilter.Status.FAILURE:
-        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success)
+        return sessions.filter(s => s.lastAttempt.done && !s.lastAttempt.success && !s.lastAttempt.cancelRequested)
       case StatusFilter.Status.PENDING:
-        return sessions.filter(s => !s.lastAttempt.done)
+        return sessions.filter(s => !s.lastAttempt.done && !s.lastAttempt.cancelRequested)
       case StatusFilter.Status.CANCELED:
         return sessions.filter(s => s.lastAttempt.cancelRequested && s.lastAttempt.done)
       case StatusFilter.Status.CANCELING:
