@@ -30,8 +30,6 @@ sudo -u postgres createdb -O digdag_test digdag_test
 # Python
 apt-get -y install python python-pip python-dev
 pip install pip --upgrade && hash -r pip # rehashed https://github.com/pypa/pip/issues/5240
-# Using sphinx==1.4.9 because sphinx_rtd_theme with sphinx 1.5.x has a problem with search and its fix is not released: https://github.com/snide/sphinx_rtd_theme/pull/346
-# Update above PR has been already merged.
 pip install sphinx==1.5.6 recommonmark sphinx_rtd_theme
 
 # Ruby
