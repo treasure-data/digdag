@@ -39,7 +39,7 @@ apt-get -y install ruby-full
 apt-get -y install redis-server
 
 # Minio (S3)
-wget -O /usr/local/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
+wget -O /usr/local/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/archive/minio.RELEASE.2019-01-23T23-18-58Z
 chmod 777 /usr/local/bin/minio
 
 # Redis
