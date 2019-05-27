@@ -6,7 +6,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import java.time.Duration;
+import java.time.Instant;
 import com.google.common.io.Resources;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.TransactionManager;
@@ -28,6 +29,7 @@ import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
 
@@ -127,6 +129,20 @@ public class WorkflowExecutorTest
         }
     }
 
+    @Test
+    public void retryExponential()
+        throws Exception
+    {
+        Instant start = Instant.now();
+        runWorkflow("retry_exponential", loadYamlResource("/io/digdag/core/workflow/retry_exponential.dig"));
+        Instant end = Instant.now();
+        Duration duration = Duration.between(start, end);
+        // Duration should be longer than 11 sec and shorter than 63 sec:
+        // with max_interval: 2: [1, 2, 2, 2, 2, 2].sum => 11
+        // without max_interval: [1, 2, 4, 8, 16, 32].sum => 63
+        assertThat(duration.getSeconds(), greaterThanOrEqualTo(11L));
+        assertThat(duration.getSeconds(), lessThanOrEqualTo(63L));
+    }
 
     @Test
     public void retryInCall()
