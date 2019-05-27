@@ -258,21 +258,31 @@ def digdag_symbolize_keys(hash)
 end
 
 klass, method_name, is_instance_method = digdag_inspect_command(command)
+error = nil
 
 if klass.nil?
   method_args = digdag_inspect_arguments(nil, method_name, DigdagEnv::PARAMS)
-  result = send(method_name, *method_args)
+  begin
+    result = send(method_name, *method_args)
+  rescue => error
+  end
 
 elsif is_instance_method
   new_args = digdag_inspect_arguments(klass, :new, DigdagEnv::PARAMS)
   instance = klass.new(*new_args)
 
   method_args = digdag_inspect_arguments(instance, method_name, DigdagEnv::PARAMS)
-  result = instance.send(method_name, *method_args)
+  begin
+    result = instance.send(method_name, *method_args)
+  rescue => error
+  end
 
 else
   method_args = digdag_inspect_arguments(klass, method_name, DigdagEnv::PARAMS)
-  result = klass.send(method_name, *method_args)
+  begin
+    result = klass.send(method_name, *method_args)
+  rescue => error
+  end
 end
 
 out = {
@@ -282,5 +292,14 @@ out = {
   #'state_params' => DigdagEnv::STATE_PARAMS,  # only for retrying
 }
 
+if error
+  out['error'] = {
+    'class' => error.class.to_s,
+    'message' => error.message,
+    'backtrace' => error.backtrace,
+  }
+end
+
 File.open(out_file, "w") {|f| f.write out.to_json }
 
+raise error if error

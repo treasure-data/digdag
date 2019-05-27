@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
 import org.slf4j.Logger;
@@ -179,7 +180,31 @@ public class RbOperatorFactory
             int ecode = p.waitFor();
 
             if (ecode != 0) {
-                throw new RuntimeException("Ruby command failed with code " + ecode);
+                StringBuilder reason = new StringBuilder();
+                reason.append("Ruby command failed with code ").append(ecode);
+                // If a ruby error message and stacktrace are available in outFile,
+                // throw RuntimeException with them.
+                try {
+                    Config out = mapper.readValue(workspace.getFile(outFile), Config.class);
+                    Config err = out.getNestedOrGetEmpty("error");
+                    Optional<String> errClass = err.getOptional("class", String.class);
+                    Optional<String> errMessage = err.getOptional("message", String.class);
+                    List<String> errBacktrace = err.getListOrEmpty("backtrace", String.class);
+                    if (errMessage.isPresent()) {
+                        reason.append(": ").append(errMessage.get());
+                    }
+                    if (errClass.isPresent()) {
+                        reason.append(" (").append(errClass.get()).append(")");
+                    }
+                    if (!errBacktrace.isEmpty()) {
+                        reason.append("\n\tfrom ");
+                        reason.append(String.join("\n\tfrom ", errBacktrace));
+                    }
+                }
+                catch (JsonMappingException ex) {
+                    // comes here if runner.rb fails before writing outFile.
+                }
+                throw new RuntimeException(reason.toString());
             }
 
             return mapper.readValue(workspace.getFile(outFile), Config.class);
