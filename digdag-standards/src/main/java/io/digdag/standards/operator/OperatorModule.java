@@ -57,6 +57,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, S3WaitOperatorFactory.class);
         addStandardOperatorFactory(binder, EmrOperatorFactory.class);
         addStandardOperatorFactory(binder, HttpOperatorFactory.class);
+        addStandardOperatorFactory(binder, HttpCallOperatorFactory.class);
         addStandardOperatorFactory(binder, ParamSetOperatorFactory.class);
         addStandardOperatorFactory(binder, ParamGetOperatorFactory.class);
     }

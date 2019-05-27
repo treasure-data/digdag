@@ -71,7 +71,7 @@ public class HttpOperatorFactory
     private final boolean allowUserProxy;
     private final int maxRedirects;
     private final String userAgent;
-    private final int maxStoredResponseContentSize;
+    final int maxStoredResponseContentSize;
 
     @Inject
     public HttpOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
@@ -109,16 +109,17 @@ public class HttpOperatorFactory
         return new HttpOperator(context);
     }
 
-    private class HttpOperator
+    class HttpOperator
             extends BaseOperator
     {
         private final TaskState state;
-        private final Config params;
-        private final String method;
-        private final boolean retry;
-        private final long timeout;
+        final Config params;
+        final String method;
+        final boolean retry;
+        final long timeout;
+        final SecretProvider httpSecrets;
 
-        private HttpOperator(OperatorContext context)
+        protected HttpOperator(OperatorContext context)
         {
             super(context);
             this.state = TaskState.of(request);
@@ -128,6 +129,7 @@ public class HttpOperatorFactory
             this.retry = params.getOptional("retry", boolean.class)
                     .or(defaultRetry(method));
             this.timeout = params.get("timeout", Long.class, 30L);
+            this.httpSecrets = context.getSecrets().getSecrets("http");
         }
 
         @Override
@@ -144,8 +146,6 @@ public class HttpOperatorFactory
 
         private TaskResult run(HttpClient httpClient)
         {
-            SecretProvider httpSecrets = context.getSecrets().getSecrets("http");
-
             Optional<String> secretUri = httpSecrets.getSecretOptional("uri");
             String rawUri;
             boolean uriIsSecret;
@@ -160,6 +160,14 @@ public class HttpOperatorFactory
             }
             URI uri = URI.create(rawUri);
 
+            boolean storeContent = params.get("store_content", boolean.class, false);
+
+            ContentResponse response = runHttp(httpClient, uri, uriIsSecret);
+            return result(response, storeContent);
+        }
+
+        ContentResponse runHttp(HttpClient httpClient, URI uri, boolean uriIsSecret)
+        {
             Optional<String> user = httpSecrets.getSecretOptional("user");
             Optional<String> authorization = httpSecrets.getSecretOptional("authorization");
 
@@ -178,7 +186,6 @@ public class HttpOperatorFactory
             Optional<JsonNode> content = params.getOptional("content", JsonNode.class);
             Optional<String> contentFormat = params.getOptional("content_format", String.class).transform(s -> s.toLowerCase(Locale.ROOT));
             Optional<String> contentType = params.getOptional("content_type", String.class);
-            boolean storeContent = params.get("store_content", boolean.class, false);
 
             if (content.isPresent()) {
                 // TODO: support files on disk etc
@@ -196,7 +203,7 @@ public class HttpOperatorFactory
                     .withErrorMessage("HTTP request failed")
                     .run(s -> execute(request, uriIsSecret));
 
-            return result(response, storeContent);
+            return response;
         }
 
         private void configureQueryParameters(Request request)
@@ -387,7 +394,7 @@ public class HttpOperatorFactory
                     .build();
         }
 
-        private HttpClient client()
+        HttpClient client()
         {
             boolean insecure = params.get("insecure", boolean.class, false);
 
@@ -434,7 +441,7 @@ public class HttpOperatorFactory
             }
         }
 
-        private void stop(HttpClient httpClient)
+        void stop(HttpClient httpClient)
         {
             try {
                 httpClient.stop();

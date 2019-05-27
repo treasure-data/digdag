@@ -1,0 +1,5 @@
++http_call:
+  http_call>: ${test_uri}
+  query:
+    k: v
+    foo: bar
