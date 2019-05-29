@@ -84,9 +84,7 @@
 
   Set automatic job retry count (default: 0).
 
-.. note::
-
-    We recommend that you not set retry count over 10. If the job is not succeessful less than 10 times retry, it needs some fix a cause of failure.
+  We recommend that you not set retry count over 10. If the job is not succeessful less than 10 times retry, it needs some fix a cause of failure.
 
 * **presto_pool_name**: NAME
 
