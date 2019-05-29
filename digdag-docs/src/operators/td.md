@@ -156,7 +156,6 @@
 
   We recommend that you not set retry count over 10. If the job is not succeessful less than 10 times retry, it needs some fix a cause of failure.
 
-
 * **result_connection**: NAME
 
   Use a connection to write the query results to an external system.
