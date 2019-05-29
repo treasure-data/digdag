@@ -1,0 +1,7 @@
+_export:
+  docker:
+    image: alpine:latest
+    run_options: ["--ulimit", "nofile=65536:65536"]
+
++check_run_options:
+  sh>: ulimit -n

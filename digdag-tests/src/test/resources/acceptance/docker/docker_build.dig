@@ -1,0 +1,9 @@
+_export:
+  docker:
+    image: alpine:latest
+    build_options: ["--ulimit", "nofile=65536:65536"]
+    build:
+      - ulimit -n > /tmp/ulimit.txt
+
++check_build:
+  sh>: cat /tmp/ulimit.txt
