@@ -20,7 +20,7 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
     compile 'org.msgpack:msgpack-core:0.8.11'
-    compile 'org.yaml:snakeyaml:1.17'
+    compile 'org.yaml:snakeyaml:1.23'
 
     // postgresql
     compile 'org.postgresql:postgresql:9.4.1211'
