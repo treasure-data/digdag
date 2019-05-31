@@ -1,6 +1,6 @@
 # td_wait>: Waits for data arriving at Treasure Data table
 
-**td_wait>** operator runs a query periodically until it returns true. This operator can use more complex query compared to [td_wait_table> operator](../td_wait_table.html).
+**td_wait>** operator runs a query periodically until it returns true. This operator can use more complex query compared to [td_wait_table> operator](td_wait_table.html).
 
     _export:
       td:

@@ -2,7 +2,7 @@
 
 **py>** operator runs a Python script using `python` command.
 
-See [Python API documents](../../python_api.html) for details including variable mappings to keyword arguments.
+See [Python API documents](../python_api.html) for details including variable mappings to keyword arguments.
 
     +step1:
       py>: my_step1_method
