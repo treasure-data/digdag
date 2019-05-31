@@ -2,7 +2,7 @@
 
 **fail>** always fails and makes the workflow failed.
 
-This operator is useful used with [if> operator](../if.html) to validate results of a previous task with `_check` directive so that a workflow fails when the validation doesn't pass.
+This operator is useful used with [if> operator](if.html) to validate results of a previous task with `_check` directive so that a workflow fails when the validation doesn't pass.
 
     +fail_if_too_few:
       if>: ${count < 10}
