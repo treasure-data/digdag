@@ -118,6 +118,7 @@ public class Main
         jc.addCommand("delete", injector.getInstance(Delete.class));
         jc.addCommand("secrets", injector.getInstance(Secrets.class), "secret");
         jc.addCommand("version", injector.getInstance(Version.class), "version");
+        jc.addCommand("migrate", injector.getInstance(Migrate.class));
 
         jc.addCommand("selfupdate", injector.getInstance(SelfUpdate.class));
     }
