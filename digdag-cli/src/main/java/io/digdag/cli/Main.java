@@ -100,6 +100,7 @@ public class Main
         jc.addCommand("upload", injector.getInstance(Upload.class));
         jc.addCommand("download", injector.getInstance(Download.class));
 
+        jc.addCommand("project", injector.getInstance(ShowProjects.class), "projects");
         jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
         jc.addCommand("start", injector.getInstance(Start.class));
         jc.addCommand("retry", injector.getInstance(Retry.class));
