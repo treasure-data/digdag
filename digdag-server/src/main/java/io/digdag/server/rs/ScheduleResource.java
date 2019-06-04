@@ -20,6 +20,8 @@ import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.metrics.DigdagMetrics;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.Consumes;
@@ -50,20 +52,24 @@ public class ScheduleResource
     private final ScheduleStoreManager sm;
     private final TransactionManager tm;
     private final ScheduleExecutor exec;
+    private final DigdagMetrics metrics;
 
     @Inject
     public ScheduleResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             TransactionManager tm,
-            ScheduleExecutor exec)
+            ScheduleExecutor exec,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
         this.exec = exec;
+        this.metrics = metrics;
     }
 
+    @Timed(value="API_GetSchedules")
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
@@ -76,6 +82,7 @@ public class ScheduleResource
         });
     }
 
+    @Timed("API_GetSchedulesById")
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
@@ -91,6 +98,7 @@ public class ScheduleResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed("API_SkipSchedule")
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
@@ -133,6 +141,7 @@ public class ScheduleResource
                 .getTimeZone();
     }
 
+    @Timed("API_BackfillSchedule")
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
@@ -151,6 +160,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class);
     }
 
+    @Timed("API_DisableSchedule")
     @POST
     @Path("/api/schedules/{id}/disable")
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
@@ -173,6 +183,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceNotFoundException.class);
     }
 
+    @Timed("API_EnableSchedule")
     @POST
     @Path("/api/schedules/{id}/enable")
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)

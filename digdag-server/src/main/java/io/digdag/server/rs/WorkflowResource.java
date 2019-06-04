@@ -36,9 +36,11 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -63,20 +65,24 @@ public class WorkflowResource
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TransactionManager tm;
+    private final DigdagMetrics metrics;
 
     @Inject
     public WorkflowResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            TransactionManager tm)
+            TransactionManager tm,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.tm = tm;
+        this.metrics = metrics;
     }
 
+    @Timed(value="API_GetWorkflow")
     @GET
     @Path("/api/workflow")
     public RestWorkflowDefinition getWorkflowDefinition(
@@ -103,6 +109,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed(value="API_GetWorkflows")
     @GET
     @Path("/api/workflows")
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
@@ -118,6 +125,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed(value="API_GetWorkflowById")
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
@@ -131,6 +139,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed(value="API_GetWorkflowTruncatedSessionTime")
     @GET
     @Path("/api/workflows/{id}/truncated_session_time")
     public RestWorkflowSessionTime getWorkflowDefinition(

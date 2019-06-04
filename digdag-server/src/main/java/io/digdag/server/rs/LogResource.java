@@ -22,7 +22,9 @@ import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.*;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -41,18 +43,24 @@ public class LogResource
     private final SessionStoreManager sm;
     private final TransactionManager tm;
     private final LogServer logServer;
+    private final DigdagMetrics metrics;
+
 
     @Inject
     public LogResource(
             SessionStoreManager sm,
             TransactionManager tm,
-            LogServerManager lm)
+            LogServerManager lm,
+            DigdagMetrics metrics)
     {
         this.sm = sm;
         this.tm = tm;
         this.logServer = lm.getLogServer();
+        this.metrics = metrics;
     }
 
+
+    @Timed(value="API_PutLogFile")
     @PUT
     @Consumes("application/gzip")
     @Path("/api/logs/{attempt_id}/files")
@@ -75,6 +83,7 @@ public class LogResource
         }, ResourceNotFoundException.class, IOException.class);
     }
 
+    @Timed(value="API_GetLogUploadHandle")
     @GET
     @Path("/api/logs/{attempt_id}/upload_handle")
     public DirectUploadHandle getFileHandles(
@@ -104,6 +113,7 @@ public class LogResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed(value="API_GetLogFileHandles")
     @GET
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
@@ -118,6 +128,7 @@ public class LogResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed(value="API_GetLogFile")
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")
