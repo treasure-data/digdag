@@ -277,7 +277,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: ``--database digdag``
 
 :command:`-m, --memory`
-  Store status in memory. Data will be removed when the server exists.
+  Store status in memory. Data will be removed when the server exits.
 
   Example: ``--memory``
 
