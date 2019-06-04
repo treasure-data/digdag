@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.TaskRequest;
 import java.time.Duration;
 import java.util.List;
@@ -36,13 +37,14 @@ public class MultiThreadAgent
     private final BlockingQueue<Runnable> executorQueue;
     private final ThreadPoolExecutor executor;
     private final AtomicInteger activeTaskCount = new AtomicInteger(0);
+    private final DigdagMetrics metrics;
 
     private volatile boolean stop = false;
 
     public MultiThreadAgent(
             AgentConfig config, AgentId agentId,
             TaskServerApi taskServer, OperatorManager runner,
-            TransactionManager transactionManager, ErrorReporter errorReporter)
+            TransactionManager transactionManager, ErrorReporter errorReporter,DigdagMetrics metrics)
     {
         this.agentId = agentId;
         this.config = config;
@@ -50,6 +52,7 @@ public class MultiThreadAgent
         this.runner = runner;
         this.transactionManager = transactionManager;
         this.errorReporter = errorReporter;
+        this.metrics = metrics;
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(false)  // make them non-daemon threads so that shutting down agent doesn't kill operator execution
@@ -119,6 +122,7 @@ public class MultiThreadAgent
                     // Acquire at most guaranteedAvaialbleThreads or 10. This guarantees that all tasks start immediately.
                     int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
                     if (maxAcquire > 0) {
+                        metrics.gauge("AGENT_NumMaxAcquire", maxAcquire);
                         transactionManager.begin(() -> {
                             List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
                             for (TaskRequest req : reqs) {
@@ -140,6 +144,7 @@ public class MultiThreadAgent
                         });
                     }
                     else {
+                        metrics.increment("AGENT_RunWaitCounter");
                         // no executor thread is available. sleep for a while until a task execution finishes
                         addActiveTaskLock.wait(500);
                     }
@@ -148,6 +153,7 @@ public class MultiThreadAgent
             catch (Throwable t) {
                 logger.error("Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
                 errorReporter.reportUncaughtError(t);
+                metrics.increment("AGENT_UncaughtExceptionCounter");
                 try {
                     // sleep before retrying
                     Thread.sleep(1000);

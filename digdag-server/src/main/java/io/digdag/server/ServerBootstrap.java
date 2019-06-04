@@ -11,6 +11,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.server.metrics.DigdagMetricsModule;
 import io.digdag.guice.rs.server.undertow.UndertowServer;
 import io.digdag.guice.rs.server.undertow.UndertowServerControl;
 
@@ -64,7 +65,9 @@ public class ServerBootstrap
                 binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
             })
-            .addModules(new ServerModule(serverConfig));
+            .addModules(new ServerModule(serverConfig))
+            .addModules(new DigdagMetricsModule())
+        ;
     }
 
     public static GuiceRsServerControl start(ServerBootstrap bootstrap)

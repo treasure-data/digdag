@@ -96,7 +96,9 @@ subprojects {
     compileTestJava.options.encoding = 'UTF-8'
 
     dependencies {
-        compile 'org.slf4j:slf4j-api:1.7.21'
+        compile 'org.slf4j:slf4j-api:1.7.25'
+        compile group: 'io.micrometer', name: 'micrometer-core', version: '1.1.4'
+        compile group: 'io.micrometer', name: 'micrometer-registry-jmx', version: '1.1.4'
 
         compileOnly "org.immutables:value:2.3.9:annotations"
         testCompileOnly "org.immutables:value:2.3.9:annotations"

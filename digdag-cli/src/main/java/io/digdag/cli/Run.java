@@ -50,6 +50,7 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.server.ac.DefaultAccessController;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.SecretStore;
@@ -57,6 +58,8 @@ import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.ac.AccessController;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -247,6 +250,8 @@ public class Run
                     binder.bind(LogModule.class).in(Scopes.SINGLETON);
                     binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
                     binder.bind(AccessController.class).to(DefaultAccessController.class);
+                    binder.bind(MeterRegistry.class).toInstance(new SimpleMeterRegistry()); // local run don't need metrics
+                    binder.bind(DigdagMetrics.class).toInstance(new DigdagMetrics());
                 })
                 .overrideModulesWith((binder) -> {
                     binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
