@@ -13,6 +13,7 @@ import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.ErrorReporter;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -24,6 +25,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateException;
+import io.micrometer.core.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +68,9 @@ public class OperatorManager
     private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
+    private DigdagMetrics metrics;
+
+    @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             ConfigFactory cf,
@@ -104,6 +109,7 @@ public class OperatorManager
         // TODO wait for shutdown completion?
     }
 
+    @Timed("OPM_Run")
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
@@ -129,7 +135,8 @@ public class OperatorManager
         }
     }
 
-    private void runWithHeartbeat(TaskRequest request)
+    @Timed("OPM_RunWHB")
+    void runWithHeartbeat(TaskRequest request)
     {
         try {
             workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (projectPath) -> {
@@ -181,7 +188,19 @@ public class OperatorManager
         }
     }
 
-    private void runWithWorkspace(Path projectPath, TaskRequest request)
+    @Timed("OPM_ConfigEval")
+    Config evalConfig(TaskRequest request)
+            throws TemplateException, ConfigException, RuntimeException, AssertionError
+    {
+        Config all = RuntimeParams.buildRuntimeParams(request.getConfig().getFactory(), request).deepCopy();
+        all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
+        Config evalParams = all.deepCopy();
+        all.merge(request.getLocalConfig());
+        return evalEngine.eval(all, evalParams);
+    }
+
+    @Timed("OPM_RunWS")
+    void runWithWorkspace(Path projectPath, TaskRequest request)
         throws TaskExecutionException
     {
         // evaluate config and creates the complete merged config.
@@ -282,6 +301,7 @@ public class OperatorManager
         }
     }
 
+    @Timed("OPM_CallExecutor")
     protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);

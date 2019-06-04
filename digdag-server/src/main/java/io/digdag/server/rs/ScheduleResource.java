@@ -26,6 +26,8 @@ import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.ScheduleTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.metrics.DigdagMetrics;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.Consumes;
@@ -57,6 +59,7 @@ public class ScheduleResource
     private final TransactionManager tm;
     private final AccessController ac;
     private final ScheduleExecutor exec;
+    private final DigdagMetrics metrics;
 
     @Inject
     public ScheduleResource(
@@ -64,15 +67,18 @@ public class ScheduleResource
             ScheduleStoreManager sm,
             TransactionManager tm,
             AccessController ac,
-            ScheduleExecutor exec)
+            ScheduleExecutor exec,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
         this.ac = ac;
         this.exec = exec;
+        this.metrics = metrics;
     }
 
+    @Timed(value="API_GetSchedules")
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
@@ -94,6 +100,7 @@ public class ScheduleResource
         });
     }
 
+    @Timed("API_GetSchedulesById")
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
@@ -115,6 +122,7 @@ public class ScheduleResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed("API_SkipSchedule")
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
@@ -163,6 +171,7 @@ public class ScheduleResource
                 .getTimeZone();
     }
 
+    @Timed("API_BackfillSchedule")
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
@@ -191,6 +200,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed("API_DisableSchedule")
     @POST
     @Path("/api/schedules/{id}/disable")
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
@@ -219,6 +229,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed("API_EnableSchedule")
     @POST
     @Path("/api/schedules/{id}/enable")
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)

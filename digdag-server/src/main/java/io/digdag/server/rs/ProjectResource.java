@@ -79,6 +79,7 @@ import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.SecretControlStore;
@@ -94,6 +95,7 @@ import io.digdag.spi.ac.SecretTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.digdag.util.Md5CountInputStream;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -157,6 +159,7 @@ public class ProjectResource
     private final SecretControlStoreManager scsp;
     private final TransactionManager tm;
     private final ProjectArchiveLoader projectArchiveLoader;
+    private final DigdagMetrics metrics;
 
     @Inject
     public ProjectResource(
@@ -173,7 +176,8 @@ public class ProjectResource
             SecretControlStoreManager scsp,
             TransactionManager tm,
             ProjectArchiveLoader projectArchiveLoader,
-            Config systemConfig)
+            Config systemConfig,
+            DigdagMetrics metrics)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -188,6 +192,8 @@ public class ProjectResource
         this.tm = tm;
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
+        this.metrics = metrics;
+
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
         MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
@@ -204,6 +210,7 @@ public class ProjectResource
         return proj;
     }
 
+    @Timed(value="API_GetProjectByName")
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
@@ -224,6 +231,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectsByName")
     @GET
     @Path("/api/projects")
     public RestProjectCollection getProjects(@QueryParam("name") String name)
@@ -287,6 +295,7 @@ public class ProjectResource
         });
     }
 
+    @Timed(value="API_GetProjectById")
     @GET
     @Path("/api/projects/{id}")
     public RestProject getProject(@PathParam("id") int projId)
@@ -305,6 +314,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectRevisions")
     @GET
     @Path("/api/projects/{id}/revisions")
     public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
@@ -323,6 +333,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectWorkflow")
     @GET
     @Path("/api/projects/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
@@ -351,6 +362,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectWorkflowByName")
     @GET
     @Path("/api/projects/{id}/workflows/{name}")
     public RestWorkflowDefinition getWorkflowByName(@PathParam("id") int projId, @PathParam("name") String name, @QueryParam("revision") String revName)
@@ -359,6 +371,7 @@ public class ProjectResource
         return getWorkflow(projId, name, revName);
     }
 
+    @Timed(value="API_GetProjectWorkflows")
     @GET
     @Path("/api/projects/{id}/workflows")
     public RestWorkflowDefinitionCollection getWorkflows(
@@ -421,6 +434,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class);
     }
 
+    @Timed(value="API_GetProjectSchedules")
     @GET
     @Path("/api/projects/{id}/schedules")
     public RestScheduleCollection getSchedules(
@@ -472,6 +486,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectSessions")
     @GET
     @Path("/api/projects/{id}/sessions")
     public RestSessionCollection getSessions(
@@ -521,6 +536,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectArchive")
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
@@ -585,6 +601,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_DeleteProject")
     @DELETE
     @Path("/api/projects/{id}")
     public RestProject deleteProject(@PathParam("id") int projId)
@@ -605,6 +622,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_CreateProject")
     @PUT
     @Consumes("application/gzip")
     @Path("/api/projects")
@@ -806,6 +824,7 @@ public class ProjectResource
         }
     }
 
+    @Timed(value="API_CreateProjectSecret")
     @PUT
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
@@ -833,6 +852,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_DeleteProjectSecret")
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
     public RestSecret deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
@@ -859,6 +879,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetProjectSecrets")
     @GET
     @Path("/api/projects/{id}/secrets")
     @Produces("application/json")

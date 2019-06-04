@@ -22,10 +22,12 @@ import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -44,6 +46,8 @@ public class LogResource
     private final TransactionManager tm;
     private final AccessController ac;
     private final LogServer logServer;
+    private final DigdagMetrics metrics;
+
 
     @Inject
     public LogResource(
@@ -51,15 +55,18 @@ public class LogResource
             SessionStoreManager sm,
             TransactionManager tm,
             AccessController ac,
-            LogServerManager lm)
+            LogServerManager lm,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
         this.ac = ac;
         this.logServer = lm.getLogServer();
+        this.metrics = metrics;
     }
 
+    @Timed(value="API_GetLogFileHandles")
     @GET
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
@@ -77,6 +84,7 @@ public class LogResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetLogFile")
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")

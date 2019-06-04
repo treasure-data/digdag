@@ -21,6 +21,8 @@ import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.metrics.DigdagMetrics;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.GET;
@@ -50,6 +52,7 @@ public class SessionResource
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
     private static int MAX_ATTEMPTS_PAGE_SIZE;
     private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
+    private final DigdagMetrics metrics;
 
     @Inject
     public SessionResource(
@@ -57,16 +60,20 @@ public class SessionResource
             SessionStoreManager sm,
             TransactionManager tm,
             AccessController ac,
-            Config systemConfig)
+            Config systemConfig,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
         this.ac = ac;
+        this.metrics = metrics;
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ATTEMPTS_PAGE_SIZE = systemConfig.get("api.max_attempts_page_size", Integer.class, DEFAULT_ATTEMPTS_PAGE_SIZE);
     }
 
+
+    @Timed(value="API_GetSessions")
     @GET
     @Path("/api/sessions")
     public RestSessionCollection getSessions(
@@ -95,6 +102,7 @@ public class SessionResource
         });
     }
 
+    @Timed(value="API_GetSessionById")
     @GET
     @Path("/api/sessions/{id}")
     public RestSession getSession(@PathParam("id") long id)
@@ -114,6 +122,7 @@ public class SessionResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetSessionAttempts")
     @GET
     @Path("/api/sessions/{id}/attempts")
     public RestSessionAttemptCollection getSessionAttempts(

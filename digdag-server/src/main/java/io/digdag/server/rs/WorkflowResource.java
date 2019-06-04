@@ -25,6 +25,12 @@ import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.metrics.DigdagMetrics;
+import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.Scheduler;
+import io.digdag.client.api.*;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 
 @Api("Workflow")
@@ -46,6 +52,7 @@ public class WorkflowResource
     private final SchedulerManager srm;
     private final TransactionManager tm;
     private final AccessController ac;
+    private final DigdagMetrics metrics;
 
     @Inject
     public WorkflowResource(
@@ -53,15 +60,18 @@ public class WorkflowResource
             ScheduleStoreManager sm,
             SchedulerManager srm,
             TransactionManager tm,
-            AccessController ac)
+            AccessController ac,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.tm = tm;
         this.ac = ac;
+        this.metrics = metrics;
     }
 
+    @Timed(value="API_GetWorkflow")
     @GET
     @Path("/api/workflow")
     public RestWorkflowDefinition getWorkflowDefinition(
@@ -94,6 +104,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetWorkflows")
     @GET
     @Path("/api/workflows")
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
@@ -116,6 +127,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetWorkflowById")
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
@@ -134,6 +146,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @Timed(value="API_GetWorkflowTruncatedSessionTime")
     @GET
     @Path("/api/workflows/{id}/truncated_session_time")
     public RestWorkflowSessionTime getWorkflowDefinition(

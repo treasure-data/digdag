@@ -3,6 +3,7 @@ dependencies {
     compile project(':digdag-core')
     compile project(':digdag-client')
     compile project(':digdag-guice-rs-server-undertow')
+    compile project(':digdag-spi')
 
     compile('io.swagger:swagger-jaxrs:1.5.10') {
         exclude module: 'javax.ws.rs'
