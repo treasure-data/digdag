@@ -39,6 +39,8 @@ _export:
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **pg.password**: NAME
 
   Optional user password to use when connecting to the Postgres database. If you want to use multiple credentials, use `password_override` option.

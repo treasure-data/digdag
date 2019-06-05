@@ -20,6 +20,8 @@ Note: The **bq>** operator uses [standard SQL](https://cloud.google.com/bigquery
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **gcp.credential**: CREDENTIAL
 
   The [Google Cloud Platform account](https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts) credential private key to use, in JSON format.

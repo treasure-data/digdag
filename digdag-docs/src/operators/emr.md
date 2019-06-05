@@ -29,6 +29,8 @@ For detailed information about EMR, see the [Amazon Elastic MapReduce Documentat
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **aws.emr.access_key_id, aws.access_key_id**
 
   The AWS Access Key ID to use when submitting EMR jobs.

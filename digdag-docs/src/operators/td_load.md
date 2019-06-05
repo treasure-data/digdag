@@ -13,6 +13,8 @@
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **td.apikey**: API_KEY
 
   The Treasure Data API key to use when submitting Treasure Data bulk load jobs.
