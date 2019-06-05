@@ -141,4 +141,60 @@ public class DockerIT
         final String logs = getAttemptLogs(client, attemptId);
         assertThat(logs, containsString("65536"));
     }
+
+    @Test
+    public void verifyPyOnDocker()
+            throws Exception
+    {
+        final Path tempdir = folder.getRoot().toPath().toAbsolutePath();
+        final Path projectDir = tempdir.resolve("py_docker");
+        final Path scriptsDir = projectDir.resolve("scripts");
+
+        // Create new project
+        final CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.code(), is(0));
+        Files.createDirectories(scriptsDir);
+        copyResource("acceptance/docker/docker_echo_params.dig", projectDir.resolve("docker_echo_params.dig"));
+        copyResource("acceptance/echo_params/scripts/__init__.py", scriptsDir.resolve("__init__.py"));
+        copyResource("acceptance/echo_params/scripts/echo_params.py", scriptsDir.resolve("echo_params.py"));
+
+        // Push the project
+        CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "py_docker",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+        // Start the workflow
+        Id attemptId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "py_docker", "docker_echo_params",
+                    "--session", "now");
+            assertThat(startStatus.code(), is(0));
+            attemptId = getAttemptId(startStatus);
+        }
+
+        // Wait for the attempt to complete
+        {
+            RestSessionAttempt attempt = null;
+            for (int i = 0; i < 30; i++) {
+                attempt = client.getSessionAttempt(attemptId);
+                if (attempt.getDone()) {
+                    break;
+                }
+                Thread.sleep(1000);
+            }
+            assertThat(attempt.getSuccess(), is(true));
+        }
+
+        String logs = getAttemptLogs(client, attemptId);
+        assertThat(logs, containsString("digdag params"));
+    }
 }
