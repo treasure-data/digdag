@@ -85,7 +85,7 @@ Storage (`io.digdag.spi.Storage`) is a plugin interface that is used to store ta
 
 S3Storage is a storage implementation that stores files on Amazon S3.
 
-Storage is injected using Extension mechanism (see bellow).
+Storage is injected using Extension mechanism (see below).
 
 
 ## Command executor

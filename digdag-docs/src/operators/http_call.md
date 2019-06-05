@@ -19,7 +19,7 @@ This operator parses response body based on returned Content-Type header. Conten
   http_call>: https://api.example.com/foobar
   ```
 
-Same parameters with **http>** operator are also supported except the parameters listed bellow. The name of the operator is similar to [http> operator](http.html). But the role is different. See also [http> operator document](http.html).
+Same parameters with **http>** operator are also supported except the parameters listed below. The name of the operator is similar to [http> operator](http.html). But the role is different. See also [http> operator document](http.html).
 
 * store_content
 
