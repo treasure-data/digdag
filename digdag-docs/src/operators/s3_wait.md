@@ -7,6 +7,8 @@
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **aws.s3.access_key_id, aws.access_key_id**
 
   The AWS Access Key ID to use when accessing S3.

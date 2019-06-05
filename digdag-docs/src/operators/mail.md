@@ -34,6 +34,8 @@ To use Gmail SMTP server, you need to do either of:
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **mail.host**: HOST
 
   SMTP host name.
