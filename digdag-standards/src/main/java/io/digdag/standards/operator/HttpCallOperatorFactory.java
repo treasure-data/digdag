@@ -44,6 +44,7 @@ public class HttpCallOperatorFactory
     private final ObjectMapper mapper;
     private final YAMLFactory yaml;
     private final ProjectArchiveLoader projectLoader;
+    private final int maxResponseContentSize;
 
     @Inject
     public HttpCallOperatorFactory(ConfigFactory cf,
@@ -58,6 +59,7 @@ public class HttpCallOperatorFactory
                 new ConfigLoaderManager(
                     cf,
                     new YamlConfigLoader()));
+        this.maxResponseContentSize = systemConfig.get("config.http_call.max_response_content_size", int.class, 64 * 1024);
     }
 
     @Override
@@ -102,8 +104,8 @@ public class HttpCallOperatorFactory
             String content = response.getContentAsString();
 
             // validate response length
-            if (content.length() > maxStoredResponseContentSize) {
-                throw new TaskExecutionException("Response content too large: " + content.length() + " > " + maxStoredResponseContentSize);
+            if (content.length() > maxResponseContentSize) {
+                throw new TaskExecutionException("Response content too large: " + content.length() + " > " + maxResponseContentSize);
             }
 
             // parse content based on response media type
