@@ -534,7 +534,7 @@ public class DatabaseProjectStoreManager
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id > :lastId" +
-                " order by wd.id" +
+                " order by proj.name, wd.name" +
                 " limit :limit")
         List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
     }
@@ -574,7 +574,7 @@ public class DatabaseProjectStoreManager
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
-                " order by wd.id")
+                " order by proj.name, wd.name")
         List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
     }
 
@@ -584,7 +584,7 @@ public class DatabaseProjectStoreManager
                 " where site_id = :siteId" +
                 " and name is not null" +
                 " and id > :lastId" +
-                " order by id asc" +
+                " order by name asc" +
                 " limit :limit")
         List<StoredProject> getProjects(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
@@ -741,7 +741,7 @@ public class DatabaseProjectStoreManager
                 " where wd.revision_id = :revId" +
                 " and wd.id > :lastId" +
                 " and proj.site_id = :siteId" +
-                " order by wd.id asc" +
+                " order by wd.name asc" +
                 " limit :limit")
         List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
