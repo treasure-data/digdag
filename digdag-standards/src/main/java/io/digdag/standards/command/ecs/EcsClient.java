@@ -2,6 +2,7 @@ package io.digdag.standards.command.ecs;
 
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.Tag;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
@@ -9,6 +10,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.ConfigException;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface EcsClient
         extends AutoCloseable
@@ -26,7 +28,7 @@ public interface EcsClient
         boolean match(TaskDefinition td);
     }
 
-    Optional<TaskDefinition> getTaskDefinitionByTag(String tagName, String tagValue);
+    Optional<TaskDefinition> getTaskDefinitionByTags(List<Tag> tags);
 
     Task getTask(String cluster, String taskArn);
 
