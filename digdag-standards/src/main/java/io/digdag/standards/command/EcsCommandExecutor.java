@@ -9,6 +9,7 @@ import com.amazonaws.services.ecs.model.LogConfiguration;
 import com.amazonaws.services.ecs.model.NetworkConfiguration;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.Tag;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
@@ -146,7 +147,7 @@ public class EcsCommandExecutor
         }
 
         // find task definition by docker.image
-        td = findTaskDefinitionByDockerImageTag(client, taskConfig); // ConfigException
+        td = findTaskDefinitionByTaskTags(commandContext, client, taskConfig); // ConfigException
         if (td != null) {
             return td;
         }
@@ -176,7 +177,8 @@ public class EcsCommandExecutor
     }
 
     @Nullable
-    protected TaskDefinition findTaskDefinitionByDockerImageTag(
+    protected TaskDefinition findTaskDefinitionByTaskTags(
+            final CommandContext commandContext,
             final EcsClient client,
             final Config taskConfig)
             throws ConfigException
@@ -187,10 +189,13 @@ public class EcsCommandExecutor
                 throw new ConfigException("Parameter docker.image: is required but not set");
             }
 
-            final String dockerImageTagValue = dockerConfig.get("image", String.class);
-            final Optional<TaskDefinition> td = client.getTaskDefinitionByTag("digdag.docker.image", dockerImageTagValue);
+            final Tag dockerImageTag = new Tag()
+                    .withKey("digdag.docker.image")
+                    .withValue(dockerConfig.get("image", String.class));
+            final List<Tag> tags = ImmutableList.of(dockerImageTag);
+            final Optional<TaskDefinition> td = client.getTaskDefinitionByTags(tags);
             if (!td.isPresent()) {
-                throw new ConfigException("Not found task definition with 'digdag.docker.image' tag: " + dockerImageTagValue);
+                throw new ConfigException("Not found task definition with 'digdag.docker.image' tag: " + dockerImageTag.getValue());
             }
 
             if (td.get().getContainerDefinitions().size() > 1) {

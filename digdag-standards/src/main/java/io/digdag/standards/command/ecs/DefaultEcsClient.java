@@ -29,6 +29,7 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class DefaultEcsClient
         implements EcsClient
@@ -106,7 +108,7 @@ public class DefaultEcsClient
     }
 
     @Override
-    public Optional<TaskDefinition> getTaskDefinitionByTag(final String tagName, final String tagValue)
+    public Optional<TaskDefinition> getTaskDefinitionByTags(final List<Tag> expectedTags)
     {
         String nextToken = null;
         while (true) {
@@ -121,11 +123,26 @@ public class DefaultEcsClient
                 final ListTagsForResourceRequest tagsRequest = new ListTagsForResourceRequest()
                         .withResourceArn(taskDefinitionArn);
                 final ListTagsForResourceResult tagsResult = client.listTagsForResource(tagsRequest);
-                for (final Tag tag : tagsResult.getTags()) {
-                    if (tag.getKey().equals(tagName) && tag.getValue().equals(tagValue)) {
-                        final TaskDefinition td = getTaskDefinition(taskDefinitionArn);
-                        return Optional.of(td);
+                ImmutableMap.Builder<String, String> tagMapBuilder = ImmutableMap.builder();
+                tagsResult.getTags().stream().map(tag -> tagMapBuilder.put(tag.getKey(), tag.getValue()));
+                final Map<String, String> tagMap = tagMapBuilder.build();
+
+                boolean tagsMatched = false;
+                for (final Tag expectedTag : expectedTags) {
+                    final String expectedTagKey = expectedTag.getKey();
+                    if (tagMap.containsKey(expectedTagKey)
+                            && tagMap.get(expectedTagKey).equals(expectedTag.getValue())) {
+                        tagsMatched = true;
                     }
+                    else {
+                        tagsMatched = false;
+                        break;
+                    }
+                }
+
+                if (tagsMatched) {
+                    final TaskDefinition td = getTaskDefinition(taskDefinitionArn);
+                    return Optional.of(td);
                 }
             }
             nextToken = listResult.getNextToken();
