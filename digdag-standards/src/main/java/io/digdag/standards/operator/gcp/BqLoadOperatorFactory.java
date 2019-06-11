@@ -96,9 +96,9 @@ class BqLoadOperatorFactory
             params.getOptional("allow_quoted_newlines", boolean.class).transform(cfg::setAllowQuotedNewlines);
             params.getOptional("allow_jagged_rows", boolean.class).transform(cfg::setAllowJaggedRows);
             params.getOptional("ignore_unknown_values", boolean.class).transform(cfg::setIgnoreUnknownValues);
-            params.getOptional("projection_fields", new TypeReference<List<String>>() {}).transform(cfg::setProjectionFields);
+            Optional.of(params.getListOrEmpty("projection_fields", String.class)).transform(cfg::setProjectionFields);
             params.getOptional("autodetect", boolean.class).transform(cfg::setAutodetect);
-            params.getOptional("schema_update_options", new TypeReference<List<String>>() {}).transform(cfg::setSchemaUpdateOptions);
+            Optional.of(params.getListOrEmpty("schema_update_options", String.class)).transform(cfg::setSchemaUpdateOptions);
 
             return new JobConfiguration()
                     .setLoad(cfg);
