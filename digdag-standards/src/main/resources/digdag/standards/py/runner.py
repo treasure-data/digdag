@@ -4,6 +4,7 @@ import json
 import imp
 import inspect
 import collections
+import traceback
 
 command = sys.argv[1]
 in_file = sys.argv[2]
@@ -140,6 +141,9 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
         return args
 
 callable_type, method_name = digdag_inspect_command(command)
+error = None
+error_value = None
+error_traceback = None
 
 if method_name:
     init_args = digdag_inspect_arguments(callable_type.__init__, True, params)
@@ -147,11 +151,21 @@ if method_name:
 
     method = getattr(instance, method_name)
     method_args = digdag_inspect_arguments(method, True, params)
-    result = method(**method_args)
+    try:
+        result = method(**method_args)
+    except Exception as e:
+        error = e
+        error_type, error_value, _tb = sys.exc_info()
+        error_traceback = traceback.format_exception(error_type, error_value, _tb)
 
 else:
     args = digdag_inspect_arguments(callable_type, False, params)
-    result = callable_type(**args)
+    try:
+        result = callable_type(**args)
+    except Exception as e:
+        error = e
+        error_type, error_value, _tb = sys.exc_info()
+        error_traceback = traceback.format_exception(error_type, error_value, _tb)
 
 out = {
     'subtask_config': digdag_env.subtask_config,
@@ -160,6 +174,15 @@ out = {
     #'state_params': digdag_env.state_params,  # only for retrying
 }
 
+if error:
+    out['error'] = {
+        'class': error_value.__class__.__name__,
+        'message': str(error_value),
+        'backtrace': error_traceback
+    }
+
 with open(out_file, 'w') as f:
     json.dump(out, f)
 
+if error:
+    raise error
