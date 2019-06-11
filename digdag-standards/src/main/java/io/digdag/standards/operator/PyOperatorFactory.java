@@ -190,8 +190,8 @@ public class PyOperatorFactory
                         reason.append(": ").append(errMessage.get());
                     }
                     if (!errBacktrace.isEmpty()) {
-                        reason.append("\n\tfrom ");
-                        reason.append(String.join("\n", errBacktrace));
+                        reason.append("\n    ");
+                        reason.append(String.join("    ", errBacktrace));
                     }
                 }
                 catch (JsonMappingException ex) {
