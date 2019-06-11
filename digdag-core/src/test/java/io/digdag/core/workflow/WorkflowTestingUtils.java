@@ -24,6 +24,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.metrics.DigdagMetrics;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
@@ -69,6 +70,7 @@ public class WorkflowTestingUtils
                 operatorFactoryBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(StoreOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(IfOperatorFactory.class).in(Scopes.SINGLETON);
+                binder.bind(DigdagMetrics.class).toInstance(DigdagMetrics.empty());
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
