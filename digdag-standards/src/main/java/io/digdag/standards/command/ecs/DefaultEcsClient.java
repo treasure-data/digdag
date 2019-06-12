@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DefaultEcsClient
         implements EcsClient
@@ -123,9 +124,7 @@ public class DefaultEcsClient
                 final ListTagsForResourceRequest tagsRequest = new ListTagsForResourceRequest()
                         .withResourceArn(taskDefinitionArn);
                 final ListTagsForResourceResult tagsResult = client.listTagsForResource(tagsRequest);
-                ImmutableMap.Builder<String, String> tagMapBuilder = ImmutableMap.builder();
-                tagsResult.getTags().stream().map(tag -> tagMapBuilder.put(tag.getKey(), tag.getValue()));
-                final Map<String, String> tagMap = tagMapBuilder.build();
+                final Map<String, String> tagMap = tagsResult.getTags().stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
 
                 boolean tagsMatched = false;
                 for (final Tag expectedTag : expectedTags) {
