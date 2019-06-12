@@ -636,10 +636,7 @@ public class EcsCommandExecutor
             final CommandContext commandContext,
             final CommandRequest commandRequest,
             final ContainerOverride containerOverride)
-    {
-        containerOverride.withCpu(128); // TODO
-        containerOverride.withMemory(256); // TODO
-    }
+    { }
 
     private static void log(final String message, final CommandLogger to)
             throws IOException
