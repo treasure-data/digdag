@@ -24,7 +24,6 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
@@ -61,7 +60,7 @@ public class WorkflowTestingUtils
 
                 binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
                 binder.bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
-                binder.bind(AccessController.class).to(DefaultAccessController.class);
+                binder.bind(AccessController.class).to(DummyAccessController.class);
 
                 Multibinder<SchedulerFactory> schedulerFactoryBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
 
