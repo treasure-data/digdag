@@ -6,6 +6,7 @@ import java.io.IOException;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.core.log.TaskLogger;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.StorageObject;
@@ -37,6 +38,7 @@ public interface TaskCallbackApi
             Optional<Config> error);
 
     StoredSessionAttempt startSession(
+            OperatorContext context,
             int siteId,
             int projectId,
             String workflowName,

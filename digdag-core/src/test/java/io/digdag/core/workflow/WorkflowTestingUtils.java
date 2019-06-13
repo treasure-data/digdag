@@ -24,11 +24,13 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.ac.AccessController;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -59,6 +61,7 @@ public class WorkflowTestingUtils
 
                 binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
                 binder.bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
+                binder.bind(AccessController.class).to(DefaultAccessController.class);
 
                 Multibinder<SchedulerFactory> schedulerFactoryBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
 

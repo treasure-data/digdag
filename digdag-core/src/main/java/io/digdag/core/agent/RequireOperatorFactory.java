@@ -73,6 +73,7 @@ public class RequireOperatorFactory
             Config overrideParams = config.getNestedOrGetEmpty("params");
             try {
                 StoredSessionAttempt attempt = callback.startSession(
+                        context,
                         request.getSiteId(),
                         projectId,
                         workflowName,

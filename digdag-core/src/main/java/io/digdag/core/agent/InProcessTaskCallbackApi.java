@@ -7,6 +7,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
@@ -31,6 +32,7 @@ import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
+import io.digdag.spi.ac.AccessController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;
@@ -50,6 +52,7 @@ public class InProcessTaskCallbackApi
     private final WorkflowExecutor exec;
     private final TransactionManager tm;
     private final TaskQueueClient queueClient;
+    private final AccessController ac;
 
     @Inject
     public InProcessTaskCallbackApi(
@@ -61,7 +64,8 @@ public class InProcessTaskCallbackApi
             AgentId agentId,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec,
-            TransactionManager tm)
+            TransactionManager tm,
+            AccessController ac)
     {
         this.pm = pm;
         this.sm = sm;
@@ -72,6 +76,7 @@ public class InProcessTaskCallbackApi
         this.exec = exec;
         this.tm = tm;
         this.queueClient = qm.getInProcessTaskQueueClient();
+        this.ac = ac;
     }
 
     @Override
@@ -157,6 +162,7 @@ public class InProcessTaskCallbackApi
 
     @Override
     public StoredSessionAttempt startSession(
+            OperatorContext context,
             int siteId,
             int projectId,
             String workflowName,
@@ -167,6 +173,8 @@ public class InProcessTaskCallbackApi
     {
         return tm.<StoredSessionAttempt, ResourceNotFoundException, ResourceLimitExceededException>begin(() -> {
                             ProjectStore projectStore = pm.getProjectStore(siteId);
+
+                            //TODO check permission by AccessController for 'require' operator over another project.
 
                             StoredProject proj = projectStore.getProjectById(projectId);
                             StoredWorkflowDefinitionWithProject def =
