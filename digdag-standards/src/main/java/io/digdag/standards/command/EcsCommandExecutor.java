@@ -277,6 +277,7 @@ public class EcsCommandExecutor
             task = client.getTask(cluster, taskArn);
         } catch (TaskSetNotFoundException e) {
             // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
+            logger.info("Cannot get the Ecs task status. Will be retried.");
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
         }
 
