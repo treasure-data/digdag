@@ -16,6 +16,12 @@ public interface TaskResult
 {
     Config getSubtaskConfig();
 
+    @Value.Default
+    default boolean getCallSubTask()
+    {
+        return false;
+    }
+
     Config getExportParams();
 
     List<ConfigKey> getResetStoreParams();

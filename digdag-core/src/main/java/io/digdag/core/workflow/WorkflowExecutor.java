@@ -1185,7 +1185,7 @@ public class WorkflowExecutor
         // task successfully finished. add ^sub and ^check tasks
         boolean subtaskAdded = false;
         try {
-            Optional<Long> rootSubtaskId = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig());
+            Optional<Long> rootSubtaskId = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig(), result.getCallSubTask());
             Optional<Long> checkTaskId = addCheckTasksIfAny(lockedTask, rootSubtaskId);
             subtaskAdded = rootSubtaskId.isPresent() || checkTaskId.isPresent();
         }
@@ -1274,12 +1274,13 @@ public class WorkflowExecutor
         params.merge(task.getConfig().getExport());
     }
 
-    private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)
+    private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig, boolean isCallOpSubTask)
         throws TaskLimitExceededException
     {
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }
+
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^sub", subtaskConfig);
         if (tasks.isEmpty()) {
@@ -1287,7 +1288,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding sub tasks: {}", tasks);
-        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), true, true);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), true, false, isCallOpSubTask);
         return Optional.of(rootTaskId);
     }
 

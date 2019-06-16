@@ -23,6 +23,8 @@ public interface TaskControlStore
 
     boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList);
 
+    void clearInitailTaskStateFlags(long taskId);
+
     void addDependencies(long downstream, List<Long> upstreams);
 
     // return true if one or more child task is progressible.

@@ -191,7 +191,6 @@ public class OperatorManager
             all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
-
             config = evalEngine.eval(all, evalParams);
         }
         catch (TemplateException ex) {

@@ -78,6 +78,7 @@ public class CallOperatorFactory
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(def)
+                .callSubTask(true)
                 .build();
         }
     }

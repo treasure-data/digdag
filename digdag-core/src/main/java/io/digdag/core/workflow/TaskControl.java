@@ -13,7 +13,6 @@ import io.digdag.core.Limits;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.SessionStore;
-import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
@@ -21,9 +20,13 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.spi.TaskResult;
 import io.digdag.client.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TaskControl
 {
+    private static final Logger logger = LoggerFactory.getLogger(TaskControl.class);
+
     private final TaskControlStore store;
     private final StoredTask task;
     private TaskStateCode state;
@@ -58,20 +61,31 @@ public class TaskControl
         checkTaskLimit(store, attemptId, tasks);
         long taskId = addTasks(store, attemptId, rootTaskId,
                 tasks, ImmutableList.of(),
-                false, true, true,
+                false, true, true, false,
                 resumingTasks);
         addResumingTasks(store, attemptId, resumingTasks);
         return taskId;
     }
 
     public long addGeneratedSubtasks(WorkflowTaskList tasks,
-                                     List<Long> rootUpstreamIds, boolean cancelSiblings, boolean isInitialTask)
+                                     List<Long> rootUpstreamIds, boolean cancelSiblings, boolean isInitialTask,
+                                     boolean isCallOpSubTask)
             throws TaskLimitExceededException
     {
         checkTaskLimit(store, task.getAttemptId(), tasks);
-        return addTasks(store, task.getAttemptId(), task.getId(),
+
+        long id = task.getId();
+        if (isCallOpSubTask && tasks.size() > 0) {
+            // generated task by call> should link to parent of call> to skip call> exec in retry.
+            id = task.getParentId().or(id);
+            // call> should not have INITIAL_TASK to be removed from retry process to avoid re-generate sub tasks
+            logger.trace("Clear INITIAL_TASK of task {}", task.getFullName());
+            store.clearInitailTaskStateFlags(task.getId());
+            //TODO should set upstream of tasks.get(0)?
+        }
+        return addTasks(store, task.getAttemptId(), id,
                 tasks, rootUpstreamIds,
-                cancelSiblings, false, isInitialTask,
+                cancelSiblings, false, isInitialTask, isCallOpSubTask,
                 collectResumingTasks(task.getAttemptId(), tasks));
     }
 
@@ -79,7 +93,7 @@ public class TaskControl
             List<Long> rootUpstreamIds, boolean cancelSiblings)
         throws TaskLimitExceededException
     {
-        return addGeneratedSubtasks(tasks, rootUpstreamIds, cancelSiblings, false);
+        return addGeneratedSubtasks(tasks, rootUpstreamIds, cancelSiblings, false, false);
     }
 
     public long addGeneratedSubtasksWithoutLimit(WorkflowTaskList tasks,
@@ -87,7 +101,7 @@ public class TaskControl
     {
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
-                cancelSiblings, false, false,
+                cancelSiblings, false, false, false,
                 collectResumingTasks(task.getAttemptId(), tasks));
     }
 
@@ -105,7 +119,7 @@ public class TaskControl
 
     private static long addTasks(TaskControlStore store,
             long attemptId, long parentTaskId, WorkflowTaskList tasks, List<Long> rootUpstreamIds,
-            boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask,
+            boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask, boolean isCallOpSubTask,
             List<ResumingTask> resumingTasks)
     {
         List<Long> indexToId = new ArrayList<>();
@@ -123,9 +137,13 @@ public class TaskControl
             .stream()
             .collect(Collectors.toMap(t -> t.getFullName(), t -> t));
 
+        boolean forceInitialTaskForCallOp = isCallOpSubTask;
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
-
+            boolean initialTaskFlag = isInitialTask;
+            if (forceInitialTaskForCallOp) {
+                initialTaskFlag = true;
+            }
             if (firstTask && firstTaskIsRootStoredParentTask) {
                 indexToId.add(rootTaskId);
                 firstTask = false;
@@ -136,6 +154,7 @@ public class TaskControl
                 // TODO not implemented yet
             }
 
+            logger.trace(String.format("AddTasks %d %s %s %s", wt.getIndex(), wt.getFullName(), wt.getConfig().toString(), initialTaskFlag));
             long parentId = wt.getParentIndex()
                 .transform(index -> indexToId.get(index))
                 .or(parentTaskId);
@@ -144,7 +163,7 @@ public class TaskControl
                 id = store.addResumedSubtask(attemptId, parentId,
                         wt.getTaskType(),
                         TaskStateCode.SUCCESS,
-                        (isInitialTask ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty()),
+                        (initialTaskFlag ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty()),
                         resumingTaskMap.get(wt.getFullName()));
             }
             else {
@@ -154,7 +173,7 @@ public class TaskControl
                     .config(TaskConfig.validate(wt.getConfig()))
                     .taskType(wt.getTaskType())
                     .state(TaskStateCode.BLOCKED)
-                    .stateFlags(isInitialTask ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty())
+                    .stateFlags(initialTaskFlag ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty())
                     .build();
 
                 id = store.addSubtask(attemptId, task);

@@ -905,6 +905,12 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public void clearInitailTaskStateFlags(long taskId)
+        {
+            dao.clearTaskStateFlags(taskId, TaskStateFlags.INITIAL_TASK);
+        }
+
+        @Override
         public void addDependencies(long downstream, List<Long> upstreams)
         {
             for (long upstream : upstreams) {
@@ -1933,6 +1939,13 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " and state = :oldState")
         long setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
+
+        @SqlUpdate("update tasks" +
+                " set updated_at = now(), state_flags = state_flags - :stateFlags" +
+                " where id = :id"
+                )
+        long clearTaskStateFlags(@Bind("id") long taskId, @Bind("stateFlags") int stateFlags);
+
 
         @SqlUpdate("update task_state_details" +
                 " set error = :error" +
