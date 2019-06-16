@@ -13,6 +13,7 @@ import com.amazonaws.services.ecs.model.Tag;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
+import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -110,7 +111,7 @@ public class EcsCommandExecutor
                 // classes of operator implementation.
                 final Task runTask = submitTask(commandContext, commandRequest, client, td); // ConfigException, RuntimeException
                 final ObjectNode currentStatus = createCurrentStatus(commandContext, commandRequest, clientConfig, runTask, awsLogs);
-                return createNextCommandStatus(commandContext, client, currentStatus);
+                return EcsCommandStatus.of(false, currentStatus);
             }
         }
         catch (ConfigException e) {
@@ -271,7 +272,13 @@ public class EcsCommandExecutor
     {
         final String cluster = previousStatus.get("cluster_name").asText();
         final String taskArn = previousStatus.get("task_arn").asText();
-        final Task task = client.getTask(cluster, taskArn);
+        final Task task;
+        try {
+            task = client.getTask(cluster, taskArn);
+        } catch (TaskSetNotFoundException e) {
+            // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
+            return EcsCommandStatus.of(false, previousStatus.deepCopy());
+        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("Get task: " + task);
