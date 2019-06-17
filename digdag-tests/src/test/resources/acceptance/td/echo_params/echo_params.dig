@@ -3,3 +3,5 @@ _export:
     image: "python:3.7"
 +foo:
   py>: scripts.echo_params.echo_params
+  _env:
+    VAR_A: aaa
