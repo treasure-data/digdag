@@ -4,6 +4,7 @@ import com.amazonaws.services.ecs.model.AssignPublicIp;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
+import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.LogConfiguration;
 import com.amazonaws.services.ecs.model.NetworkConfiguration;
@@ -502,6 +503,7 @@ public class EcsCommandExecutor
         final ContainerDefinition cd = td.getContainerDefinitions().get(0);
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
+        setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
         setEcsContainerOverrideResource(commandContext, commandRequest, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
@@ -512,7 +514,6 @@ public class EcsCommandExecutor
         //containerOverride.withName()
         //containerOverride.withCommand()
         //containerOverride.withCpu();
-        //containerOverride.withEnvironment();
         //containerOverride.withMemory();
         //containerOverride.withMemoryReservation();
         //containerOverride.withResourceRequirements();
@@ -638,6 +639,18 @@ public class EcsCommandExecutor
     protected List<String> setEcsContainerOverrideArgumentsAfterCommand()
     {
         return ImmutableList.of();
+    }
+
+    protected void setEcsContainerOverrideEnvironment(
+            final CommandContext commandContext,
+            final CommandRequest commandRequest,
+            final ContainerOverride containerOverride)
+    {
+        final ImmutableList.Builder<KeyValuePair> environments = ImmutableList.builder();
+        for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
+            environments.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
+        }
+        containerOverride.withEnvironment(environments.build());
     }
 
     protected void setEcsContainerOverrideResource(
