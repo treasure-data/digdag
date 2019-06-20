@@ -28,9 +28,9 @@ sudo -u postgres createuser -s digdag_test
 sudo -u postgres createdb -O digdag_test digdag_test
 
 # Python
-apt-get -y install python python-pip python-dev
-pip install pip --upgrade && hash -r pip # rehashed https://github.com/pypa/pip/issues/5240
-pip install sphinx==1.5.6 recommonmark sphinx_rtd_theme
+apt-get -y install python3 python3-pip
+python3 -m pip install -U pip
+python3 -m pip install -r requirements.txt -c constraints.txt
 
 # Ruby
 apt-get -y install ruby-full
