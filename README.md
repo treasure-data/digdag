@@ -149,10 +149,20 @@ Documents are in digdag-docs/src directory. They're built using Sphinx.
 
 Website is hosted on [www.digdag.io](http://www.digdag.io) using Github Pages. Pages are built using deployment step of circle.yml and automatically pushed to [gh-pages branch of digdag-docs repository](https://github.com/treasure-data/digdag-docs/tree/gh-pages).
 
-To build the pages and check them locally, run following command:
+To build the pages and check them locally, follow this instruction.
+
+Create a virtual environment of Python and install dependent Python libraries including Sphinx.
 
 ```
-$ ./gradlew site
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv)$ pip install -r digdag-docs/requirements.txt -c digdag-docs/constraints.txt
+```
+
+After installation of Python libraries, You can build with running the following command:
+
+```
+(.venv)$ ./gradlew site
 ```
 
 This might not always update all necessary files (Sphinx doesn't manage update dependencies well). In this case, run `./gradlew clean` first.
