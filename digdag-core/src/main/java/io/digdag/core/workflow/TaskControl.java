@@ -121,7 +121,7 @@ public class TaskControl
 
         Map<String, ResumingTask> resumingTaskMap = resumingTasks
             .stream()
-            .collect(Collectors.toMap(t -> t.getFullName(), t -> t));
+            .collect(Collectors.toMap(t -> t.getFullName(), t -> t, (a, b) -> a));
 
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
@@ -140,6 +140,7 @@ public class TaskControl
                 .transform(index -> indexToId.get(index))
                 .or(parentTaskId);
             long id;
+
             if (resumingTaskMap.containsKey(wt.getFullName())) {
                 id = store.addResumedSubtask(attemptId, parentId,
                         wt.getTaskType(),
