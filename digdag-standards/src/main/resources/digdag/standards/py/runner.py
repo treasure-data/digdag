@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-import imp
+import types
 import inspect
 import collections
 import traceback
@@ -15,7 +15,7 @@ with open(in_file) as f:
     params = in_data['params']
 
 # fake digdag_env module already imported
-digdag_env_mod = sys.modules['digdag_env'] = imp.new_module('digdag_env')
+digdag_env_mod = sys.modules['digdag_env'] = types.ModuleType('digdag_env')
 digdag_env_mod.params = params
 digdag_env_mod.subtask_config = collections.OrderedDict()
 digdag_env_mod.export_params = {}
@@ -24,7 +24,7 @@ digdag_env_mod.state_params = {}
 import digdag_env
 
 # fake digdag module already imported
-digdag_mod = sys.modules['digdag'] = imp.new_module('digdag')
+digdag_mod = sys.modules['digdag'] = types.ModuleType('digdag')
 
 class Env(object):
     def __init__(self, digdag_env_mod):
@@ -73,7 +73,7 @@ class Env(object):
 digdag_mod.env = Env(digdag_env_mod)
 import digdag
 
-# add the archive path to improt path
+# add the archive path to import path
 sys.path.append(os.path.abspath(os.getcwd()))
 
 def digdag_inspect_command(command):
