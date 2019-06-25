@@ -12,12 +12,14 @@ import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
 import org.slf4j.Logger;
@@ -172,7 +174,30 @@ public class PyOperatorFactory
             int ecode = p.waitFor();
 
             if (ecode != 0) {
-                throw new RuntimeException("Python command failed with code " + ecode);
+                StringBuilder reason = new StringBuilder();
+                reason.append("Python command failed with code ").append(ecode);
+
+                try {
+                    Config out = mapper.readValue(workspace.getFile(outFile), Config.class);
+                    Config err = out.getNestedOrGetEmpty("error");
+                    Optional<String> errClass = err.getOptional("class", String.class);
+                    Optional<String> errMessage = err.getOptional("message", String.class);
+                    List<String> errBacktrace = err.getListOrEmpty("backtrace", String.class);
+                    if (errClass.isPresent()) {
+                        reason.append(": from ").append(errClass.get());
+                    }
+                    if (errMessage.isPresent()) {
+                        reason.append(": ").append(errMessage.get());
+                    }
+                    if (!errBacktrace.isEmpty()) {
+                        reason.append("\n    ");
+                        reason.append(String.join("    ", errBacktrace));
+                    }
+                }
+                catch (JsonMappingException ex) {
+                    // comes here if runner.py fails before writing outFile.
+                }
+                throw new RuntimeException(reason.toString());
             }
 
             return mapper.readValue(workspace.getFile(outFile), Config.class);
