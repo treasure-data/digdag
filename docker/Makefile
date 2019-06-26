@@ -3,6 +3,8 @@ IMAGE_TAG = $(shell git show --pretty=format:'%ad-%H' --date 'format:%Y%m%dT%H%M
 IMAGE = $(IMAGE_NAME):$(IMAGE_TAG)
 
 build:
+	cp ../digdag-docs/requirements.txt bootstrap/
+	cp ../digdag-docs/constraints.txt bootstrap/
 	docker build -t $(IMAGE) .
 	@echo Built $(IMAGE)
 
