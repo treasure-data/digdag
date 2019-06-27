@@ -283,7 +283,7 @@ If ``_retry: N`` (N is an integer: 1, 2, 3, ...) parameter is set to a group, it
       sh>: tasks/analyze_prepared_data_sets.sh
 
 
-Tasks also support ``_retry: N`` parameter to retry the specific task. Note that some operators don't support the generic ``_retry`` option but have their own options to control retrying behavior. Operators that involve external systems may reuse previous results. To ensure an external task is repeated, you may use retry at the group level.
+Tasks also support ``_retry: N`` parameter to retry the specific task. Note that some operators don't support the generic ``_retry`` option but have their own options to control retrying behavior. Operators that involve external systems may reuse previous results. To ensure an external task is repeated, you may use ``_retry`` at the group level.
 
 You can set interval to _retry as follows.
 
