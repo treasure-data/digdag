@@ -11,6 +11,8 @@
 MANIFEST
 pom.xml
 .digdag
+docker/bootstrap/constraints.txt
+docker/bootstrap/requirements.txt
 
 # intellij idea
 *.iml
