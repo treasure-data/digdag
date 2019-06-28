@@ -140,7 +140,6 @@ public class TaskControl
                 .transform(index -> indexToId.get(index))
                 .or(parentTaskId);
             long id;
-
             if (resumingTaskMap.containsKey(wt.getFullName())) {
                 id = store.addResumedSubtask(attemptId, parentId,
                         wt.getTaskType(),
