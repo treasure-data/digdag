@@ -6,6 +6,8 @@
 */build/
 */out/
 *.pyc
+venv*
+.venv*
 /dist/*.tar.gz
 /config/test_postgresql.properties
 MANIFEST
