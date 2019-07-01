@@ -68,7 +68,7 @@ public class JacksonTimeModule
                 return Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value));
             }
             catch (DateTimeParseException ex) {
-                throw new JsonMappingException("Invalid ISO time format: %s" + value, ex);
+                throw new JsonMappingException("Invalid ISO time format: " + value, ex);
             }
         }
     }
