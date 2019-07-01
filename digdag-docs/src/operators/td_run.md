@@ -10,7 +10,7 @@
       td_run>: 12345
     +step2:
       td_run>: myquery2
-      session_time: 2016-01-01T01:01:01+0000
+      session_time: 2016-01-01T01:01:01+00:00
 
 ## Examples
 
