@@ -15,16 +15,23 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Locale.ENGLISH;
@@ -52,11 +59,17 @@ class Archiver
 
         ImmutableList.Builder<String> workflowResources = ImmutableList.builder();
 
+        List<Path> ignoreFileList = ignoreFileList(projectPath);
+
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(output)))) {
             // default mode for file names longer than 100 bytes is throwing an exception (LONGFILE_ERROR)
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
 
             project.listFiles((resourceName, absPath) -> {
+                if (ignoreFileList.contains(projectPath.resolve(resourceName))) {
+                    out.println("  Skip " + resourceName);
+                    return;
+                }
                 if (!Files.isDirectory(absPath)) {
                     out.println("  Archiving " + resourceName);
 
@@ -149,5 +162,40 @@ class Archiver
             }
         }
         return e;
+    }
+
+    private List<Path> ignoreFileList(Path projectPath) {
+        Path ignoreFilePath = projectPath.resolve(".digdagignore");
+        if(!ignoreFilePath.toFile().exists()) {
+            return new ArrayList<Path>();
+        }
+
+        List<Path> ignoreList = new ArrayList<Path>();
+        List<Path> noIgnoreList = new ArrayList<Path>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(ignoreFilePath.toFile()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                try (Stream<Path> entries = Files.walk(projectPath)) {
+                    if(line.startsWith("#") || line.startsWith(" ")) {
+                        continue;
+                    } else if (line.startsWith("!")) {
+                        line = line.substring(1, line.length());
+                        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + projectPath + "/" + line);
+                        entries.filter(matcher::matches).forEach((file) -> noIgnoreList.add(file));
+                    } else {
+                        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + projectPath + "/" + line);
+                        entries.filter(matcher::matches).forEach((file) -> ignoreList.add(file));
+                    }
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        ignoreList.removeAll(noIgnoreList);
+        return ignoreList;
     }
 }
