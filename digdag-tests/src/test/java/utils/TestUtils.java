@@ -493,19 +493,19 @@ public class TestUtils
         copyResource(resource, project.resolve(workflowName));
     }
 
-    public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params)
+    public static CommandStatus runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params)
             throws IOException
     {
-        runWorkflow(folder, resource, params, ImmutableMap.of());
+        return runWorkflow(folder, resource, params, ImmutableMap.of());
     }
 
-    public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config)
+    public static CommandStatus runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config)
             throws IOException
     {
-        runWorkflow(folder, resource, params, config, 0);
+        return runWorkflow(folder, resource, params, config, 0);
     }
 
-    public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config, int expectedStatus)
+    public static CommandStatus runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config, int expectedStatus)
             throws IOException
     {
         Path workflow = Paths.get(resource);
@@ -526,6 +526,7 @@ public class TestUtils
             copyResource(resource, file);
             CommandStatus status = main(runCommand);
             assertThat(status.errUtf8(), status.code(), is(expectedStatus));
+            return status;
         }
         finally {
             FileUtils.deleteQuietly(tempdir.toFile());

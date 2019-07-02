@@ -21,7 +21,9 @@ import io.digdag.util.UserSecretTemplate;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.digdag.util.Workspace.propagateIoException;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ENGLISH;
 
 public class HttpCallOperatorFactory
         extends HttpOperatorFactory
@@ -88,6 +91,7 @@ public class HttpCallOperatorFactory
             UserSecretTemplate uriTemplate = UserSecretTemplate.of(params.get("_command", String.class));
             boolean uriIsSecret = uriTemplate.containsSecrets();
             URI uri = URI.create(uriTemplate.format(context.getSecrets()));
+            String mediaTypeOverride = params.getOptional("content_type_override", String.class).orNull();
 
             ContentResponse response;
 
@@ -99,9 +103,28 @@ public class HttpCallOperatorFactory
                 stop(httpClient);
             }
 
-            // This ContentResponse::getContentAsString considers ;charset= parameter
-            // of Content-Type. If not set, it uses UTF-8.
-            String content = response.getContentAsString();
+            String content;
+            if (Strings.isNullOrEmpty(mediaTypeOverride)) {
+                // This ContentResponse::getContentAsString considers ;charset= parameter
+                // of Content-Type. If not set, it uses UTF-8.
+                content = response.getContentAsString();
+            }
+            else {
+                // This logic mimics how org.eclipse.jetty.client.HttpContentResponse::getContentAsString handles Content-Type
+                int index = mediaTypeOverride.toLowerCase(ENGLISH).indexOf("charset=");
+                if (index > 0) {
+                    String encoding = mediaTypeOverride.substring(index + "charset=".length());
+                    try {
+                        content = new String(response.getContent(), encoding);
+                    }
+                    catch (UnsupportedEncodingException e) {
+                        throw new UnsupportedCharsetException(encoding);
+                    }
+                }
+                else {
+                    content = new String(response.getContent(), UTF_8);
+                }
+            }
 
             // validate response length
             if (content.length() > maxResponseContentSize) {
@@ -109,7 +132,7 @@ public class HttpCallOperatorFactory
             }
 
             // parse content based on response media type
-            String digFileSource = reformatDigFile(content, response.getMediaType());
+            String digFileSource = reformatDigFile(content, response.getMediaType(), mediaTypeOverride);
             // write to http_call.dig file
             Path workflowPath = writeDigFile(digFileSource);
 
@@ -132,12 +155,18 @@ public class HttpCallOperatorFactory
                 .build();
         }
 
-        private String reformatDigFile(String content, String mediaTypeString)
+        private String reformatDigFile(String content, String mediaTypeString, String mediaTypeOverride)
         {
-            if (Strings.isNullOrEmpty(mediaTypeString)) {
-                throw new TaskExecutionException("Content-Type must be set in the HTTP response but not set");
+            MediaType mediaType;
+            if (Strings.isNullOrEmpty(mediaTypeOverride)) {
+                if (Strings.isNullOrEmpty(mediaTypeString)) {
+                    throw new TaskExecutionException("Content-Type must be set in the HTTP response but not set");
+                }
+                mediaType = MediaType.valueOf(mediaTypeString);
             }
-            MediaType mediaType = MediaType.valueOf(mediaTypeString);
+            else {
+                mediaType = MediaType.valueOf(mediaTypeOverride);
+            }
 
             String t = mediaType.getType() + "/" + mediaType.getSubtype();  // without ;charset= or other params
             switch (t) {
