@@ -1,0 +1,36 @@
+timezone: UTC
+
+schedule:
+  daily>: 10:00:00
+
++t_project_id:
+  sh>: 'echo "project_id: ${project_id}" > __FILE__'
+
++t_session_id:
+  sh>: 'echo "session_id: ${session_id}" >> __FILE__'
+
++t_attempt_id:
+  sh>: 'echo "attempt_id: ${attempt_id}" >> __FILE__'
+
++t_session_time:
+  sh>: 'echo "session_time: ${session_time}" >> __FILE__'
+
++t_next_session_time:
+  sh>: 'echo "next_session_time: ${next_session_time}" >> __FILE__'
+
++t_last_session_time:
+  sh>: 'echo "last_session_time: ${last_session_time}" >> __FILE__'
+
++t_session_uuid:
+  sh>: 'echo "session_uuid: ${session_uuid}" >> __FILE__'
+
++t_timezone:
+  sh>: 'echo "timezone: ${timezone}" >> __FILE__'
+
++t_task_name:
+  sh>: 'echo "task_name: ${task_name}" >> __FILE__'
+
++t_retry_attempt_name:
+  sh>: 'echo "retry_attempt_name: ${retry_attempt_name}" >> __FILE__'
+
+

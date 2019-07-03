@@ -187,8 +187,11 @@ public class OperatorManager
         // evaluate config and creates the complete merged config.
         Config config;
         try {
-            Config all = RuntimeParams.buildRuntimeParams(request.getConfig().getFactory(), request).deepCopy();
+            Config all = cf.create();
             all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
+            Config runtimeParams = RuntimeParams.buildRuntimeParams(request.getConfig().getFactory(), request).deepCopy();
+            all.merge(runtimeParams); //runtime parameter should not be override request parameters
+
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
 
