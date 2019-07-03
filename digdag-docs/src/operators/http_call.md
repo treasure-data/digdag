@@ -7,6 +7,8 @@ This operator parses response body based on returned Content-Type header. Conten
 * **application/json**: Parse the response as JSON.
 * **application/x-yaml**: Use the returned body as-is.
 
+If appropriate Content-Type header is not returned, use content_type_override option.
+
 ## Options
 
 * **http_call>**: URI
@@ -18,6 +20,19 @@ This operator parses response body based on returned Content-Type header. Conten
   ```
   http_call>: https://api.example.com/foobar
   ```
+
+* **content_type_override**: application/x-yaml or application/json
+
+  Overrides Content-Type response header returned from the server. This option is useful when the server doesn't return an appropriate Content-Type but returns a generic value such as text/plain or application/octet-stream.
+
+  Examples:
+
+  ```
+  http_call>: https://api.example.com/foobar
+  content_type_override: application/x-yaml
+  ```
+
+## Other options
 
 Same parameters with **http>** operator are also supported except the parameters listed below. The name of the operator is similar to [http> operator](http.html). But the role is different. See also [http> operator document](http.html).
 

@@ -31,6 +31,7 @@ import org.littleshoot.proxy.HttpProxyServer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -41,6 +42,7 @@ import static org.junit.Assert.assertThat;
 import static utils.TestUtils.objectMapper;
 import static utils.TestUtils.runWorkflow;
 import static utils.TestUtils.startMockWebServer;
+import utils.CommandStatus;
 import utils.TestUtils;
 
 public class HttpCallIT
@@ -140,6 +142,44 @@ public class HttpCallIT
                 .setBody(formatYaml(bodyConfig)));
         String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http_call/http_call.dig", ImmutableMap.of(
+                    "test_uri", uri,
+                    "outdir", root().toString(),
+                    "name", "child"));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        assertThat(Files.exists(root().resolve("child.out")), is(true));
+        RecordedRequest request = httpMockWebServer.takeRequest();
+        assertThat(request.getMethod(), is("GET"));
+    }
+
+    @Test
+    public void testSubTasksWithUnknownContentType()
+            throws Exception
+    {
+        Config bodyConfig = loadYamlResource("acceptance/http_call/child.dig");
+        httpMockWebServer.enqueue(
+                new MockResponse()
+                .addHeader("Content-Type: application/octet-stream")
+                .setBody(formatYaml(bodyConfig)));
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
+        CommandStatus status = runWorkflow(folder, "acceptance/http_call/http_call.dig", ImmutableMap.of(
+                    "test_uri", uri,
+                    "outdir", root().toString(),
+                    "name", "child"), ImmutableMap.of(), 1);
+        assertThat(status.errUtf8(), containsString("Unsupported Content-Type"));
+        assertThat(status.errUtf8(), containsString("application/octet-stream"));
+    }
+
+    @Test
+    public void testSubTasksWithContentTypeOverride()
+            throws Exception
+    {
+        Config bodyConfig = loadYamlResource("acceptance/http_call/child.dig");
+        httpMockWebServer.enqueue(
+                new MockResponse()
+                .addHeader("Content-Type: application/octet-stream")
+                .setBody(formatYaml(bodyConfig)));
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http_call/http_call_yaml_override.dig", ImmutableMap.of(
                     "test_uri", uri,
                     "outdir", root().toString(),
                     "name", "child"));
