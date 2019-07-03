@@ -6,16 +6,17 @@ import io.digdag.client.api.Id;
 import io.digdag.client.api.RestDirectDownloadHandle;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestLogFileHandleCollection;
-import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.tls.HandshakeCertificates;
 import org.bouncycastle.util.io.Streams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.net.ssl.SSLSocketFactory;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.WebApplicationException;
 
@@ -32,6 +33,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static okhttp3.tls.internal.TlsUtil.localhost;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
@@ -49,7 +51,9 @@ public class DigdagClientTest
             throws Exception
     {
         mockWebServer = new MockWebServer();
-        mockWebServer.useHttps(SslClient.localhost().socketFactory, false);
+        HandshakeCertificates handshakeCertificates = localhost();
+        SSLSocketFactory socketFactory = handshakeCertificates.sslSocketFactory();
+        mockWebServer.useHttps(socketFactory, false);
         mockWebServer.start();
 
         client = DigdagClient.builder()
