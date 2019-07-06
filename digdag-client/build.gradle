@@ -22,6 +22,7 @@ dependencies {
     // which conflicts with undertow 1.4.0.Final -> jboss-logging 3.2.1.Final
     compile 'org.jboss.logging:jboss-logging:3.3.0.Final'
 
-    testCompile 'com.squareup.okhttp3:okhttp:3.4.1'
-    testCompile 'com.squareup.okhttp3:mockwebserver:3.4.1'
+    testCompile 'com.squareup.okhttp3:okhttp:3.12.0'
+    testCompile 'com.squareup.okhttp3:okhttp-tls:3.12.0'
+    testCompile 'com.squareup.okhttp3:mockwebserver:3.12.0'
 }
