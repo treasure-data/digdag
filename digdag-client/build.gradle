@@ -12,7 +12,7 @@ dependencies {
         // available version of guava at the moment (e.g. 21.0). This is not good.
         exclude group: 'com.google.guava', module: 'guava'
     }
-    compile "com.google.guava:guava:19.0"
+    compile "com.google.guava:guava:25.1-jre"
 
     compile 'org.jboss.resteasy:resteasy-client:3.0.24.Final'
     compile 'org.apache.commons:commons-compress:1.10'
