@@ -109,6 +109,15 @@ public class DefaultEcsClient
     }
 
     @Override
+    public List<Tag> getTaskDefinitionTags(final String taskDefinitionArn)
+    {
+        final ListTagsForResourceRequest tagsRequest = new ListTagsForResourceRequest()
+                .withResourceArn(taskDefinitionArn);
+        final ListTagsForResourceResult tagsResult = client.listTagsForResource(tagsRequest); // several runtime exception
+        return tagsResult.getTags();
+    }
+
+    @Override
     public Optional<TaskDefinition> getTaskDefinitionByTags(final List<Tag> expectedTags)
     {
         String nextToken = null;
@@ -121,10 +130,8 @@ public class DefaultEcsClient
             final ListTaskDefinitionsResult listResult = client.listTaskDefinitions(listRequest);
             final List<String> taskDefinitionArns = listResult.getTaskDefinitionArns();
             for (final String taskDefinitionArn : taskDefinitionArns) {
-                final ListTagsForResourceRequest tagsRequest = new ListTagsForResourceRequest()
-                        .withResourceArn(taskDefinitionArn);
-                final ListTagsForResourceResult tagsResult = client.listTagsForResource(tagsRequest);
-                final Map<String, String> tagMap = tagsResult.getTags().stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
+                final List<Tag> tags = getTaskDefinitionTags(taskDefinitionArn);
+                final Map<String, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
 
                 boolean tagsMatched = false;
                 for (final Tag expectedTag : expectedTags) {
