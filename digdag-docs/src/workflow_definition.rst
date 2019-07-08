@@ -127,6 +127,11 @@ You can define variables in 3 ways:
 * Setting variable programmably using API
 * Starting a session with variables
 
+.. note::
+
+    You cannot overwrite built-in variables.
+
+
 Using _export: parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
