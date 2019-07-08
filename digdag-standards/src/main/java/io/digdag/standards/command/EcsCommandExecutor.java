@@ -111,7 +111,8 @@ public class EcsCommandExecutor
                 // When RuntimeException is thrown by submitTask method, it will be handled and retried by BaseOperator, which is one of base
                 // classes of operator implementation.
                 final Task runTask = submitTask(commandContext, commandRequest, client, td); // ConfigException, RuntimeException
-                final ObjectNode currentStatus = createCurrentStatus(commandContext, commandRequest, clientConfig, runTask, awsLogs);
+                final List<Tag> taskDefinitionTags = client.getTaskDefinitionTags(td.getTaskDefinitionArn());
+                final ObjectNode currentStatus = createCurrentStatus(commandContext, commandRequest, clientConfig, taskDefinitionTags, runTask, awsLogs);
                 return EcsCommandStatus.of(false, currentStatus);
             }
         }
@@ -235,6 +236,7 @@ public class EcsCommandExecutor
             final CommandContext commandContext,
             final CommandRequest commandRequest,
             final EcsClientConfig clientConfig,
+            final List<Tag> taskDefinitionTags,
             final Task runTask,
             final Optional<ObjectNode> awsLogs)
     {
@@ -242,11 +244,18 @@ public class EcsCommandExecutor
         final ObjectNode currentStatus = JsonNodeFactory.instance.objectNode();
         currentStatus.put("cluster_name", clientConfig.getClusterName());
         currentStatus.put("task_arn", runTask.getTaskArn());
+        currentStatus.putPOJO("task_definition_tags", toTagMap(taskDefinitionTags));
+        currentStatus.putPOJO("task_tags", toTagMap(runTask.getTags()));
         currentStatus.put("task_creation_timestamp", runTask.getCreatedAt().getTime() / 1000);
         currentStatus.put("io_directory", ioDirectoryPath.toString());
         currentStatus.put("executor_state", JsonNodeFactory.instance.objectNode());
         currentStatus.put("awslogs", awsLogs.isPresent() ? awsLogs.get() : JsonNodeFactory.instance.nullNode());
         return currentStatus;
+    }
+
+    private static Map<String, String> toTagMap(final List<Tag> tagArray)
+    {
+        return tagArray.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
     }
 
     @Override

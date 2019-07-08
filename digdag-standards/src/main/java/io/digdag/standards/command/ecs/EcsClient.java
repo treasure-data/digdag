@@ -28,6 +28,8 @@ public interface EcsClient
         boolean match(TaskDefinition td);
     }
 
+    List<Tag> getTaskDefinitionTags(final String taskDefinitionArn);
+
     Optional<TaskDefinition> getTaskDefinitionByTags(List<Tag> tags);
 
     Task getTask(String cluster, String taskArn);
