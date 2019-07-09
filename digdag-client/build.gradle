@@ -13,7 +13,7 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
     compile "com.google.guava:guava:25.1-jre"
-
+    compile "com.google.code.findbugs:jsr305:3.0.2"
     compile 'org.jboss.resteasy:resteasy-client:3.0.24.Final'
     compile 'org.apache.commons:commons-compress:1.10'
     compile 'io.jsonwebtoken:jjwt:0.6.0'
