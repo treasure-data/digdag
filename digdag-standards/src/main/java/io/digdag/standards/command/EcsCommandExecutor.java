@@ -244,8 +244,8 @@ public class EcsCommandExecutor
         final ObjectNode currentStatus = JsonNodeFactory.instance.objectNode();
         currentStatus.put("cluster_name", clientConfig.getClusterName());
         currentStatus.put("task_arn", runTask.getTaskArn());
-        currentStatus.putPOJO("task_definition_tags", toTagMap(taskDefinitionTags));
-        currentStatus.putPOJO("task_tags", toTagMap(runTask.getTags()));
+        currentStatus.set("task_definition_tags", toTagJsonNode(taskDefinitionTags));
+        currentStatus.set("task_tags", toTagJsonNode(runTask.getTags()));
         currentStatus.put("task_creation_timestamp", runTask.getCreatedAt().getTime() / 1000);
         currentStatus.put("io_directory", ioDirectoryPath.toString());
         currentStatus.put("executor_state", JsonNodeFactory.instance.objectNode());
@@ -253,9 +253,13 @@ public class EcsCommandExecutor
         return currentStatus;
     }
 
-    private static Map<String, String> toTagMap(final List<Tag> tagArray)
+    private static ObjectNode toTagJsonNode(final List<Tag> tagArray)
     {
-        return tagArray.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
+        ObjectNode on = JsonNodeFactory.instance.objectNode();
+        for (final Tag t : tagArray) {
+            on.put(t.getKey(), t.getValue());
+        }
+        return on;
     }
 
     @Override
