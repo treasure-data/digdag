@@ -53,7 +53,7 @@ public class EcsClientConfig
                 extracted.get("secret_access_key", String.class),
                 extracted.get("region", String.class),
                 extracted.get("subnets", String.class),
-                extracted.get("max_retries", int.class)
+                extracted.get("max_retries", int.class, 3)
         );
     }
 
