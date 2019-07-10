@@ -1,2 +1,3 @@
 io.digdag.standards.td.TdDigdagClientConfigurationPlugin
 io.digdag.standards.auth.jwt.JwtAuthenticatorPlugin
+io.digdag.standards.auth.basic.BasicAuthenticatorPlugin

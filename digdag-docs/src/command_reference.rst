@@ -389,6 +389,24 @@ In the config file, following parameters are available
 * api.max_sessions_page_size (integer. The max number of rows of sessions in api response)
 * api.max_archive_total_size_limit (integer. The maximum size of an archived project. i.e. ``digdag push`` size. default: 2MB(2\*1024\*1024))
 
+Authenticator Plugins
+*********************
+
+**Basic Auth**
+
+Enabled by setting the config parameter ``server.authenticator-class`` to ``io.digdag.standards.auth.basic.BasicAuthenticator``.
+
+Configuration:
+
+* basicauth.username (string) *required*
+* basicauth.password (string) *required*
+* basicauth.admin (boolean) optional, default ``false``
+
+
+**Jwt**
+
+Undocumented.
+
 
 Secret Encryption Key
 *********************
@@ -416,6 +434,9 @@ Client-mode common options:
 
 :command:`-H, --header KEY=VALUE`
   Add a custom HTTP header. Use multiple times to set multiple headers.
+
+:command:`--basic-auth <user:pass>`
+  Add an Authorization header with the provided username and password.
 
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
