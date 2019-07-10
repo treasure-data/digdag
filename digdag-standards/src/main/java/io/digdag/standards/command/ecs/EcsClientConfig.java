@@ -52,7 +52,8 @@ public class EcsClientConfig
                 extracted.get("access_key_id", String.class),
                 extracted.get("secret_access_key", String.class),
                 extracted.get("region", String.class),
-                extracted.get("subnets", String.class)
+                extracted.get("subnets", String.class),
+                extracted.get("max_retries", Integer.class)
         );
     }
 
@@ -62,13 +63,15 @@ public class EcsClientConfig
     private final String secretAccessKey;
     private final String region;
     private final List<String> subnets;
+    private final Integer maxRetries;
 
     private EcsClientConfig(final String clusterName,
             final String launchType,
             final String accessKeyId,
             final String secretAccessKey,
             final String region,
-            final String subnets)
+            final String subnets,
+            final Integer maxRetries)
     {
         this.clusterName = clusterName;
         this.launchType = launchType;
@@ -76,6 +79,7 @@ public class EcsClientConfig
         this.secretAccessKey = secretAccessKey;
         this.region = region;
         this.subnets = Arrays.asList(subnets.split(",")); // TODO more robust
+        this.maxRetries = maxRetries;
     }
 
     public String getClusterName()
@@ -107,4 +111,6 @@ public class EcsClientConfig
     {
         return subnets;
     }
+
+    public Integer getMaxRetries() { return maxRetries; }
 }
