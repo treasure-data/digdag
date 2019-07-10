@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.standards.auth.jwt;
 
 import io.digdag.client.api.RestApiKey;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

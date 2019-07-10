@@ -133,7 +133,7 @@ public class Server
         Properties props = buildServerProperties();
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig serverConfig = ServerConfig.convertFrom(ce);
-        ServerBootstrap.start(new ServerBootstrap(version, serverConfig));
+        ServerBootstrap.start(new ServerBootstrap(version, serverConfig, loadSystemPlugins(props)));
     }
 
     protected Properties buildServerProperties()

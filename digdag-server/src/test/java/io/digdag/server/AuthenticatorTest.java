@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.Authenticator;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
