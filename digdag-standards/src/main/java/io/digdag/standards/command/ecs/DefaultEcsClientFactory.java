@@ -9,8 +9,6 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
 import io.digdag.client.config.ConfigException;
 
-import javax.validation.constraints.NotNull;
-
 public class DefaultEcsClientFactory
         implements EcsClientFactory
 {
@@ -23,7 +21,8 @@ public class DefaultEcsClientFactory
                 new BasicAWSCredentials(ecsClientConfig.getAccessKeyId(), ecsClientConfig.getSecretAccessKey()));
         // TODO improve to enable more options
         final ClientConfiguration clientConfig = new ClientConfiguration()
-                .withProtocol(Protocol.HTTPS);
+                .withProtocol(Protocol.HTTPS)
+                .withMaxErrorRetry(ecsClientConfig.getMaxRetries());
 
         final AmazonECSClient ecsClient = (AmazonECSClient) AmazonECSClient.builder()
                 .withRegion(ecsClientConfig.getRegion())
