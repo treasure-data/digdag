@@ -3,7 +3,6 @@ package io.digdag.server.rs;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestSession;
-import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.client.config.Config;
@@ -25,6 +24,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,9 +62,10 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions")
-    public RestSessionCollection getSessions(
+    public PaginationResource getSessions(
             @QueryParam("last_id") Long lastId,
-            @QueryParam("page_size") Integer pageSize)
+            @QueryParam("page_size") Integer pageSize,
+            @QueryParam("page_number") Integer pageNumber)
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
 
@@ -72,9 +73,19 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId));
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(Optional.fromNullable(lastId));
 
-            return RestModels.sessionCollection(rs, sessions);
+            if (sessions.isEmpty()) return new PaginationResource(new ArrayList<>(), 1);
+
+            int sessionsSize = sessions.size();
+            ArrayList<List<StoredSessionWithLastAttempt>> dividedSessions = new ArrayList<>();
+            for (int i =0; i < sessionsSize; i+= validPageSize) {
+                dividedSessions.add(sessions.subList(i, Math.min(i + validPageSize, sessionsSize)));
+            }
+            Integer offset = Optional.fromNullable(pageNumber).or(1);
+            List<StoredSessionWithLastAttempt> targetSessions = dividedSessions.get(offset - 1);
+            List<RestSession> restSessions = RestModels.sessionCollection(rs, targetSessions).getSessions();
+            return new PaginationResource(restSessions, dividedSessions.size());
         });
     }
 

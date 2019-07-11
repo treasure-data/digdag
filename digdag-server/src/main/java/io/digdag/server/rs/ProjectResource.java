@@ -1,5 +1,6 @@
 package io.digdag.server.rs;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.net.URI;
@@ -12,6 +13,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
+import javax.swing.text.html.Option;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -411,11 +413,12 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects/{id}/sessions")
-    public RestSessionCollection getSessions(
+    public PaginationResource getSessions(
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId,
-            @QueryParam("page_size") Integer pageSize)
+            @QueryParam("page_size") Integer pageSize,
+            @QueryParam("page_number") Integer pageNumber)
             throws ResourceNotFoundException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
@@ -428,12 +431,22 @@ public class ProjectResource
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, Optional.fromNullable(lastId));
             } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfProject(proj.getId(), Optional.fromNullable(lastId));
             }
 
-            return RestModels.sessionCollection(ps, sessions);
+            if (sessions.isEmpty()) return new PaginationResource(new ArrayList<>(), 1);
+
+            int sessionsSize = sessions.size();
+            ArrayList<List<StoredSessionWithLastAttempt>> dividedSessions = new ArrayList<>();
+            for (int i =0; i < sessionsSize; i+= validPageSize) {
+                dividedSessions.add(sessions.subList(i, Math.min(i + validPageSize, sessionsSize)));
+            }
+            Integer offset = Optional.fromNullable(pageNumber).or(1);
+            List<StoredSessionWithLastAttempt> targetSessions = dividedSessions.get(offset - 1);
+            List<RestSession> restSessions = RestModels.sessionCollection(ps, targetSessions).getSessions();
+            return new PaginationResource(restSessions, dividedSessions.size());
         }, ResourceNotFoundException.class);
     }
 

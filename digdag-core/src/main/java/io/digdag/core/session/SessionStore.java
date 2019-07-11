@@ -9,14 +9,14 @@ import io.digdag.core.repository.ResourceNotFoundException;
 public interface SessionStore
         extends SessionTransaction
 {
-    List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId);
+    List<StoredSessionWithLastAttempt> getSessions(Optional<Long> lastId);
 
     StoredSessionWithLastAttempt getSessionById(long sessionId)
         throws ResourceNotFoundException;
 
-    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId);
+    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, Optional<Long> lastId);
 
-    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId);
+    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, Optional<Long> lastId);
 
     List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId);
 
