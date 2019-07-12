@@ -2,7 +2,7 @@ version: 2.0
 
 jobs:
   test:
-    parallelism: 4
+    parallelism: 8
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
