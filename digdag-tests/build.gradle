@@ -33,4 +33,12 @@ test {
             System.getProperty("test.single") == null && filter.includePatterns.empty
         }
     }
+
+  if (project.hasProperty("testFilter")) {
+    List<String> props = project.getProperties().get("testFilter").split("\\s+")
+    props.each {
+      String converted = it.replace("digdag-tests/src/test/java/acceptance/td/", "**/").replace(".java", ".class")
+      include(converted)
+    }
+  }
 }
