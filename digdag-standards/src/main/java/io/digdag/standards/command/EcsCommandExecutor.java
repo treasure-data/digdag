@@ -111,8 +111,7 @@ public class EcsCommandExecutor
                 // When RuntimeException is thrown by submitTask method, it will be handled and retried by BaseOperator, which is one of base
                 // classes of operator implementation.
                 final Task runTask = submitTask(commandContext, commandRequest, client, td); // ConfigException, RuntimeException
-                final List<Tag> taskDefinitionTags = client.getTaskDefinitionTags(td.getTaskDefinitionArn());
-                final ObjectNode currentStatus = createCurrentStatus(commandContext, commandRequest, clientConfig, taskDefinitionTags, runTask, awsLogs);
+                final ObjectNode currentStatus = createCurrentStatus(commandContext, commandRequest, clientConfig, runTask, awsLogs);
                 return EcsCommandStatus.of(false, currentStatus);
             }
         }
@@ -236,7 +235,6 @@ public class EcsCommandExecutor
             final CommandContext commandContext,
             final CommandRequest commandRequest,
             final EcsClientConfig clientConfig,
-            final List<Tag> taskDefinitionTags,
             final Task runTask,
             final Optional<ObjectNode> awsLogs)
     {
@@ -244,22 +242,11 @@ public class EcsCommandExecutor
         final ObjectNode currentStatus = JsonNodeFactory.instance.objectNode();
         currentStatus.put("cluster_name", clientConfig.getClusterName());
         currentStatus.put("task_arn", runTask.getTaskArn());
-        currentStatus.set("task_definition_tags", toTagJsonNode(taskDefinitionTags));
-        currentStatus.set("task_tags", toTagJsonNode(runTask.getTags()));
         currentStatus.put("task_creation_timestamp", runTask.getCreatedAt().getTime() / 1000);
         currentStatus.put("io_directory", ioDirectoryPath.toString());
         currentStatus.put("executor_state", JsonNodeFactory.instance.objectNode());
         currentStatus.put("awslogs", awsLogs.isPresent() ? awsLogs.get() : JsonNodeFactory.instance.nullNode());
         return currentStatus;
-    }
-
-    private static ObjectNode toTagJsonNode(final List<Tag> tagArray)
-    {
-        ObjectNode on = JsonNodeFactory.instance.objectNode();
-        for (final Tag t : tagArray) {
-            on.put(t.getKey(), t.getValue());
-        }
-        return on;
     }
 
     @Override
