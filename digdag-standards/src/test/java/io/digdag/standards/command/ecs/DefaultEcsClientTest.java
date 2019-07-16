@@ -42,11 +42,13 @@ public class DefaultEcsClientTest
                 new Tag().withKey("k1").withValue("v1"),
                 new Tag().withKey("k2").withValue("v2")
         );
+        final ListTagsForResourceRequest request = new ListTagsForResourceRequest()
+                .withResourceArn("my_task_def_arn");
         final ListTagsForResourceResult result = new ListTagsForResourceResult()
                 .withTags(expected);
-        doReturn(result).when(rawEcsClient).listTagsForResource(any(ListTagsForResourceRequest.class));
+        doReturn(result).when(rawEcsClient).listTagsForResource(request);
 
-        List<Tag> tags = ecsClient.getTaskDefinitionTags("my_task_def_arn");
+        List<Tag> tags = ecsClient.getTaskDefinitionTags(request.getResourceArn());
         assertEquals(expected.size(), tags.size());
         assertEquals(expected.get(0), tags.get(0));
         assertEquals(expected.get(1), tags.get(1));
