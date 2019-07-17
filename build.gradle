@@ -113,7 +113,7 @@ subprojects {
         jacksonVersion = "2.9.9"
         jacksonDatabindVersion = "2.9.9"
         awsJavaSdkVersion = "1.11.63"
-        guavaVersion = "19.0"
+        guavaVersion = "27.1-jre"
     }
 
     tasks.withType(JavaCompile) {

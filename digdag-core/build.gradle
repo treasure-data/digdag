@@ -5,10 +5,8 @@ dependencies {
     compile project(':digdag-plugin-utils')
     compile project(':digdag-guice-rs-server')
 
-    // this dependency is here only to override dependency conflict of
-    // jackson-module-guice -> guice 3.0.
-    // https://github.com/FasterXML/jackson-modules-base/pull/22
-    compile 'org.embulk:guice-bootstrap:0.2.1'
+    compile 'com.google.inject:guice:4.2.2'
+    compile 'org.embulk:guice-bootstrap:0.3.2'
 
     compile("com.fasterxml.jackson.module:jackson-module-guice:${project.ext.jacksonVersion}") {
         // Avoid upgrading com.google.guava:guava:19.0 -> 23.6-android
@@ -42,7 +40,7 @@ dependencies {
 
     // Dependency conflict resolution
     compile 'javax.activation:activation:1.1.1'
-    compile 'org.apache.httpcomponents:httpclient:4.5.2'
+    compile 'org.apache.httpcomponents:httpclient:4.5.3'
 
     testCompile project(path: ':digdag-client', configuration: 'testArtifacts')
 }
