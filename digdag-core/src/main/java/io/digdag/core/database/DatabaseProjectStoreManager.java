@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.ImmutableStoredProject;
+import io.digdag.core.repository.ImmutableStoredProjectWithRevision;
 import io.digdag.core.repository.ImmutableStoredRevision;
 import io.digdag.core.repository.ImmutableStoredWorkflowDefinition;
 import io.digdag.core.repository.ImmutableStoredWorkflowDefinitionWithProject;
@@ -18,6 +19,7 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredProjectWithRevision;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
@@ -129,6 +131,13 @@ public class DatabaseProjectStoreManager
         //{
         //    return dao.getProjects(siteId, Integer.MAX_VALUE, 0);
         //}
+
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
+        @Override
+        public List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
+        {
+            return autoCommit((handle, dao) -> dao.getProjectsWithLatestRevision(siteId, pageSize, lastId.or(0), acFilter.getSql()));
+        }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
@@ -643,6 +652,22 @@ public class DatabaseProjectStoreManager
                 @Bind("lastId") int lastId,
                 @Define("acFilter") String acFilter);
 
+        @SqlQuery("select proj.*, rev.name as revision_name, rev.created_at as revision_created_at, rev.archive_type as revision_archive_type, rev.archive_md5 as revision_archive_md5" +
+                " from projects proj" +
+                " join revisions rev on proj.id = rev.project_id" +
+                " join (" +
+                    "select project_id, max(id) AS id" +
+                    " from revisions" +
+                    " group by project_id" +
+                ") a on a.id = rev.id" +
+                " where proj.site_id = :siteId" +
+                " and proj.name is not null" +
+                " and <acFilter>" +
+                " and proj.id > :lastId" +
+                " order by proj.id asc" +
+                " limit :limit")
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+
         @SqlUpdate("update projects" +
                 " set deleted_name = name, deleted_at = now(), name = NULL" +
                 " where id = :projId "+
@@ -907,6 +932,40 @@ public class DatabaseProjectStoreManager
                 .siteId(r.getInt("site_id"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .deletedAt(deletedAt)
+                .build();
+        }
+    }
+
+    static class StoredProjectWithRevisionMapper
+            implements ResultSetMapper<StoredProjectWithRevision>
+    {
+        private final ConfigMapper cfm;
+
+        public StoredProjectWithRevisionMapper(ConfigMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public StoredProjectWithRevision map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            String name = r.getString("name");
+            Optional<Instant> deletedAt = Optional.absent();
+            if (r.wasNull()) {
+                name = r.getString("deleted_name");
+                deletedAt = Optional.of(getTimestampInstant(r, "deleted_at"));
+            }
+            return ImmutableStoredProjectWithRevision.builder()
+                .id(r.getInt("id"))
+                .name(name)
+                .siteId(r.getInt("site_id"))
+                .createdAt(getTimestampInstant(r, "created_at"))
+                .deletedAt(deletedAt)
+                .revisionName(r.getString("revision_name"))
+                .revisionCreatedAt(getTimestampInstant(r, "revision_created_at"))
+                .revisionArchiveType(ArchiveType.of(r.getString("revision_archive_type")))
+                .revisionArchiveMd5(getOptionalBytes(r, "revision_archive_md5"))
                 .build();
         }
     }
