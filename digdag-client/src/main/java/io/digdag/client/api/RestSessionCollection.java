@@ -10,6 +10,8 @@ public interface RestSessionCollection
 {
     List<RestSession> getSessions();
 
+    int getTotalPageCount();
+
     static ImmutableRestSessionCollection.Builder builder()
     {
         return ImmutableRestSessionCollection.builder();
