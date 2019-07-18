@@ -431,9 +431,9 @@ public class ProjectResource
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId));
             } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId));
             }
 
             if (sessions.isEmpty()) return new PaginationResource(new ArrayList<>(), 1);

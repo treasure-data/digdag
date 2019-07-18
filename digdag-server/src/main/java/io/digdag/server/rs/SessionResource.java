@@ -73,7 +73,7 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(Optional.fromNullable(lastId));
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId));
 
             if (sessions.isEmpty()) return new PaginationResource(new ArrayList<>(), 1);
 
