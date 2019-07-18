@@ -9,6 +9,8 @@ public interface ProjectStore
 {
     List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId);
 
+    List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId);
+
     ProjectMap getProjectsByIdList(List<Integer> projIdList);
 
     StoredProject getProjectById(int projId)
