@@ -245,7 +245,7 @@ public final class RestModels
     }
 
     static RestSessionCollection sessionCollection(
-            ProjectStore ps, List<StoredSessionWithLastAttempt> sessions)
+            ProjectStore ps, List<StoredSessionWithLastAttempt> sessions, int pageCount)
     {
         ProjectMap projs = ps.getProjectsByIdList(
                 sessions.stream()
@@ -267,6 +267,7 @@ public final class RestModels
 
         return RestSessionCollection.builder()
             .sessions(collection)
+            .totalPageCount(pageCount)
             .build();
     }
 

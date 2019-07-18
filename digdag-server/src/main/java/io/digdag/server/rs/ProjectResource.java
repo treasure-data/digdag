@@ -13,7 +13,6 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
-import javax.swing.text.html.Option;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -413,7 +412,7 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects/{id}/sessions")
-    public PaginationResource getSessions(
+    public RestSessionCollection getSessions(
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId,
@@ -436,7 +435,7 @@ public class ProjectResource
                 sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId));
             }
 
-            if (sessions.isEmpty()) return new PaginationResource(new ArrayList<>(), 1);
+            if (sessions.isEmpty()) return RestModels.sessionCollection(ps, sessions, 1);
 
             int sessionsSize = sessions.size();
             ArrayList<List<StoredSessionWithLastAttempt>> dividedSessions = new ArrayList<>();
@@ -445,8 +444,7 @@ public class ProjectResource
             }
             Integer offset = Optional.fromNullable(pageNumber).or(1);
             List<StoredSessionWithLastAttempt> targetSessions = dividedSessions.get(offset - 1);
-            List<RestSession> restSessions = RestModels.sessionCollection(ps, targetSessions).getSessions();
-            return new PaginationResource(restSessions, dividedSessions.size());
+            return RestModels.sessionCollection(ps, targetSessions, dividedSessions.size());
         }, ResourceNotFoundException.class);
     }
 

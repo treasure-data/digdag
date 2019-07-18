@@ -3,6 +3,7 @@ package io.digdag.server.rs;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.client.config.Config;
@@ -62,7 +63,7 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions")
-    public PaginationResource getSessions(
+    public RestSessionCollection getSessions(
             @QueryParam("last_id") Long lastId,
             @QueryParam("page_size") Integer pageSize,
             @QueryParam("page_number") Integer pageNumber)
@@ -75,7 +76,7 @@ public class SessionResource
 
             List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId));
 
-            if (sessions.isEmpty()) return new PaginationResource(new ArrayList<>(), 1);
+            if (sessions.isEmpty()) return RestModels.sessionCollection(rs, sessions, 1);
 
             int sessionsSize = sessions.size();
             ArrayList<List<StoredSessionWithLastAttempt>> dividedSessions = new ArrayList<>();
@@ -84,8 +85,7 @@ public class SessionResource
             }
             Integer offset = Optional.fromNullable(pageNumber).or(1);
             List<StoredSessionWithLastAttempt> targetSessions = dividedSessions.get(offset - 1);
-            List<RestSession> restSessions = RestModels.sessionCollection(rs, targetSessions).getSessions();
-            return new PaginationResource(restSessions, dividedSessions.size());
+            return RestModels.sessionCollection(rs, targetSessions, dividedSessions.size());
         });
     }
 
