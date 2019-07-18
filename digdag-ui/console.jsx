@@ -761,7 +761,7 @@ class Pagination extends React.Component {
     } else {
       const mid = Math.ceil(pageCount / 2);
 
-      if (currentPage <= 3 || currentPage >= pageCount - 1 || (currentPage >= mid - 1 && currentPage <= mid + 1)) {
+      if (currentPage <= 3 || currentPage >= pageCount - 1 || (currentPage >= m - 1 && currentPage <= m + 1)) {
         const pageNumbers = [1, 2, 3, mid - 1, mid, mid + 1, pageCount - 1, pageCount];
         const buttons = this.createPageButtons(pageNumbers, currentPage, router, location);
         buttons.splice(6, 0, <DisabledButton/>);
