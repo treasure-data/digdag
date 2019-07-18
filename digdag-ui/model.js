@@ -258,8 +258,8 @@ export class Model {
     return this.get(`projects/${projectId}/sessions?workflow=${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectSessions (projectId: string): Promise<SessionCollection> {
-    return this.get(`projects/${projectId}/sessions`)
+  fetchProjectSessions (projectId: string, page: string): Promise<SessionCollection> {
+    return this.get(`projects/${projectId}/sessions?page_number=${page}`)
   }
 
   fetchProjectAttempts (projectName: string): Promise<AttemptCollection> {
@@ -270,8 +270,8 @@ export class Model {
     return this.get(`attempts`)
   }
 
-  fetchSessions (): Promise<SessionCollection> {
-    return this.get(`sessions`)
+  fetchSessions (page: string): Promise<SessionCollection> {
+    return this.get(`sessions?page_number=${page}`)
   }
 
   fetchAttempt (attemptId: string): Promise<Attempt> {
