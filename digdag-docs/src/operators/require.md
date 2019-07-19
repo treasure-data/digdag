@@ -71,3 +71,16 @@
   ignore_failure: true
   ```
 
+* **params**: MAP
+
+  This operator doesn't pass a parameter to another workflow. `params` options set parameters.
+
+  Examples:
+
+  ```yaml
+  +example:
+    require>: child
+    params:
+      param_name1: ${parent_param_name}
+  ```
+
