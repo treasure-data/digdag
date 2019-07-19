@@ -7,13 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.database.TransactionManager;
 import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
-import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.ErrorReporter;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -25,7 +23,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateException;
-import io.micrometer.core.annotation.Timed;
+import io.digdag.spi.metrics.DigdagMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +107,7 @@ public class OperatorManager
         // TODO wait for shutdown completion?
     }
 
-    @Timed("OPM_Run")
+    @DigdagTimed(value = "opm_Run", category = "agent", taskRequest = true)
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
@@ -135,7 +133,7 @@ public class OperatorManager
         }
     }
 
-    @Timed("OPM_RunWHB")
+    @DigdagTimed(value = "opm_RunWHB", category = "agent", taskRequest = true)
     void runWithHeartbeat(TaskRequest request)
     {
         try {
@@ -188,23 +186,10 @@ public class OperatorManager
         }
     }
 
-    @Timed("OPM_ConfigEval")
+    @DigdagTimed(value = "opm_ConfigEval", category = "agent", taskRequest = true)
     Config evalConfig(TaskRequest request)
-            throws TemplateException, ConfigException, RuntimeException, AssertionError
+            throws RuntimeException, AssertionError
     {
-        Config all = RuntimeParams.buildRuntimeParams(request.getConfig().getFactory(), request).deepCopy();
-        all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
-        Config evalParams = all.deepCopy();
-        all.merge(request.getLocalConfig());
-        return evalEngine.eval(all, evalParams);
-    }
-
-    @Timed("OPM_RunWS")
-    void runWithWorkspace(Path projectPath, TaskRequest request)
-        throws TaskExecutionException
-    {
-        // evaluate config and creates the complete merged config.
-        Config config;
         try {
             Config all = cf.create();
             all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
@@ -214,10 +199,21 @@ public class OperatorManager
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
 
-            config = evalEngine.eval(all, evalParams);
+            return evalEngine.eval(all, evalParams);
         }
-        catch (TemplateException ex) {
-            throw new ConfigException(ex.getMessage(), ex);
+        catch (TemplateException te) {
+            throw new ConfigException(te.getMessage(), te);
+        }
+    }
+
+    @DigdagTimed(value = "opm_RunWS", category = "agent", taskRequest = true)
+    void runWithWorkspace(Path projectPath, TaskRequest request)
+        throws TaskExecutionException
+    {
+        // evaluate config and creates the complete merged config.
+        Config config;
+        try {
+            config = evalConfig(request);
         }
         catch (ConfigException ex) {
             throw ex;
@@ -301,7 +297,7 @@ public class OperatorManager
         }
     }
 
-    @Timed("OPM_CallExecutor")
+    @DigdagTimed(value = "opm_CallExecutor", category = "agent", taskRequest = true)
     protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);
@@ -337,7 +333,7 @@ public class OperatorManager
 
         return operator.run();
     }
-
+    
     private void heartbeat()
     {
         try {

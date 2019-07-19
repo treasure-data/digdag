@@ -33,15 +33,15 @@ import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskQueueRequest;
 import io.digdag.spi.TaskConflictException;
 import io.digdag.spi.TaskNotFoundException;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.digdag.util.RetryControl;
-import io.micrometer.core.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -496,7 +496,7 @@ public class WorkflowExecutor
                 if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
                     break;
                 }
-                metrics.increment("WFEXEC_LoopCount");
+                metrics.increment("executor", "LoopCount");
                 //boolean inced = prop.run();
                 //boolean retried = retryRetryWaitingTasks();
                 //if (inced || retried) {
@@ -519,7 +519,7 @@ public class WorkflowExecutor
                             waitMsec.set(INITIAL_INTERVAL);
                         }
                         else {
-                            metrics.gauge("WFEXEC_LoopWaitMsec", waitMsec.get());
+                            metrics.summary("executor", "LoopWaitMsec", waitMsec.get());
                             boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
                             if (noticed && propagatorNotice) {
                                 propagatorNotice = false;
@@ -538,7 +538,7 @@ public class WorkflowExecutor
         }
     }
 
-    @Timed("WFEXEC_PropagateBlockedChildrenToReady")
+    @DigdagTimed(value="PropagateBlockedChildrenToReady", category="executor")
     private boolean propagateBlockedChildrenToReady()
     {
         boolean anyChanged = false;
@@ -746,7 +746,7 @@ public class WorkflowExecutor
         params.set("error", error);
     }
 
-    @Timed("WFEXEC_PropagateSessionArchive")
+    @DigdagTimed(value="PropagateSessionArchive", category="executor")
     protected boolean propagateSessionArchive()
     {
         boolean anyChanged = false;
@@ -779,7 +779,7 @@ public class WorkflowExecutor
         return anyChanged;
     }
 
-    @Timed("WFEXEC_RetryRetryWaitingTasks")
+    @DigdagTimed(value="RetryRetryWaitingTasks", category="executor")
     protected boolean retryRetryWaitingTasks()
     {
         return tm.begin(() -> sm.trySetRetryWaitingToReady() > 0);
@@ -832,7 +832,7 @@ public class WorkflowExecutor
     }
 
 
-    @Timed("WFEXEC_EnqueueReadyTasks")
+    @DigdagTimed(value="EnqueueReadyTasks", category="executor")
     protected void enqueueReadyTasks(TaskQueuer queuer)
     {
         List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(100));
@@ -845,7 +845,7 @@ public class WorkflowExecutor
         }
     }
 
-    @Timed("WFEXEC_EnqueueTask")
+    @DigdagTimed(value="EnqueueTask", category="executor")
     protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
         sm.lockTaskIfNotLocked(taskId, (store, task) -> {

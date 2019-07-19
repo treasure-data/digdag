@@ -17,12 +17,12 @@ import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
-import io.digdag.metrics.DigdagMetrics;
-import io.micrometer.core.annotation.Timed;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.GET;
@@ -73,7 +73,7 @@ public class SessionResource
     }
 
 
-    @Timed(value="API_GetSessions")
+    @DigdagTimed(value="GetSessions", category="api")
     @GET
     @Path("/api/sessions")
     public RestSessionCollection getSessions(
@@ -102,7 +102,7 @@ public class SessionResource
         });
     }
 
-    @Timed(value="API_GetSessionById")
+    @DigdagTimed(value="GetSessionById", category="api")
     @GET
     @Path("/api/sessions/{id}")
     public RestSession getSession(@PathParam("id") long id)
@@ -122,7 +122,7 @@ public class SessionResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetSessionAttempts")
+    @DigdagTimed(value="GetSessionAttempts", category="api")
     @GET
     @Path("/api/sessions/{id}/attempts")
     public RestSessionAttemptCollection getSessionAttempts(

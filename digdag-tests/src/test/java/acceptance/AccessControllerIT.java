@@ -19,7 +19,7 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.server.ClientVersionChecker;
 import io.digdag.server.JmxErrorReporter;
 import io.digdag.server.ServerBootstrap;
@@ -42,8 +42,7 @@ import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.digdag.spi.metrics.DigdagMetrics;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -134,8 +133,7 @@ public class AccessControllerIT
 
                         binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                         newExporter(binder).export(ErrorReporter.class).withGeneratedName();
-                        binder.bind(MeterRegistry.class).toInstance(new SimpleMeterRegistry());
-                        binder.bind(DigdagMetrics.class).toInstance(new DigdagMetrics());
+                        binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
 
                     })
                     .addModules(new ServerModule(serverConfig) {

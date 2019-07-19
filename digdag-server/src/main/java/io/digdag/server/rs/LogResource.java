@@ -1,33 +1,26 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.time.Instant;
-import java.io.InputStream;
 import java.io.IOException;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.PUT;
 import javax.ws.rs.GET;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ServerErrorException;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.io.ByteStreams;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.WorkflowTarget;
-import io.micrometer.core.annotation.Timed;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -66,7 +59,7 @@ public class LogResource
         this.metrics = metrics;
     }
 
-    @Timed(value="API_GetLogFileHandles")
+    @DigdagTimed(value="GetLogFileHandles", category="api")
     @GET
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
@@ -84,7 +77,7 @@ public class LogResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetLogFile")
+    @DigdagTimed(value="GetLogFile", category="api")
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")

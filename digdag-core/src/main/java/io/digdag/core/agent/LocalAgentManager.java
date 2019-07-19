@@ -1,8 +1,6 @@
 package io.digdag.core.agent;
 
 import java.util.function.Supplier;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
@@ -11,8 +9,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.queue.TaskQueueServerManager;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 
 public class LocalAgentManager
         implements BackgroundExecutor
