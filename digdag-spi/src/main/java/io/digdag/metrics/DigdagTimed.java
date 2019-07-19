@@ -26,5 +26,7 @@ public @interface DigdagTimed {
     String description() default "";
 
     boolean taskRequest() default false;
+
+    boolean appendMethodName() default false;
 }
 
