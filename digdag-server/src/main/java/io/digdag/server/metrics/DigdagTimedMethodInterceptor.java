@@ -32,8 +32,7 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
         DigdagTimed timed = invocation.getMethod().getAnnotation(DigdagTimed.class);
 
         String category = timed.category();
-        String value = timed.value() != null? timed.value() : "unknown";
-
+        String value = mkValue(timed, invocation);
         String metricsName = metrics.mkMetricsName(category, value);
         Timer.Sample sample = metrics.timerStart(category);
         try {
@@ -49,6 +48,20 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
                 // ignoring on purpose
             }
         }
+    }
+
+    protected String mkValue(DigdagTimed timed, MethodInvocation invocation)
+    {
+        String value = timed.value() != null? timed.value() : "";
+        String methodName = invocation.getMethod().getName();
+        if (timed.appendMethodName() && methodName != null) {
+            value += methodName;
+        }
+
+        if (value.compareTo("") == 0) {
+            value = "unknown";
+        }
+        return value;
     }
 
     /**
