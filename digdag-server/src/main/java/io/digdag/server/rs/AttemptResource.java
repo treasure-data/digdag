@@ -30,6 +30,7 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ScheduleTime;
@@ -37,8 +38,7 @@ import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
-import io.digdag.metrics.DigdagMetrics;
-import io.micrometer.core.annotation.Timed;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 @Api("Attempt")
@@ -95,7 +95,7 @@ public class AttemptResource
     }
 
 
-    @Timed(value="API_GetAttempts")
+    @DigdagTimed(value="GetAttempts", category="api")
     @GET
     @Path("/api/attempts")
     public RestSessionAttemptCollection getAttempts(
@@ -151,7 +151,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetAttemptById")
+    @DigdagTimed(value="GetAttemptById", category="api")
     @GET
     @Path("/api/attempts/{id}")
     public RestSessionAttempt getAttempt(@PathParam("id") long id)
@@ -171,7 +171,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetAttemptRetries")
+    @DigdagTimed(value="GetAttemptRetries", category="api")
     @GET
     @Path("/api/attempts/{id}/retries")
     public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
@@ -194,7 +194,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetAttemptTasks")
+    @DigdagTimed(value="GetAttemptTasks", category="api")
     @GET
     @Path("/api/attempts/{id}/tasks")
     public RestTaskCollection getTasks(@PathParam("id") long id)
@@ -216,7 +216,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_StartAttempt")
+    @DigdagTimed(value="StartAttempt", category="api")
     @PUT
     @Consumes("application/json")
     @Path("/api/attempts")
@@ -334,7 +334,7 @@ public class AttemptResource
         }
     }
 
-    @Timed(value="API_KillAttempt")
+    @DigdagTimed(value="KillAttempt", category="api")
     @POST
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")

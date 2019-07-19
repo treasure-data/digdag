@@ -31,8 +31,6 @@ import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import io.digdag.client.api.Id;
-import io.digdag.client.api.IdAndName;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevisionCollection;
@@ -79,7 +77,7 @@ import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.SecretControlStore;
@@ -94,8 +92,8 @@ import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SecretTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.digdag.util.Md5CountInputStream;
-import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -210,7 +208,7 @@ public class ProjectResource
         return proj;
     }
 
-    @Timed(value="API_GetProjectByName")
+    @DigdagTimed(value="GetProjectByName", category="api")
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
@@ -231,7 +229,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectsByName")
+    @DigdagTimed(value="GetProjectsByName", category="api")
     @GET
     @Path("/api/projects")
     public RestProjectCollection getProjects(@QueryParam("name") String name)
@@ -295,7 +293,7 @@ public class ProjectResource
         });
     }
 
-    @Timed(value="API_GetProjectById")
+    @DigdagTimed(value="GetProjectById", category="api")
     @GET
     @Path("/api/projects/{id}")
     public RestProject getProject(@PathParam("id") int projId)
@@ -314,7 +312,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectRevisions")
+    @DigdagTimed(value="GetProjectRevisions", category="api")
     @GET
     @Path("/api/projects/{id}/revisions")
     public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
@@ -333,7 +331,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectWorkflow")
+    @DigdagTimed(value="GetProjectWorkflow", category="api")
     @GET
     @Path("/api/projects/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
@@ -362,7 +360,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectWorkflowByName")
+    @DigdagTimed(value="GetProjectWorkflowByName", category="api")
     @GET
     @Path("/api/projects/{id}/workflows/{name}")
     public RestWorkflowDefinition getWorkflowByName(@PathParam("id") int projId, @PathParam("name") String name, @QueryParam("revision") String revName)
@@ -371,7 +369,7 @@ public class ProjectResource
         return getWorkflow(projId, name, revName);
     }
 
-    @Timed(value="API_GetProjectWorkflows")
+    @DigdagTimed(value="GetProjectWorkflows", category="api")
     @GET
     @Path("/api/projects/{id}/workflows")
     public RestWorkflowDefinitionCollection getWorkflows(
@@ -434,7 +432,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class);
     }
 
-    @Timed(value="API_GetProjectSchedules")
+    @DigdagTimed(value="GetProjectSchedules", category="api")
     @GET
     @Path("/api/projects/{id}/schedules")
     public RestScheduleCollection getSchedules(
@@ -486,7 +484,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectSessions")
+    @DigdagTimed(value="GetProjectSessions", category="api")
     @GET
     @Path("/api/projects/{id}/sessions")
     public RestSessionCollection getSessions(
@@ -536,7 +534,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectArchive")
+    @DigdagTimed(value="GetProjectArchive", category="api")
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
@@ -601,7 +599,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_DeleteProject")
+    @DigdagTimed(value="DeleteProject", category="api")
     @DELETE
     @Path("/api/projects/{id}")
     public RestProject deleteProject(@PathParam("id") int projId)
@@ -622,7 +620,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_CreateProject")
+    @DigdagTimed(value="CreateProject", category="api")
     @PUT
     @Consumes("application/gzip")
     @Path("/api/projects")
@@ -824,7 +822,7 @@ public class ProjectResource
         }
     }
 
-    @Timed(value="API_CreateProjectSecret")
+    @DigdagTimed(value="CreateProjectSecret", category="api")
     @PUT
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
@@ -852,7 +850,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_DeleteProjectSecret")
+    @DigdagTimed(value="DeleteProjectSecret", category="api")
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
     public RestSecret deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
@@ -879,7 +877,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @Timed(value="API_GetProjectSecrets")
+    @DigdagTimed(value="GetProjectSecrets", category="api")
     @GET
     @Path("/api/projects/{id}/secrets")
     @Produces("application/json")

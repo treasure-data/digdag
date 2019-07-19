@@ -8,7 +8,7 @@ import io.digdag.core.agent.AgentId;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.metrics.DigdagMetrics;
+import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.spi.TaskQueueRequest;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -103,7 +103,7 @@ public class DatabaseFactory
                 configFactory,
                 objectMapper(),
                 configFactory.create(),
-                DigdagMetrics.empty()
+                StdDigdagMetrics.empty()
         );
     }
 
