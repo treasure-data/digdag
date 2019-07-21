@@ -84,9 +84,9 @@ public class DatabaseMigrator
         final int maxRetry = 3;
         for (int i = 0; i < maxRetry; i++) {
             try {
-                logger.info("Database migration started");
+                logger.debug("Database migration started");
                 migrate();
-                logger.info("Database migration successfully finished.");
+                logger.debug("Database migration successfully finished.");
                 return;
             }
             catch (RuntimeException re) {
@@ -122,7 +122,7 @@ public class DatabaseMigrator
             for (Migration m : migrations) {
                 Set<String> appliedSet = getAppliedMigrationNames(handle);
                 if (appliedSet.add(m.getVersion())) {
-                    logger.info("Applying database migration:" + m.getVersion());
+                    logger.debug("Applying database migration:" + m.getVersion());
                     numApplied++;
                     if (m.noTransaction()) {
                         // In no transaction we can't lock schema_migrations table
