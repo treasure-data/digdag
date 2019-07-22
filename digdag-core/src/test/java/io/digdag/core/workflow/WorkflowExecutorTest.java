@@ -2,13 +2,16 @@ package io.digdag.core.workflow;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.time.Duration;
 import java.time.Instant;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.google.common.io.Resources;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.LocalSite;
@@ -16,7 +19,10 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
-import org.junit.After;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredTask;
+import io.digdag.util.RetryControl;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -24,14 +30,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import static io.digdag.client.config.ConfigUtils.configFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.client.config.ConfigUtils.newConfig;
-import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class WorkflowExecutorTest
 {
@@ -178,6 +187,45 @@ public class WorkflowExecutorTest
         assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("loop0:try1try2succeeded.loop1:try1try2succeeded.loop2:try1try2try1try2try1try2"));
     }
 
+    @Test
+    public void checkRetry()
+            throws Exception
+    {
+        ProjectStoreManager rm = mock(ProjectStoreManager.class);
+        SessionStoreManager sm = mock(SessionStoreManager.class);
+        TransactionManager tm = mock(TransactionManager.class);
+        TaskQueueDispatcher dispatcher = mock(TaskQueueDispatcher.class);
+        WorkflowCompiler compiler = mock(WorkflowCompiler.class);
+        ConfigFactory cf = configFactory;
+        ObjectMapper archiveMapper = mock(ObjectMapper.class);
+        Config systemConfig = configFactory.create();
+
+        WorkflowExecutor executor = new WorkflowExecutor(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig);
+        Config stateParam = cf.create().set("retry_count", "2");
+        StoredTask task = mock(StoredTask.class);
+
+        {  // Invalid _retry format. Should return absent.
+            Config config = cf.fromJsonString("{\"_retry\":\"${retry_limit}\"}");
+            when(task.getConfig()).thenReturn(TaskConfig.validate(config));
+            when(task.getStateParams()).thenReturn(stateParam);
+            Optional<RetryControl> retryControlOpt = executor.checkRetry(task);
+            assertFalse(retryControlOpt.isPresent());
+        }
+        {  // Valid _retry format and still have a chance to retry.
+            Config config = cf.fromJsonString("{\"_retry\":\"3\"}");
+            when(task.getConfig()).thenReturn(TaskConfig.validate(config));
+            when(task.getStateParams()).thenReturn(stateParam);
+            Optional<RetryControl> retryControlOpt = executor.checkRetry(task);
+            assertTrue(retryControlOpt.isPresent());
+        }
+        {  // Valid _retry format but no space to retry.
+            Config config = cf.fromJsonString("{\"_retry\":\"2\"}");
+            when(task.getConfig()).thenReturn(TaskConfig.validate(config));
+            when(task.getStateParams()).thenReturn(stateParam);
+            Optional<RetryControl> retryControlOpt = executor.checkRetry(task);
+            assertFalse(retryControlOpt.isPresent());
+        }
+    }
 
     @Test
     public void ifOperatorDelayedEvalDo()
