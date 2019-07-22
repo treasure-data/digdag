@@ -33,7 +33,6 @@ import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
-import io.digdag.core.session.TaskStateSummary;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -47,10 +46,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -626,9 +623,9 @@ public class WorkflowExecutor
             // group error
             boolean updated;
 
-            RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
-            boolean willRetry = retryControl.evaluate();
-            if (willRetry) {
+            Optional<RetryControl> retryControlOpt = checkRetry(task);
+            if (retryControlOpt.isPresent()) {
+                RetryControl retryControl = retryControlOpt.get();
                 updated = lockedTask.setPlannedToGroupRetryWaiting(
                         retryControl.getNextRetryStateParams(),
                         retryControl.getNextRetryInterval());
@@ -691,6 +688,29 @@ public class WorkflowExecutor
                 logger.warn("Unexpected state change failure from PLANNED to SUCCESS: {}", task);
             }
             return updated;
+        }
+    }
+
+
+    /**
+     * Check retriable of task
+     * @param task
+     * @return if present(), should retry, if absent() should not retry.
+     */
+    Optional<RetryControl> checkRetry(StoredTask task)
+    {
+        try {
+            RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
+            if (retryControl.evaluate()) {
+                return Optional.of(retryControl);
+            }
+            else {
+                return Optional.absent();
+            }
+        }
+        catch (ConfigException ce) {
+            logger.warn("Ignore retry parameter because of invalid retry configuration. attempt_id:{} config:{}", task.getAttemptId(), task.getConfig());
+            return Optional.absent();
         }
     }
 
