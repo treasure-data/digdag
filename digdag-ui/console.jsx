@@ -2170,7 +2170,7 @@ class WorkflowRevisionPage extends React.Component {
   }
 
   fetchWorkflow () {
-    model().fetchWorkflow(this.props.params.workflowId).then(workflow => {
+    model().fetchWorkflow(this.props.match.params.workflowId).then(workflow => {
       if (!this.ignoreLastFetch) {
         this.setState({ workflow })
       }
