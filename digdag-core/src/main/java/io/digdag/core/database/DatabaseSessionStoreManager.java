@@ -1188,7 +1188,8 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public Integer getTotalProjectSessionsCount(Optional<Long> lastId, int projectId) {
+        public Integer getTotalProjectSessionsCount(Optional<Long> lastId, int projectId)
+        {
             return autoCommit((handle, dao) -> dao.getTotalProjectSessionsCount(lastId.or(Long.MAX_VALUE), projectId));
         }
 
@@ -1561,13 +1562,13 @@ public class DatabaseSessionStoreManager
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-          " from sessions s" +
-          " join session_attempts sa on sa.id = s.last_attempt_id" +
-          " where s.project_id in (select id from projects where site_id = :siteId)" +
-          " and s.id < :lastId" +
-          " order by s.id desc" +
-          " limit :limit" +
-          " offset :offset")
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id in (select id from projects where site_id = :siteId)" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Bind("offset") int offset);
 
 
@@ -1608,13 +1609,13 @@ public class DatabaseSessionStoreManager
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-          " from sessions s" +
-          " join session_attempts sa on sa.id = s.last_attempt_id" +
-          " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
-          " and s.id < :lastId" +
-          " order by s.id desc" +
-          " limit :limit" +
-          " offset :offset")
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Bind("offset") int offset);
 
 
@@ -1652,18 +1653,18 @@ public class DatabaseSessionStoreManager
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Bind("offset") int offset);
 
         @SqlQuery("select count(1)" +
-          " from sessions s" +
-          " join session_attempts sa on sa.id = s.last_attempt_id" +
-          " where s.project_id in (select id from projects where site_id = :siteId)" +
-          " and s.id < :lastId")
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id in (select id from projects where site_id = :siteId)" +
+                " and s.id < :lastId")
         Integer getTotalSessionsCount(@Bind("siteId") int siteId, @Bind("lastId") long lastId);
 
 
         @SqlQuery("select count(1)" +
-          " from sessions s" +
-          " join session_attempts sa on sa.id = s.last_attempt_id" +
-          " where s.project_id = :projectId" +
-          " and s.id < :lastId")
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where s.project_id = :projectId" +
+                " and s.id < :lastId")
         Integer getTotalProjectSessionsCount(@Bind("lastId") long lastId, @Bind("projectId") int projectId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
