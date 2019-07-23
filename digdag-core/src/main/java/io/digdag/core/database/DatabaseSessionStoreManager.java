@@ -1188,6 +1188,11 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public Integer getTotalProjectSessionsCount(Optional<Long> lastId, int projectId) {
+            return autoCommit((handle, dao) -> dao.getTotalProjectSessionsCount(lastId.or(Long.MAX_VALUE), projectId));
+        }
+
+        @Override
         public StoredSessionWithLastAttempt getSessionById(long sessionId)
                 throws ResourceNotFoundException
         {
@@ -1200,6 +1205,13 @@ public class DatabaseSessionStoreManager
         public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId)
         {
             return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE)));
+        }
+
+        @Override
+        public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId, int pageNumber)
+        {
+            int offset = pageSize * (pageNumber - 1);
+            return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE), offset));
         }
 
         @Override
@@ -1228,6 +1240,13 @@ public class DatabaseSessionStoreManager
         public List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId)
         {
             return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE)));
+        }
+
+        @Override
+        public List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId, int pageNumber)
+        {
+            int offset = pageSize * (pageNumber - 1);
+            return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE), offset));
         }
 
         @Override
@@ -1639,6 +1658,14 @@ public class DatabaseSessionStoreManager
           " and s.id < :lastId")
         Integer getTotalSessionsCount(@Bind("siteId") int siteId, @Bind("lastId") long lastId);
 
+
+        @SqlQuery("select count(1)" +
+          " from sessions s" +
+          " join session_attempts sa on sa.id = s.last_attempt_id" +
+          " where s.project_id = :projectId" +
+          " and s.id < :lastId")
+        Integer getTotalProjectSessionsCount(@Bind("lastId") long lastId, @Bind("projectId") int projectId);
+
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
@@ -1657,6 +1684,16 @@ public class DatabaseSessionStoreManager
         List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
+          " from sessions s" +
+          " join session_attempts sa on sa.id = s.last_attempt_id" +
+          " where s.project_id = :projId" +
+          " and sa.site_id = :siteId" +
+          " and s.id < :lastId" +
+          " order by s.id desc" +
+          " limit :limit")
+        List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Bind("offset") int offset);
+
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projId" +
@@ -1664,8 +1701,21 @@ public class DatabaseSessionStoreManager
                 " and sa.site_id = :siteId" +
                 " and s.id < :lastId" +
                 " order by s.id desc" +
-                " limit :limit")
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
+          " from sessions s" +
+          " join session_attempts sa on sa.id = s.last_attempt_id" +
+          " where s.project_id = :projId" +
+          " and s.workflow_name = :workflowName" +
+          " and sa.site_id = :siteId" +
+          " and s.id < :lastId" +
+          " order by s.id desc" +
+          " limit :limit" +
+          " offset :offset")
+        List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId, @Bind("offset") int offset);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
@@ -1673,7 +1723,8 @@ public class DatabaseSessionStoreManager
                 " where sa.site_id = :siteId" +
                 " and sa.id < :lastId" +
                 " order by sa.id desc" +
-                " limit :limit")
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionAttemptWithSession> getAttempts(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +

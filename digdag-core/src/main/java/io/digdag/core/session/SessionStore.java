@@ -15,12 +15,18 @@ public interface SessionStore
 
     Integer getTotalSessionsCount(Optional<Long> lastId);
 
+    Integer getTotalProjectSessionsCount(Optional<Long> lastId, int projectId);
+
     StoredSessionWithLastAttempt getSessionById(long sessionId)
         throws ResourceNotFoundException;
 
     List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId);
 
+    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId, int pageNumber);
+
     List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId);
+
+    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId, int pageNumber);
 
     List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId);
 

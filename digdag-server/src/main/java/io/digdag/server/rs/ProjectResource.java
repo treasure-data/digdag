@@ -427,24 +427,20 @@ public class ProjectResource
             SessionStore ss = ssm.getSessionStore(getSiteId());
 
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
+            Integer page = Optional.fromNullable(pageNumber).or(1);
+
+            Integer totalSessionsCount = ss.getTotalProjectSessionsCount(Optional.fromNullable(lastId), projectId);
+            int totalPageCount = totalSessionsCount / validPageSize;
+            if (totalSessionsCount % validPageSize != 0) totalPageCount += 1;
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId), page);
             } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId));
+                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId), page);
             }
 
-            if (sessions.isEmpty()) return RestModels.sessionCollection(ps, sessions, 1);
-
-            int sessionsSize = sessions.size();
-            ArrayList<List<StoredSessionWithLastAttempt>> dividedSessions = new ArrayList<>();
-            for (int i =0; i < sessionsSize; i+= validPageSize) {
-                dividedSessions.add(sessions.subList(i, Math.min(i + validPageSize, sessionsSize)));
-            }
-            Integer offset = Optional.fromNullable(pageNumber).or(1);
-            List<StoredSessionWithLastAttempt> targetSessions = dividedSessions.get(offset - 1);
-            return RestModels.sessionCollection(ps, targetSessions, dividedSessions.size());
+            return RestModels.sessionCollection(ps, sessions, totalPageCount);
         }, ResourceNotFoundException.class);
     }
 
