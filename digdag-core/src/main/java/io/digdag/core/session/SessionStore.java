@@ -11,6 +11,10 @@ public interface SessionStore
 {
     List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId);
 
+    List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId, int pageNumber);
+
+    Integer getTotalSessionsCount(Optional<Long> lastId);
+
     StoredSessionWithLastAttempt getSessionById(long sessionId)
         throws ResourceNotFoundException;
 

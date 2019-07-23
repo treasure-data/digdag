@@ -74,18 +74,13 @@ public class SessionResource
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId));
+            Integer totalSessionsCount = ss.getTotalSessionsCount(Optional.fromNullable(lastId));
+            Integer totalPageCount = totalSessionsCount / validPageSize;
+            if (totalSessionsCount % validPageSize != 0) totalPageCount += 1;
 
-            if (sessions.isEmpty()) return RestModels.sessionCollection(rs, sessions, 1);
-
-            int sessionsSize = sessions.size();
-            ArrayList<List<StoredSessionWithLastAttempt>> dividedSessions = new ArrayList<>();
-            for (int i =0; i < sessionsSize; i+= validPageSize) {
-                dividedSessions.add(sessions.subList(i, Math.min(i + validPageSize, sessionsSize)));
-            }
-            Integer offset = Optional.fromNullable(pageNumber).or(1);
-            List<StoredSessionWithLastAttempt> targetSessions = dividedSessions.get(offset - 1);
-            return RestModels.sessionCollection(rs, targetSessions, dividedSessions.size());
+            Integer page = Optional.fromNullable(pageNumber).or(1);
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId), page);
+            return RestModels.sessionCollection(rs, sessions, totalPageCount);
         });
     }
 
