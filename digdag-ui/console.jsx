@@ -9,7 +9,15 @@ import 'bootstrap/dist/js/bootstrap'
 import _ from 'lodash'
 
 import React from 'react'
-import { Router, Link, Route, browserHistory, withRouter } from 'react-router'
+import PropTypes from 'prop-types'
+import {
+  BrowserRouter as Router,
+  Route,
+  Link,
+  Switch,
+  withRouter,
+  matchPath
+} from 'react-router-dom'
 import Measure from 'react-measure'
 import Tar from 'tar-js'
 import moment from 'moment'
@@ -370,7 +378,7 @@ const SessionStatusView = ({ session }:{session: Session}) => {
 }
 
 SessionStatusView.propTypes = {
-  session: React.PropTypes.object.isRequired
+  session: PropTypes.object.isRequired
 }
 
 class SessionRevisionView extends React.Component {
@@ -1955,8 +1963,10 @@ class VersionView extends React.Component {
 }
 
 class Navbar extends React.Component {
-  static contextTypes = {
-    router: React.PropTypes.object
+  static propTypes = {
+    match: PropTypes.object.isRequired,
+    location: PropTypes.object.isRequired,
+    history: PropTypes.object.isRequired
   }
 
   logout (e) {
@@ -1988,8 +1998,12 @@ class Navbar extends React.Component {
   }
 
   isActiveClass (path) {
-    const { router } = this.context
-    return router.isActive(path) ? 'active' : ''
+    const { location } = this.props
+    const match = matchPath(location.pathname, {
+      path: path,
+      exact: true
+    })
+    return match ? 'active' : ''
   }
 
   render () {
@@ -2039,7 +2053,7 @@ const WorkflowsPage = () =>
 
 const ProjectPage = (props:{params: {projectId: string}}) =>
   <div className='container-fluid'>
-    <ProjectView projectId={props.params.projectId} />
+    <ProjectView projectId={props.match.params.projectId} />
   </div>
 
 class WorkflowPage extends React.Component {
@@ -2079,7 +2093,7 @@ class WorkflowPage extends React.Component {
   }
 
   fetch () {
-    model().fetchProjectWorkflow(this.props.params.projectId, this.props.params.workflowName).then(workflow => {
+    model().fetchProjectWorkflow(this.props.match.params.projectId, this.props.match.params.workflowName).then(workflow => {
       if (!this.ignoreLastFetch) {
         this.setState({ workflow })
       }
@@ -2469,15 +2483,15 @@ const NewProjectPage = (props:{}) =>
 
 const EditProjectPage = (props:{params: {projectId: string}}) =>
   <div className='container-fluid'>
-    <ProjectEditor projectId={props.params.projectId} />
+    <ProjectEditor projectId={props.match.params.projectId} />
   </div>
 
-const AttemptPage = ({ params }:{params: {attemptId: string}}) =>
+const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
-    <AttemptView attemptId={params.attemptId} />
-    <AttemptTimelineView attemptId={params.attemptId} />
-    <AttemptTasksView attemptId={params.attemptId} />
-    <AttemptLogsView attemptId={params.attemptId} />
+    <AttemptView attemptId={match.params.attemptId} />
+    <AttemptTimelineView attemptId={match.params.attemptId} />
+    <AttemptTasksView attemptId={match.params.attemptId} />
+    <AttemptLogsView attemptId={match.params.attemptId} />
   </div>
 
 class SessionPage extends React.Component {
@@ -2519,12 +2533,12 @@ class SessionPage extends React.Component {
   }
 
   fetch () {
-    model().fetchSession(this.props.params.sessionId).then(session => {
+    model().fetchSession(this.props.match.params.sessionId).then(session => {
       if (!this.ignoreLastFetch) {
         this.setState({ session })
       }
     })
-    model().fetchSessionAttempts(this.props.params.sessionId).then(({ attempts }) => {
+    model().fetchSessionAttempts(this.props.match.params.sessionId).then(({ attempts }) => {
       if (!this.ignoreLastFetch) {
         this.setState({ attempts })
       }
@@ -2690,12 +2704,8 @@ class WorkflowsView extends React.Component {
 }
 
 class NotFoundPage extends React.Component {
-  props:{
-    router: Object;
-  };
-
   componentDidMount () {
-    this.props.router.replace('/')
+    this.props.history.replace('/')
   }
 
   render () {
@@ -2739,9 +2749,10 @@ class ParserTest extends React.Component {
 
 class AppWrapper extends React.Component {
   render () {
+    const NavbarWithRouter = withRouter(Navbar)
     return (
       <div className='container-fluid'>
-        <Navbar />
+        <NavbarWithRouter />
         {this.props.children}
       </div>
     )
@@ -2783,27 +2794,29 @@ class ConsolePage extends React.Component {
   render () {
     return (
       <div className='container-fluid'>
-        <Router history={browserHistory}>
-          <Route component={CacheLoader}>
-            <Route component={AppWrapper}>
-              <Route path='/' component={WorkflowsPage} />
-              <Route path='/projects' component={ProjectsPage} />
-              <Route path='/projects/new' component={NewProjectPage} />
-              <Route path='/projects/:projectId' component={ProjectPage} />
-              <Route path='/projects/:projectId/edit' component={EditProjectPage} />
-              <Route path='/projects/:projectId/workflows/:workflowName' component={WorkflowPage} />
-              <Route path='/workflows/:workflowId' component={WorkflowRevisionPage} />
-              <Route path='/sessions/:sessionId' component={SessionPage} />
-              <Route path='/attempts/:attemptId' component={AttemptPage} />
-              {isDevelopmentEnv &&
-                <Route>
-                  <Route path='/parser-test' component={ParserTest} />
-                  <Route path='/codeviewer' component={CodeViewerTest} />
-                </Route>
-              }
-              <Route path='*' component={withRouter(NotFoundPage)} />
-            </Route>
-          </Route>
+        <Router>
+          <CacheLoader>
+            <AppWrapper>
+              <Switch>
+                <Route exact path='/' component={WorkflowsPage} />
+                <Route exact path='/projects' component={ProjectsPage} />
+                <Route exact path='/projects/new' component={NewProjectPage} />
+                <Route exact path='/projects/:projectId' component={ProjectPage} />
+                <Route exact path='/projects/:projectId/edit' component={EditProjectPage} />
+                <Route exact path='/projects/:projectId/workflows/:workflowName' component={WorkflowPage} />
+                <Route exact path='/workflows/:workflowId' component={WorkflowRevisionPage} />
+                <Route exact path='/sessions/:sessionId' component={SessionPage} />
+                <Route exact path='/attempts/:attemptId' component={AttemptPage} />
+                {isDevelopmentEnv &&
+                  <Switch>
+                    <Route exact path='/parser-test' component={ParserTest} />
+                    <Route exact path='/codeviewer' component={CodeViewerTest} />
+                  </Switch>
+                }
+                <Route component={withRouter(NotFoundPage)} />
+              </Switch>
+            </AppWrapper>
+          </CacheLoader>
         </Router>
       </div>
     )
