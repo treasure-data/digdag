@@ -30,6 +30,14 @@ import uuidv4 from 'uuid/v4'
 import jQuery from 'jquery'
 import ReactInterval from 'react-interval'
 import { Buffer } from 'buffer/'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faSignOutAlt,
+  faCheckCircle,
+  faExclamationCircle,
+  faPlayCircle,
+  faSyncAlt
+} from '@fortawesome/free-solid-svg-icons'
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -258,7 +266,7 @@ class CacheLoader extends React.Component {
     if (!hasCache) {
       return (
         <div className='loading-container'>
-          <span className='spinner-border' role='status'></span>
+          <span className='spinner-border' role='status' />
           <span className='loading-text'>Loading...</span>
         </div>
       )
@@ -336,17 +344,17 @@ class WorkflowListView extends React.Component {
 const AttemptStatusView = ({ attempt }) => {
   if (attempt.done) {
     if (attempt.success) {
-      return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
+      return <span><FontAwesomeIcon icon={faCheckCircle} className='text-success' /> Success</span>
     } else if (attempt.cancelRequested) {
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceled</span>
     } else {
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Failure</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-danger' /> Failure</span>
     }
   } else {
     if (attempt.cancelRequested) {
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceling</span>
     } else {
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Pending</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Pending</span>
     }
   }
 }
@@ -376,7 +384,7 @@ const SessionStatusView = ({ session }:{session: Session}) => {
   const attempt = session.lastAttempt
   return attempt
     ? <Link to={`/attempts/${attempt.id}`}><AttemptStatusView attempt={attempt} /></Link>
-    : <span><span className='glyphicon glyphicon-refresh text-info' /> Pending</span>
+    : <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Pending</span>
 }
 
 SessionStatusView.propTypes = {
@@ -1384,7 +1392,7 @@ const ParamsView = ({ params }:{params: Object}) =>
 const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: boolean}) => {
   if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(state) >= 0) {
     // These state won't progress once cancelRequested is set. Planned tasks won't generate tasks.
-    return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
+    return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceling</span>
   }
 
   switch (state) {
@@ -1392,36 +1400,36 @@ const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: b
     case 'blocked':
       if (cancelRequested) {
         // Blocked tasks won't start once cancelRequested is set
-        return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+        return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceled</span>
       } else {
-        return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
+        return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Blocked</span>
       }
     case 'ready':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Ready</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Ready</span>
     case 'retry_waiting':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Retry Waiting</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Retry Waiting</span>
     case 'group_retry_waiting':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Group Retry Waiting</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Group Retry Waiting</span>
     case 'planned':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Planned</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Planned</span>
 
     // Running
     case 'running':
-      return <span><span className='glyphicon glyphicon-play text-info' /> Running</span>
+      return <span><FontAwesomeIcon icon={faPlayCircle} className='text-info' /> Running</span>
 
     // Error
     case 'group_error':
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Group Error</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-danger' /> Group Error</span>
     case 'error':
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Error</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-danger' /> Error</span>
 
     // Warning
     case 'canceled':
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceled</span>
 
     // Success
     case 'success':
-      return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
+      return <span><FontAwesomeIcon icon={faCheckCircle} className='text-success' /> Success</span>
 
     default:
       return <span>{_.capitalize(state)}</span>
@@ -2049,8 +2057,7 @@ class Navbar extends React.Component {
           </ul>
           <li className='navbar-text navbar-right'><VersionView /></li>
           <ul className='nav navbar-nav navbar-right'>
-            <li><a className='nav-link' href='/' onClick={this.logout}><span className='glyphicon glyphicon-log-out'
-              aria-hidden='true' /> Logout</a></li>
+            <li><a className='nav-link' href='/' onClick={this.logout}><FontAwesomeIcon icon={faSignOutAlt} /> Logout</a></li>
           </ul>
         </div>
       </nav>
