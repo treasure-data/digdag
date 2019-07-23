@@ -131,6 +131,7 @@ public class MultiThreadAgent
                                     catch (Throwable t) {
                                         logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
                                         errorReporter.reportUncaughtError(t);
+                                        metrics.increment("agent", "uncaughtErrors");
                                     }
                                     finally {
                                         activeTaskCount.decrementAndGet();
@@ -151,7 +152,7 @@ public class MultiThreadAgent
             catch (Throwable t) {
                 logger.error("Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
                 errorReporter.reportUncaughtError(t);
-                metrics.increment("agent", "mtag_UncaughtExceptionCounter");
+                metrics.increment("agent", "uncaughtErrors");
                 try {
                     // sleep before retrying
                     Thread.sleep(1000);

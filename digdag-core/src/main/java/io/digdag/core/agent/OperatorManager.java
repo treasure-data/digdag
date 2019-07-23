@@ -351,6 +351,7 @@ public class OperatorManager
         catch (Throwable t) {
             logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
             errorReporter.reportUncaughtError(t);
+            metrics.increment("agent", "uncaughtErrors");
         }
     }
 
