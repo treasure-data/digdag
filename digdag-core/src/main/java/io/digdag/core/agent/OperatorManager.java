@@ -24,6 +24,7 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateException;
 import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +108,7 @@ public class OperatorManager
         // TODO wait for shutdown completion?
     }
 
-    @DigdagTimed(value = "opm_Run", category = "agent", taskRequest = true)
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
@@ -133,7 +134,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_RunWHB", category = "agent", taskRequest = true)
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     void runWithHeartbeat(TaskRequest request)
     {
         try {
@@ -186,7 +187,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_ConfigEval", category = "agent", taskRequest = true)
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     Config evalConfig(TaskRequest request)
             throws RuntimeException, AssertionError
     {
@@ -206,7 +207,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_RunWS", category = "agent", taskRequest = true)
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     void runWithWorkspace(Path projectPath, TaskRequest request)
         throws TaskExecutionException
     {
@@ -297,7 +298,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_CallExecutor", category = "agent", taskRequest = true)
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);
@@ -351,7 +352,7 @@ public class OperatorManager
         catch (Throwable t) {
             logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
             errorReporter.reportUncaughtError(t);
-            metrics.increment("agent", "uncaughtErrors");
+            metrics.increment(Category.AGETNT, "uncaughtErrors");
         }
     }
 

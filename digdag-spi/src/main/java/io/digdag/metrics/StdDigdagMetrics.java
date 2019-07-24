@@ -25,7 +25,7 @@ public class StdDigdagMetrics implements DigdagMetrics
     final MeterRegistry registryApi;
     final MeterRegistry registryDb;
     final MeterRegistry registryExecutor;
-    final Map<String, MeterRegistry> mapRegistries;
+    final Map<Category, MeterRegistry> mapRegistries;
 
     @Inject
     public StdDigdagMetrics(
@@ -40,8 +40,11 @@ public class StdDigdagMetrics implements DigdagMetrics
         this.registryDb = registryDb;
         this.registryExecutor = registryExecutor;
         this.mapRegistries = ImmutableMap.of(
-                "default", registry, "agent", registryAgent, "api", registryApi,
-                "db", registryDb, "executor", registryExecutor);
+                Category.DEFAULT, registry,
+                Category.AGETNT, registryAgent,
+                Category.API, registryApi,
+                Category.DB, registryDb,
+                Category.EXECUTOR, registryExecutor);
     }
 
     @Override
@@ -51,7 +54,7 @@ public class StdDigdagMetrics implements DigdagMetrics
     }
 
     @Override
-    public MeterRegistry getRegistry(String category)
+    public MeterRegistry getRegistry(Category category)
     {
         MeterRegistry mreg =  mapRegistries.get(category);
         if (mreg == null) {
@@ -62,35 +65,35 @@ public class StdDigdagMetrics implements DigdagMetrics
     }
 
     @Override
-    public String mkMetricsName(String category, String metricsName)
+    public String mkMetricsName(Category category, String metricsName)
     {
         return metricsPrefix(category) + metricsName;
     }
 
-    private String metricsPrefix(String category)
+    private String metricsPrefix(Category category)
     {
-        if (category.compareTo("default") == 0) {
+        if (category.getString().compareTo("default") == 0) {
             return "";
         }
         else {
-            return category + "_";
+            return category.getString() + "_";
         }
     }
 
     @Override
-    public void increment(String category, String metricName, Tags tags)
+    public void increment(Category category, String metricName, Tags tags)
     {
         getRegistry(category).counter(mkMetricsName(category, metricName), tags).increment();
     }
 
     @Override
-    public void gauge(String category, String metricName, Tags tags, double value)
+    public void gauge(Category category, String metricName, Tags tags, double value)
     {
         getRegistry(category).gauge(mkMetricsName(category, metricName), tags, value);
     }
 
     @Override
-    public void summary(String category, String metricName, Tags tags, double value)
+    public void summary(Category category, String metricName, Tags tags, double value)
     {
         getRegistry(category).summary(mkMetricsName(category, metricName), tags).record(value);
     }

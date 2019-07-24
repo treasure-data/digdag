@@ -73,7 +73,7 @@ public class SessionResource
     }
 
 
-    @DigdagTimed(value="GetSessions", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/sessions")
     public RestSessionCollection getSessions(
@@ -102,7 +102,7 @@ public class SessionResource
         });
     }
 
-    @DigdagTimed(value="GetSessionById", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/sessions/{id}")
     public RestSession getSession(@PathParam("id") long id)
@@ -122,7 +122,7 @@ public class SessionResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetSessionAttempts", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/sessions/{id}/attempts")
     public RestSessionAttemptCollection getSessionAttempts(

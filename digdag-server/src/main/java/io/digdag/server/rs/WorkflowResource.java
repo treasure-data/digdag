@@ -67,7 +67,7 @@ public class WorkflowResource
         this.metrics = metrics;
     }
 
-    @DigdagTimed(value="GetWorkflow", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/workflow")
     public RestWorkflowDefinition getWorkflowDefinition(
@@ -100,7 +100,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetWorkflows", category="api")
+    @DigdagTimed(category="api", appendMethodName = true)
     @GET
     @Path("/api/workflows")
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
@@ -123,7 +123,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetWorkflowById", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
@@ -142,7 +142,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetWorkflowTruncatedSessionTime", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/workflows/{id}/truncated_session_time")
     public RestWorkflowSessionTime getWorkflowDefinition(

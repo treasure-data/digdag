@@ -12,6 +12,7 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.BackgroundExecutor;
@@ -98,7 +99,7 @@ public class SessionMonitorExecutor
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This session monitor scheduling will be retried.", t);
             errorReporter.reportUncaughtError(t);
-            metrics.increment("default", "uncaughtErrors");
+            metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }
     }
 

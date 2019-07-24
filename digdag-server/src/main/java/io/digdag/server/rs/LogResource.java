@@ -59,7 +59,7 @@ public class LogResource
         this.metrics = metrics;
     }
 
-    @DigdagTimed(value="GetLogFileHandles", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
@@ -77,7 +77,7 @@ public class LogResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetLogFile", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")

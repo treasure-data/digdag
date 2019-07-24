@@ -1,10 +1,10 @@
 package io.digdag.server.metrics;
 
 import com.google.inject.Inject;
-import io.digdag.core.session.Task;
 import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -12,8 +12,6 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 
 /**
  * MethodInterceptor for Timed annotation.
@@ -31,7 +29,7 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
     {
         DigdagTimed timed = invocation.getMethod().getAnnotation(DigdagTimed.class);
 
-        String category = timed.category();
+        Category category = Category.fromString(timed.category());
         String value = mkValue(timed, invocation);
         String metricsName = metrics.mkMetricsName(category, value);
         Timer.Sample sample = metrics.timerStart(category);

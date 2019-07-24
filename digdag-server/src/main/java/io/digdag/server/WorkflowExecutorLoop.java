@@ -8,6 +8,7 @@ import io.digdag.core.ErrorReporter;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ public class WorkflowExecutorLoop
             catch (Throwable t) {
                 logger.error("Uncaught error during executing workflow state machine. Ignoring. Loop will be retried.", t);
                 errorReporter.reportUncaughtError(t);
-                metrics.increment("executor", "uncaughtErrors");
+                metrics.increment(Category.EXECUTOR, "uncaughtErrors");
                 try {
                     // sleep before retrying
                     Thread.sleep(1000);
