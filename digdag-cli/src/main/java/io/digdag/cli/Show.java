@@ -9,6 +9,8 @@ import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.metrics.StdDigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 
 import java.io.File;
 import java.util.List;
@@ -51,6 +53,9 @@ public class Show
                 .withWorkflowExecutor(false)
                 .withScheduleExecutor(false)
                 .withLocalAgent(false)
+                .addModules(binder -> {
+                    binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
+                })
                 .initialize()) {
             show(digdag.getInjector(), workflowPath);
         }

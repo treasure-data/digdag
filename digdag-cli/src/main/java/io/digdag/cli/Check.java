@@ -19,8 +19,10 @@ import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
+import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
+import io.digdag.spi.metrics.DigdagMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +97,7 @@ public class Check
                 .withLocalAgent(false)
                 .addModules(binder -> {
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
+                    binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
                 })
                 .initializeWithoutShutdownHook()) {
             check(digdag.getInjector(), workflowNameArg);
