@@ -19,6 +19,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.metrics.StdDigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
@@ -97,6 +99,7 @@ public class Start
             .withLocalAgent(false)
             .addModules(binder -> {
                 binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
+                binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
             })
             .initialize()
             .getInjector();

@@ -15,8 +15,10 @@ import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
+import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
+import io.digdag.spi.metrics.DigdagMetrics;
 import org.embulk.guice.Bootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +84,9 @@ public class Sched
                 .withWorkflowExecutor(false)
                 .withScheduleExecutor(false)
                 .withLocalAgent(false)
+                .addModules(binder -> {
+                    binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
+                })
                 .initializeWithoutShutdownHook()) {
             Injector injector = digdag.getInjector();
 

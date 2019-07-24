@@ -17,6 +17,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.metrics.StdDigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -85,6 +87,7 @@ public class Push
                     binder.bind(Archiver.class).in(Scopes.SINGLETON);
                     binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
                     binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
+                    binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
                 })
                 .initialize()
                 .getInjector();
