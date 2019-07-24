@@ -1724,8 +1724,7 @@ public class DatabaseSessionStoreManager
                 " where sa.site_id = :siteId" +
                 " and sa.id < :lastId" +
                 " order by sa.id desc" +
-                " limit :limit" +
-                " offset :offset")
+                " limit :limit")
         List<StoredSessionAttemptWithSession> getAttempts(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
