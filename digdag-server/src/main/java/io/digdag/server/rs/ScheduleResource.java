@@ -77,7 +77,7 @@ public class ScheduleResource
         this.metrics = metrics;
     }
 
-    @DigdagTimed(value="GetSchedules", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
@@ -99,7 +99,7 @@ public class ScheduleResource
         });
     }
 
-    @DigdagTimed(value="GetSchedulesById", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
@@ -121,7 +121,7 @@ public class ScheduleResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="SkipSchedule", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
@@ -170,7 +170,7 @@ public class ScheduleResource
                 .getTimeZone();
     }
 
-    @DigdagTimed(value="BackfillSchedule", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
@@ -199,7 +199,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="DisableSchedule", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Path("/api/schedules/{id}/disable")
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
@@ -228,7 +228,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="EnableSchedule", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Path("/api/schedules/{id}/enable")
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)

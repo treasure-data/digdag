@@ -95,7 +95,7 @@ public class AttemptResource
     }
 
 
-    @DigdagTimed(value="GetAttempts", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/attempts")
     public RestSessionAttemptCollection getAttempts(
@@ -151,7 +151,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetAttemptById", category="api")
+    @DigdagTimed(category="api", appendMethodName = true)
     @GET
     @Path("/api/attempts/{id}")
     public RestSessionAttempt getAttempt(@PathParam("id") long id)
@@ -171,7 +171,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetAttemptRetries", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/attempts/{id}/retries")
     public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
@@ -194,7 +194,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="GetAttemptTasks", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/attempts/{id}/tasks")
     public RestTaskCollection getTasks(@PathParam("id") long id)
@@ -216,7 +216,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(value="StartAttempt", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @PUT
     @Consumes("application/json")
     @Path("/api/attempts")
@@ -334,7 +334,7 @@ public class AttemptResource
         }
     }
 
-    @DigdagTimed(value="KillAttempt", category="api")
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")

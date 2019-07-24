@@ -37,6 +37,7 @@ import io.digdag.spi.Scheduler;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,7 +159,7 @@ public class ScheduleExecutor
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. Scheduling will be retried.", t);
             errorReporter.reportUncaughtError(t);
-            metrics.increment("default", "uncaughtErrors");
+            metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }
     }
 
@@ -194,7 +195,7 @@ public class ScheduleExecutor
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. Submitting delayed attempts will be retried.", t);
             errorReporter.reportUncaughtError(t);
-            metrics.increment("default", "uncaughtErrors");
+            metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }
     }
 

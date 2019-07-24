@@ -8,16 +8,13 @@ import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
-import io.micrometer.core.instrument.config.NamingConvention;
-import io.micrometer.core.instrument.util.HierarchicalNameMapper;
 import io.micrometer.jmx.JmxConfig;
 import io.micrometer.jmx.JmxMeterRegistry;
 
 import java.util.Map;
-import java.util.stream.Collectors;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 
 
 public class DigdagMetricsModule
@@ -38,17 +35,17 @@ public class DigdagMetricsModule
      */
     public void configureMeterRegistry()
     {
-        bindMeterRegistry("default");
-        bindMeterRegistry("api");
-        bindMeterRegistry("agent");
-        bindMeterRegistry("executor");
-        bindMeterRegistry("db");
+        bindMeterRegistry(Category.DEFAULT);
+        bindMeterRegistry(Category.AGETNT);
+        bindMeterRegistry(Category.API);
+        bindMeterRegistry(Category.DB);
+        bindMeterRegistry(Category.EXECUTOR);
     }
 
-    protected void bindMeterRegistry(String category)
+    protected void bindMeterRegistry(Category category)
     {
         binder().bind(MeterRegistry.class)
-                .annotatedWith(Names.named(category))
+                .annotatedWith(Names.named(category.getString()))
                 .toInstance(createCompositeMeterRegistry(category));
     }
 
@@ -57,21 +54,21 @@ public class DigdagMetricsModule
      * @param category
      * @return
      */
-    protected CompositeMeterRegistry createCompositeMeterRegistry(String category)
+    protected CompositeMeterRegistry createCompositeMeterRegistry(Category category)
     {
         return new CompositeMeterRegistry().add(createJmxMeterRegistry(category));
     }
 
 
-    private final Map<String,String> categoryToJMXdomain = ImmutableMap.of(
-            "default", "io.digdag",
-            "api", "io.digdag.api",
-            "agent", "io.digdag.agent",
-            "executor", "io.digdag.executor",
-            "db", "io.digdag.db"
+    private final Map<Category,String> categoryToJMXdomain = ImmutableMap.of(
+            Category.DEFAULT, "io.digdag",
+            Category.AGETNT, "io.digdag.agent",
+            Category.API, "io.digdag.api",
+            Category.DB, "io.digdag.db",
+            Category.EXECUTOR, "io.digdag.executor"
     );
 
-    private JmxMeterRegistry createJmxMeterRegistry(String category)
+    private JmxMeterRegistry createJmxMeterRegistry(Category category)
     {
         return new DigdagJmxMeterRegistry(createJmxConfig(categoryToJMXdomain.get(category)), Clock.SYSTEM);
     }

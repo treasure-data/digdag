@@ -41,6 +41,7 @@ import io.digdag.spi.TaskQueueRequest;
 import io.digdag.spi.TaskConflictException;
 import io.digdag.spi.TaskNotFoundException;
 import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import io.digdag.util.RetryControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -496,7 +497,7 @@ public class WorkflowExecutor
                 if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
                     break;
                 }
-                metrics.increment("executor", "LoopCount");
+                metrics.increment(Category.EXECUTOR, "loopCount");
                 //boolean inced = prop.run();
                 //boolean retried = retryRetryWaitingTasks();
                 //if (inced || retried) {
@@ -519,7 +520,7 @@ public class WorkflowExecutor
                             waitMsec.set(INITIAL_INTERVAL);
                         }
                         else {
-                            metrics.summary("executor", "LoopWaitMsec", waitMsec.get());
+                            metrics.summary(Category.EXECUTOR, "loopWaitMsec", waitMsec.get());
                             boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
                             if (noticed && propagatorNotice) {
                                 propagatorNotice = false;
@@ -538,7 +539,7 @@ public class WorkflowExecutor
         }
     }
 
-    @DigdagTimed(value="PropagateBlockedChildrenToReady", category="executor")
+    @DigdagTimed(category = "executor", appendMethodName = true)
     private boolean propagateBlockedChildrenToReady()
     {
         boolean anyChanged = false;
@@ -561,6 +562,7 @@ public class WorkflowExecutor
         return anyChanged;
     }
 
+    @DigdagTimed(category = "executor", appendMethodName = true)
     private boolean propagateAllPlannedToDone()
     {
         boolean anyChanged = false;
@@ -746,7 +748,7 @@ public class WorkflowExecutor
         params.set("error", error);
     }
 
-    @DigdagTimed(value="PropagateSessionArchive", category="executor")
+    @DigdagTimed(category = "executor", appendMethodName = true)
     protected boolean propagateSessionArchive()
     {
         boolean anyChanged = false;
@@ -779,7 +781,7 @@ public class WorkflowExecutor
         return anyChanged;
     }
 
-    @DigdagTimed(value="RetryRetryWaitingTasks", category="executor")
+    @DigdagTimed(category = "executor", appendMethodName = true)
     protected boolean retryRetryWaitingTasks()
     {
         return tm.begin(() -> sm.trySetRetryWaitingToReady() > 0);
@@ -832,7 +834,7 @@ public class WorkflowExecutor
     }
 
 
-    @DigdagTimed(value="EnqueueReadyTasks", category="executor")
+    @DigdagTimed(category = "executor", appendMethodName = true)
     protected void enqueueReadyTasks(TaskQueuer queuer)
     {
         List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(100));
@@ -845,7 +847,7 @@ public class WorkflowExecutor
         }
     }
 
-    @DigdagTimed(value="EnqueueTask", category="executor")
+    @DigdagTimed(category="executor", appendMethodName = true)
     protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
         sm.lockTaskIfNotLocked(taskId, (store, task) -> {
