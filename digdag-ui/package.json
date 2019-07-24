@@ -18,6 +18,9 @@
   "dependencies": {
     "@babel/runtime": "^7.2.0",
     "@types/react": "^16.8.23",
+    "@fortawesome/fontawesome-svg-core": "^1.2.19",
+    "@fortawesome/free-solid-svg-icons": "^5.9.0",
+    "@fortawesome/react-fontawesome": "^0.1.4",
     "bootstrap": "4.3.1",
     "brace": "^0.10.0",
     "buffer": "5.0.5",
@@ -43,6 +46,7 @@
     "react-router-dom": "^5.0.1",
     "snazzy": "^6.0.0",
     "tar-js": "^0.3.0",
+    "tether": "^1.4.5",
     "urijs": "1.18.9",
     "url-parse": "1.4.3",
     "uuid": "^3.2.1",

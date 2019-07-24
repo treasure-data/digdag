@@ -30,6 +30,14 @@ import uuidv4 from 'uuid/v4'
 import jQuery from 'jquery'
 import ReactInterval from 'react-interval'
 import { Buffer } from 'buffer/'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faSignOutAlt,
+  faCheckCircle,
+  faExclamationCircle,
+  faPlayCircle,
+  faSyncAlt
+} from '@fortawesome/free-solid-svg-icons'
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -127,7 +135,8 @@ class CodeViewer extends React.Component {
       showGutter: false,
       showPrintMargin: false,
       tabSize: 2,
-      useSoftTabs: true
+      useSoftTabs: true,
+      maxLines: Infinity
     }
   }
 
@@ -165,6 +174,7 @@ class CodeViewer extends React.Component {
     require('./ace-digdag')
     this._editor = Ace.edit(this.editor)
     this._editor.setOptions(this.props.editorOptions)
+    this._editor.$blockScrolling = Infinity
     this._editor.on('click', this.editorClick.bind(this))
     this._updateEditor(this.props)
   }
@@ -255,9 +265,9 @@ class CacheLoader extends React.Component {
     const { children } = this.props
     if (!hasCache) {
       return (
-        <div className='loadingContainer'>
-          <span className='glyphicon glyphicon-refresh spinning' />
-          <span className='loadingText'>Loading ...</span>
+        <div className='loading-container'>
+          <span className='spinner-border' role='status' />
+          <span className='loading-text'>Loading...</span>
         </div>
       )
     }
@@ -280,7 +290,7 @@ class ProjectListView extends React.Component {
     )
     return (
       <div className='table-responsive'>
-        <table className='table table-striped table-hover table-condensed'>
+        <table className='table table-striped table-hover table-sm'>
           <thead>
             <tr>
               <th>Name</th>
@@ -314,7 +324,7 @@ class WorkflowListView extends React.Component {
     )
     return (
       <div className='table-responsive'>
-        <table className='table table-striped table-hover table-condensed'>
+        <table className='table table-striped table-hover table-sm'>
           <thead>
             <tr>
               <th>Name</th>
@@ -334,17 +344,17 @@ class WorkflowListView extends React.Component {
 const AttemptStatusView = ({ attempt }) => {
   if (attempt.done) {
     if (attempt.success) {
-      return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
+      return <span><FontAwesomeIcon icon={faCheckCircle} className='text-success' /> Success</span>
     } else if (attempt.cancelRequested) {
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceled</span>
     } else {
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Failure</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-danger' /> Failure</span>
     }
   } else {
     if (attempt.cancelRequested) {
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceling</span>
     } else {
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Pending</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Pending</span>
     }
   }
 }
@@ -374,7 +384,7 @@ const SessionStatusView = ({ session }:{session: Session}) => {
   const attempt = session.lastAttempt
   return attempt
     ? <Link to={`/attempts/${attempt.id}`}><AttemptStatusView attempt={attempt} /></Link>
-    : <span><span className='glyphicon glyphicon-refresh text-info' /> Pending</span>
+    : <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Pending</span>
 }
 
 SessionStatusView.propTypes = {
@@ -446,10 +456,10 @@ class AttemptListView extends React.Component {
     })
 
     return (
-      <div className='row'>
+      <div>
         <h2>Attempts</h2>
         <div className='table-responsive'>
-          <table className='table table-striped table-hover table-condensed'>
+          <table className='table table-striped table-hover table-sm'>
             <thead>
               <tr>
                 <th>ID</th>
@@ -495,7 +505,7 @@ class SessionListView extends React.Component {
 
     return (
       <div className='table-responsive'>
-        <table className='table table-striped table-hover table-condensed'>
+        <table className='table table-striped table-hover table-sm'>
           <thead>
             <tr>
               <th>ID</th>
@@ -582,27 +592,27 @@ class ScheduleListView extends React.Component {
     })
     const statusButton = isPaused ? (
       <button
-        className='btn btn-sm btn-secondary pull-right'
+        className='btn btn-sm btn-secondary float-right'
         onClick={this.disableSchedule.bind(this)}
       >
         PAUSE
       </button>
     ) : (
       <button
-        className='btn btn-sm btn-success pull-right'
+        className='btn btn-sm btn-success float-right'
         onClick={this.enableSchedule.bind(this)}
       >
         RESUME
       </button>
     )
     return (
-      <div className='row'>
-        <h2>
+      <div>
+        <h2 className='d-inline-flex'>
           Scheduling
-          {hasSchedule ? statusButton : ''}
         </h2>
+        {hasSchedule ? statusButton : ''}
         <div className='table-responsive'>
-          <table className='table table-striped table-hover table-condensed'>
+          <table className='table table-striped table-hover table-sm'>
             <thead>
               <tr>
                 <th>ID</th>
@@ -694,9 +704,9 @@ class StatusFilter extends React.Component {
 
     return (
       <div className='status-filter'>
-        <form className='form-inline'>
-          <label className='control-label'>Status:&ensp;</label>
-          <select className='form-control input-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+        <form className='form-inline mb-2'>
+          <label className='control-label pr-2'>Status:</label>
+          <select className='form-control form-control-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
             {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </form>
@@ -788,9 +798,9 @@ class ProjectView extends React.Component {
     const project = this.state.project
     return (
       <div>
-        <div className='row'>
+        <div>
           <h2>Project</h2>
-          <table className='table table-condensed'>
+          <table className='table table-sm'>
             <tbody>
               <tr>
                 <td>ID</td>
@@ -815,12 +825,19 @@ class ProjectView extends React.Component {
             </tbody>
           </table>
         </div>
-        <div className='row'>
-          <h2>Workflows</h2>
+        <div>
+          <h2 className='d-inline-flex'>Workflows</h2>
+          <div className='float-right'>
+            <Link
+              className='btn btn-sm btn-outline-secondary'
+              to={`/projects/${project.id}/edit`}
+            >
+              Edit workflows
+            </Link>
+          </div>
           <WorkflowListView workflows={this.state.workflows} />
-          <div><Link to={`/projects/${project.id}/edit`}>Edit workflows</Link></div>
         </div>
-        <div className='row'>
+        <div>
           <h2>Sessions</h2>
           <StatusFilter sessions={this.state.sessions}>
             <SessionListView />
@@ -893,16 +910,15 @@ class WorkflowView extends React.Component {
     const wf = this.props.workflow
     return (
       <div>
-        <div className='row'>
-          <h2>Workflow
-            <button
-              className='btn btn-sm btn-success pull-right'
-              onClick={this.runWorkflow.bind(this)}
-            >
+        <div>
+          <h2 className='d-inline-flex'>Workflow</h2>
+          <button
+            className='btn btn-sm btn-success float-right'
+            onClick={this.runWorkflow.bind(this)}
+          >
             RUN
-            </button>
-          </h2>
-          <table className='table table-condensed'>
+          </button>
+          <table className='table table-sm'>
             <tbody>
               <tr>
                 <td>ID</td>
@@ -924,29 +940,35 @@ class WorkflowView extends React.Component {
           </table>
         </div>
         <ScheduleListView workflowName={wf.name} projectId={wf.project.id} />
-        <div className='row'>
-          <h2>Definition</h2>
-          <pre>
-            <Measure>
-              { ({ width }) =>
-                <CodeViewer
-                  className='definition'
-                  language='digdag'
-                  value={this.definition()}
-                  style={{ width }}
-                />
-              }
-            </Measure>
-          </pre>
+        <div>
+          <h2 className='d-inline-flex'>Definition</h2>
+          <button className='btn btn-sm btn-light float-right'><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></button>
+          <div className='card bg-light my-2 pre-scrollable'>
+            <div className='card-body p-2'>
+              <pre className='mb-0'>
+                <code>
+                  <Measure>
+                    { ({ width }) =>
+                      <CodeViewer
+                        className='definition'
+                        language='digdag'
+                        value={this.definition()}
+                        style={{ width }}
+                      />
+                    }
+                  </Measure>
+                </code>
+              </pre>
+            </div>
+          </div>
         </div>
-        <div><Link to={`/projects/${wf.project.id}/edit`}>Edit</Link></div>
-        <div className='row'>
+        <div>
           <h2>Sessions</h2>
           <StatusFilter sessions={this.state.sessions}>
             <SessionListView />
           </StatusFilter>
         </div>
-        <div className='row'>
+        <div>
           <h2>Files</h2>
           <WorkflowFilesView workflow={wf} projectArchive={this.state.projectArchive} />
         </div>
@@ -1051,18 +1073,24 @@ function fileString (file:string, projectArchive:?ProjectArchive) {
 const FileView = ({ file, fileType, contents }:{file: string, fileType: string, contents: string}) =>
   <div>
     <h4>{file}</h4>
-    <pre>
-      <Measure>
-        { ({ width }) =>
-          <CodeViewer
-            className='definition'
-            language={fileType}
-            value={contents}
-            style={{ width }}
-          />
-        }
-      </Measure>
-    </pre>
+    <div className='card bg-light my-2'>
+      <div className='card-body p-2'>
+        <pre className='mb-0'>
+          <code>
+            <Measure>
+              { ({ width }) =>
+                <CodeViewer
+                  className='definition'
+                  language={fileType}
+                  value={contents}
+                  style={{ width }}
+                />
+              }
+            </Measure>
+          </code>
+        </pre>
+      </div>
+    </div>
   </div>
 
 const WorkflowFilesView = ({ workflow, projectArchive }:{workflow: Workflow, projectArchive: ?ProjectArchive}) =>
@@ -1122,19 +1150,17 @@ class AttemptView extends React.Component {
     }
 
     return (
-      <div className='row'>
-        <h2>
-          Attempt
-          {canKill &&
+      <div>
+        <h2 className='d-inline-flex'>Attempt</h2>
+        {canKill &&
           <button
-            className='btn btn-danger pull-right'
+            className='btn btn-sm btn-danger float-right'
             onClick={this.killAttempt.bind(this)}
           >
             KILL
           </button>
-          }
-        </h2>
-        <table className='table table-condensed'>
+        }
+        <table className='table table-sm'>
           <tbody>
             <tr>
               <td>ID</td>
@@ -1208,28 +1234,27 @@ class SessionView extends React.Component {
     const canRetryAll = attemptCanRetryAll(lastAttempt)
     const canResume = attemptCanResume(lastAttempt)
     return (
-      <div className='row'>
-        <h2>
+      <div className='session'>
+        <h2 className='d-inline-flex'>
           Session
-          {canRetryAll &&
-            <button
-              className='btn btn-primary pull-right'
-              onClick={this.retryAll.bind(this)}
-            >
-              RETRY ALL
-            </button>
-          }
-          {canResume &&
-            <button
-              className='btn btn-success pull-right'
-              onClick={this.retryFailed.bind(this)}
-              style={{ marginRight: '0.5em' }}
-            >
-              RETRY FAILED
-            </button>
-          }
         </h2>
-        <table className='table table-condensed'>
+        {canRetryAll &&
+        <button
+          className='btn btn-sm btn-primary float-right'
+          onClick={this.retryAll.bind(this)}
+        >
+              RETRY ALL
+        </button>
+        }
+        {canResume &&
+        <button
+          className='btn btn-sm btn-success mr-2 float-right'
+          onClick={this.retryFailed.bind(this)}
+        >
+              RETRY FAILED
+        </button>
+        }
+        <table className='table table-sm'>
           <tbody>
             <tr>
               <td>ID</td>
@@ -1367,7 +1392,7 @@ const ParamsView = ({ params }:{params: Object}) =>
 const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: boolean}) => {
   if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(state) >= 0) {
     // These state won't progress once cancelRequested is set. Planned tasks won't generate tasks.
-    return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceling</span>
+    return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceling</span>
   }
 
   switch (state) {
@@ -1375,36 +1400,36 @@ const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: b
     case 'blocked':
       if (cancelRequested) {
         // Blocked tasks won't start once cancelRequested is set
-        return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+        return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceled</span>
       } else {
-        return <span><span className='glyphicon glyphicon-refresh text-info' /> Blocked</span>
+        return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Blocked</span>
       }
     case 'ready':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Ready</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Ready</span>
     case 'retry_waiting':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Retry Waiting</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Retry Waiting</span>
     case 'group_retry_waiting':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Group Retry Waiting</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Group Retry Waiting</span>
     case 'planned':
-      return <span><span className='glyphicon glyphicon-refresh text-info' /> Planned</span>
+      return <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Planned</span>
 
     // Running
     case 'running':
-      return <span><span className='glyphicon glyphicon-play text-info' /> Running</span>
+      return <span><FontAwesomeIcon icon={faPlayCircle} className='text-info' /> Running</span>
 
     // Error
     case 'group_error':
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Group Error</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-danger' /> Group Error</span>
     case 'error':
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-danger' /> Error</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-danger' /> Error</span>
 
     // Warning
     case 'canceled':
-      return <span><span className='glyphicon glyphicon-exclamation-sign text-warning' /> Canceled</span>
+      return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceled</span>
 
     // Success
     case 'success':
-      return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
+      return <span><FontAwesomeIcon icon={faCheckCircle} className='text-success' /> Success</span>
 
     default:
       return <span>{_.capitalize(state)}</span>
@@ -1484,7 +1509,7 @@ class TaskListView extends React.Component {
   render () {
     return (
       <div className='table-responsive'>
-        <table className='table table-striped table-hover table-condensed'>
+        <table className='table table-striped table-hover table-sm'>
           <thead>
             <tr>
               <th>ID</th>
@@ -1579,15 +1604,15 @@ class TaskTimelineRow extends React.Component {
       // Error
       case 'group_error':
       case 'error':
-        return 'progress-bar-danger'
+        return 'bg-danger'
 
       // Warning
       case 'canceled':
-        return 'progress-bar-warning'
+        return 'bg-warning'
 
       // Success
       case 'success':
-        return 'progress-bar-success'
+        return 'bg-success'
 
       default:
         return ''
@@ -1645,8 +1670,8 @@ class TaskTimelineRow extends React.Component {
     return (
       <tr>
         <td style={{ whiteSpace: 'nowrap', paddingLeft: `${this.taskLevel()}em` }}>{taskName}</td>
-        <td style={{ width: '100%' }}>
-          <div className='progress' style={{ marginBottom: 0 }}>
+        <td className='align-middle' style={{ width: '100%' }}>
+          <div className='progress mb-0　' style={{ height: '1.4rem' }}>
             <div ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
               className={`progress-bar ${this.progressBarClasses()}`} role='progressbar' style={style}>{duration}</div>
           </div>
@@ -1662,7 +1687,7 @@ const TaskTimelineView = ({ tasks, startTime, endTime }:{
   endTime: ?Object;
 }) =>
   <div className='table-responsive'>
-    <table className='table table-condensed'>
+    <table className='table table-sm'>
       <thead>
         <tr>
           <th>Task</th>
@@ -1720,7 +1745,7 @@ class AttemptTasksView extends React.Component {
   render () {
     const { done } = this.state
     return (
-      <div className='row'>
+      <div>
         <h2>Tasks</h2>
         <TaskListView tasks={this.state.tasks} />
         <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
@@ -1808,7 +1833,7 @@ class AttemptTimelineView extends React.Component {
   render () {
     const { done } = this.state
     return (
-      <div className='row'>
+      <div>
         <h2>Timeline</h2>
         <TaskTimelineView tasks={this.state.tasks} startTime={this.state.firstStartedAt} endTime={this.state.endTime} />
         <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
@@ -1863,8 +1888,17 @@ class LogFileView extends React.Component {
       return (
         <div>
           <h3 id={'logs-' + this.props.file.taskName + this.props.order.toString()}
-            className='log-view'>{this.props.file.taskName}</h3>
-          <pre>{pako.inflate(this.state.data, { to: 'string' })}</pre>
+            className='log-view'><small>{this.props.file.taskName}</small></h3>
+
+          <div className='card bg-light my-2'>
+            <div className='card-body p-2'>
+              <pre className='m-0 small'>
+                <code>
+                  {pako.inflate(this.state.data, { to: 'string' })}
+                </code>
+              </pre>
+            </div>
+          </div>
         </div>
       )
     } else {
@@ -1935,7 +1969,7 @@ class AttemptLogsView extends React.Component {
   render () {
     const { done } = this.state
     return (
-      <div className='row'>
+      <div>
         <h2>Logs</h2>
         {this.logFiles()}
         <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
@@ -2008,30 +2042,23 @@ class Navbar extends React.Component {
 
   render () {
     return (
-      <nav className={`navbar ${this.className()} navbar-fixed-top`} style={this.style()}>
-        <div className='container-fluid'>
-          <div className='navbar-header'>
-            <button type='button' className='navbar-toggle collapsed' data-toggle='collapse' data-target='#navbar'
-              aria-expanded='false' aria-controls='navbar'>
-              <span className='sr-only'>Toggle navigation</span>
-              <span className='icon-bar' />
-              <span className='icon-bar' />
-              <span className='icon-bar' />
-            </button>
-            {this.logo()}
-            <a className='navbar-brand' href='/'>{this.brand()}</a>
-          </div>
-          <div id='navbar' className='collapse navbar-collapse'>
-            <ul className='nav navbar-nav'>
-              <li className={this.isActiveClass('/')}><Link to='/'>Workflows</Link></li>
-              <li className={this.isActiveClass('/projects')}><Link to='/projects'>Projects</Link></li>
-            </ul>
-            <ul className='nav navbar-nav navbar-right'>
-              <li><a href='/' onClick={this.logout}><span className='glyphicon glyphicon-log-out'
-                aria-hidden='true' /> Logout</a></li>
-            </ul>
-            <p className='navbar-text navbar-right'><VersionView /></p>
-          </div>
+      <nav className={`navbar ${this.className()} navbar-dark navbar-expand-lg`} style={this.style()}>
+        {this.logo()}
+        <a className='navbar-brand' href='/'>{this.brand()}</a>
+        <button type='button' className='navbar-toggler' data-toggle='collapse' data-target='#navbar'
+          aria-expanded='false' aria-controls='navbar' aria-label='Toggle navigation'>
+          <span className='sr-only'>Toggle navigation</span>
+          <span className='navbar-toggler-icon' />
+        </button>
+        <div id='navbar' className='collapse navbar-collapse'>
+          <ul className='navbar-nav mr-auto'>
+            <li className={`nav-item ${this.isActiveClass('/')}`}><Link className='nav-link' to='/'>Workflows</Link></li>
+            <li className={`nav-item ${this.isActiveClass('/projects')}`}><Link className='nav-link' to='/projects'>Projects</Link></li>
+          </ul>
+          <li className='navbar-text navbar-right'><VersionView /></li>
+          <ul className='nav navbar-nav navbar-right'>
+            <li><a className='nav-link' href='/' onClick={this.logout}><FontAwesomeIcon icon={faSignOutAlt} /> Logout</a></li>
+          </ul>
         </div>
       </nav>
     )
@@ -2046,8 +2073,15 @@ const ProjectsPage = (props:{}) =>
 
 const WorkflowsPage = () =>
   <div className='container-fluid'>
+    <div className='float-right'>
+      <Link
+        className='btn btn-sm btn-outline-secondary'
+        to={`/projects/new`}
+      >
+        New project
+      </Link>
+    </div>
     <WorkflowsView />
-    <div><Link to={`/projects/new`}>New project</Link></div>
     <SessionsView />
   </div>
 
@@ -2150,7 +2184,7 @@ class WorkflowRevisionPage extends React.Component {
   }
 
   fetchWorkflow () {
-    model().fetchWorkflow(this.props.params.workflowId).then(workflow => {
+    model().fetchWorkflow(this.props.match.params.workflowId).then(workflow => {
       if (!this.ignoreLastFetch) {
         this.setState({ workflow })
       }
@@ -2213,9 +2247,12 @@ class FileEditor extends React.Component {
     const file = this.props.file
     return (
       <div>
-        <h3>
+        <div className='input-group mb-2'>
           <input type='text' className='form-control' value={this.state.name} onChange={this.handleNameChange.bind(this)} />
-        </h3>
+          <div className='input-group-append'>
+            <button className='btn btn-sm btn-outline-danger float-right' onClick={this.props.onDelete}>Delete</button>
+          </div>
+        </div>
         <pre>
           <Measure>
             { ({ width }) =>
@@ -2229,7 +2266,6 @@ class FileEditor extends React.Component {
             }
           </Measure>
         </pre>
-        <button className='btn btn-sm btn-error' onClick={this.props.onDelete}>Delete</button>
       </div>
     )
   }
@@ -2312,8 +2348,8 @@ class ProjectArchiveEditor extends React.Component {
     )
     return (
       <div>
-        <div className='btn-group'>
-          <button className='btn btn-sm' onClick={this.handleAddFile.bind(this)}>Add file</button>
+        <div className='btn-group mb-2 pb-2'>
+          <button className='btn btn-light btn-sm' onClick={this.handleAddFile.bind(this)}>Add file</button>
         </div>
         {editors}
       </div>
@@ -2389,7 +2425,7 @@ class ProjectEditor extends React.Component {
     if (project) {
       title = 'Edit Workflows'
       header = (
-        <table className='table table-condensed'>
+        <table className='table table-sm'>
           <tbody>
             <tr>
               <td>ID</td>
@@ -2417,26 +2453,26 @@ class ProjectEditor extends React.Component {
     } else {
       title = 'New Project'
       header = (
-        <table className='table table-condensed'>
+        <table className='table table-sm'>
           <tbody>
             <tr>
               <td>Name</td>
-              <input type='text' className='form-control' value={this.state.projectName} onChange={this.handleNameChange.bind(this)} />
+              <td><input type='text' className='form-control form-control-sm' value={this.state.projectName} onChange={this.handleNameChange.bind(this)} /></td>
             </tr>
             <tr>
               <td>Revision</td>
-              <input type='text' className='form-control' value={this.state.revisionName} onChange={this.handleRevisionChange.bind(this)} />
+              <td><input type='text' className='form-control form-control-sm' value={this.state.revisionName} onChange={this.handleRevisionChange.bind(this)} /></td>
             </tr>
           </tbody>
         </table>
       )
     }
     return (
-      <div className='row'>
+      <div>
         <h2>{title}</h2>
         {header}
         <Alerts alertType={this.state.alertType} message={this.state.saveMessage} />
-        <button style={{ marginBottom: '0.5em' }} className='btn btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
+        <button className='btn mb-2 btn-sm btn-info' onClick={this.save.bind(this)}>Save</button>
         <ProjectArchiveEditor projectArchive={this.state.projectArchive} ref={(value) => { this._editor = value }} />
       </div>
     )
@@ -2666,7 +2702,7 @@ class LoginPage extends React.Component {
     })
 
     return (
-      <div className='container'>
+      <div className='container-fluid'>
         <h1>{DIGDAG_CONFIG.auth.title}</h1>
         <form onSubmit={this.handleSubmit}>
           {authItems}
@@ -2740,7 +2776,7 @@ class ParserTest extends React.Component {
   }
   render () {
     return (
-      <div className='container'>
+      <div className='container-fluid'>
         <CodeViewer className='definition' language='digdag' value={this.definition()} />
       </div>
     )
@@ -2751,9 +2787,11 @@ class AppWrapper extends React.Component {
   render () {
     const NavbarWithRouter = withRouter(Navbar)
     return (
-      <div className='container-fluid'>
+      <div>
         <NavbarWithRouter />
-        {this.props.children}
+        <div className='app-wrapper'>
+          {this.props.children}
+        </div>
       </div>
     )
   }
@@ -2793,7 +2831,7 @@ export class CodeViewerTest extends React.Component {
 class ConsolePage extends React.Component {
   render () {
     return (
-      <div className='container-fluid'>
+      <div>
         <Router>
           <CacheLoader>
             <AppWrapper>
