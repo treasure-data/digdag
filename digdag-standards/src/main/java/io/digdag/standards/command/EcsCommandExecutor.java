@@ -116,7 +116,7 @@ public class EcsCommandExecutor
             }
         }
         catch (ConfigException e) {
-            logger.info("EcsCommandExecutor is not executed.", e);
+            logger.trace("Fall back to DockerCommandExecutor: {}", e.toString());
             return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
         }
     }
