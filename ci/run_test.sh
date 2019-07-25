@@ -1,14 +1,18 @@
 #!/bin/bash -e
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[ $(( 0 % ${CI_NODE_TOTAL} )) -eq ${CI_NODE_INDEX} ]]; then
+if [ 0 -eq ${CI_NODE_INDEX} ]; then
+    echo "run_findbugs.sh and others"
     "${BASEDIR}/run_findbugs.sh"
-fi
-
-if [[ $(( 1 % ${CI_NODE_TOTAL} )) -eq ${CI_NODE_INDEX} ]]; then
     "${BASEDIR}/validate.sh"
+    "${BASEDIR}/run_build.sh"
 fi
 
-"${BASEDIR}/run_test_h2.sh"
-"${BASEDIR}/run_test_pg.sh"
+if [ 0 -lt ${CI_NODE_INDEX} -o 1 -eq ${CI_NODE_TOTAL} ]; then
+    echo "run_test_(h2|pg).sh"
+    ${BASEDIR}/run_test_h2.sh -PwithoutUi
+    ${BASEDIR}/run_test_pg.sh -PwithoutUi
+fi
+
+
 

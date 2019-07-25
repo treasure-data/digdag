@@ -154,8 +154,8 @@ subprojects {
 
         // Shard test classes over CI workers
         if (System.env.CI_NODE_INDEX) {
-            def n = System.env.CI_NODE_TOTAL as Integer
-            def i = System.env.CI_NODE_INDEX as Integer
+            int n = System.env.CI_NODE_TOTAL.toInteger() - 1 // exclude index 0
+            int i = System.env.CI_NODE_INDEX.toInteger()
             include {
                 // Recurse into all packages
                 if (it.file.isDirectory()) {
@@ -163,11 +163,14 @@ subprojects {
                 }
 
                 // Include test class based on worker index
-                def included = Math.abs(it.file.hashCode()) % n == i
+		boolean isIncluded = (Math.abs(it.file.hashCode()) % n + 1 == i) //exclude index 0
                 if (System.env.CI_DEBUG?.toBoolean()) {
-                    logger.info("test '" + it.file + '" included: ' + included)
+                    logger.info("test '" + it.file + '" included: ' + isIncluded)
                 }
-                return included
+		else if (isIncluded) {
+                    logger.info("test:" + it.file)
+		}
+                return isIncluded
             }
         }
 
@@ -330,6 +333,9 @@ project(':digdag-ui') {
                 environment "SHA", "assets"
             }
         }
+        onlyIf {
+            !project.hasProperty("withoutUi")
+        }
     }
 
     // include public/* in the jar file
@@ -338,6 +344,12 @@ project(':digdag-ui') {
         include 'public/**/*'
     }
     processResources.dependsOn('buildUi')
+
+    test {
+        onlyIf {
+            !project.hasProperty("withoutUi")
+        }
+    }
 }
 
 project(':digdag-cli') {
@@ -356,6 +368,9 @@ project(':digdag-cli') {
             shadow project(':digdag-ui')
         }
         shadowJar.dependsOn(project(':digdag-ui').jar)
+    }
+    else {
+        logger.info("Skip digdag-ui")
     }
 
     shadowJar {
