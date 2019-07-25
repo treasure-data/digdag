@@ -293,7 +293,7 @@ public class ProjectResource
         });
     }
 
-    @DigdagTimed(category = "api", appendMethodName = true)
+    @DigdagTimed(category = "api", value = "getProjectById")
     @GET
     @Path("/api/projects/{id}")
     public RestProject getProject(@PathParam("id") int projId)
@@ -432,7 +432,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class);
     }
 
-    @DigdagTimed(category = "api", appendMethodName = true)
+    @DigdagTimed(category = "api", value = "getProjectSchedules")
     @GET
     @Path("/api/projects/{id}/schedules")
     public RestScheduleCollection getSchedules(
@@ -484,7 +484,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(category = "api", appendMethodName = true)
+    @DigdagTimed(category = "api", value = "getProjectSessions")
     @GET
     @Path("/api/projects/{id}/sessions")
     public RestSessionCollection getSessions(

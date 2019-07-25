@@ -123,7 +123,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    @DigdagTimed(category = "api", appendMethodName = true)
+    @DigdagTimed(category = "api", value = "getWorkflowDefinitionById")
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
