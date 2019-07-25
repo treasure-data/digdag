@@ -99,7 +99,7 @@ public class ScheduleResource
         });
     }
 
-    @DigdagTimed(category = "api", appendMethodName = true)
+    @DigdagTimed(category = "api", value = "getScheduleById")
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
