@@ -29,14 +29,14 @@ before_install:
   - sudo service --status-all
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/redis-server stop
-  - |
-    docker run \
-    -w /digdag \
-    -v `pwd`/:/digdag \
-    -v $HOME/.gradle:/root/.gradle \
-    $BUILD_IMAGE \
-    ./gradlew testClasses --no-daemon
-  - ci/validate.sh
+  # - |
+  #   docker run \
+  #   -w /digdag \
+  #   -v `pwd`/:/digdag \
+  #   -v $HOME/.gradle:/root/.gradle \
+  #   $BUILD_IMAGE \
+  #   ./gradlew testClasses --no-daemon
+  # - ci/validate.sh
 
 install: true
 

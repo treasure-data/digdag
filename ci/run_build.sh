@@ -8,4 +8,4 @@ docker run \
 -v ~/.gradle:/root/.gradle \
 -e TERM=dumb \
 $BUILD_IMAGE \
-./gradlew clean cli --info --no-daemon "$@"
+./gradlew clean cli testClasses --info --no-daemon "$@"
