@@ -102,16 +102,20 @@ public class ServerJmxIT
         try (JMXConnector con = connectJmx(server)) {
             MBeanServerConnection beans = con.getMBeanServerConnection();
 
+            //Category AGENT
             Object numMaxAcquire = beans.getAttribute(ObjectName.getInstance("io.digdag.agent", "name", "agent_mtag_NumMaxAcquire"), "Count");
             assertTrue((long)numMaxAcquire >= 0);
 
-            Object getProjectsByName = beans.getAttribute(ObjectName.getInstance("io.digdag.api", "name", "api_GetProjectsByName"), "Count");
+            //Category API
+            Object getProjectsByName = beans.getAttribute(ObjectName.getInstance("io.digdag.api", "name", "api_getProjects"), "Count");
             assertTrue((long)getProjectsByName >= 0);
 
+            //Category DB
             Object findTasksByState = beans.getAttribute(ObjectName.getInstance("io.digdag.db", "name", "db_dssm_findRootTasksByStates"), "Count");
             assertTrue((long)findTasksByState >= 0);
 
-            Object executor_LoopCount = beans.getAttribute(ObjectName.getInstance("io.digdag.executor", "name", "executor_LoopCount"), "Count");
+            //Category EXECUTOR
+            Object executor_LoopCount = beans.getAttribute(ObjectName.getInstance("io.digdag.executor", "name", "executor_loopCount"), "Count");
             assertTrue((long)executor_LoopCount >= 0);
         }
     }
