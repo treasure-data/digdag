@@ -229,6 +229,7 @@ public class WorkflowExecutionTimeoutEnforcer
                 .sessionId(attempt.getSessionId())
                 .siteId(attempt.getSiteId())
                 .workflowName(workflow.transform(wf -> wf.getName()))
+                .workflowDefinitionId(wfId)
                 .build();
 
         try {
