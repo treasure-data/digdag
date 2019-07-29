@@ -22,6 +22,8 @@ public interface TaskRequest
 
     String getWorkflowName();
 
+    Optional<Long> getWorkflowDefinitionId();
+
     Optional<String> getRevision();
 
     long getTaskId();
