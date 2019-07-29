@@ -58,6 +58,9 @@ public interface Notification
     @JsonProperty("session_time")
     Optional<OffsetDateTime> getSessionTime();
 
+    @JsonProperty("workflow_definition_id")
+    Optional<Long> getWorkflowDefinitionId();
+
     static ImmutableNotification.Builder builder(Instant timestamp, String message) {
         return ImmutableNotification.builder()
                 .timestamp(timestamp)

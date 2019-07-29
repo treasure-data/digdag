@@ -117,6 +117,7 @@ public class MailNotificationSender
                 .timeZone(ZoneOffset.UTC)
                 .sessionUuid(UUID.randomUUID())
                 .sessionTime(OffsetDateTime.now())
+                .workflowDefinitionId(5L)
                 .build();
         try {
             body(notification);
