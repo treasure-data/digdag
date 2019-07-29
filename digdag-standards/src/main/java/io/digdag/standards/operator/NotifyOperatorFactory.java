@@ -70,6 +70,7 @@ public class NotifyOperatorFactory
                     .timeZone(request.getTimeZone())
                     .sessionUuid(request.getSessionUuid())
                     .sessionTime(OffsetDateTime.ofInstant(request.getSessionTime(), request.getTimeZone()))
+                    .workflowDefinitionId(request.getWorkflowDefinitionId())
                     .build();
 
             try {

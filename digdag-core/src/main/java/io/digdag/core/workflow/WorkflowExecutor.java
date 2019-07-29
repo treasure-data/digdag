@@ -1037,6 +1037,7 @@ public class WorkflowExecutor
                 .localConfig(localConfig)
                 .config(params)
                 .lastStateParams(task.getStateParams())
+                .workflowDefinitionId(attempt.getWorkflowDefinitionId())
                 .build();
 
             return Optional.of(request);
