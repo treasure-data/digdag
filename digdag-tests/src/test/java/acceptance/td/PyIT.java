@@ -157,7 +157,6 @@ public class PyIT
 
         String logs = getAttemptLogs(client, attemptId);
         assertThat(logs, containsString("digdag params"));
-        assertThat(logs, containsString("'VAR_A', 'aaa'")); // via _env in echo_params.dig
+        assertThat(logs, containsString("{'VAR_A': 'aaa'}")); // via _env in echo_params.dig
     }
-
 }
