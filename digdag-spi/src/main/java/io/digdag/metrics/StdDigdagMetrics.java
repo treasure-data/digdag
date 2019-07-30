@@ -41,7 +41,7 @@ public class StdDigdagMetrics implements DigdagMetrics
         this.registryExecutor = registryExecutor;
         this.mapRegistries = ImmutableMap.of(
                 Category.DEFAULT, registry,
-                Category.AGETNT, registryAgent,
+                Category.AGENT, registryAgent,
                 Category.API, registryApi,
                 Category.DB, registryDb,
                 Category.EXECUTOR, registryExecutor);

@@ -36,7 +36,7 @@ public class DigdagMetricsModule
     public void configureMeterRegistry()
     {
         bindMeterRegistry(Category.DEFAULT);
-        bindMeterRegistry(Category.AGETNT);
+        bindMeterRegistry(Category.AGENT);
         bindMeterRegistry(Category.API);
         bindMeterRegistry(Category.DB);
         bindMeterRegistry(Category.EXECUTOR);
@@ -62,7 +62,7 @@ public class DigdagMetricsModule
 
     private final Map<Category,String> categoryToJMXdomain = ImmutableMap.of(
             Category.DEFAULT, "io.digdag",
-            Category.AGETNT, "io.digdag.agent",
+            Category.AGENT, "io.digdag.agent",
             Category.API, "io.digdag.api",
             Category.DB, "io.digdag.db",
             Category.EXECUTOR, "io.digdag.executor"

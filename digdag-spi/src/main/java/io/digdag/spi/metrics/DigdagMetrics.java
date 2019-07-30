@@ -12,7 +12,7 @@ public interface DigdagMetrics
 
     enum Category {
         DEFAULT("default"),
-        AGETNT("agent"),
+        AGENT("agent"),
         API("api"),
         DB("db"),
         EXECUTOR("executor");
