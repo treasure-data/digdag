@@ -446,7 +446,7 @@ public class DatabaseTaskQueueServer
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
             errorReporter.reportUncaughtError(t);
-            metrics.increment(Category.DEFAULT, "uncaughtErrors");
+            metrics.increment(Category.DB, "uncaughtErrors");
         }
     }
 
