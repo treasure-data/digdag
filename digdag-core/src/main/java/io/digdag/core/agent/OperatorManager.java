@@ -200,6 +200,7 @@ public class OperatorManager
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
 
+            //ToDo get metrics on parameter size
             return evalEngine.eval(all, evalParams);
         }
         catch (TemplateException te) {
@@ -334,7 +335,7 @@ public class OperatorManager
 
         return operator.run();
     }
-    
+
     private void heartbeat()
     {
         try {
