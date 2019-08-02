@@ -30,6 +30,7 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ScheduleTime;
@@ -37,6 +38,7 @@ import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 @Api("Attempt")
@@ -65,6 +67,7 @@ public class AttemptResource
     private final ConfigFactory cf;
     private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
     private static int MAX_ATTEMPTS_PAGE_SIZE;
+    private final DigdagMetrics metrics;
 
     @Inject
     public AttemptResource(
@@ -76,7 +79,8 @@ public class AttemptResource
             AttemptBuilder attemptBuilder,
             WorkflowExecutor executor,
             ConfigFactory cf,
-            Config systemConfig)
+            Config systemConfig,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
@@ -86,9 +90,12 @@ public class AttemptResource
         this.attemptBuilder = attemptBuilder;
         this.executor = executor;
         this.cf = cf;
+        this.metrics = metrics;
         MAX_ATTEMPTS_PAGE_SIZE = systemConfig.get("api.max_attempts_page_size", Integer.class, DEFAULT_ATTEMPTS_PAGE_SIZE);
     }
 
+
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/attempts")
     public RestSessionAttemptCollection getAttempts(
@@ -144,6 +151,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category="api", appendMethodName = true)
     @GET
     @Path("/api/attempts/{id}")
     public RestSessionAttempt getAttempt(@PathParam("id") long id)
@@ -163,6 +171,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/attempts/{id}/retries")
     public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
@@ -185,6 +194,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/attempts/{id}/tasks")
     public RestTaskCollection getTasks(@PathParam("id") long id)
@@ -206,6 +216,7 @@ public class AttemptResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @PUT
     @Consumes("application/json")
     @Path("/api/attempts")
@@ -323,6 +334,7 @@ public class AttemptResource
         }
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")

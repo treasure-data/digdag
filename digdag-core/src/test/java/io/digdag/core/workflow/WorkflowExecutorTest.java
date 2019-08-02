@@ -22,6 +22,8 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredTask;
+import io.digdag.metrics.StdDigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.digdag.util.RetryControl;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -196,11 +198,12 @@ public class WorkflowExecutorTest
         TransactionManager tm = mock(TransactionManager.class);
         TaskQueueDispatcher dispatcher = mock(TaskQueueDispatcher.class);
         WorkflowCompiler compiler = mock(WorkflowCompiler.class);
+        DigdagMetrics metrics = StdDigdagMetrics.empty();
         ConfigFactory cf = configFactory;
         ObjectMapper archiveMapper = mock(ObjectMapper.class);
         Config systemConfig = configFactory.create();
 
-        WorkflowExecutor executor = new WorkflowExecutor(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig);
+        WorkflowExecutor executor = new WorkflowExecutor(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, metrics);
         Config stateParam = cf.create().set("retry_count", "2");
         StoredTask task = mock(StoredTask.class);
 

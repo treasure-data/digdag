@@ -19,12 +19,14 @@ import com.google.common.base.Preconditions;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 @Api("Workflow")
@@ -46,6 +48,7 @@ public class WorkflowResource
     private final SchedulerManager srm;
     private final TransactionManager tm;
     private final AccessController ac;
+    private final DigdagMetrics metrics;
 
     @Inject
     public WorkflowResource(
@@ -53,15 +56,18 @@ public class WorkflowResource
             ScheduleStoreManager sm,
             SchedulerManager srm,
             TransactionManager tm,
-            AccessController ac)
+            AccessController ac,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.tm = tm;
         this.ac = ac;
+        this.metrics = metrics;
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/workflow")
     public RestWorkflowDefinition getWorkflowDefinition(
@@ -94,6 +100,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category="api", appendMethodName = true)
     @GET
     @Path("/api/workflows")
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
@@ -116,6 +123,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", value = "getWorkflowDefinitionById")
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
@@ -134,6 +142,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/workflows/{id}/truncated_session_time")
     public RestWorkflowSessionTime getWorkflowDefinition(

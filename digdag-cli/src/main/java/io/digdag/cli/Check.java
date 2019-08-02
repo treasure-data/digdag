@@ -38,7 +38,6 @@ import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Arguments.loadProject;
 import static io.digdag.cli.Arguments.normalizeWorkflowName;
 import static io.digdag.cli.SystemExitException.systemExit;
-import static io.digdag.cli.TimeUtil.formatTimeDiff;
 
 public class Check
     extends Command

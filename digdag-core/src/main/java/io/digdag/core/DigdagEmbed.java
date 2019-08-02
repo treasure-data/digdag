@@ -37,6 +37,8 @@ import io.digdag.core.log.LogModule;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.plugin.DynamicPluginModule;
 import io.digdag.core.plugin.SystemPluginModule;
+import io.digdag.metrics.StdDigdagMetrics;
+import io.digdag.spi.metrics.DigdagMetrics;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -186,6 +188,7 @@ public class DigdagEmbed
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
                         binder.bind(TempFileManager.class).toProvider(TempFileManagerProvider.class).in(Scopes.SINGLETON);
+                        binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
                     }
                 ));
             if (withWorkflowExecutor) {

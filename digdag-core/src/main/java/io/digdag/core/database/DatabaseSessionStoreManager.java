@@ -56,6 +56,7 @@ import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskStateSummary;
 import io.digdag.core.session.TaskType;
 import io.digdag.core.workflow.TaskConfig;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.ac.AccessController;
@@ -221,12 +222,14 @@ public class DatabaseSessionStoreManager
         return new DatabaseSessionStore(siteId);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public Instant getStoreTime()
     {
         return autoCommit((handle, dao) -> dao.now());
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public int getSiteIdOfTask(long taskId)
         throws ResourceNotFoundException
@@ -236,6 +239,7 @@ public class DatabaseSessionStoreManager
                 "session attempt of task id=%d", taskId);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public StoredSessionAttemptWithSession getAttemptWithSessionById(long attemptId)
         throws ResourceNotFoundException
@@ -245,6 +249,7 @@ public class DatabaseSessionStoreManager
                 "session attempt id=%d", attemptId);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public AttemptStateFlags getAttemptStateFlags(long attemptId)
         throws ResourceNotFoundException
@@ -263,6 +268,7 @@ public class DatabaseSessionStoreManager
         return AttemptStateFlags.of(stateFlags);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public boolean isAnyNotDoneAttempts()
     {
@@ -277,18 +283,21 @@ public class DatabaseSessionStoreManager
             );
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<Long> findAllReadyTaskIds(int maxEntries)
     {
         return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit)
     {
         return autoCommit((handle, dao) -> dao.findActiveAttemptsCreatedBefore(sqlTimestampOf(createdBefore), lastId, limit));
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
     {
@@ -315,6 +324,7 @@ public class DatabaseSessionStoreManager
     }
 
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
     {
@@ -329,18 +339,21 @@ public class DatabaseSessionStoreManager
         });
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId)
     {
         return autoCommit((handle, dao) -> dao.findRecentlyChangedTasks(updatedSince, lastId, 100));
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<Long> findTasksByState(TaskStateCode state, long lastId)
     {
         return autoCommit((handle, dao) -> dao.findTasksByState(state.get(), lastId, 100));
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId)
     {
@@ -363,6 +376,7 @@ public class DatabaseSessionStoreManager
             );
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<Long> findDirectParentsOfBlockedTasks(long lastId)
     {
@@ -382,6 +396,7 @@ public class DatabaseSessionStoreManager
             );
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public boolean requestCancelAttempt(long attemptId)
     {
@@ -426,18 +441,21 @@ public class DatabaseSessionStoreManager
         });
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public int trySetRetryWaitingToReady()
     {
         return autoCommit((handle, dao) -> dao.trySetRetryWaitingToReady());
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
         return lockTask(taskId, func, false);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockAction<T> func)
     {
@@ -456,12 +474,14 @@ public class DatabaseSessionStoreManager
         });
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
         return lockTaskWithDetails(taskId, func, false);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public <T> Optional<T> lockTaskIfNotLocked(long taskId, TaskLockActionWithDetails<T> func)
     {
@@ -488,6 +508,7 @@ public class DatabaseSessionStoreManager
         });
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {
@@ -522,6 +543,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<TaskRelation> getTaskRelations(long attemptId)
     {
@@ -538,6 +560,7 @@ public class DatabaseSessionStoreManager
             );
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<Config> getExportParams(List<Long> idList)
     {
@@ -557,6 +580,7 @@ public class DatabaseSessionStoreManager
         return sortConfigListByIdList(idList, list);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<ParameterUpdate> getStoreParams(List<Long> idList)
     {
@@ -575,6 +599,7 @@ public class DatabaseSessionStoreManager
         return sortParameterUpdateListByIdList(idList, list);
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public List<Config> getErrors(List<Long> idList)
     {
@@ -649,6 +674,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
     public void lockReadyDelayedAttempts(Instant currentTime, DelayedAttemptAction func)
     {
@@ -797,6 +823,7 @@ public class DatabaseSessionStoreManager
             this.dao = handle.attach(Dao.class);
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public long getTaskCountOfAttempt(long attemptId)
         {
@@ -811,6 +838,7 @@ public class DatabaseSessionStoreManager
             return count;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public long addSubtask(long attemptId, Task task)
         {
@@ -820,6 +848,7 @@ public class DatabaseSessionStoreManager
             return taskId;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public long addResumedSubtask(long attemptId, long parentId,
                 TaskType taskType, TaskStateCode state, TaskStateFlags flags,
@@ -844,6 +873,7 @@ public class DatabaseSessionStoreManager
             return taskId;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public void addResumingTasks(long attemptId, List<ResumingTask> tasks)
         {
@@ -863,6 +893,7 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public List<ResumingTask> getResumingTasksByNamePrefix(long attemptId, String fullNamePrefix)
         {
@@ -870,6 +901,7 @@ public class DatabaseSessionStoreManager
             return dao.findResumingTasksByNamePrefix(attemptId, fullNamePrefix + '%');
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
         {
@@ -907,6 +939,7 @@ public class DatabaseSessionStoreManager
             return true;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public void addDependencies(long downstream, List<Long> upstreams)
         {
@@ -915,6 +948,7 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public boolean isAnyProgressibleChild(long taskId)
         {
@@ -947,6 +981,7 @@ public class DatabaseSessionStoreManager
                 .first() != null;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public boolean isAnyErrorChild(long taskId)
         {
@@ -979,6 +1014,7 @@ public class DatabaseSessionStoreManager
                 .first() != null;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public List<Config> collectChildrenErrors(long taskId)
         {
@@ -993,12 +1029,14 @@ public class DatabaseSessionStoreManager
                 .list();
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
             return n > 0;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
         public boolean setStartedState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
@@ -1006,12 +1044,14 @@ public class DatabaseSessionStoreManager
             return n > 0;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setDoneState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
             long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
             return n > 0;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setErrorStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error)
         {
             long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
@@ -1022,6 +1062,7 @@ public class DatabaseSessionStoreManager
             return false;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setPlannedStateSuccessful(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
@@ -1037,6 +1078,7 @@ public class DatabaseSessionStoreManager
             return false;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setSuccessStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
@@ -1052,6 +1094,7 @@ public class DatabaseSessionStoreManager
             return false;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setPlannedStateWithDelayedError(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int newFlags, Optional<Config> updateError)
         {
             int n = handle.createStatement("update tasks" +
@@ -1072,6 +1115,7 @@ public class DatabaseSessionStoreManager
             return false;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setRetryWaitingState(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int retryInterval, Config stateParams, Optional<Config> updateError)
         {
             int n = handle.createStatement("update tasks" +
@@ -1097,6 +1141,7 @@ public class DatabaseSessionStoreManager
             return false;
         }
 
+        @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public int trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(long taskId)
         {
             return handle.createStatement("update tasks" +
@@ -1138,12 +1183,14 @@ public class DatabaseSessionStoreManager
             this.siteId = siteId;
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public long getActiveAttemptCount()
         {
             return autoCommit((handle, dao) -> new DatabaseSessionControlStore(handle, siteId).getActiveAttemptCount());
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public Optional<Instant> getLastExecutedSessionTime(
             int projectId, String workflowName,
@@ -1152,6 +1199,7 @@ public class DatabaseSessionStoreManager
             return autoCommit((handle, dao) -> new DatabaseSessionControlStore(handle, siteId).getLastExecutedSessionTime(projectId, workflowName, beforeThisSessionTime));
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public <T> T sessionTransaction(SessionTransactionAction<T> func)
                 throws Exception
@@ -1161,6 +1209,7 @@ public class DatabaseSessionStoreManager
             }, Exception.class);
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
@@ -1171,6 +1220,7 @@ public class DatabaseSessionStoreManager
             }, ResourceConflictException.class, ResourceNotFoundException.class);
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionWithLastAttempt> getSessions(
                 int pageSize,
@@ -1180,6 +1230,7 @@ public class DatabaseSessionStoreManager
             return autoCommit((handle, dao) -> dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE), acFilter.getSql()));
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionWithLastAttempt getSessionById(long sessionId)
                 throws ResourceNotFoundException
@@ -1189,6 +1240,7 @@ public class DatabaseSessionStoreManager
                     "session id=%d", sessionId);
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(
                 int projectId,
@@ -1200,6 +1252,7 @@ public class DatabaseSessionStoreManager
             return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE), acFilter.getSql()));
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionAttemptWithSession> getAttempts(
                 boolean withRetriedAttempts,
@@ -1215,6 +1268,7 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionAttemptWithSession> getAttemptsOfProject(
                 boolean withRetriedAttempts,
@@ -1231,6 +1285,7 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionWithLastAttempt> getSessionsOfProject(
                 int projectId,
@@ -1241,6 +1296,7 @@ public class DatabaseSessionStoreManager
             return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE), acFilter.getSql()));
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(
                 boolean withRetriedAttempts,
@@ -1258,18 +1314,21 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(int projectId, String workflowName, int pageSize, Optional<Long> lastId)
         {
             return autoCommit((handle, dao) -> dao.getActiveAttemptsOfWorkflow(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE)));
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionAttempt> getAttemptsOfSession(long sessionId, int pageSize, Optional<Long> lastId)
         {
             return autoCommit((handle, dao) -> dao.getAttemptsOfSessionWithRetries(siteId, sessionId, pageSize, lastId.or(Long.MAX_VALUE)));
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionAttemptWithSession getAttemptById(long attemptId)
             throws ResourceNotFoundException
@@ -1279,6 +1338,7 @@ public class DatabaseSessionStoreManager
                     "session attempt id=%d", attemptId);
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionAttemptWithSession getLastAttemptByName(int projectId, String workflowName, Instant sessionTime)
             throws ResourceNotFoundException
@@ -1288,6 +1348,7 @@ public class DatabaseSessionStoreManager
                     "session time=%s in project id=%d workflow name=%s", sessionTime, projectId, workflowName);
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionAttemptWithSession getAttemptByName(int projectId, String workflowName, Instant sessionTime, String retryAttemptName)
             throws ResourceNotFoundException
@@ -1297,6 +1358,7 @@ public class DatabaseSessionStoreManager
                     "session attempt name=%s in session project id=%d workflow name=%s time=%s", retryAttemptName, projectId, workflowName, sessionTime);
         }
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredSessionAttemptWithSession> getOtherAttempts(long attemptId)
             throws ResourceNotFoundException
@@ -1327,6 +1389,7 @@ public class DatabaseSessionStoreManager
         //        .list();
         //}
 
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
         @Override
         public List<ArchivedTask> getTasksOfAttempt(long attemptId)
         {
@@ -1371,6 +1434,7 @@ public class DatabaseSessionStoreManager
             this.dao = handle.attach(dao(databaseType));
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionAttempt insertAttempt(long sessionId, int projId, SessionAttempt attempt)
             throws ResourceConflictException, ResourceNotFoundException
@@ -1393,6 +1457,7 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionAttempt insertDelayedAttempt(long sessionId, int projId, SessionAttempt attempt,
                 Optional<Long> dependentSessionId)
@@ -1403,6 +1468,7 @@ public class DatabaseSessionStoreManager
             return stored;
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public long getActiveAttemptCount()
         {
@@ -1416,6 +1482,7 @@ public class DatabaseSessionStoreManager
                 .first();
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public Optional<Instant> getLastExecutedSessionTime(
                 int projectId, String workflowName,
@@ -1426,6 +1493,7 @@ public class DatabaseSessionStoreManager
                 .transform(seconds -> Instant.ofEpochSecond(seconds));
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public StoredSessionAttempt getLastAttempt(long sessionId)
             throws ResourceNotFoundException
@@ -1435,12 +1503,14 @@ public class DatabaseSessionStoreManager
                     "latest attempt of session id=%d", sessionId);
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public Optional<StoredSessionAttempt> getLastAttemptIfExists(long sessionId)
         {
             return Optional.fromNullable(dao.getLastAttemptInternal(sessionId));
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public <T> T insertRootTask(long attemptId, Task task, SessionBuilderAction<T> func)
         {
@@ -1450,6 +1520,7 @@ public class DatabaseSessionStoreManager
             return func.call(new DatabaseTaskControlStore(handle), taskId);
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public void insertMonitors(long attemptId, List<SessionMonitor> monitors)
         {
@@ -1458,6 +1529,7 @@ public class DatabaseSessionStoreManager
             }
         }
 
+        @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
         @Override
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
@@ -1518,6 +1590,7 @@ public class DatabaseSessionStoreManager
             this.dao = handle.attach(dao(databaseType));
         }
 
+        @DigdagTimed(value = "ddacst_", category = "db", appendMethodName = true)
         @Override
         public <T> T lockSessionOfAttempt(long attemptId, DelayedSessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException, ResourceLimitExceededException
@@ -1533,12 +1606,14 @@ public class DatabaseSessionStoreManager
             return func.call(new DatabaseSessionControlStore(handle, 0), attempt);
         }
 
+        @DigdagTimed(value = "ddacst_", category = "db", appendMethodName = true)
         @Override
         public void delayDelayedAttempt(long attemptId, Instant nextRunTime)
         {
             dao.updateNextDelayedAttemptRunTime(attemptId, nextRunTime.getEpochSecond());
         }
 
+        @DigdagTimed(value = "ddacst_", category = "db", appendMethodName = true)
         @Override
         public void completeDelayedAttempt(long attemptId)
         {

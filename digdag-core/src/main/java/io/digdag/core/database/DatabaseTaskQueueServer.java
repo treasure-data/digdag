@@ -18,6 +18,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.ErrorReporter;
+import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.Bind;
@@ -48,6 +50,9 @@ public class DatabaseTaskQueueServer
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
+
+    @Inject
+    private DigdagMetrics metrics;
 
     @Inject
     public DatabaseTaskQueueServer(DatabaseConfig config, TransactionManager tm, ConfigMapper cfm, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
@@ -441,6 +446,7 @@ public class DatabaseTaskQueueServer
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
             errorReporter.reportUncaughtError(t);
+            metrics.increment(Category.DB, "uncaughtErrors");
         }
     }
 

@@ -25,6 +25,7 @@ import io.digdag.core.repository.TimeZoneMap;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStatus;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.ac.AccessController;
 import org.immutables.value.Value;
@@ -83,6 +84,7 @@ public class DatabaseProjectStoreManager
         return new DatabaseProjectStore(siteId);
     }
 
+    @DigdagTimed(value = "dpsm_", category = "db", appendMethodName = true)
     @Override
     public StoredWorkflowDefinitionWithProject getWorkflowDetailsById(long wfId)
             throws ResourceNotFoundException
@@ -92,6 +94,7 @@ public class DatabaseProjectStoreManager
                 "workflow id=%s", wfId);
     }
 
+    @DigdagTimed(value = "dpsm_", category = "db", appendMethodName = true)
     @Override
     public StoredProject getProjectByIdInternal(int projId)
         throws ResourceNotFoundException
@@ -101,6 +104,7 @@ public class DatabaseProjectStoreManager
                 "project id=%s", projId);
     }
 
+    @DigdagTimed(value = "dpsm_", category = "db", appendMethodName = true)
     @Override
     public StoredRevision getRevisionOfWorkflowDefinition(long wfId)
         throws ResourceNotFoundException
@@ -126,12 +130,14 @@ public class DatabaseProjectStoreManager
         //    return dao.getProjects(siteId, Integer.MAX_VALUE, 0);
         //}
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
         {
             return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0), acFilter.getSql()));
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public ProjectMap getProjectsByIdList(List<Integer> projIdList)
         {
@@ -157,6 +163,7 @@ public class DatabaseProjectStoreManager
             return new ProjectMap(builder.build());
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredProject getProjectById(int projId)
                 throws ResourceNotFoundException
@@ -166,6 +173,7 @@ public class DatabaseProjectStoreManager
                     "project id=%d", projId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredProject getProjectByName(String projName)
                 throws ResourceNotFoundException
@@ -175,6 +183,7 @@ public class DatabaseProjectStoreManager
                     "project name=%s", projName);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
                 throws ResourceConflictException
@@ -203,6 +212,7 @@ public class DatabaseProjectStoreManager
             }, ResourceConflictException.class);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
             throws ResourceNotFoundException
@@ -220,6 +230,7 @@ public class DatabaseProjectStoreManager
             }, ResourceNotFoundException.class);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredRevision getRevisionById(int revId)
                 throws ResourceNotFoundException
@@ -229,6 +240,7 @@ public class DatabaseProjectStoreManager
                     "revision id=%d", revId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredRevision getRevisionByName(int projId, String revName)
                 throws ResourceNotFoundException
@@ -238,6 +250,7 @@ public class DatabaseProjectStoreManager
                     "revision name=%s in project id=%d", revName, projId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredRevision getLatestRevision(int projId)
                 throws ResourceNotFoundException
@@ -247,12 +260,14 @@ public class DatabaseProjectStoreManager
                     "project id=%d", projId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredRevision> getRevisions(int projId, int pageSize, Optional<Integer> lastId)
         {
             return autoCommit((handle, dao) -> dao.getRevisions(siteId, projId, pageSize, lastId.or(Integer.MAX_VALUE)));
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public byte[] getRevisionArchiveData(int revId)
                 throws ResourceNotFoundException
@@ -262,6 +277,7 @@ public class DatabaseProjectStoreManager
                     "revisin id=%d", revId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(int projId, String name)
             throws ResourceNotFoundException
@@ -271,6 +287,7 @@ public class DatabaseProjectStoreManager
                     "workflow name=%s in the latest revision of project id=%d", name, projId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 int pageSize,
@@ -281,6 +298,7 @@ public class DatabaseProjectStoreManager
             return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L), acFilter.getSql()));
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredWorkflowDefinition> getWorkflowDefinitions(
                 int revId,
@@ -291,6 +309,7 @@ public class DatabaseProjectStoreManager
             return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0L), acFilter.getSql()));
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredWorkflowDefinitionWithProject getWorkflowDefinitionById(long wfId)
             throws ResourceNotFoundException
@@ -300,6 +319,7 @@ public class DatabaseProjectStoreManager
                     "workflow id=%d", wfId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
             throws ResourceNotFoundException
@@ -309,6 +329,7 @@ public class DatabaseProjectStoreManager
                     "workflow name=%s in revision id=%d", name, revId);
         }
 
+        @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList)
         {
@@ -388,6 +409,7 @@ public class DatabaseProjectStoreManager
          * This method doesn't check site id because ProjectControl
          * interface is available only if site is is valid.
          */
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
         @Override
         public StoredRevision insertRevision(int projId, Revision revision)
             throws ResourceConflictException
@@ -405,6 +427,7 @@ public class DatabaseProjectStoreManager
             }
         }
 
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
         @Override
         public void insertRevisionArchiveData(int revId, byte[] data)
             throws ResourceConflictException
@@ -423,6 +446,7 @@ public class DatabaseProjectStoreManager
          * This method doesn't check site id because ProjectControl
          * interface is available only if site is is valid.
          */
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
         @Override
         public StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition def, ZoneId workflowTimeZone)
             throws ResourceConflictException
@@ -455,6 +479,7 @@ public class DatabaseProjectStoreManager
             }
         }
 
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
         @Override
         public <T extends Schedule> void updateSchedules(int projId, List<T> schedules,
                 ScheduleUpdateAction<T> func)
@@ -508,6 +533,7 @@ public class DatabaseProjectStoreManager
             }
         }
 
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
         @Override
         public void deleteSchedules(int projId)
         {

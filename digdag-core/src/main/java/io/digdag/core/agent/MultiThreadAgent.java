@@ -1,7 +1,6 @@
 package io.digdag.core.agent;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
@@ -9,14 +8,16 @@ import io.digdag.spi.TaskRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.time.Duration;
+
+import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,13 +37,14 @@ public class MultiThreadAgent
     private final BlockingQueue<Runnable> executorQueue;
     private final ThreadPoolExecutor executor;
     private final AtomicInteger activeTaskCount = new AtomicInteger(0);
+    private final DigdagMetrics metrics;
 
     private volatile boolean stop = false;
 
     public MultiThreadAgent(
             AgentConfig config, AgentId agentId,
             TaskServerApi taskServer, OperatorManager runner,
-            TransactionManager transactionManager, ErrorReporter errorReporter)
+            TransactionManager transactionManager, ErrorReporter errorReporter, DigdagMetrics metrics)
     {
         this.agentId = agentId;
         this.config = config;
@@ -50,6 +52,7 @@ public class MultiThreadAgent
         this.runner = runner;
         this.transactionManager = transactionManager;
         this.errorReporter = errorReporter;
+        this.metrics = metrics;
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(false)  // make them non-daemon threads so that shutting down agent doesn't kill operator execution
@@ -119,6 +122,7 @@ public class MultiThreadAgent
                     // Acquire at most guaranteedAvaialbleThreads or 10. This guarantees that all tasks start immediately.
                     int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
                     if (maxAcquire > 0) {
+                        metrics.summary(Category.AGENT,"mtag_NumMaxAcquire", maxAcquire);
                         transactionManager.begin(() -> {
                             List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
                             for (TaskRequest req : reqs) {
@@ -129,6 +133,7 @@ public class MultiThreadAgent
                                     catch (Throwable t) {
                                         logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
                                         errorReporter.reportUncaughtError(t);
+                                        metrics.increment(Category.AGENT, "uncaughtErrors");
                                     }
                                     finally {
                                         activeTaskCount.decrementAndGet();
@@ -140,6 +145,7 @@ public class MultiThreadAgent
                         });
                     }
                     else {
+                        metrics.increment(Category.AGENT, "mtag_RunWaitCounter");
                         // no executor thread is available. sleep for a while until a task execution finishes
                         addActiveTaskLock.wait(500);
                     }
@@ -148,6 +154,7 @@ public class MultiThreadAgent
             catch (Throwable t) {
                 logger.error("Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
                 errorReporter.reportUncaughtError(t);
+                metrics.increment(Category.AGENT, "uncaughtErrors");
                 try {
                     // sleep before retrying
                     Thread.sleep(1000);

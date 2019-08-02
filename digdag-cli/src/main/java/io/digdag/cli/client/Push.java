@@ -1,6 +1,5 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -13,21 +12,15 @@ import io.digdag.cli.TimeUtil;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.ConfigLoaderManager;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.cli.client.ProjectUtil.showUploadedProject;
 

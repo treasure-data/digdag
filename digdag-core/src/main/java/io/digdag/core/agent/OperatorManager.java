@@ -7,12 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.database.TransactionManager;
 import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
-import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.ErrorReporter;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -24,6 +23,8 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateException;
+import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,9 @@ public class OperatorManager
     private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
+    private DigdagMetrics metrics;
+
+    @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             ConfigFactory cf,
@@ -104,6 +108,7 @@ public class OperatorManager
         // TODO wait for shutdown completion?
     }
 
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
@@ -129,7 +134,8 @@ public class OperatorManager
         }
     }
 
-    private void runWithHeartbeat(TaskRequest request)
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    void runWithHeartbeat(TaskRequest request)
     {
         try {
             workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (projectPath) -> {
@@ -181,11 +187,10 @@ public class OperatorManager
         }
     }
 
-    private void runWithWorkspace(Path projectPath, TaskRequest request)
-        throws TaskExecutionException
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    Config evalConfig(TaskRequest request)
+            throws RuntimeException, AssertionError
     {
-        // evaluate config and creates the complete merged config.
-        Config config;
         try {
             Config all = cf.create();
             all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
@@ -195,10 +200,22 @@ public class OperatorManager
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
 
-            config = evalEngine.eval(all, evalParams);
+            //ToDo get metrics on parameter size
+            return evalEngine.eval(all, evalParams);
         }
-        catch (TemplateException ex) {
-            throw new ConfigException(ex.getMessage(), ex);
+        catch (TemplateException te) {
+            throw new ConfigException(te.getMessage(), te);
+        }
+    }
+
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    void runWithWorkspace(Path projectPath, TaskRequest request)
+        throws TaskExecutionException
+    {
+        // evaluate config and creates the complete merged config.
+        Config config;
+        try {
+            config = evalConfig(request);
         }
         catch (ConfigException ex) {
             throw ex;
@@ -282,6 +299,7 @@ public class OperatorManager
         }
     }
 
+    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
     protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);
@@ -335,6 +353,7 @@ public class OperatorManager
         catch (Throwable t) {
             logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
             errorReporter.reportUncaughtError(t);
+            metrics.increment(Category.AGENT, "uncaughtErrors");
         }
     }
 

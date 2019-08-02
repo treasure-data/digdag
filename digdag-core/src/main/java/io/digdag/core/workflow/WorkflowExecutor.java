@@ -33,12 +33,15 @@ import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskQueueRequest;
 import io.digdag.spi.TaskConflictException;
 import io.digdag.spi.TaskNotFoundException;
+import io.digdag.spi.metrics.DigdagMetrics;
+import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import io.digdag.util.RetryControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,6 +167,7 @@ public class WorkflowExecutor
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
+    private final DigdagMetrics metrics;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -178,7 +182,8 @@ public class WorkflowExecutor
             WorkflowCompiler compiler,
             ConfigFactory cf,
             ObjectMapper archiveMapper,
-            Config systemConfig)
+            Config systemConfig,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
@@ -188,6 +193,7 @@ public class WorkflowExecutor
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
+        this.metrics = metrics;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -491,7 +497,7 @@ public class WorkflowExecutor
                 if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
                     break;
                 }
-
+                metrics.increment(Category.EXECUTOR, "loopCount");
                 //boolean inced = prop.run();
                 //boolean retried = retryRetryWaitingTasks();
                 //if (inced || retried) {
@@ -514,6 +520,7 @@ public class WorkflowExecutor
                             waitMsec.set(INITIAL_INTERVAL);
                         }
                         else {
+                            metrics.summary(Category.EXECUTOR, "loopWaitMsec", waitMsec.get());
                             boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
                             if (noticed && propagatorNotice) {
                                 propagatorNotice = false;
@@ -532,6 +539,7 @@ public class WorkflowExecutor
         }
     }
 
+    @DigdagTimed(category = "executor", appendMethodName = true)
     private boolean propagateBlockedChildrenToReady()
     {
         boolean anyChanged = false;
@@ -554,6 +562,7 @@ public class WorkflowExecutor
         return anyChanged;
     }
 
+    @DigdagTimed(category = "executor", appendMethodName = true)
     private boolean propagateAllPlannedToDone()
     {
         boolean anyChanged = false;
@@ -739,7 +748,8 @@ public class WorkflowExecutor
         params.set("error", error);
     }
 
-    private boolean propagateSessionArchive()
+    @DigdagTimed(category = "executor", appendMethodName = true)
+    protected boolean propagateSessionArchive()
     {
         boolean anyChanged = false;
         long lastTaskId = 0;
@@ -771,7 +781,8 @@ public class WorkflowExecutor
         return anyChanged;
     }
 
-    private boolean retryRetryWaitingTasks()
+    @DigdagTimed(category = "executor", appendMethodName = true)
+    protected boolean retryRetryWaitingTasks()
     {
         return tm.begin(() -> sm.trySetRetryWaitingToReady() > 0);
     }
@@ -822,7 +833,9 @@ public class WorkflowExecutor
         //}
     }
 
-    private void enqueueReadyTasks(TaskQueuer queuer)
+
+    @DigdagTimed(category = "executor", appendMethodName = true)
+    protected void enqueueReadyTasks(TaskQueuer queuer)
     {
         List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(100));
         for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
@@ -834,7 +847,8 @@ public class WorkflowExecutor
         }
     }
 
-    private void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
+    @DigdagTimed(category="executor", appendMethodName = true)
+    protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
         sm.lockTaskIfNotLocked(taskId, (store, task) -> {
             TaskControl lockedTask = new TaskControl(store, task);

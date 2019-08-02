@@ -9,7 +9,6 @@ import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -21,11 +20,13 @@ import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.ScheduleTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 import javax.ws.rs.Consumes;
@@ -57,6 +58,7 @@ public class ScheduleResource
     private final TransactionManager tm;
     private final AccessController ac;
     private final ScheduleExecutor exec;
+    private final DigdagMetrics metrics;
 
     @Inject
     public ScheduleResource(
@@ -64,15 +66,18 @@ public class ScheduleResource
             ScheduleStoreManager sm,
             TransactionManager tm,
             AccessController ac,
-            ScheduleExecutor exec)
+            ScheduleExecutor exec,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
         this.ac = ac;
         this.exec = exec;
+        this.metrics = metrics;
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/schedules")
     public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
@@ -94,6 +99,7 @@ public class ScheduleResource
         });
     }
 
+    @DigdagTimed(category = "api", value = "getScheduleById")
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") int id)
@@ -115,6 +121,7 @@ public class ScheduleResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
@@ -163,6 +170,7 @@ public class ScheduleResource
                 .getTimeZone();
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
@@ -191,6 +199,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceLimitExceededException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Path("/api/schedules/{id}/disable")
     public RestScheduleSummary disableSchedule(@PathParam("id") int id)
@@ -219,6 +228,7 @@ public class ScheduleResource
         }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Path("/api/schedules/{id}/enable")
     public RestScheduleSummary enableSchedule(@PathParam("id") int id)

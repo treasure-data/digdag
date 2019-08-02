@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import org.junit.Rule;
 import org.junit.Test;
 import io.digdag.core.database.DataSourceProvider;
+import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
 import static utils.TestUtils.expect;
+import static utils.TestUtils.main;
 
 public class ServerJmxIT
 {
@@ -89,6 +91,35 @@ public class ServerJmxIT
             assertTrue((int)numConnection >= 0);
         }
     }
+
+    @Test
+    public void verifyDigdagMetrics()
+            throws Exception
+    {
+        //To get specific metrics, we need to use it.
+        CommandStatus status = main("projects",
+                "-e", server.endpoint());
+        try (JMXConnector con = connectJmx(server)) {
+            MBeanServerConnection beans = con.getMBeanServerConnection();
+
+            //Category AGENT
+            Object numMaxAcquire = beans.getAttribute(ObjectName.getInstance("io.digdag.agent", "name", "agent_mtag_NumMaxAcquire"), "Count");
+            assertTrue((long)numMaxAcquire >= 0);
+
+            //Category API
+            Object getProjectsByName = beans.getAttribute(ObjectName.getInstance("io.digdag.api", "name", "api_getProjects"), "Count");
+            assertTrue((long)getProjectsByName >= 0);
+
+            //Category DB
+            Object findTasksByState = beans.getAttribute(ObjectName.getInstance("io.digdag.db", "name", "db_dssm_findRootTasksByStates"), "Count");
+            assertTrue((long)findTasksByState >= 0);
+
+            //Category EXECUTOR
+            Object executor_LoopCount = beans.getAttribute(ObjectName.getInstance("io.digdag.executor", "name", "executor_loopCount"), "Count");
+            assertTrue((long)executor_LoopCount >= 0);
+        }
+    }
+
 
     @Test
     public void verifyUncaughtErrorCount()

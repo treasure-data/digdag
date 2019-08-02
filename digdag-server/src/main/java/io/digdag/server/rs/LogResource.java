@@ -1,31 +1,26 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.time.Instant;
-import java.io.InputStream;
 import java.io.IOException;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.PUT;
 import javax.ws.rs.GET;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ServerErrorException;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.io.ByteStreams;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.client.api.*;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.*;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.WorkflowTarget;
+import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
@@ -44,6 +39,8 @@ public class LogResource
     private final TransactionManager tm;
     private final AccessController ac;
     private final LogServer logServer;
+    private final DigdagMetrics metrics;
+
 
     @Inject
     public LogResource(
@@ -51,15 +48,18 @@ public class LogResource
             SessionStoreManager sm,
             TransactionManager tm,
             AccessController ac,
-            LogServerManager lm)
+            LogServerManager lm,
+            DigdagMetrics metrics)
     {
         this.rm = rm;
         this.sm = sm;
         this.tm = tm;
         this.ac = ac;
         this.logServer = lm.getLogServer();
+        this.metrics = metrics;
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
@@ -77,6 +77,7 @@ public class LogResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
+    @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")

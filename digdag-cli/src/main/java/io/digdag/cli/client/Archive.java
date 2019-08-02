@@ -1,6 +1,5 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -10,19 +9,13 @@ import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.ConfigLoaderManager;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
-import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Archive
