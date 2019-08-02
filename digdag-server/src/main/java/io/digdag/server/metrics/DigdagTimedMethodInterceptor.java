@@ -32,15 +32,24 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
         Category category = Category.fromString(timed.category());
         String value = mkValue(timed, invocation);
         String metricsName = metrics.mkMetricsName(category, value);
+        Tags taskTags = Tags.empty();
+        try {
+            taskTags = timed.taskRequest() ? getTaskRequest(invocation) : Tags.empty();
+        }
+        catch (Exception e) {
+            logger.debug(e.toString());
+            //ignore exception which is caused by metrics processing itself.
+        }
+
         Timer.Sample sample = metrics.timerStart(category);
         try {
             return invocation.proceed();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             throw ex;
-        } finally {
+        }
+        finally {
             try {
-                Tags taskTags = timed.taskRequest() ? getTaskRequest(invocation) : Tags.empty();
-
                 metrics.timerStop(category, metricsName, taskTags.and(timed.extraTags()), sample);
             } catch (Exception e) {
                 // ignoring on purpose
