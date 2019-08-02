@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.Function;
 
 public class PollingRetryExecutor
 {
@@ -21,8 +22,7 @@ public class PollingRetryExecutor
 
     private static final DurationInterval DEFAULT_RETRY_INTERVAL = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
 
-    private static final String DEFAULT_ERROR_MESSAGE = "Operation failed";
-    private static final Object[] DEFAULT_ERROR_MESSAGE_PARAMETERS = {};
+    private static final Function<Exception, String> DEFAULT_ERROR_MESSAGE_FUNCTION = (ex) -> "Operation failed";
     private static final List<Predicate<Exception>> DEFAULT_RETRY_PREDICATES = ImmutableList.of();
 
     private static final String RESULT = "result";
@@ -37,23 +37,20 @@ public class PollingRetryExecutor
 
     private final List<Predicate<Exception>> retryPredicates;
 
-    private final String errorMessage;
-    private final Object[] errorMessageParameters;
+    private final Function<Exception, String> errorMessageFunction;
 
     private PollingRetryExecutor(
             TaskState state,
             String stateKey,
             DurationInterval retryInterval,
             List<Predicate<Exception>> retryPredicates,
-            String errorMessage,
-            Object... errorMessageParameters)
+            Function<Exception, String> errorMessageFunction)
     {
         this.state = Objects.requireNonNull(state, "state");
         this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
         this.retryInterval = Objects.requireNonNull(retryInterval, "retryInterval");
         this.retryPredicates = Objects.requireNonNull(retryPredicates, "retryPredicates");
-        this.errorMessage = Objects.requireNonNull(errorMessage, "errorMessage");
-        this.errorMessageParameters = Objects.requireNonNull(errorMessageParameters, "errorMessageParameters");
+        this.errorMessageFunction = Objects.requireNonNull(errorMessageFunction, "errorMessageFunction");
     }
 
     public static PollingRetryExecutor pollingRetryExecutor(TaskState state, String stateKey)
@@ -63,19 +60,22 @@ public class PollingRetryExecutor
                 stateKey,
                 DEFAULT_RETRY_INTERVAL,
                 DEFAULT_RETRY_PREDICATES,
-                DEFAULT_ERROR_MESSAGE,
-                DEFAULT_ERROR_MESSAGE_PARAMETERS);
+                DEFAULT_ERROR_MESSAGE_FUNCTION);
     }
 
     public PollingRetryExecutor withErrorMessage(String errorMessage, Object... errorMessageParameters)
+    {
+        return withErrorMessage((exception) -> String.format(errorMessage, errorMessageParameters));
+    }
+
+    public PollingRetryExecutor withErrorMessage(Function<Exception, String> errorMessageFunction)
     {
         return new PollingRetryExecutor(
                 state,
                 stateKey,
                 retryInterval,
                 retryPredicates,
-                errorMessage,
-                errorMessageParameters);
+                errorMessageFunction);
     }
 
     public PollingRetryExecutor retryUnless(Predicate<Exception> predicate)
@@ -104,8 +104,7 @@ public class PollingRetryExecutor
                 stateKey,
                 retryInterval,
                 newRetryPredicates,
-                errorMessage,
-                errorMessageParameters);
+                errorMessageFunction);
     }
 
     public PollingRetryExecutor withRetryInterval(DurationInterval retryInterval)
@@ -115,8 +114,7 @@ public class PollingRetryExecutor
                 stateKey,
                 retryInterval,
                 retryPredicates,
-                errorMessage,
-                errorMessageParameters);
+                errorMessageFunction);
     }
 
     public void runOnce(Action f)
@@ -179,7 +177,7 @@ public class PollingRetryExecutor
             throw e;
         }
         catch (Exception e) {
-            String formattedErrorMessage = String.format(errorMessage, errorMessageParameters);
+            String formattedErrorMessage = errorMessageFunction.apply(e);
 
             if (!retry(e)) {
                 logger.warn("{}: giving up", formattedErrorMessage, e);

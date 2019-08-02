@@ -30,6 +30,7 @@ import io.digdag.util.UserSecretTemplate;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
@@ -59,6 +60,7 @@ import java.util.concurrent.TimeoutException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpHeader.USER_AGENT;
 
 public class HttpOperatorFactory
@@ -200,7 +202,7 @@ public class HttpOperatorFactory
             configureQueryParameters(request);
 
             ContentResponse response = PollingRetryExecutor.pollingRetryExecutor(state, "request")
-                    .withErrorMessage("HTTP request failed")
+                    .withErrorMessage((ex) -> "HTTP request failed. " + ex.getMessage())
                     .run(s -> execute(request, uriIsSecret));
 
             return response;
@@ -293,19 +295,19 @@ public class HttpOperatorFactory
                     case HttpStatus.REQUEST_TIMEOUT_408:
                     case HttpStatus.TOO_MANY_REQUESTS_429:
                         // Retry these.
-                        return new RuntimeException("Failed HTTP request: " + requestStatus(req, res, uriIsSecret));
+                        return new RuntimeException("Failed HTTP request: " + requestStatus(req, res, uriIsSecret) + responseSummary(res));
                     default:
                         // 4xx: The request is invalid for this resource. Fail hard without retrying.
-                        return new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret));
+                        return new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret) + responseSummary(res));
                 }
             }
             else if (res.getStatus() >= 500 && res.getStatus() < 600) {
                 // 5xx: Server Error. This is hopefully ephemeral.
-                return ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res, uriIsSecret));
+                return ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res, uriIsSecret) + responseSummary(res));
             }
             else {
                 // Unknown status code. Treat as an ephemeral error.
-                return ephemeralError("Unexpected HTTP status: " + requestStatus(req, res, uriIsSecret));
+                return ephemeralError("Unexpected HTTP status: " + requestStatus(req, res, uriIsSecret) + responseSummary(res));
             }
         }
 
@@ -351,7 +353,7 @@ public class HttpOperatorFactory
         private String requestStatus(Request request, Response r, boolean uriIsSecret)
         {
             String safeUri = safeUri(request, uriIsSecret);
-            return request.getMethod() + " " + safeUri + ": " + r.getStatus() + " " + HttpStatus.getMessage(r.getStatus());
+            return request.getMethod() + " " + safeUri + " - " + r.getStatus() + " " + HttpStatus.getMessage(r.getStatus());
         }
 
         private String safeUri(Request request, boolean uriIsSecret)
@@ -368,6 +370,34 @@ public class HttpOperatorFactory
                 throw Throwables.propagate(e);
             }
             return safeUri.toString();
+        }
+
+        private String responseSummary(Response r)
+        {
+            if (r instanceof HttpContentResponse) {
+                HttpContentResponse res = (HttpContentResponse) r;
+                String contentLengthHeader = res.getHeaders().get(CONTENT_LENGTH);
+                if (contentLengthHeader != null) {
+                    // Skip if Content-Length header suggests response body is too long
+                    try {
+                        if (Integer.parseInt(contentLengthHeader) > maxStoredResponseContentSize) {
+                            return ": (too long response body)";
+                        }
+                    }
+                    catch (Exception ex) {
+                        return ": (too long response body)";
+                    }
+                }
+                String body = res.getContentAsString();
+                if (body.length() > 200) {
+                    // Truncate too long message
+                    body = body.substring(0, 200 - 3) + "...";
+                }
+                return ": " + body;
+            }
+            else {
+                return "";
+            }
         }
 
         private TaskResult result(ContentResponse response, boolean storeContent)
