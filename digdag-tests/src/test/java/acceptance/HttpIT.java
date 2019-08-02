@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.littleshoot.proxy.HttpProxyServer;
+import utils.CommandStatus;
 import utils.TestUtils;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ import static org.eclipse.jetty.http.HttpMethod.OPTIONS;
 import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpMethod.PUT;
 import static org.eclipse.jetty.http.HttpMethod.TRACE;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -497,5 +499,41 @@ public class HttpIT
         httpMockWebServer.enqueue(new MockResponse().setBody(content));
         runWorkflow(folder, "acceptance/http/http_for_each.dig", ImmutableMap.of("test_uri", uri));
         assertThat(httpMockWebServer.getRequestCount(), is(1));
+    }
+
+    @Test
+    public void verifyErrorMessageSummary()
+            throws IOException
+    {
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
+        httpMockWebServer.setDispatcher(new QueueDispatcher());
+        httpMockWebServer.enqueue(new MockResponse().setResponseCode(400).setBody("Test Failure Body"));
+        CommandStatus status = runWorkflow(folder, "acceptance/http/http.dig",
+                ImmutableMap.of("test_uri", uri),
+                ImmutableMap.of(),
+                1);
+        assertThat(status.errUtf8(), containsString("Test Failure Body"));
+    }
+
+    @Test
+    public void verifyTruncateLongErrorMessage()
+            throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 197; i++) {
+            sb.append(Integer.toString(i % 10));
+        }
+        String error197 = sb.toString();
+        String fullError = error197 + "ERROR!";
+        String truncatedError = error197 + "...";
+
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
+        httpMockWebServer.setDispatcher(new QueueDispatcher());
+        httpMockWebServer.enqueue(new MockResponse().setResponseCode(400).setBody(fullError));
+        CommandStatus status = runWorkflow(folder, "acceptance/http/http.dig",
+                ImmutableMap.of("test_uri", uri),
+                ImmutableMap.of(),
+                1);
+        assertThat(status.errUtf8(), containsString(truncatedError));
     }
 }
