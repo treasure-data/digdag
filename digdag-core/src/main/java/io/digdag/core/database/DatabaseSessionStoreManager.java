@@ -1171,7 +1171,7 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE)));
+            return getSessions(pageSize, lastId, 1);
         }
 
         @Override
@@ -1205,7 +1205,7 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE)));
+            return getSessionsOfWorkflowByName(projectId, workflowName, pageSize, lastId, 1);
         }
 
         @Override
@@ -1240,7 +1240,7 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE)));
+            return getSessionsOfProject(projectId, pageSize, lastId, 1);
         }
 
         @Override
