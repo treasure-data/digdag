@@ -10,7 +10,9 @@ public interface RestSessionCollection
 {
     List<RestSession> getSessions();
 
-    int getTotalPageCount();
+    int getRecordsNumber();
+
+    int getPageSize();
 
     static ImmutableRestSessionCollection.Builder builder()
     {

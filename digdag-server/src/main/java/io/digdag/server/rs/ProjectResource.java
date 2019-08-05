@@ -429,9 +429,7 @@ public class ProjectResource
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
             Integer page = Optional.fromNullable(pageNumber).or(1);
 
-            Integer totalSessionsCount = ss.getTotalProjectSessionsCount(Optional.fromNullable(lastId), projectId);
-            int totalPageCount = totalSessionsCount / validPageSize;
-            if (totalSessionsCount % validPageSize != 0) totalPageCount += 1;
+            Integer sessionRecordsNumber = ss.getTotalProjectSessionsCount(Optional.fromNullable(lastId), projectId);
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
@@ -440,7 +438,7 @@ public class ProjectResource
                 sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId), page);
             }
 
-            return RestModels.sessionCollection(ps, sessions, totalPageCount);
+            return RestModels.sessionCollection(ps, sessions, sessionRecordsNumber, validPageSize);
         }, ResourceNotFoundException.class);
     }
 
