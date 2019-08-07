@@ -44,6 +44,9 @@ public class Push
     @Parameter(names = {"--schedule-from"})
     String scheduleFromString = null;
 
+    @Parameter(names = {"--copy-outside-symlinks"})
+    boolean copyOutsideSymlinks = false;
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -61,6 +64,7 @@ public class Push
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
         err.println("        --schedule-from \"yyyy-MM-dd HH:mm:ss Z\"  start schedules from this time instead of current time");
+        err.println("        --copy-outside-symlinks      transform symbolic links to regular files or directories");
         showCommonOptions();
         return systemExit(error);
     }
@@ -107,7 +111,7 @@ public class Push
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        List<String> workflows = injector.getInstance(Archiver.class).createArchive(projectPath, archivePath);
+        List<String> workflows = injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, copyOutsideSymlinks);
         out.println("Workflows:");
         if (workflows.isEmpty()) {
             out.println("  WARNING: This project doesn't include workflows. Usually, this is a mistake.");

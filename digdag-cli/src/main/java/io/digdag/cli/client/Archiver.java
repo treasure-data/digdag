@@ -43,7 +43,7 @@ class Archiver
         this.cf = cf;
     }
 
-    List<String> createArchive(Path projectPath, Path output)
+    List<String> createArchive(Path projectPath, Path output, boolean copyOutsideSymlinks)
             throws IOException
     {
         out.println("Creating " + output + "...");
@@ -57,12 +57,12 @@ class Archiver
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
 
             project.listFiles((resourceName, absPath) -> {
-                if (!Files.isDirectory(absPath)) {
+                if (!Files.isDirectory(absPath)) {  // skip directory and symlinks pointing a directory (because NOFOLLOW_LINKS is set)
                     out.println("  Archiving " + resourceName);
 
-                    TarArchiveEntry e = buildTarArchiveEntry(projectPath, absPath, resourceName);
+                    TarArchiveEntry e = buildTarArchiveEntry(projectPath, absPath, resourceName, copyOutsideSymlinks);
                     tar.putArchiveEntry(e);
-                    if (e.isSymbolicLink()) {
+                    if (e.isSymbolicLink() && !copyOutsideSymlinks) {
                         out.println("    symlink -> " + e.getLinkName());
                     }
                     else {
@@ -82,72 +82,92 @@ class Archiver
         return workflowResources.build();
     }
 
-    private TarArchiveEntry buildTarArchiveEntry(Path projectPath, Path absPath, String name)
+    private TarArchiveEntry buildTarArchiveEntry(Path projectPath, Path absPath, String name,
+            boolean copyOutsideSymlinks)
             throws IOException
     {
-        TarArchiveEntry e;
         if (Files.isSymbolicLink(absPath)) {
-            e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
-            Path rawDest = Files.readSymbolicLink(absPath);
-            Path normalizedAbsDest = absPath.getParent().resolve(rawDest).normalize();
-
-            if (!normalizedAbsDest.startsWith(projectPath)) {
-                throw new IllegalArgumentException(String.format(ENGLISH,
-                        "Invalid symbolic link: Given path '%s' is outside of project directory '%s'", normalizedAbsDest, projectPath));
+            TarArchiveEntry symlinkEntry = createSymlinkEntryOrNull(projectPath, absPath, name,
+                    copyOutsideSymlinks);
+            if (symlinkEntry != null) {
+                return symlinkEntry;
             }
-
-            // absolute path will be invalid on a server. convert it to a relative path
-            Path normalizedRelativeDest = absPath.getParent().relativize(normalizedAbsDest);
-
-            String linkName = normalizedRelativeDest.toString();
-
-            // TarArchiveEntry(File) does this normalization but setLinkName doesn't. So do it here:
-            linkName = linkName.replace(File.separatorChar, '/');
-            e.setLinkName(linkName);
         }
-        else {
-            e = new TarArchiveEntry(absPath.toFile(), name);
-            try {
-                int mode = 0;
-                for (PosixFilePermission perm : Files.getPosixFilePermissions(absPath)) {
-                    switch (perm) {
-                    case OWNER_READ:
-                        mode |= 0400;
-                        break;
-                    case OWNER_WRITE:
-                        mode |= 0200;
-                        break;
-                    case OWNER_EXECUTE:
-                        mode |= 0100;
-                        break;
-                    case GROUP_READ:
-                        mode |= 0040;
-                        break;
-                    case GROUP_WRITE:
-                        mode |= 0020;
-                        break;
-                    case GROUP_EXECUTE:
-                        mode |= 0010;
-                        break;
-                    case OTHERS_READ:
-                        mode |= 0004;
-                        break;
-                    case OTHERS_WRITE:
-                        mode |= 0002;
-                        break;
-                    case OTHERS_EXECUTE:
-                        mode |= 0001;
-                        break;
-                    default:
-                        // ignore
-                    }
+
+        // Create a regular file or directory TarArchiveEntry (follow link if symlink)
+        TarArchiveEntry e = new TarArchiveEntry(absPath.toFile(), name);
+        try {
+            int mode = 0;
+            for (PosixFilePermission perm : Files.getPosixFilePermissions(absPath)) {
+                switch (perm) {
+                case OWNER_READ:
+                    mode |= 0400;
+                    break;
+                case OWNER_WRITE:
+                    mode |= 0200;
+                    break;
+                case OWNER_EXECUTE:
+                    mode |= 0100;
+                    break;
+                case GROUP_READ:
+                    mode |= 0040;
+                    break;
+                case GROUP_WRITE:
+                    mode |= 0020;
+                    break;
+                case GROUP_EXECUTE:
+                    mode |= 0010;
+                    break;
+                case OTHERS_READ:
+                    mode |= 0004;
+                    break;
+                case OTHERS_WRITE:
+                    mode |= 0002;
+                    break;
+                case OTHERS_EXECUTE:
+                    mode |= 0001;
+                    break;
+                default:
+                    // ignore
                 }
-                e.setMode(mode);
             }
-            catch (UnsupportedOperationException ex) {
-                // ignore custom mode
-            }
+            e.setMode(mode);
         }
+        catch (UnsupportedOperationException ex) {
+            // ignore custom mode
+        }
+
+        return e;
+    }
+
+    private TarArchiveEntry createSymlinkEntryOrNull(Path projectPath, Path absPath, String name,
+            boolean copyOutsideSymlinks)
+            throws IOException
+    {
+        Path rawDest = Files.readSymbolicLink(absPath);
+        Path normalizedAbsDest = absPath.getParent().resolve(rawDest).normalize();
+
+        if (!normalizedAbsDest.startsWith(projectPath)) {
+            // outside of projectPath
+            if (copyOutsideSymlinks) {
+                return null;
+            }
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                        "Invalid symbolic link: Given path '%s' is outside of project directory '%s'. Consider to add --copy-outside-symlinks option", normalizedAbsDest, projectPath));
+        }
+
+        // Create a TarArchiveEntry of symlink
+        TarArchiveEntry e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
+
+        // absolute path will be invalid on a server. convert it to a relative path
+        Path normalizedRelativeDest = absPath.getParent().relativize(normalizedAbsDest);
+
+        String linkName = normalizedRelativeDest.toString();
+
+        // TarArchiveEntry(File) does this normalization but setLinkName doesn't. So do it here:
+        linkName = linkName.replace(File.separatorChar, '/');
+        e.setLinkName(linkName);
+
         return e;
     }
 }

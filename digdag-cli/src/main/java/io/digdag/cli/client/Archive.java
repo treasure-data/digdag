@@ -35,6 +35,9 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
+    @Parameter(names = {"--copy-outside-symlinks"})
+    boolean copyOutsideSymlinks = false;
+
     @Override
     public void main()
             throws Exception
@@ -52,6 +55,7 @@ public class Archive
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
+        err.println("        --copy-outside-symlinks      transform symbolic links to regular files or directories");
         Main.showCommonOptions(env, err);
         return systemExit(error);
     }
@@ -85,7 +89,7 @@ public class Archive
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output));
+        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), copyOutsideSymlinks);
 
         out.println("Created " + output + ".");
         out.println("Use `" + programName + " upload <path.tar.gz> <project> <revision>` to upload it a server.");
