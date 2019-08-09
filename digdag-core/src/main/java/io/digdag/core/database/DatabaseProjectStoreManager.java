@@ -554,6 +554,25 @@ public class DatabaseProjectStoreManager
     public interface H2Dao
             extends Dao
     {
+        // h2 doesn't have max window function.
+        // this is not efficient but gave up optimization on h2.
+        @Override
+        @SqlQuery("select proj.*, rev.name as revision_name, rev.created_at as revision_created_at, rev.archive_type as revision_archive_type, rev.archive_md5 as revision_archive_md5" +
+        " from projects proj" +
+        " join revisions rev on proj.id = rev.project_id" +
+        " join (" +
+            "select project_id, max(id) AS id" +
+            " from revisions" +
+            " group by project_id" +
+        ") a on a.id = rev.id" +
+        " where proj.site_id = :siteId" +
+        " and proj.name is not null" +
+        " and <acFilter>" +
+        " and proj.id > :lastId" +
+        " order by proj.id asc" +
+        " limit :limit")
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+
         // h2's MERGE doesn't return generated id when conflicting row already exists
         @SqlUpdate("merge into projects" +
                 " (site_id, name, created_at)" +
@@ -594,6 +613,22 @@ public class DatabaseProjectStoreManager
     public interface PgDao
             extends Dao
     {
+        @Override
+        @SqlQuery("select id, site_id, name, created_at, deleted_at, deleted_name, revision_name, revision_created_at, revision_archive_type, revision_archive_md5" +
+        " from (" +
+            " select proj.*, rev.name as revision_name, rev.created_at as revision_created_at, rev.archive_type as revision_archive_type, rev.archive_md5 as revision_archive_md5, rev.id as revision_id, max(rev.id) OVER(partition by rev.project_id) as max_revision_id" +
+            " from projects proj" +
+            " join revisions rev on proj.id = rev.project_id" +
+            " where proj.site_id = :siteId" +
+            " and proj.name is not null" +
+            " and <acFilter>" +
+            " and proj.id > :lastId" +
+        ") as projects_with_revision" +
+        " where projects_with_revision.revision_id = projects_with_revision.max_revision_id" +
+        " order by id asc" +
+        " limit :limit")
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+
         @SqlQuery("insert into projects" +
                 " (site_id, name, created_at)" +
                 " values (:siteId, :name, now())" +
@@ -652,20 +687,6 @@ public class DatabaseProjectStoreManager
                 @Bind("lastId") int lastId,
                 @Define("acFilter") String acFilter);
 
-        @SqlQuery("select proj.*, rev.name as revision_name, rev.created_at as revision_created_at, rev.archive_type as revision_archive_type, rev.archive_md5 as revision_archive_md5" +
-                " from projects proj" +
-                " join revisions rev on proj.id = rev.project_id" +
-                " join (" +
-                    "select project_id, max(id) AS id" +
-                    " from revisions" +
-                    " group by project_id" +
-                ") a on a.id = rev.id" +
-                " where proj.site_id = :siteId" +
-                " and proj.name is not null" +
-                " and <acFilter>" +
-                " and proj.id > :lastId" +
-                " order by proj.id asc" +
-                " limit :limit")
         List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
 
         @SqlUpdate("update projects" +
