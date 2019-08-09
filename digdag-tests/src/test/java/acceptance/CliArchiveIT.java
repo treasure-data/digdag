@@ -78,7 +78,7 @@ public class CliArchiveIT
     }
 
     @Test
-    public void rejectSymlinksPointingParents()
+    public void rejectSymlinksPointingParentFiles()
             throws Exception
     {
         Path sub = Files.createDirectories(projectDir.resolve("sub"));
@@ -95,6 +95,29 @@ public class CliArchiveIT
 
         // sub/from1 points ../../to1 => should fail
         Files.createSymbolicLink(sub.resolve("from2"), Paths.get("..").resolve("..").resolve("to2"));
+        CommandStatus status2 = main(
+                "archive",
+                "--project", projectDir.toString(),
+                "--output", "test_archive.tar.gz",
+                "-c", config.toString()
+        );
+        assertThat(status2.errUtf8(), status2.code(), is(1));
+        assertThat(status2.errUtf8(), containsString("is outside of project directory"));
+    }
+
+    @Test
+    public void rejectSymlinksPointingParentDirectories()
+            throws Exception
+    {
+        // ../to1/file => "text1"
+        Path to1 = projectDir.resolve("..").resolve("to1");
+        Files.createDirectories(to1);
+        Files.write(to1.resolve("file"), "text1".getBytes(UTF_8));
+
+        Path sub = Files.createDirectories(projectDir.resolve("sub"));
+
+        // sub/from1 points ../../to1/ => should fail
+        Files.createSymbolicLink(sub.resolve("from1"), Paths.get("..").resolve("..").resolve("to1"));
         CommandStatus status2 = main(
                 "archive",
                 "--project", projectDir.toString(),

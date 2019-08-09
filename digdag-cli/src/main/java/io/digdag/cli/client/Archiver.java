@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
@@ -57,15 +58,10 @@ class Archiver
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
 
             project.listFiles((resourceName, absPath) -> {
-                if (!Files.isDirectory(absPath)) {  // skip directory and symlinks pointing a directory (because NOFOLLOW_LINKS is not set)
-                    out.println("  Archiving " + resourceName);
-
-                    TarArchiveEntry e = buildTarArchiveEntry(projectPath, absPath, resourceName, copyOutgoingSymlinks);
+                TarArchiveEntry e = buildFileOrSymlinkEntryOrNull(projectPath, absPath, resourceName, copyOutgoingSymlinks);
+                if (e != null) {
                     tar.putArchiveEntry(e);
-                    if (e.isSymbolicLink()) {
-                        out.println("    symlink -> " + e.getLinkName());
-                    }
-                    else {
+                    if (!e.isSymbolicLink()) {
                         try (InputStream in = Files.newInputStream(absPath)) {
                             ByteStreams.copy(in, tar);
                         }
@@ -75,27 +71,42 @@ class Archiver
                     if (WorkflowResourceMatcher.defaultMatcher().matches(resourceName, absPath)) {
                         workflowResources.add(resourceName);
                     }
+
+                    // If symbolic link entry is created, don't copy files recursively
+                    return !e.isSymbolicLink();
                 }
+                return true;
             });
         }
 
         return workflowResources.build();
     }
 
-    private TarArchiveEntry buildTarArchiveEntry(Path projectPath, Path absPath, String name,
+    private TarArchiveEntry buildFileOrSymlinkEntryOrNull(Path projectPath, Path absPath, String resourceName,
             boolean copyOutgoingSymlinks)
             throws IOException
     {
+        // If symbolic link, try to create symlink entry
         if (Files.isSymbolicLink(absPath)) {
-            TarArchiveEntry symlinkEntry = createSymlinkEntryOrNull(projectPath, absPath, name,
+            TarArchiveEntry e = createSymlinkEntryOrNull(projectPath, absPath, resourceName,
                     copyOutgoingSymlinks);
-            if (symlinkEntry != null) {
-                return symlinkEntry;
+            if (e != null) {
+                out.println("  Archiving " + resourceName);
+                out.println("    symlink -> " + e.getLinkName());
+                return e;
             }
+            // The path is a symbolic link and the file will be copied
         }
 
-        // Create a regular file or directory TarArchiveEntry (follow link if symlink)
-        TarArchiveEntry e = new TarArchiveEntry(absPath.toFile(), name);
+        // Skip directories directories because directories will be created automatically
+        // when server extracts the archive
+        if (Files.isDirectory(absPath)) {
+            return null;
+        }
+
+        // Create a regular file TarArchiveEntry (follow link if symlink)
+        out.println("  Archiving " + resourceName);
+        TarArchiveEntry e = new TarArchiveEntry(absPath.toFile(), resourceName);
         try {
             int mode = 0;
             for (PosixFilePermission perm : Files.getPosixFilePermissions(absPath)) {
@@ -140,7 +151,7 @@ class Archiver
         return e;
     }
 
-    private TarArchiveEntry createSymlinkEntryOrNull(Path projectPath, Path absPath, String name,
+    private TarArchiveEntry createSymlinkEntryOrNull(Path projectPath, Path absPath, String resourceName,
             boolean copyOutgoingSymlinks)
             throws IOException
     {
@@ -157,7 +168,7 @@ class Archiver
         }
 
         // Create a TarArchiveEntry of symlink
-        TarArchiveEntry e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
+        TarArchiveEntry e = new TarArchiveEntry(resourceName, TarConstants.LF_SYMLINK);
 
         // absolute path will be invalid on a server. convert it to a relative path
         Path normalizedRelativeDest = absPath.getParent().relativize(normalizedAbsDest);
