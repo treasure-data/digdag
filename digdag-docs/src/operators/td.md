@@ -9,6 +9,14 @@
     +simple_query:
       td>: queries/simple_query.sql
 
+    +simple_query_expanded:
+      td>:
+        data: "SELECT '${session_id}' FROM nasdaq"
+
+    +simple_query_nonexpanded:
+      td>:
+      query: "SELECT * FROM nasdaq"
+
     +create_new_table_using_result_of_select:
       td>: queries/select_sql.sql
       create_table: mytable_${session_date_compact}
@@ -51,6 +59,52 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   ```
   td>: queries/step1.sql
   ```
+
+** **data**: query
+
+  A query can be passed as a string.
+
+  Examples:
+
+  ```
+  td>:
+    data: "SELECT * FROM nasdaq"
+  ```
+
+* **query**: query template
+
+  A query template. This string can contain `${...}` syntax to embed variables.
+
+  Examples:
+
+  ```
+  _export:
+    database: www_access
+    sql: "SELECT '${task_name\x7D'"
+
+  +td_data:
+    td>:
+      data: ${sql}
+
+  +td_query:
+    td>:
+    query: ${sql}
+  ```
+
+  Result:
+
+  ```
+  [INFO] (0018@[0:default]+foo+td_data): td>: {data=SELECT '${task_name}'}
+  [INFO] (0018@[0:default]+foo+td_data): td>: {data=SELECT '${task_name}'}
+  [INFO] (0018@[0:default]+foo+td_data): Started presto job id=536633133: SELECT '${task_name}'
+  [INFO] (0018@[0:default]+foo+td_data): td>: {data=SELECT '${task_name}'}
+  [INFO] (0018@[0:default]+foo+td_query): td>:
+  [INFO] (0018@[0:default]+foo+td_query): td-client version: 0.8.11
+  [INFO] (0018@[0:default]+foo+td_query): td>:
+  [INFO] (0018@[0:default]+foo+td_query): Started presto job id=536633088: SELECT '+foo+td_query'
+  [INFO] (0018@[0:default]+foo+td_query): td>:
+  ```
+
 
 * **create_table**: NAME
 
