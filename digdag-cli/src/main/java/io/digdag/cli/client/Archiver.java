@@ -43,7 +43,7 @@ class Archiver
         this.cf = cf;
     }
 
-    List<String> createArchive(Path projectPath, Path output, boolean copyOutsideSymlinks)
+    List<String> createArchive(Path projectPath, Path output, boolean copyOutgoingSymlinks)
             throws IOException
     {
         out.println("Creating " + output + "...");
@@ -57,12 +57,12 @@ class Archiver
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
 
             project.listFiles((resourceName, absPath) -> {
-                if (!Files.isDirectory(absPath)) {  // skip directory and symlinks pointing a directory (because NOFOLLOW_LINKS is set)
+                if (!Files.isDirectory(absPath)) {  // skip directory and symlinks pointing a directory (because NOFOLLOW_LINKS is not set)
                     out.println("  Archiving " + resourceName);
 
-                    TarArchiveEntry e = buildTarArchiveEntry(projectPath, absPath, resourceName, copyOutsideSymlinks);
+                    TarArchiveEntry e = buildTarArchiveEntry(projectPath, absPath, resourceName, copyOutgoingSymlinks);
                     tar.putArchiveEntry(e);
-                    if (e.isSymbolicLink() && !copyOutsideSymlinks) {
+                    if (e.isSymbolicLink()) {
                         out.println("    symlink -> " + e.getLinkName());
                     }
                     else {
@@ -83,12 +83,12 @@ class Archiver
     }
 
     private TarArchiveEntry buildTarArchiveEntry(Path projectPath, Path absPath, String name,
-            boolean copyOutsideSymlinks)
+            boolean copyOutgoingSymlinks)
             throws IOException
     {
         if (Files.isSymbolicLink(absPath)) {
             TarArchiveEntry symlinkEntry = createSymlinkEntryOrNull(projectPath, absPath, name,
-                    copyOutsideSymlinks);
+                    copyOutgoingSymlinks);
             if (symlinkEntry != null) {
                 return symlinkEntry;
             }
@@ -141,7 +141,7 @@ class Archiver
     }
 
     private TarArchiveEntry createSymlinkEntryOrNull(Path projectPath, Path absPath, String name,
-            boolean copyOutsideSymlinks)
+            boolean copyOutgoingSymlinks)
             throws IOException
     {
         Path rawDest = Files.readSymbolicLink(absPath);
@@ -149,11 +149,11 @@ class Archiver
 
         if (!normalizedAbsDest.startsWith(projectPath)) {
             // outside of projectPath
-            if (copyOutsideSymlinks) {
+            if (copyOutgoingSymlinks) {
                 return null;
             }
             throw new IllegalArgumentException(String.format(ENGLISH,
-                        "Invalid symbolic link: Given path '%s' is outside of project directory '%s'. Consider to add --copy-outside-symlinks option", normalizedAbsDest, projectPath));
+                        "Invalid symbolic link: Given path '%s' is outside of project directory '%s'. Consider to add --copy-outgoing-symlinks option", normalizedAbsDest, projectPath));
         }
 
         // Create a TarArchiveEntry of symlink

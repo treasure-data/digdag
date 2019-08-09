@@ -106,7 +106,7 @@ public class CliArchiveIT
     }
 
     @Test
-    public void copyOutsideSymlinksCopiesFile()
+    public void copyOutgoingSymlinksCopiesFile()
             throws Exception
     {
         Files.createDirectories(projectDir);
@@ -125,7 +125,7 @@ public class CliArchiveIT
                 "archive",
                 "--project", projectDir.toString(),
                 "--output", archivePath.toString(),
-                "--copy-outside-symlinks",
+                "--copy-outgoing-symlinks",
                 "-c", config.toString()
         );
         assertThat(status1.errUtf8(), status1.code(), is(0));
@@ -150,7 +150,7 @@ public class CliArchiveIT
     }
 
     @Test
-    public void copyOutsideSymlinksCopiesDirectory()
+    public void copyOutgoingSymlinksCopiesDirectory()
             throws Exception
     {
         Files.createDirectories(projectDir);
@@ -170,7 +170,7 @@ public class CliArchiveIT
                 "archive",
                 "--project", projectDir.toString(),
                 "--output", archivePath.toString(),
-                "--copy-outside-symlinks",
+                "--copy-outgoing-symlinks",
                 "-c", config.toString()
         );
         assertThat(status1.errUtf8(), status1.code(), is(0));
