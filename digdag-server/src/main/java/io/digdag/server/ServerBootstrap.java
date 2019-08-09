@@ -66,7 +66,7 @@ public class ServerBootstrap
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
             })
             .addModules(new ServerModule(serverConfig))
-            .overrideModulesWith(new DigdagMetricsModule())
+            .overrideModulesWith(new DigdagMetricsModule(serverConfig.getMetricsConfig()))
         ;
     }
 

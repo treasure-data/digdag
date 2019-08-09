@@ -10,6 +10,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.guice.rs.server.undertow.UndertowServerConfig;
 import io.digdag.guice.rs.server.undertow.UndertowListenAddress;
+import io.digdag.server.metrics.DigdagMetricsConfig;
 import io.digdag.server.rs.AdminRestricted;
 import org.immutables.value.Value;
 
@@ -47,6 +48,8 @@ public interface ServerConfig
     public Map<String, String> getHeaders();
 
     public ConfigElement getSystemConfig();
+
+    public DigdagMetricsConfig getMetricsConfig();
 
     public Map<String,String> getEnvironment();
 
@@ -90,6 +93,7 @@ public interface ServerConfig
             .enableSwagger(config.get("server.enable-swagger", boolean.class, false))
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
+            .metricsConfig(DigdagMetricsConfig.load(config))
             .environment(readPrefixed.apply("server.environment."))
             .build();
     }
