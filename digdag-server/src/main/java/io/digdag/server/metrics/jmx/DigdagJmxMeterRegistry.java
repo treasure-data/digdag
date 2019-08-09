@@ -1,4 +1,4 @@
-package io.digdag.server.metrics;
+package io.digdag.server.metrics.jmx;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
