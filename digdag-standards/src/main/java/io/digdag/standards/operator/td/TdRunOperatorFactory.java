@@ -98,7 +98,7 @@ public class TdRunOperatorFactory
                     .build();
 
             String jobId = op.submitNewJobWithRetry(client -> client.startSavedQuery(req));
-            logger.info("Started a saved query id={} with time={}, job id= {}", id, sessionTime, jobId);
+            logger.info("Started a saved query id={} with time={}, job id={}", id, sessionTime, jobId);
             return jobId;
         }
 
@@ -111,7 +111,7 @@ public class TdRunOperatorFactory
                     .build();
 
             String jobId = op.submitNewJobWithRetry(client -> client.startSavedQuery(req));
-            logger.info("Started a saved query name={} with time={}, job id= {}", name, sessionTime, jobId);
+            logger.info("Started a saved query name={} with time={}, job id={}", name, sessionTime, jobId);
             return jobId;
         }
 
