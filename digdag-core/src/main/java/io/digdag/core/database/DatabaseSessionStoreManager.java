@@ -1552,14 +1552,10 @@ public class DatabaseSessionStoreManager
     public interface H2Dao
             extends Dao
     {
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-                " from sessions s" +
-                " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id in (select id from projects where site_id = :siteId)" +
-                " and s.id < :lastId" +
-                " order by s.id desc" +
-                " limit :limit")
-        List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        default List<StoredSessionWithLastAttempt> getSessions(int siteId, int limit, long lastId)
+        {
+            return getSessions(siteId, limit, lastId, 0);
+        }
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
@@ -1597,17 +1593,14 @@ public class DatabaseSessionStoreManager
     public interface PgDao
             extends Dao
     {
+
+        default List<StoredSessionWithLastAttempt> getSessions(int siteId, int limit, long lastId)
+        {
+            return getSessions(siteId, limit, lastId, 0);
+        }
+
         // This query uses "sessions.project_id = any(array(select ..))" instead of "in" (semi-join) so that
         // PostgreSQL doesn't use a bad query plan which scans almost all records from sessions table.
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-                " from sessions s" +
-                " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id = any(array(select id from projects where site_id = :siteId))" +
-                " and s.id < :lastId" +
-                " order by s.id desc" +
-                " limit :limit")
-        List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
-
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
@@ -1674,15 +1667,10 @@ public class DatabaseSessionStoreManager
                 " and sa.site_id = :siteId")
         StoredSessionWithLastAttempt getSession(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-                " from sessions s" +
-                " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id = :projId" +
-                " and sa.site_id = :siteId" +
-                " and s.id < :lastId" +
-                " order by s.id desc" +
-                " limit :limit")
-        List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        default List<StoredSessionWithLastAttempt> getSessionsOfProject(int siteId, int projId, int limit, long lastId)
+        {
+            return getSessionsOfProject(siteId, projId, limit, lastId, 0);
+        }
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
@@ -1695,16 +1683,10 @@ public class DatabaseSessionStoreManager
                 " offset :offset")
         List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId, @Bind("offset") int offset);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
-                " from sessions s" +
-                " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where s.project_id = :projId" +
-                " and s.workflow_name = :workflowName" +
-                " and sa.site_id = :siteId" +
-                " and s.id < :lastId" +
-                " order by s.id desc" +
-                " limit :limit")
-        List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("workflowName") String workflowName, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        default List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int siteId, int projId, String workflowName, int limit, long lastId)
+        {
+            return getSessionsOfWorkflowByName(siteId, projId, workflowName, limit, lastId, 0);
+        }
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
