@@ -60,9 +60,10 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   td>: queries/step1.sql
   ```
 
-** **data**: query
+* **data**: query
 
   A query can be passed as a string.
+  (Note that this is actually not an option; this needs indent)
 
   Examples:
 
