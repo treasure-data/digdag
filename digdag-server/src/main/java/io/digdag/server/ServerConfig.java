@@ -93,7 +93,7 @@ public interface ServerConfig
             .enableSwagger(config.get("server.enable-swagger", boolean.class, false))
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
-            .metricsConfig(DigdagMetricsConfig.load(config))
+            .metricsConfig(new DigdagMetricsConfig(config))
             .environment(readPrefixed.apply("server.environment."))
             .build();
     }

@@ -3,14 +3,13 @@ package io.digdag.server.metrics.jmx;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
 import io.digdag.server.metrics.DigdagMetricsPluginConfig;
-import io.digdag.server.metrics.ImmutableDigdagMetricsConfig;
 import io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.immutables.value.Value;
 
 import java.util.Map;
 
 @Value.Immutable
-@JsonDeserialize(as = ImmutableDigdagMetricsConfig.class)
+@JsonDeserialize(as = ImmutableJmxPluginConfig.class)
 public interface JmxPluginConfig extends DigdagMetricsPluginConfig
 {
     @Value.Default
