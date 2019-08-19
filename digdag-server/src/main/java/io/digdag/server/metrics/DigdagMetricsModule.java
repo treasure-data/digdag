@@ -70,10 +70,15 @@ public class DigdagMetricsModule
     protected CompositeMeterRegistry createCompositeMeterRegistry(Category category)
     {
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
-        if (metricsConfig.getJmxPluginConfig().enable(category)) {
+        if (isEnableCategory("jmx", category)) {
             registry.add(createJmxMeterRegistry(category));
         }
         return registry;
+    }
+
+    protected boolean isEnableCategory(String key, Category category)
+    {
+        return metricsConfig.getPluginConfig(key).transform( (p) -> p.getCategoryEnable(category)).or(false);
     }
 
 
