@@ -92,10 +92,10 @@ In the following instructions, assumed that `upstream` is set to `treasure-data/
 1. run `./gradlew setVersion -Pto=<version>` command.
 1. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
 1. run `./gradlew clean cli site check releaseCheck`.
-1. make a release branch. `git checkout -b release_v<version>` and commit. 
+1. make a release branch. `git checkout -b release_v<version>` and commit.
 1. push the release branch to origin and create a PR.
 1. after the PR is merged to master, checkout master and pull latest upstream/master.
-1. run `./gradlew clean cli site check releaseCheck` agian.
+1. run `./gradlew clean cli site check releaseCheck` again.
 1. if it succeeded, run `./gradlew release`.
 1. a few minutes later, run `digdag selfupdate` and confirm the version.
 
@@ -180,7 +180,7 @@ The list of release note is [here](https://github.com/treasure-data/digdag/tree/
 Digdag is using a Java annotation processor `org.immutables:value.` The combination of Java annotation processing and Gradle on IntelliJ IDEA sometimes introduces some troubles. In Digdag's case, you may run into some compile errors like `cannot find symbol: class ImmutableRestWorkflowDefinitionCollection.`
 So we'd recommend the followings to avoid those compile errors if you want to develop Digdag one the IDE.
 
-1. There's an important configuration option to be enabled to fully have IntelliJ be fully integrated with an existing gradle build configuration: `Delegate IDE build/run actions to gradle` needs to be enabled. 
+1. There's an important configuration option to be enabled to fully have IntelliJ be fully integrated with an existing gradle build configuration: `Delegate IDE build/run actions to gradle` needs to be enabled.
 
 ![](https://user-images.githubusercontent.com/17990895/48221255-9706be80-e35f-11e8-8283-1ca6d713e31c.png)
 
