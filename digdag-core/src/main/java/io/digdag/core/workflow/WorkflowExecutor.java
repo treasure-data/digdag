@@ -1,6 +1,7 @@
 package io.digdag.core.workflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -62,6 +63,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static java.util.Locale.ENGLISH;
@@ -509,8 +511,17 @@ public class WorkflowExecutor
                 retryRetryWaitingTasks();
                 enqueueReadyTasks(queuer);
 
+                /**
+                 *  propagateSessionArchive() should always call.
+                 *  If propagateSessionArchive() for a session fail,
+                 *  next propagateSessionArchive() never call
+                 *  until propagateAllPlannedToDone() become true.
+                 *  If there is only the session, never archived.
+                 *  Check by WorkflowExecutorCatchingTest.testPropagateSessionArchive()
+                 */
+                propagateSessionArchive();
                 if (propagateAllPlannedToDone()) {
-                    propagateSessionArchive();
+                    //propagateSessionArchive();
                 }
                 else {
                     propagatorLock.lock();
@@ -539,6 +550,46 @@ public class WorkflowExecutor
         }
     }
 
+    /**
+     * If catch exception then return defaultValue
+     * @param func
+     * @param defaultValue
+     * @param errorMessage
+     * @param <R>
+     * @return
+     */
+    protected <R> R catching(Supplier<R> func, R defaultValue, String errorMessage)
+    {
+        try {
+            return func.get();
+        }
+        catch (Exception e) {
+            catchingNotify(e);
+            metrics.increment(Category.EXECUTOR, "errorInRunWhile");
+            logger.warn(errorMessage);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Called when catching() catches Exception.
+     * Do noting.
+     * Purpose for test and future extension.
+     * @param e
+     */
+    public void catchingNotify(Exception e) {}
+
+
+    @VisibleForTesting
+    protected Function<Long, Optional<Boolean>> funcPropagateBlockedChildrenToReady()
+    {
+        return (pId) ->
+                tm.begin(()-> sm.lockTaskIfNotLocked(
+                        pId,
+                        (store) -> store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(pId) > 0)
+                );
+    }
+
     @DigdagTimed(category = "executor", appendMethodName = true)
     protected boolean propagateBlockedChildrenToReady()
     {
@@ -551,15 +602,29 @@ public class WorkflowExecutor
             if (parentIds.isEmpty()) {
                 break;
             }
+
             anyChanged = parentIds
                     .stream()
-                    .map(parentId -> tm.begin(() ->
-                            sm.lockTaskIfNotLocked(parentId, (store) ->
-                                    store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0)).or(false))
+                    .map(parentId ->
+                            catching(
+                                    ()->funcPropagateBlockedChildrenToReady().apply(parentId),
+                                    Optional.<Boolean>absent(),
+                                    "Failed to set children to ready. paretId:" + parentId
+                            )
+                            .or(false)
+                    )
                     .reduce(anyChanged, (a, b) -> a || b);
             lastParentId = parentIds.get(parentIds.size() - 1);
         }
         return anyChanged;
+    }
+
+    protected Function<Long, Optional<Boolean>> funcSetDoneFromDoneChildren()
+    {
+        return (tId) ->
+                tm.begin(() ->
+                        sm.lockTaskIfNotLocked(tId, (store, storedTask) ->
+                                setDoneFromDoneChildren(new TaskControl(store, storedTask))));
     }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
@@ -575,9 +640,14 @@ public class WorkflowExecutor
             }
             anyChanged = taskIds
                     .stream()
-                    .map(taskId -> tm.begin(() ->
-                            sm.lockTaskIfNotLocked(taskId, (store, storedTask) ->
-                                    setDoneFromDoneChildren(new TaskControl(store, storedTask)))).or(false))
+                    .map(taskId ->
+                            catching(
+                                    ()->funcSetDoneFromDoneChildren().apply(taskId),
+                                    Optional.<Boolean>absent(),
+                                    "Failed to call setDoneFromDoneChildren. taskId:" + taskId
+                            )
+                            .or(false)
+                    )
                     .reduce(anyChanged, (a, b) -> a || b);
             lastTaskId = taskIds.get(taskIds.size() - 1);
         }
@@ -748,6 +818,25 @@ public class WorkflowExecutor
         params.set("error", error);
     }
 
+    @VisibleForTesting
+    protected Function<TaskAttemptSummary, Optional<Boolean>> funcArchiveTasks()
+    {
+        return (t) ->
+                tm.begin(() ->
+                        sm.lockAttemptIfExists(t.getAttemptId(), (store, summary) -> {
+                            if (summary.getStateFlags().isDone()) {
+                                // already archived. This means that another thread archived
+                                // this attempt after findRootTasksByStates call.
+                                return false;
+                            }
+                            else {
+                                SessionAttemptControl control = new SessionAttemptControl(store, t.getAttemptId());
+                                control.archiveTasks(archiveMapper, t.getState() == TaskStateCode.SUCCESS);
+                                return true;
+                            }
+                        }));
+    }
+
     @DigdagTimed(category = "executor", appendMethodName = true)
     protected boolean propagateSessionArchive()
     {
@@ -762,19 +851,14 @@ public class WorkflowExecutor
             }
             anyChanged = tasks
                     .stream()
-                    .map(task ->tm.begin(() ->
-                            sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
-                                if (summary.getStateFlags().isDone()) {
-                                    // already archived. This means that another thread archived
-                                    // this attempt after findRootTasksByStates call.
-                                    return false;
-                                }
-                                else {
-                                    SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
-                                    control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
-                                    return true;
-                                }
-                            }).or(false)))
+                    .map(task ->
+                            catching(
+                                ()->funcArchiveTasks().apply(task),
+                                Optional.<Boolean>absent(),
+                                    "Failed to call archiveTasks. taskId:" + task.getId()
+                            )
+                            .or(false)
+                    )
                     .reduce(anyChanged, (a, b) -> a || b);
             lastTaskId = tasks.get(tasks.size() - 1).getId();
         }
@@ -833,16 +917,22 @@ public class WorkflowExecutor
         //}
     }
 
+    @VisibleForTesting
+    protected Function<Long, Boolean> funcEnqueueTask()
+    {
+        return (tId) ->
+                tm.begin(() -> {
+                    enqueueTask(dispatcher, tId);
+                    return true;
+                });
+    }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
     protected void enqueueReadyTasks(TaskQueuer queuer)
     {
         List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(100));
         for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
-            tm.begin(() -> {
-                enqueueTask(dispatcher, taskId);
-                return null;
-            });
+            catching(()->funcEnqueueTask().apply(taskId), true, "Failed to call enqueueTask. taskId:" + taskId);
             //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
         }
     }
