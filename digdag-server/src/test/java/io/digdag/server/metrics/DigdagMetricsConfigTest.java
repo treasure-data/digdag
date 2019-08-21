@@ -4,6 +4,9 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.server.metrics.fluency.FluencyMonitorSystemConfig;
+import io.digdag.server.metrics.fluency.ImmutableFluencyMonitorSystemConfig;
+import io.digdag.server.metrics.jmx.ImmutableJmxMonitorSystemConfig;
 import io.digdag.server.metrics.jmx.JmxMonitorSystemConfig;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -13,6 +16,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -62,7 +66,7 @@ public class DigdagMetricsConfigTest
     }
 
     @Test
-    public void testJmxEnabledAgentAndExectuor()
+    public void testJmxEnabledWithParams()
     {
         /**
          *  server.metrics.enable: " jmx "
@@ -83,5 +87,53 @@ public class DigdagMetricsConfigTest
         assertFalse("category 'db' is enable", jmxConfig.get().enable(DigdagMetrics.Category.DB));
         assertTrue("category 'executor' is enable", jmxConfig.get().enable(DigdagMetrics.Category.EXECUTOR));
         assertFalse("category 'default' is enable", jmxConfig.get().enable(DigdagMetrics.Category.DEFAULT));
+    }
+
+
+    @Test
+    public void testFluencyEnabled()
+    {
+        /**
+         *  metrics.enable: " fluency "
+         */
+        config = fromJson("{ \"metrics.enable\": \" fluency \" }");
+        DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
+
+        Optional<FluencyMonitorSystemConfig> fluencyConfig = metricsConfig.getMonitorSystemConfig("fluency").transform((p) -> (FluencyMonitorSystemConfig)p);
+        assertTrue("Exist fluency config", fluencyConfig.isPresent());
+        assertTrue("plugin is enable", fluencyConfig.get().getMonitorSystemEnable());
+        assertTrue("category 'agent' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.AGENT));
+        assertTrue("category 'api' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.API));
+        assertTrue("category 'db' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DB));
+        assertTrue("category 'executor' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.EXECUTOR));
+        assertTrue("category 'default' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DEFAULT));
+    }
+
+    @Test
+    public void testFluencyEnabledWithParams()
+    {
+        /**
+         *  server.metrics.enable: " fluency "
+         *  server.metrics.jmx.categories: "agent, executors "
+         */
+        config = fromJson(
+                "{ " +
+                        "\"metrics.enable\": \" fluency \", " +
+                        "\"metrics.fluency.categories\": \"agent, executor\", " +
+                        "\"metrics.fluency.host\": \"server01:9999\", " +
+                        "\"metrics.fluency.tag\": \"tag0001\" " +
+                        "}");
+        DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
+
+        Optional<FluencyMonitorSystemConfig> fluencyConfig = metricsConfig.getMonitorSystemConfig("fluency").transform((p) -> (FluencyMonitorSystemConfig)p);
+        assertTrue("Exist fluency config", fluencyConfig.isPresent());
+        assertTrue("plugin is enable", fluencyConfig.get().getMonitorSystemEnable());
+        assertTrue("category 'agent' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.AGENT));
+        assertFalse("category 'api' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.API));
+        assertFalse("category 'db' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DB));
+        assertTrue("category 'executor' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.EXECUTOR));
+        assertFalse("category 'default' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DEFAULT));
+        assertEquals("host", "server01:9999", fluencyConfig.get().getHost());
+        assertEquals("tag", "tag0001", fluencyConfig.get().getTag());
     }
 }
