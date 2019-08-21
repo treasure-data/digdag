@@ -3,6 +3,7 @@ package io.digdag.server.metrics;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.server.metrics.fluency.FluencyMonitorSystemConfig;
 import io.digdag.server.metrics.jmx.JmxMonitorSystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +46,13 @@ public class DigdagMetricsConfig
      * @param config
      * @return
      */
-    public MonitorSystemConfig loadMonitorSystemConfig(String key, Config config)
+    protected MonitorSystemConfig loadMonitorSystemConfig(String key, Config config)
     {
         switch (key) {
             case "jmx":
                 return getJmxMonitorSystemConfig(config);
+            case "fluency":
+                return getFluencyMonitorSystemConfig(config);
             default:
                 throw new ConfigException("Unsupported digdag-metrics monitor system:" + key);
         }
@@ -58,5 +61,10 @@ public class DigdagMetricsConfig
     JmxMonitorSystemConfig getJmxMonitorSystemConfig(Config config)
     {
         return JmxMonitorSystemConfig.load(config);
+    }
+
+    FluencyMonitorSystemConfig getFluencyMonitorSystemConfig(Config config)
+    {
+        return FluencyMonitorSystemConfig.load(config);
     }
 }

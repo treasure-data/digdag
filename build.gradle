@@ -42,6 +42,9 @@ allprojects {
         maven {
             url  "http://dl.bintray.com/digdag/maven-snapshots"
         }
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+        }
     }
 
     jacoco {
@@ -97,8 +100,9 @@ subprojects {
 
     dependencies {
         compile 'org.slf4j:slf4j-api:1.7.25'
-        compile group: 'io.micrometer', name: 'micrometer-core', version: '1.1.4'
-        compile group: 'io.micrometer', name: 'micrometer-registry-jmx', version: '1.1.4'
+        compile group: 'io.micrometer', name: 'micrometer-core', version: '1.2.0'
+        compile group: 'io.micrometer', name: 'micrometer-registry-jmx', version: '1.2.0'
+        compile group: 'io.github.yoyama', name: 'fluency-meter-registory_2.12', version: '0.1.0'
 
         compileOnly "org.immutables:value:2.3.9:annotations"
         testCompileOnly "org.immutables:value:2.3.9:annotations"
