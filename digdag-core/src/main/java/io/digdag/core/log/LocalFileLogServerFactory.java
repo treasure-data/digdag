@@ -31,6 +31,7 @@ public class LocalFileLogServerFactory
     private static final String LOG_GZ_FILE_SUFFIX = ".log.gz";
 
     private final Path logPath;
+    private final long logSplitSize;
     private final AgentId agentId;
 
     @Inject
@@ -40,6 +41,7 @@ public class LocalFileLogServerFactory
             .toAbsolutePath()
             .normalize();
         this.agentId = agentId;
+        this.logSplitSize = systemConfig.get("log-server.local.split_size", Long.class, 0L);
     }
 
     @Override
@@ -141,7 +143,7 @@ public class LocalFileLogServerFactory
         public LocalFileDirectTaskLogger newDirectTaskLogger(LogFilePrefix prefix, String taskName)
         {
             try {
-                return new LocalFileDirectTaskLogger(prefix, taskName);
+                return new LocalFileDirectTaskLogger(prefix, taskName, logSplitSize);
             }
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
@@ -152,16 +154,17 @@ public class LocalFileLogServerFactory
             implements TaskLogger
         {
             private CountingLogOutputStream output;
-            private static final int THRESHOLD_SIZE = 100;
+            private final long splitSize;;
 
             private final LogFilePrefix prefix;
             private final String taskName;
 
-            public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName)
+            public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName, Long splitSize)
                 throws IOException
             {
                 this.prefix = prefix;
                 this.taskName = taskName;
+                this.splitSize = splitSize;
 
                 this.output = createOutput(prefix, taskName, agentId);
             }
@@ -205,7 +208,7 @@ public class LocalFileLogServerFactory
                     logAppendLock.lock();
                     try {
                         output.write(data, off, len);
-                        if (output.getUncompressedSize() > THRESHOLD_SIZE) {
+                        if (splitSize > 0 && output.getUncompressedSize() > splitSize) {
                             switchLogFile();
                         }
                     }
