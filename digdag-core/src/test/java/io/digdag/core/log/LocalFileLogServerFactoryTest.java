@@ -77,8 +77,10 @@ public class LocalFileLogServerFactoryTest
     {
         setUpTaskLogger(Optional.of("100"));
         String msg = repeatedString("a", 51);
-        taskLogger.log(msg.getBytes(UTF_8), 0, msg.length());
-        taskLogger.log(msg.getBytes(UTF_8), 0, msg.length());
+        for (int i = 0; i < 100; i++) {
+            taskLogger.log(msg.getBytes(UTF_8), 0, msg.length());
+        }
+        taskLogger.close();
         for (File f : taskLogPath.toFile().listFiles()) {
             for (File f2: f.listFiles()) {
                 File[] taskLogs = f2.listFiles();
@@ -99,6 +101,7 @@ public class LocalFileLogServerFactoryTest
         for (int i = 0; i < 100; i++) {
             taskLogger.log(msg.getBytes(UTF_8), 0, msg.length());
         }
+        taskLogger.close();
         for (File f : taskLogPath.toFile().listFiles()) {
             for (File f2: f.listFiles()) {
                 File[] taskLogs = f2.listFiles();
@@ -119,6 +122,7 @@ public class LocalFileLogServerFactoryTest
         for (int i = 0; i < 100; i++) {
             taskLogger.log(msg.getBytes(UTF_8), 0, msg.length());
         }
+        taskLogger.close();
         for (File f : taskLogPath.toFile().listFiles()) {
             for (File f2: f.listFiles()) {
                 File[] taskLogs = f2.listFiles();
