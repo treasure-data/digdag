@@ -381,6 +381,8 @@ In the config file, following parameters are available
 * log-server.s3.credentials.access-key-id (string. default: instance profile)
 * log-server.s3.credentials.secret-access-key (string. default: instance profile)
 * log-server.s3.path-style-access (boolean. default: false)
+* log-server.local.path (string. default: digdag.log)
+* log-server.local.split_size (long. default: 0  (not splitted))
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 * executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)
 * executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
