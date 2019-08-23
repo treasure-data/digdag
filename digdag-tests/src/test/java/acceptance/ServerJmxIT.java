@@ -41,7 +41,7 @@ public class ServerJmxIT
             .inProcess(false)
             .configuration(
                     "server.jmx.port=0",
-                    "server.metrics.enable=jmx",
+                    "metrics.enable=jmx",
                     "database.leakDetectionThreshold=60000",
                     "database.maximumPoolSize=3")
             .build();

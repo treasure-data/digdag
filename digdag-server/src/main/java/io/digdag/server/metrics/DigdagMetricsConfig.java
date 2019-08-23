@@ -27,7 +27,7 @@ public class DigdagMetricsConfig
     {
         // fetch enabled plugin server.metrics.enable = jmx,...
         List<String> keys = config
-                .getOptional("server.metrics.enable", String.class)
+                .getOptional("metrics.enable", String.class)
                 .transform((s) ->
                         Arrays.asList(s.split(","))
                                 .stream()

@@ -38,7 +38,7 @@ public interface JmxPluginConfig extends DigdagMetricsPluginConfig
      */
     static JmxPluginConfig load(Config config)
     {
-        Map<Category, Boolean> categories = DigdagMetricsPluginConfig.getEnabledCategories(config.getOptional("server.metrics.jmx.categories", String.class));
+        Map<Category, Boolean> categories = DigdagMetricsPluginConfig.getEnabledCategories(config.getOptional("metrics.jmx.categories", String.class));
         return ImmutableJmxPluginConfig
                 .builder()
                 .categoryAgentEnable(categories.get(Category.AGENT))
