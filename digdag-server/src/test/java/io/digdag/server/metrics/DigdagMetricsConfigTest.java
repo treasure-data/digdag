@@ -47,9 +47,9 @@ public class DigdagMetricsConfigTest
     public void testJmxEnabled()
     {
         /**
-         *  server.metrics.enable: " jmx "
+         *  metrics.enable: " jmx "
          */
-        config = fromJson("{ \"server.metrics.enable\": \" jmx \" }");
+        config = fromJson("{ \"metrics.enable\": \" jmx \" }");
         DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
 
         Optional<JmxPluginConfig> jmxConfig = metricsConfig.getPluginConfig("jmx").transform((p) -> (JmxPluginConfig)p);
@@ -71,8 +71,8 @@ public class DigdagMetricsConfigTest
          */
         config = fromJson(
                 "{ " +
-                        "\"server.metrics.enable\": \" jmx \", " +
-                        "\"server.metrics.jmx.categories\": \"agent, executor\" " +
+                        "\"metrics.enable\": \" jmx \", " +
+                        "\"metrics.jmx.categories\": \"agent, executor\" " +
                  "}");
         DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
 
