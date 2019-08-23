@@ -24,14 +24,14 @@ So metrics are categorized as follows.
 ## Setup
 Digdag metrics is disabled as default. To enable it, add configuration to server config as follows.
 ```
-server.metrics.enable = jmx
+metrics.enable = jmx
 ```
 
 As default, all categories metrics are enable.
 You can choose enabled categories as follows.
 ```
-server.metrics.enable = jmx
-server.metrics.jmx.categories = api,default
+metrics.enable = jmx
+metrics.jmx.categories = api,default
 ```
 
 ## API metrics
