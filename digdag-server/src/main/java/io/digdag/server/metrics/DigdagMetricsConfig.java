@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 
 public class DigdagMetricsConfig
 {
-    Logger logger = LoggerFactory.getLogger(DigdagMetricsConfig.class);
-    Map<String, MonitorSystemConfig> monitorSystems = new HashMap<>();
+    private static Logger logger = LoggerFactory.getLogger(DigdagMetricsConfig.class);
+    private Map<String, MonitorSystemConfig> monitorSystems = new HashMap<>();
 
     public Optional<MonitorSystemConfig> getMonitorSystemConfig(String key)
     {
