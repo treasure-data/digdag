@@ -3,7 +3,7 @@ package io.digdag.server.metrics;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.server.metrics.jmx.JmxPluginConfig;
+import io.digdag.server.metrics.jmx.JmxMonitorSystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,16 +16,16 @@ import java.util.stream.Collectors;
 public class DigdagMetricsConfig
 {
     Logger logger = LoggerFactory.getLogger(DigdagMetricsConfig.class);
-    Map<String, DigdagMetricsPluginConfig> plugins = new HashMap<>();
+    Map<String, MonitorSystemConfig> monitorSystems = new HashMap<>();
 
-    public Optional<DigdagMetricsPluginConfig> getPluginConfig(String key)
+    public Optional<MonitorSystemConfig> getMonitorSystemConfig(String key)
     {
-        return plugins.containsKey(key) ? Optional.of(plugins.get(key)) : Optional.absent();
+        return monitorSystems.containsKey(key) ? Optional.of(monitorSystems.get(key)) : Optional.absent();
     }
 
     public DigdagMetricsConfig(Config config)
     {
-        // fetch enabled plugin server.metrics.enable = jmx,...
+        // fetch enabled monitor system metrics.enable = jmx,...
         List<String> keys = config
                 .getOptional("metrics.enable", String.class)
                 .transform((s) ->
@@ -36,7 +36,7 @@ public class DigdagMetricsConfig
                                 .collect(Collectors.toList())
                 ).or(Arrays.asList());
         // load each config
-        keys.stream().forEach((k) -> plugins.put(k, loadPluginConfig(k, config)));
+        keys.stream().forEach((k) -> monitorSystems.put(k, loadMonitorSystemConfig(k, config)));
     }
 
     /**
@@ -45,18 +45,18 @@ public class DigdagMetricsConfig
      * @param config
      * @return
      */
-    public DigdagMetricsPluginConfig loadPluginConfig(String key, Config config)
+    public MonitorSystemConfig loadMonitorSystemConfig(String key, Config config)
     {
         switch (key) {
             case "jmx":
-                return getJmxPluginConfig(config);
+                return getJmxMonitorSystemConfig(config);
             default:
-                throw new ConfigException("Unsupported digdag-metrics plugin:" + key);
+                throw new ConfigException("Unsupported digdag-metrics monitor system:" + key);
         }
     }
 
-    JmxPluginConfig getJmxPluginConfig(Config config)
+    JmxMonitorSystemConfig getJmxMonitorSystemConfig(Config config)
     {
-        return JmxPluginConfig.load(config);
+        return JmxMonitorSystemConfig.load(config);
     }
 }

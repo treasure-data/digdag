@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
@@ -49,8 +50,6 @@ public interface ServerConfig
 
     public ConfigElement getSystemConfig();
 
-    public DigdagMetricsConfig getMetricsConfig();
-
     public Map<String,String> getEnvironment();
 
     public static ImmutableServerConfig.Builder defaultBuilder()
@@ -93,18 +92,23 @@ public interface ServerConfig
             .enableSwagger(config.get("server.enable-swagger", boolean.class, false))
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
-            .metricsConfig(new DigdagMetricsConfig(config))
             .environment(readPrefixed.apply("server.environment."))
             .build();
     }
 
     public static ServerConfig convertFrom(ConfigElement configElement)
     {
+        //ToDo replaced with configFactory()
         ConfigFactory cf = new ConfigFactory(
                 new ObjectMapper()
                 .registerModule(new GuavaModule())
                 );
         return convertFrom(configElement.toConfig(cf));
+    }
+
+    public static ConfigFactory configFactory()
+    {
+        return new ConfigFactory(DigdagClient.objectMapper());
     }
 
     Set<Integer> getAdminSites();

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public interface DigdagMetricsPluginConfig
+public interface MonitorSystemConfig
 {
-    boolean getPluginEnable();
+    boolean getMonitorSystemEnable();
 
     boolean getCategoryDefaultEnable();
 
@@ -25,7 +25,7 @@ public interface DigdagMetricsPluginConfig
 
     default boolean enable(Category category)
     {
-        return getPluginEnable() && getCategoryEnable(category);
+        return getMonitorSystemEnable() && getCategoryEnable(category);
     }
 
     default boolean getCategoryEnable(Category category)
