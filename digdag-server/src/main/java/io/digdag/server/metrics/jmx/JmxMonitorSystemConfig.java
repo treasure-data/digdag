@@ -2,18 +2,18 @@ package io.digdag.server.metrics.jmx;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
-import io.digdag.server.metrics.DigdagMetricsPluginConfig;
+import io.digdag.server.metrics.MonitorSystemConfig;
 import io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.immutables.value.Value;
 
 import java.util.Map;
 
 @Value.Immutable
-@JsonDeserialize(as = ImmutableJmxPluginConfig.class)
-public interface JmxPluginConfig extends DigdagMetricsPluginConfig
+@JsonDeserialize(as = ImmutableJmxMonitorSystemConfig.class)
+public interface JmxMonitorSystemConfig extends MonitorSystemConfig
 {
     @Value.Default
-    default boolean getPluginEnable() { return true; }
+    default boolean getMonitorSystemEnable() { return true; }
 
     @Value.Default
     default boolean getCategoryDefaultEnable() { return true; }
@@ -36,10 +36,10 @@ public interface JmxPluginConfig extends DigdagMetricsPluginConfig
      *   jmx.categories: ALL
      * @return
      */
-    static JmxPluginConfig load(Config config)
+    static JmxMonitorSystemConfig load(Config config)
     {
-        Map<Category, Boolean> categories = DigdagMetricsPluginConfig.getEnabledCategories(config.getOptional("metrics.jmx.categories", String.class));
-        return ImmutableJmxPluginConfig
+        Map<Category, Boolean> categories = MonitorSystemConfig.getEnabledCategories(config.getOptional("metrics.jmx.categories", String.class));
+        return ImmutableJmxMonitorSystemConfig
                 .builder()
                 .categoryAgentEnable(categories.get(Category.AGENT))
                 .categoryApiEnable(categories.get(Category.API))
@@ -49,8 +49,8 @@ public interface JmxPluginConfig extends DigdagMetricsPluginConfig
                 .build();
     }
 
-    static JmxPluginConfig disabled()
+    static JmxMonitorSystemConfig disabled()
     {
-        return ImmutableJmxPluginConfig.builder().pluginEnable(false).build();
+        return ImmutableJmxMonitorSystemConfig.builder().monitorSystemEnable(false).build();
     }
 }

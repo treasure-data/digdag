@@ -2,7 +2,6 @@ package io.digdag.server.metrics;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.name.Names;
 import io.digdag.metrics.StdDigdagMetrics;
@@ -78,7 +77,7 @@ public class DigdagMetricsModule
 
     protected boolean isEnableCategory(String key, Category category)
     {
-        return metricsConfig.getPluginConfig(key).transform( (p) -> p.getCategoryEnable(category)).or(false);
+        return metricsConfig.getMonitorSystemConfig(key).transform( (p) -> p.getCategoryEnable(category)).or(false);
     }
 
 

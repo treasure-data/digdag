@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 
+import io.digdag.client.DigdagClient;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
 import io.digdag.client.Version;
@@ -11,6 +12,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.server.metrics.DigdagMetricsConfig;
 import io.digdag.server.metrics.DigdagMetricsModule;
 import io.digdag.guice.rs.server.undertow.UndertowServer;
 import io.digdag.guice.rs.server.undertow.UndertowServerControl;
@@ -66,7 +68,7 @@ public class ServerBootstrap
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
             })
             .addModules(new ServerModule(serverConfig))
-            .overrideModulesWith(new DigdagMetricsModule(serverConfig.getMetricsConfig()))
+            .overrideModulesWith(new DigdagMetricsModule(new DigdagMetricsConfig(serverConfig.getSystemConfig().toConfig(ServerConfig.configFactory()))))
         ;
     }
 

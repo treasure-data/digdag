@@ -1,11 +1,10 @@
 package io.digdag.server.metrics;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.server.metrics.jmx.JmxPluginConfig;
+import io.digdag.server.metrics.jmx.JmxMonitorSystemConfig;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.client.DigdagClient.objectMapper;
 
@@ -40,7 +39,7 @@ public class DigdagMetricsConfigTest
     public void testDefault()
     {
         DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
-        assertFalse("No jmx config", metricsConfig.getPluginConfig("jmx").isPresent());
+        assertFalse("No jmx config", metricsConfig.getMonitorSystemConfig("jmx").isPresent());
     }
 
     @Test
@@ -52,9 +51,9 @@ public class DigdagMetricsConfigTest
         config = fromJson("{ \"metrics.enable\": \" jmx \" }");
         DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
 
-        Optional<JmxPluginConfig> jmxConfig = metricsConfig.getPluginConfig("jmx").transform((p) -> (JmxPluginConfig)p);
+        Optional<JmxMonitorSystemConfig> jmxConfig = metricsConfig.getMonitorSystemConfig("jmx").transform((p) -> (JmxMonitorSystemConfig)p);
         assertTrue("Exist jmx config", jmxConfig.isPresent());
-        assertTrue("plugin is enable", jmxConfig.get().getPluginEnable());
+        assertTrue("plugin is enable", jmxConfig.get().getMonitorSystemEnable());
         assertTrue("category 'agent' is enable", jmxConfig.get().enable(DigdagMetrics.Category.AGENT));
         assertTrue("category 'api' is enable", jmxConfig.get().enable(DigdagMetrics.Category.API));
         assertTrue("category 'db' is enable", jmxConfig.get().enable(DigdagMetrics.Category.DB));
@@ -76,9 +75,9 @@ public class DigdagMetricsConfigTest
                  "}");
         DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
 
-        Optional<JmxPluginConfig> jmxConfig = metricsConfig.getPluginConfig("jmx").transform((p) -> (JmxPluginConfig)p);
+        Optional<JmxMonitorSystemConfig> jmxConfig = metricsConfig.getMonitorSystemConfig("jmx").transform((p) -> (JmxMonitorSystemConfig)p);
         assertTrue("Exist jmx config", jmxConfig.isPresent());
-        assertTrue("plugin is enable", jmxConfig.get().getPluginEnable());
+        assertTrue("plugin is enable", jmxConfig.get().getMonitorSystemEnable());
         assertTrue("category 'agent' is enable", jmxConfig.get().enable(DigdagMetrics.Category.AGENT));
         assertFalse("category 'api' is enable", jmxConfig.get().enable(DigdagMetrics.Category.API));
         assertFalse("category 'db' is enable", jmxConfig.get().enable(DigdagMetrics.Category.DB));
