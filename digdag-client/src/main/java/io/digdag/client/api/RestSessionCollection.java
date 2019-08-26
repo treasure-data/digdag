@@ -12,8 +12,6 @@ public interface RestSessionCollection
 
     int getRecordsNumber();
 
-    int getPageSize();
-
     static ImmutableRestSessionCollection.Builder builder()
     {
         return ImmutableRestSessionCollection.builder();

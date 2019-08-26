@@ -438,7 +438,7 @@ public class ProjectResource
                 sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId), page);
             }
 
-            return RestModels.sessionCollection(ps, sessions, sessionRecordsNumber, validPageSize);
+            return RestModels.sessionCollection(ps, sessions, sessionRecordsNumber);
         }, ResourceNotFoundException.class);
     }
 
