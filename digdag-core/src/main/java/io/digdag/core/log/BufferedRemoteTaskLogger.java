@@ -1,16 +1,14 @@
 package io.digdag.core.log;
 
 import java.time.Instant;
-import java.util.zip.GZIPOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
-import java.time.Instant;
+
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import io.digdag.core.TempFileManager;
@@ -135,49 +133,4 @@ public class BufferedRemoteTaskLogger
         }
     }
 
-    private static class CountingLogOutputStream
-        extends GZIPOutputStream
-    {
-        private final Path path;
-        private final Instant openTime;
-        private int count;
-
-        public CountingLogOutputStream(Path path)
-            throws IOException
-        {
-            super(Files.newOutputStream(path), 8*1024);
-            this.def.setLevel(9);
-            this.path = path;
-            this.openTime = Instant.now();
-        }
-
-        @Override
-        public void write(int b) throws IOException
-        {
-            super.write(b);
-            count++;
-        }
-
-        @Override
-        public void write(byte b[], int off, int len) throws IOException
-        {
-            super.write(b, off, len);
-            count += len;
-        }
-
-        public Path getPath()
-        {
-            return path;
-        }
-
-        public Instant getOpenTime()
-        {
-            return openTime;
-        }
-
-        public int getUncompressedSize()
-        {
-            return count;
-        }
-    }
 }
