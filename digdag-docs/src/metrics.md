@@ -7,6 +7,8 @@ _Digdag metrics_ integrates [micrometer](https://micrometer.io/).
 micrometer supports many monitoring tools. But currently _digdag metrics_ only supports JMX.
 We may add a few monitoring tools in the future.
 
+## Metrics category
+
 There are many metrics in _digdag metrics_.
 So metrics are categorized as follows.
 
@@ -18,6 +20,19 @@ So metrics are categorized as follows.
 | Executor  | io.digdag.executor| executor_           | Workflow executor metrics   |
 | Default   | io.digdag         |                     | Others                      |
 
+
+## Setup
+Digdag metrics is disabled as default. To enable it, add configuration to server config as follows.
+```
+metrics.enable = jmx
+```
+
+As default, all categories metrics are enable.
+You can choose enabled categories as follows.
+```
+metrics.enable = jmx
+metrics.jmx.categories = api,default
+```
 
 ## API metrics
 

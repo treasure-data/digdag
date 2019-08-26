@@ -6,12 +6,15 @@ import com.google.inject.matcher.Matchers;
 import com.google.inject.name.Names;
 import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.metrics.DigdagTimed;
+import io.digdag.server.metrics.jmx.DigdagJmxMeterRegistry;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.jmx.JmxConfig;
 import io.micrometer.jmx.JmxMeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
@@ -20,6 +23,15 @@ import static io.digdag.spi.metrics.DigdagMetrics.Category;
 public class DigdagMetricsModule
         extends AbstractModule
 {
+    private DigdagMetricsConfig metricsConfig;
+
+    private static final Logger logger = LoggerFactory.getLogger(DigdagMetricsModule.class);
+
+    public DigdagMetricsModule(DigdagMetricsConfig metricsConfig)
+    {
+        this.metricsConfig = metricsConfig;
+    }
+
     @Override
     public void configure()
     {
@@ -56,7 +68,16 @@ public class DigdagMetricsModule
      */
     protected CompositeMeterRegistry createCompositeMeterRegistry(Category category)
     {
-        return new CompositeMeterRegistry().add(createJmxMeterRegistry(category));
+        CompositeMeterRegistry registry = new CompositeMeterRegistry();
+        if (isEnableCategory("jmx", category)) {
+            registry.add(createJmxMeterRegistry(category));
+        }
+        return registry;
+    }
+
+    protected boolean isEnableCategory(String key, Category category)
+    {
+        return metricsConfig.getMonitorSystemConfig(key).transform( (p) -> p.getCategoryEnable(category)).or(false);
     }
 
 

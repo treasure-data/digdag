@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.guice.rs.server.undertow.UndertowServerConfig;
 import io.digdag.guice.rs.server.undertow.UndertowListenAddress;
+import io.digdag.server.metrics.DigdagMetricsConfig;
 import io.digdag.server.rs.AdminRestricted;
 import org.immutables.value.Value;
 
@@ -96,11 +98,17 @@ public interface ServerConfig
 
     public static ServerConfig convertFrom(ConfigElement configElement)
     {
+        //ToDo replaced with configFactory()
         ConfigFactory cf = new ConfigFactory(
                 new ObjectMapper()
                 .registerModule(new GuavaModule())
                 );
         return convertFrom(configElement.toConfig(cf));
+    }
+
+    public static ConfigFactory configFactory()
+    {
+        return new ConfigFactory(DigdagClient.objectMapper());
     }
 
     Set<Integer> getAdminSites();
