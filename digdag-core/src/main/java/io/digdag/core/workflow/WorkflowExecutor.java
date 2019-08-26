@@ -540,7 +540,7 @@ public class WorkflowExecutor
     }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
-    private boolean propagateBlockedChildrenToReady()
+    protected boolean propagateBlockedChildrenToReady()
     {
         boolean anyChanged = false;
         long lastParentId = 0;
@@ -563,7 +563,7 @@ public class WorkflowExecutor
     }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
-    private boolean propagateAllPlannedToDone()
+    protected boolean propagateAllPlannedToDone()
     {
         boolean anyChanged = false;
         long lastTaskId = 0;
