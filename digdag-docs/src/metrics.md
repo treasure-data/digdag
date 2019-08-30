@@ -4,7 +4,7 @@
 Digdag supports JMX and provides a few metrics. But it is not enough to monitor its performance and stability.
 To improve it, new metrics framework _digdag metrics_ has been introduced.
 _Digdag metrics_ integrates [micrometer](https://micrometer.io/).
-micrometer supports many monitoring tools. But currently _digdag metrics_ only supports JMX.
+micrometer supports many monitoring tools. Currently _digdag metrics_ supports JMX and Fluentd(Fluency).
 We may add a few monitoring tools in the future.
 
 ## Metrics category
@@ -24,14 +24,17 @@ So metrics are categorized as follows.
 ## Setup
 Digdag metrics is disabled as default. To enable it, add configuration to server config as follows.
 ```
-metrics.enable = jmx
+metrics.enable = jmx,fluency
 ```
 
 As default, all categories metrics are enable.
 You can choose enabled categories as follows.
 ```
-metrics.enable = jmx
+metrics.enable = jmx,fluency
 metrics.jmx.categories = api,default
+metrics.fluency.categories = agent,executor,default
+metrics.fluency.host = localhost:24224
+metrics.fluency.tag = digdag_metrics
 ```
 
 ## API metrics
