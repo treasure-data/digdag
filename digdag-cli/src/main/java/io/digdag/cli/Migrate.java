@@ -124,7 +124,7 @@ public class Migrate
     {
         err.println("Usage: " + programName + " migrate (run|check) run or check database migration");
         err.println("  Options:");
-        err.println("    -c, --config PATH.properties     configuration file (default: /Users/you.yamagata/.config/digdag/config)");
+        err.println("    -c, --config PATH.properties     configuration file (default: ~/.config/digdag/config)");
         err.println("    -o, --database DIR               path to H2 database");
         return systemExit(error);
     }
