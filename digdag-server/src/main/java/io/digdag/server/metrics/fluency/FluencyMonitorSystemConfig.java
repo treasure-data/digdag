@@ -44,6 +44,9 @@ public interface FluencyMonitorSystemConfig extends MonitorSystemConfig
     default String getHost() { return "localhost:24224"; }
 
     @Value.Default
+    default long getStep() { return 60L; }
+
+    @Value.Default
     default Optional<String> getBackupDir() { return Optional.absent(); }
 
 
@@ -68,6 +71,7 @@ public interface FluencyMonitorSystemConfig extends MonitorSystemConfig
                 .tag(config.getOptional("metrics.fluency.tag", String.class).or("digdag"))
                 .host(config.getOptional("metrics.fluency.host", String.class).or("localhost:24224"))
                 .backupDir(config.getOptional("metrics.fluency.host", String.class))
+                .step(config.getOptional("metrics.fluency.step", Long.class).or(60L))
                 .build();
     }
 

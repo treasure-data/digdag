@@ -35,6 +35,7 @@ metrics.jmx.categories = api,default
 metrics.fluency.categories = agent,executor,default
 metrics.fluency.host = localhost:24224
 metrics.fluency.tag = digdag_metrics
+metrics.fluency.step = 60   #step to send metrics. default is 60 seconds
 ```
 
 ## API metrics
