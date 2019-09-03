@@ -46,6 +46,7 @@ public class SessionResource
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
     private static int MAX_ATTEMPTS_PAGE_SIZE;
     private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
+    private static final int DEFAULT_PAGE_NUMBER = 1;
 
     @Inject
     public SessionResource(
@@ -69,14 +70,14 @@ public class SessionResource
             @QueryParam("page_number") Integer pageNumber)
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+        int validPageNumber = QueryParamValidator.validatePageNumber(Optional.fromNullable(pageNumber), DEFAULT_PAGE_NUMBER);
 
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
-            Integer sessionRecordsNumber = ss.getTotalSessionsCount(Optional.fromNullable(lastId));
+            Integer sessionRecordsNumber = ss.getSessionsCount(Optional.fromNullable(lastId));
 
-            Integer validPageNumber = Optional.fromNullable(pageNumber).or(1);
             List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId), validPageNumber);
             return RestModels.sessionCollection(rs, sessions, sessionRecordsNumber);
         });

@@ -169,6 +169,7 @@ public class ProjectResource
     private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
+    private static final int DEFAULT_PAGE_NUMBER = 1;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -421,15 +422,15 @@ public class ProjectResource
             throws ResourceNotFoundException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+        int validPageNumber = QueryParamValidator.validatePageNumber(Optional.fromNullable(pageNumber), DEFAULT_PAGE_NUMBER);
 
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             SessionStore ss = ssm.getSessionStore(getSiteId());
 
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
-            Integer validPageNumber = Optional.fromNullable(pageNumber).or(1);
 
-            Integer sessionRecordsNumber = ss.getTotalProjectSessionsCount(Optional.fromNullable(lastId), projectId);
+            Integer sessionRecordsNumber = ss.getSessionsCountOfProject(Optional.fromNullable(lastId), projectId);
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {

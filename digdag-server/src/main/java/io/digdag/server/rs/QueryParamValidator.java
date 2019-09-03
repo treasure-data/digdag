@@ -22,4 +22,9 @@ public class QueryParamValidator
             return pageSizeValue;
         }
     }
+
+    public static int validatePageNumber(Optional<Integer> pageNumber, int defaultPageNumber)
+    {
+        return pageNumber.or(defaultPageNumber);
+    }
 }
