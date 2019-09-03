@@ -427,15 +427,15 @@ public class ProjectResource
             SessionStore ss = ssm.getSessionStore(getSiteId());
 
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
-            Integer page = Optional.fromNullable(pageNumber).or(1);
+            Integer validPageNumber = Optional.fromNullable(pageNumber).or(1);
 
             Integer sessionRecordsNumber = ss.getTotalProjectSessionsCount(Optional.fromNullable(lastId), projectId);
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId), page);
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId), validPageNumber);
             } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId), page);
+                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId), validPageNumber);
             }
 
             return RestModels.sessionCollection(ps, sessions, sessionRecordsNumber);
