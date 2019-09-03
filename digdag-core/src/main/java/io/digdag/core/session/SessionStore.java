@@ -13,9 +13,9 @@ public interface SessionStore
 
     List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId, int pageNumber);
 
-    Integer getTotalSessionsCount(Optional<Long> lastId);
+    Integer getSessionsCount(Optional<Long> lastId);
 
-    Integer getTotalProjectSessionsCount(Optional<Long> lastId, int projectId);
+    Integer getSessionsCountOfProject(Optional<Long> lastId, int projectId);
 
     StoredSessionWithLastAttempt getSessionById(long sessionId)
         throws ResourceNotFoundException;

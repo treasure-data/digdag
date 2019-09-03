@@ -1182,15 +1182,15 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public Integer getTotalSessionsCount(Optional<Long> lastId)
+        public Integer getSessionsCount(Optional<Long> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getTotalSessionsCount(siteId, lastId.or(Long.MAX_VALUE)));
+            return autoCommit((handle, dao) -> dao.getSessionsCount(siteId, lastId.or(Long.MAX_VALUE)));
         }
 
         @Override
-        public Integer getTotalProjectSessionsCount(Optional<Long> lastId, int projectId)
+        public Integer getSessionsCountOfProject(Optional<Long> lastId, int projectId)
         {
-            return autoCommit((handle, dao) -> dao.getTotalProjectSessionsCount(lastId.or(Long.MAX_VALUE), projectId));
+            return autoCommit((handle, dao) -> dao.getSessionsCountOfProject(lastId.or(Long.MAX_VALUE), projectId));
         }
 
         @Override
@@ -1650,7 +1650,7 @@ public class DatabaseSessionStoreManager
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id in (select id from projects where site_id = :siteId)" +
                 " and s.id < :lastId")
-        Integer getTotalSessionsCount(@Bind("siteId") int siteId, @Bind("lastId") long lastId);
+        Integer getSessionsCount(@Bind("siteId") int siteId, @Bind("lastId") long lastId);
 
 
         @SqlQuery("select count(1)" +
@@ -1658,7 +1658,7 @@ public class DatabaseSessionStoreManager
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projectId" +
                 " and s.id < :lastId")
-        Integer getTotalProjectSessionsCount(@Bind("lastId") long lastId, @Bind("projectId") int projectId);
+        Integer getSessionsCountOfProject(@Bind("lastId") long lastId, @Bind("projectId") int projectId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
