@@ -128,7 +128,7 @@ public class DigdagMetricsModule
                 .getMonitorSystemConfig("fluency")
                 .or(() -> {throw new ConfigException("fluency is disabled");});
         Fluency fluency = FluencyMonitorSystemConfig.createFluency(fconfig);
-        FluencyRegistryConfig regConfig = new FluencyRegistryConfig(fconfig.getTag(), "digdag", Duration.ofSeconds(60));
+        FluencyRegistryConfig regConfig = new FluencyRegistryConfig(fconfig.getTag(), "digdag", Duration.ofSeconds(fconfig.getStep()));
         return FluencyMeterRegistry.apply(regConfig, HierarchicalNameMapper.DEFAULT, Clock.SYSTEM, fluency);
     }
 

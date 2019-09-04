@@ -5,8 +5,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.server.metrics.fluency.FluencyMonitorSystemConfig;
-import io.digdag.server.metrics.fluency.ImmutableFluencyMonitorSystemConfig;
-import io.digdag.server.metrics.jmx.ImmutableJmxMonitorSystemConfig;
 import io.digdag.server.metrics.jmx.JmxMonitorSystemConfig;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -107,6 +105,7 @@ public class DigdagMetricsConfigTest
         assertTrue("category 'db' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DB));
         assertTrue("category 'executor' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.EXECUTOR));
         assertTrue("category 'default' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DEFAULT));
+        assertEquals("step is 60 secs as default", 60L,  fluencyConfig.get().getStep());
     }
 
     @Test
@@ -121,7 +120,8 @@ public class DigdagMetricsConfigTest
                         "\"metrics.enable\": \" fluency \", " +
                         "\"metrics.fluency.categories\": \"agent, executor\", " +
                         "\"metrics.fluency.host\": \"server01:9999\", " +
-                        "\"metrics.fluency.tag\": \"tag0001\" " +
+                        "\"metrics.fluency.tag\": \"tag0001\", " +
+                        "\"metrics.fluency.step\": 120" +
                         "}");
         DigdagMetricsConfig metricsConfig = new DigdagMetricsConfig(config);
 
@@ -135,5 +135,6 @@ public class DigdagMetricsConfigTest
         assertFalse("category 'default' is enable", fluencyConfig.get().enable(DigdagMetrics.Category.DEFAULT));
         assertEquals("host", "server01:9999", fluencyConfig.get().getHost());
         assertEquals("tag", "tag0001", fluencyConfig.get().getTag());
+        assertEquals("step", 120L, fluencyConfig.get().getStep());
     }
 }
