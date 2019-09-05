@@ -512,15 +512,16 @@ public class WorkflowExecutor
                 enqueueReadyTasks(queuer);
 
                 /**
-                 *  propagateSessionArchive() should always call.
+                 *  propagateSessionArchive() should be always called.
                  *  If propagateSessionArchive() for a session fail,
                  *  next propagateSessionArchive() never call
                  *  until propagateAllPlannedToDone() become true.
                  *  If there is only the session, never archived.
-                 *  Check by WorkflowExecutorCatchingTest.testPropagateSessionArchive()
+                 *  Checked by WorkflowExecutorCatchingTest.testPropagateSessionArchive()
                  */
+                boolean hasModification = propagateAllPlannedToDone();
                 propagateSessionArchive();
-                if (propagateAllPlannedToDone()) {
+                if (hasModification) {
                     //propagateSessionArchive();
                 }
                 else {
