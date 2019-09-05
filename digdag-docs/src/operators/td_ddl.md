@@ -19,6 +19,21 @@
       td_ddl>:
       rename_tables: [{from: "my_table_${session_date_compact}", to: "my_table"}]
 
+
+If you would like to specify a different database which is not declared with _export, you can specify the database name under the options as below.
+
+
+    _export:
+      td:
+        database: test_db1
+
+    +task1:
+      td_ddl>:
+      create_tables: [test_ddl1, test_ddl2]
+      database: test_db2
+
+
+
 ## Secrets
 
 When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
