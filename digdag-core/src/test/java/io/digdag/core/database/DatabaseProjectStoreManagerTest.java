@@ -162,6 +162,9 @@ public class DatabaseProjectStoreManagerTest
             StoredWorkflowDefinitionWithProject wfDetails3 = StoredWorkflowDefinitionWithProject.of(wf3, proj2, srcRev3);
             StoredWorkflowDefinitionWithProject wfDetails4 = StoredWorkflowDefinitionWithProject.of(wf4, proj2, srcRev3);
 
+            StoredProjectWithRevision proj1Rev1 = StoredProjectWithRevision.of(proj1, rev1);
+            StoredProjectWithRevision proj2Rev3 = StoredProjectWithRevision.of(proj2, rev3);
+
             ProjectStore anotherSite = manager.getProjectStore(1);
 
             ////
@@ -198,6 +201,11 @@ public class DatabaseProjectStoreManagerTest
             assertEquals(ImmutableList.of(proj1), store.getProjects(1, Optional.absent()));
             assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId())));
             assertEmpty(anotherSite.getProjects(100, Optional.absent()));
+
+            assertEquals(ImmutableList.of(proj1Rev1, proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.absent()));
+            assertEquals(ImmutableList.of(proj1Rev1), store.getProjectsWithLatestRevision(1, Optional.absent()));
+            assertEquals(ImmutableList.of(proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.of(proj1.getId())));
+            assertEmpty(anotherSite.getProjectsWithLatestRevision(100, Optional.absent()));
 
             assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(proj2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
             assertEquals(ImmutableList.of(rev3), store.getRevisions(proj2.getId(), 1, Optional.absent()));
@@ -328,6 +336,7 @@ public class DatabaseProjectStoreManagerTest
 
             // listing doesn't include deleted projects
             assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent()));
+            assertEquals(ImmutableList.of(), store.getProjectsWithLatestRevision(100, Optional.absent()));
             assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
 
             // lookup by project/revision id succeeds and deletedAt is set
