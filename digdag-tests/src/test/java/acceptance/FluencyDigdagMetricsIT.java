@@ -44,7 +44,7 @@ public class FluencyDigdagMetricsIT
 {
     List<Object[]> emitList = new ArrayList<>();
     Fluency fluency = mock(Fluency.class);
-    FluencyRegistryConfig regConfig = new FluencyRegistryConfig("testtest", "digdag", Duration.ofSeconds(1));
+    FluencyRegistryConfig regConfig = FluencyRegistryConfig.apply("testtest", "digdag", Duration.ofSeconds(1), true);
 
     CommandExecutor cmdExecutor = mock(CommandExecutor.class);
     DigdagMetricsModule metricsModule;
