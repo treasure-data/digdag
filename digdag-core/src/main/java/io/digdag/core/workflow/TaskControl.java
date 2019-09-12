@@ -323,9 +323,9 @@ public class TaskControl
         // propagateChildrenErrorWithRetry
     }
 
-    public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
+    public boolean copyInitialTasksForRetry(String parentFullName, List<Long> recursiveChildrenIdList)
     {
-        return store.copyInitialTasksForRetry(recursiveChildrenIdList);
+        return store.copyInitialTasksForRetry(recursiveChildrenIdList, Optional.of(parentFullName));
     }
 
     public boolean setGroupRetryReadyToPlanned()

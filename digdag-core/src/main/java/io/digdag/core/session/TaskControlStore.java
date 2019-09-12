@@ -21,7 +21,13 @@ public interface TaskControlStore
 
     List<ResumingTask> getResumingTasksByNamePrefix(long attemptId, String fullNamePrefix);
 
-    boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList);
+    //To keep signature compatibility.
+    default boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
+    {
+        return copyInitialTasksForRetry(recursiveChildrenIdList, Optional.absent());
+    }
+
+    boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList, Optional<String> parentFullName);
 
     void addDependencies(long downstream, List<Long> upstreams);
 
