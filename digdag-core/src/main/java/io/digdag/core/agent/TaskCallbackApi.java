@@ -18,22 +18,16 @@ public interface TaskCallbackApi
 {
     TaskLogger newTaskLogger(TaskRequest request);
 
-    void taskHeartbeat(int siteId,
-            List<String> lockedIds, AgentId agentId, int lockSeconds);
+    void taskHeartbeat(int siteId, List<TaskRequest> requests, AgentId agentId, int lockSeconds);
 
     Optional<StorageObject> openArchive(TaskRequest request)
         throws IOException;
 
-    void taskSucceeded(int siteId,
-            long taskId, String lockId, AgentId agentId,
-            TaskResult result);
+    void taskSucceeded(TaskRequest request, AgentId agentId, TaskResult result);
 
-    void taskFailed(int siteId,
-            long taskId, String lockId, AgentId agentId,
-            Config error);
+    void taskFailed(TaskRequest request, AgentId agentId, Config error);
 
-    void retryTask(int siteId,
-            long taskId, String lockId, AgentId agentId,
+    void retryTask(TaskRequest request, AgentId agentId,
             int retryInterval, Config retryStateParams,
             Optional<Config> error);
 

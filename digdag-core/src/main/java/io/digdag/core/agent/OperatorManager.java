@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -150,18 +151,13 @@ public class OperatorManager
                         else {
                             logger.error("Task failed, retrying", ex);
                         }
-                        callback.retryTask(request.getSiteId(),
-                                request.getTaskId(), request.getLockId(), agentId,
-                                ex.getRetryInterval().get(), ex.getStateParams(cf).get(),
-                                ex.getError(cf));
+                        callback.retryTask(request, agentId, ex.getRetryInterval().get(), ex.getStateParams(cf).get(), ex.getError(cf));
                     }
                     else {
                         logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
                         logger.debug("", ex);
                         // TODO use debug to log stacktrace here
-                        callback.taskFailed(request.getSiteId(),
-                                request.getTaskId(), request.getLockId(), agentId,
-                                ex.getError(cf).get());  // TODO is error set?
+                        callback.taskFailed(request, agentId, ex.getError(cf).get());  // TODO is error set?
                     }
                 }
                 catch (RuntimeException | AssertionError ex) { // Avoid infinite task retry cause of AssertionError by Operators
@@ -171,9 +167,7 @@ public class OperatorManager
                     else {
                         logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
                     }
-                    callback.taskFailed(request.getSiteId(),
-                            request.getTaskId(), request.getLockId(), agentId,
-                            buildExceptionErrorConfig(ex).toConfig(cf));  // no retry
+                    callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));  // no retry
                 }
                 return true;
             });
@@ -181,9 +175,9 @@ public class OperatorManager
         catch (RuntimeException | IOException ex) {
             // exception happened in workspaceManager
             logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
-            callback.taskFailed(request.getSiteId(),
-                    request.getTaskId(), request.getLockId(), agentId,
-                    buildExceptionErrorConfig(ex).toConfig(cf));
+            callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));
+
+
         }
     }
 
@@ -243,9 +237,9 @@ public class OperatorManager
                 .findFirst();
             if (!operatorKey.isPresent()) {
                 // TODO warning
-                callback.taskSucceeded(request.getSiteId(),
-                        request.getTaskId(), request.getLockId(), agentId,
-                        TaskResult.empty(cf));
+                callback.taskSucceeded(request, agentId, TaskResult.empty(cf));
+
+
                 return;
             }
             type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
@@ -283,9 +277,9 @@ public class OperatorManager
             }
         }
 
-        callback.taskSucceeded(request.getSiteId(),
-                request.getTaskId(), request.getLockId(), agentId,
-                result);
+        callback.taskSucceeded(request, agentId, result);
+
+
     }
 
     private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, Collection<String> candidateKeys)
@@ -339,15 +333,15 @@ public class OperatorManager
     private void heartbeat()
     {
         try {
-            Map<Integer, List<String>> sites = runningTaskMap.values().stream()
+            Map<Integer, List<TaskRequest>> sites = runningTaskMap.values().stream()
                 .collect(Collectors.groupingBy(
                             TaskRequest::getSiteId,
-                            Collectors.mapping(TaskRequest::getLockId, Collectors.toList())
+                            Collectors.mapping(Function.identity(), Collectors.toList())
                             ));
-            for (Map.Entry<Integer, List<String>> pair : sites.entrySet()) {
+            for (Map.Entry<Integer, List<TaskRequest>> pair : sites.entrySet()) {
                 int siteId = pair.getKey();
-                List<String> lockIds = pair.getValue();
-                callback.taskHeartbeat(siteId, lockIds, agentId, agentConfig.getLockRetentionTime());
+                List<TaskRequest> taskRequests = pair.getValue();
+                callback.taskHeartbeat(siteId, taskRequests, agentId, agentConfig.getLockRetentionTime());
             }
         }
         catch (Throwable t) {
