@@ -2,6 +2,8 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.time.Instant;
+import java.util.stream.Collectors;
+
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -99,8 +101,12 @@ public class InProcessTaskCallbackApi
 
     @Override
     public void taskHeartbeat(int siteId,
-            List<String> lockedIds, AgentId agentId, int lockSeconds)
+            List<TaskRequest> requests, AgentId agentId, int lockSeconds)
     {
+        List<String> lockedIds = requests.stream()
+                .collect(
+                        Collectors.mapping(TaskRequest::getLockId, Collectors.toList())
+                );
         tm.begin(() -> queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds));
     }
 
@@ -135,28 +141,23 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public void taskSucceeded(int siteId,
-            long taskId, String lockId, AgentId agentId,
-            TaskResult result)
+    public void taskSucceeded(TaskRequest request, AgentId agentId, TaskResult result)
     {
-        tm.begin(() -> exec.taskSucceeded(siteId, taskId, lockId, agentId, result));
+        tm.begin(() -> exec.taskSucceeded(request.getSiteId(), request.getTaskId(), request.getLockId(), agentId, result));
     }
 
     @Override
-    public void taskFailed(int siteId,
-            long taskId, String lockId, AgentId agentId,
-            Config error)
+    public void taskFailed(TaskRequest request, AgentId agentId, Config error)
     {
-        tm.begin(() -> exec.taskFailed(siteId, taskId, lockId, agentId, error));
+        tm.begin(() -> exec.taskFailed(request.getSiteId(), request.getTaskId(), request.getLockId(), agentId, error));
     }
 
     @Override
-    public void retryTask(int siteId,
-            long taskId, String lockId, AgentId agentId,
+    public void retryTask(TaskRequest request, AgentId agentId,
             int retryInterval, Config retryStateParams,
             Optional<Config> error)
     {
-        tm.begin(() -> exec.retryTask(siteId, taskId, lockId, agentId,
+        tm.begin(() -> exec.retryTask(request.getSiteId(), request.getTaskId(), request.getLockId(), agentId,
                 retryInterval, retryStateParams, error));
     }
 
