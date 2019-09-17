@@ -49,7 +49,7 @@ public class NullLogServerFactory
         }
 
         @Override
-        public List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName)
+        public List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName, boolean enableDirectDownload)
         {
             return ImmutableList.of();
         }

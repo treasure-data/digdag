@@ -73,7 +73,7 @@ public class StorageFileLogServer
     }
 
     @Override
-    protected void listFiles(String dateDir, String attemptDir, FileMetadataConsumer consumer)
+    protected void listFiles(String dateDir, String attemptDir, boolean enableDirectDownload, FileMetadataConsumer consumer)
     {
         String dir = getPrefixDir(dateDir, attemptDir);
 
@@ -85,7 +85,7 @@ public class StorageFileLogServer
                     consumer.accept(
                             fileName,
                             meta.getContentLength(),
-                            directDownloadEnabled ? storage.getDirectDownloadHandle(key).orNull() : null);
+                            (directDownloadEnabled && enableDirectDownload) ? storage.getDirectDownloadHandle(key).orNull() : null);
             });
         });
     }

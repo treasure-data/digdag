@@ -64,15 +64,20 @@ public class LogResource
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFileHandleCollection getFileHandles(
             @PathParam("attempt_id") long attemptId,
-            @QueryParam("task") String taskName)
+            @QueryParam("task") String taskName,
+            @QueryParam("direct_download") Boolean directDownloadAllowed)
             throws ResourceNotFoundException, AccessControlException
     {
+        // Disable direct download (including direct= field in the response body where
+        // some clients including digdag-client package use the link automatically when
+        // it's set) if ?direct_download=false is given.
+        boolean enableDirectDownload = (directDownloadAllowed == null) || (boolean) directDownloadAllowed;
         return tm.<RestLogFileHandleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkGetLogFiles(
                             WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
                             getAuthenticatedUser()));
-            List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
+            List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName), enableDirectDownload);
             return RestModels.logFileHandleCollection(handles);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
