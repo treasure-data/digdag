@@ -682,10 +682,8 @@ public class Run
                 try (SetThreadName threadName = new SetThreadName(origThreadName)) {
                     logger.warn("Skipped");
                 }
-                callback.taskSucceeded(request.getSiteId(),
-                        request.getTaskId(), request.getLockId(), agentId,
-                        result);
-        }
+                callback.taskSucceeded(request, agentId, result);
+            }
             else {
                 super.run(request);
             }
