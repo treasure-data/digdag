@@ -32,9 +32,11 @@ abstract class BaseBqJobOperator
         Config result = cf.create();
         Config bq = result.getNestedOrSetEmpty("bq");
         bq.set("last_job_id", job.getId());
+        bq.set("last_jobid", job.getId());
         return TaskResult.defaultBuilder(request)
                 .storeParams(result)
                 .addResetStoreParams(ConfigKey.of("bq", "last_job_id"))
+                .addResetStoreParams(ConfigKey.of("bq", "last_jobid"))
                 .build();
     }
 
