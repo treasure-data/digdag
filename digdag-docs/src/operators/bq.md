@@ -157,7 +157,6 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
 ## Output parameters
 
-* **bq.last_job_id**
+* **bq.last_job_id** or **bq.last_jobid**
 
-  The id of the BigQuery job that executed this query.
-
+  The id of the BigQuery job that executed this query. `bq.last_jobid` will be kept for compatibility and remove in near future release.
