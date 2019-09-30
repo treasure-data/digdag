@@ -1,0 +1,13 @@
++step1:
+  echo>: step1
+  append_file: out
+
++step2:
+  echo>: step2
+  append_file: out
+
++step3:
+  echo>: step3
+  append_file: out
+
+

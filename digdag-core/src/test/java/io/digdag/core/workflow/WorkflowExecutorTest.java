@@ -11,6 +11,7 @@ import java.time.Instant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.io.Resources;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.TransactionManager;
@@ -32,13 +33,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.digdag.client.config.ConfigUtils.configFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
@@ -46,6 +51,8 @@ import static org.mockito.Mockito.when;
 
 public class WorkflowExecutorTest
 {
+    private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutorTest.class);
+
     private static DigdagEmbed embed;
 
     @BeforeClass
@@ -248,8 +255,58 @@ public class WorkflowExecutorTest
 
     }
 
+    @Test
+    public void randomEnqueue()
+            throws Exception
+    {
+        Config sysConfig = configFactory.create();
+
+        sysConfig.set("executor.enqueue_random_fetch", true);
+        sysConfig.set("executor.enqueue_fetch_size", 3);
+        DigdagEmbed embed2 = WorkflowTestingUtils.setupEmbed(b -> {
+            return b.setSystemConfig(ConfigElement.copyOf(sysConfig));
+        });
+        try {
+            {
+                runWorkflow(embed2, "random_enqueue_simple", loadYamlResource("/io/digdag/core/workflow/random_enqueue_simple.dig"));
+                Optional<String> result = getResult("out", folder);
+                logger.info(result.get());
+                assertThat(result.get(), is("step1step2step3"));
+            }
+            {
+                runWorkflow(embed2, "random_enqueue_parallel", loadYamlResource("/io/digdag/core/workflow/random_enqueue_parallel.dig"));
+                Optional<String> result = getResult("out", folder);
+                assertThat(result.isPresent(), not(false));
+                String out = result.get();
+                logger.info(out);
+                for (int i = 0; i < 8; i++) {
+                    assertThat(out, containsString("idx:" + i));
+                }
+            }
+        }
+        finally {
+            embed2.close();
+        }
+    }
+
+    private Optional<String> getResult(String fileName, TemporaryFolder folder)
+    {
+        try {
+            return Optional.of(new String(Files.readAllBytes(folder.getRoot().toPath().resolve(fileName)), UTF_8));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return Optional.absent();
+        }
+    }
 
     private void runWorkflow(String workflowName, Config config)
+            throws Exception
+    {
+        WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
+    }
+
+    private void runWorkflow(DigdagEmbed embed, String workflowName, Config config)
             throws Exception
     {
         WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);

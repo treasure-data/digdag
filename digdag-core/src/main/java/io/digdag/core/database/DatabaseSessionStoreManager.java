@@ -285,9 +285,14 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<Long> findAllReadyTaskIds(int maxEntries)
+    public List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch)
     {
-        return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
+        if (randomFetch) {
+            return autoCommit((handle, dao) -> dao.findAllTaskIdsByStateRandom(TaskStateCode.READY.get(), maxEntries));
+        }
+        else {
+            return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
+        }
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
@@ -1660,6 +1665,10 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
+
+        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
+        List<Long> findAllTaskIdsByStateRandom(@Bind("state") short state, @Bind("limit") int limit);
+
     }
 
     @UseStringTemplate3StatementLocator
@@ -1705,6 +1714,9 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update skip locked")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
+
+        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
+        List<Long> findAllTaskIdsByStateRandom(@Bind("state") short state, @Bind("limit") int limit);
     }
 
     public interface Dao
@@ -2003,6 +2015,8 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
+
+        List<Long> findAllTaskIdsByStateRandom(@Bind("state") short state, @Bind("limit") int limit);
 
         @SqlQuery("select id, session_id, state_flags, index from session_attempts where id = :attemptId for update")
         SessionAttemptSummary lockAttempt(@Bind("attemptId") long attemptId);

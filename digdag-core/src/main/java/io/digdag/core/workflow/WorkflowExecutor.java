@@ -174,6 +174,8 @@ public class WorkflowExecutor
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
     private volatile boolean propagatorNotice = false;
+    private final boolean enqueueRandomFetch;
+    private final Integer enqueueFetchSize;
 
     @Inject
     public WorkflowExecutor(
@@ -196,6 +198,8 @@ public class WorkflowExecutor
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
         this.metrics = metrics;
+        this.enqueueRandomFetch = systemConfig.get("executor.enqueue_random_fetch", Boolean.class, false);
+        this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -931,7 +935,8 @@ public class WorkflowExecutor
     @DigdagTimed(category = "executor", appendMethodName = true)
     protected void enqueueReadyTasks(TaskQueuer queuer)
     {
-        List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(100));
+        List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(enqueueFetchSize, enqueueRandomFetch));
+        logger.trace("readyTaskIds:{}", readyTaskIds);
         for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
             catching(()->funcEnqueueTask().apply(taskId), true, "Failed to call enqueueTask. taskId:" + taskId);
             //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
