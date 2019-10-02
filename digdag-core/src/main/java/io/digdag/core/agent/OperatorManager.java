@@ -136,7 +136,7 @@ public class OperatorManager
     }
 
     @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
-    void runWithHeartbeat(TaskRequest request)
+    protected void runWithHeartbeat(TaskRequest request)
     {
         try {
             workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (projectPath) -> {
@@ -182,7 +182,7 @@ public class OperatorManager
     }
 
     @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
-    Config evalConfig(TaskRequest request)
+    protected Config evalConfig(TaskRequest request)
             throws RuntimeException, AssertionError
     {
         try {
@@ -203,7 +203,7 @@ public class OperatorManager
     }
 
     @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
-    void runWithWorkspace(Path projectPath, TaskRequest request)
+    protected void runWithWorkspace(Path projectPath, TaskRequest request)
         throws TaskExecutionException
     {
         // evaluate config and creates the complete merged config.
