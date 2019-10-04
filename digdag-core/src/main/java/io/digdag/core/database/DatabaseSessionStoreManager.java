@@ -1171,11 +1171,11 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId)
         {
-            return getSessions(pageSize, lastId, 1);
+            return getSessions(pageSize, 1, lastId);
         }
 
         @Override
-        public List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId, int pageNumber)
+        public List<StoredSessionWithLastAttempt> getSessions(int pageSize, int pageNumber, Optional<Long> lastId)
         {
             int offset = pageSize * (pageNumber - 1);
             return autoCommit((handle, dao) -> dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE), offset));
@@ -1205,11 +1205,11 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId)
         {
-            return getSessionsOfWorkflowByName(projectId, workflowName, pageSize, lastId, 1);
+            return getSessionsOfWorkflowByName(projectId, workflowName, pageSize, 1, lastId);
         }
 
         @Override
-        public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId, int pageNumber)
+        public List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, int pageNumber, Optional<Long> lastId)
         {
             int offset = pageSize * (pageNumber - 1);
             return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE), offset));
@@ -1240,11 +1240,11 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId)
         {
-            return getSessionsOfProject(projectId, pageSize, lastId, 1);
+            return getSessionsOfProject(projectId, pageSize, 1, lastId);
         }
 
         @Override
-        public List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId, int pageNumber)
+        public List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, int pageNumber, Optional<Long> lastId)
         {
             int offset = pageSize * (pageNumber - 1);
             return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE), offset));

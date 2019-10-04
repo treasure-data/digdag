@@ -434,9 +434,9 @@ public class ProjectResource
 
             List<StoredSessionWithLastAttempt> sessions;
             if (workflowName != null) {
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId), validPageNumber);
+                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, validPageNumber, Optional.fromNullable(lastId));
             } else {
-                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId), validPageNumber);
+                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, validPageNumber, Optional.fromNullable(lastId));
             }
 
             return RestModels.sessionCollection(ps, sessions, sessionRecordsNumber);

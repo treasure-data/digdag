@@ -260,15 +260,15 @@ public class DatabaseSessionStoreManagerTest
 
             assertSessionAndLastAttemptEquals(session1, attempt1);
             assertThat(ImmutableList.of(session1, otherProjSession1), is(store.getSessions(100, Optional.absent())));
-            assertThat(ImmutableList.of(otherProjSession1), is(store.getSessions(1, Optional.absent(), 2)));
+            assertThat(ImmutableList.of(otherProjSession1), is(store.getSessions(1, 2, Optional.absent())));
             assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
-            assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 1, Optional.absent(), 1)));
-            assertEmpty(store.getSessionsOfProject(proj.getId(), 1, Optional.absent(), 2));
+            assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 1, 1, Optional.absent())));
+            assertEmpty(store.getSessionsOfProject(proj.getId(), 1, 2, Optional.absent()));
             assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
-            assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, Optional.absent(), 1)));
-            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, Optional.absent(), 2));
+            assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, 1, Optional.absent())));
+            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, 2, Optional.absent()));
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
-            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 1, Optional.absent(), 2));
+            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 1, 2, Optional.absent()));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
 
@@ -283,13 +283,13 @@ public class DatabaseSessionStoreManagerTest
 
             assertSessionAndLastAttemptEquals(session2, attempt2);
             assertThat(ImmutableList.of(session2, session1, otherProjSession1), is(store.getSessions(100, Optional.absent())));
-            assertThat(ImmutableList.of(otherProjSession1), is(store.getSessions(1, Optional.absent(), 3)));
+            assertThat(ImmutableList.of(otherProjSession1), is(store.getSessions(1, 3, Optional.absent())));
             assertThat(ImmutableList.of(session2, session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
-            assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 1, Optional.absent(), 2)));
-            assertEmpty(store.getSessionsOfProject(proj.getId(), 1, Optional.absent(), 3));
+            assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 1, 2, Optional.absent())));
+            assertEmpty(store.getSessionsOfProject(proj.getId(), 1, 3, Optional.absent()));
             assertThat(ImmutableList.of(session2, session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
-            assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, Optional.absent(), 2)));
-            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, Optional.absent(), 3));
+            assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, 2, Optional.absent())));
+            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, 3, Optional.absent()));
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt2));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
@@ -310,13 +310,13 @@ public class DatabaseSessionStoreManagerTest
             assertSessionAndLastAttemptEquals(session2AfterRetry, attempt3);
             assertThat(session2AfterRetry.getLastAttempt().getRetryAttemptName(), is(Optional.of(retryAttemptName)));
             assertThat(ImmutableList.of(session2AfterRetry, session1, otherProjSession1), is(store.getSessions(100, Optional.absent())));
-            assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessions(2, Optional.absent(), 1)));
+            assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessions(2, 1, Optional.absent())));
             assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
-            assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 1, Optional.absent(), 2)));
-            assertEmpty(store.getSessionsOfProject(proj.getId(), 1, Optional.absent(), 3));
+            assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 1, 2, Optional.absent())));
+            assertEmpty(store.getSessionsOfProject(proj.getId(), 1, 3, Optional.absent()));
             assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
-            assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, Optional.absent(), 2)));
-            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, Optional.absent(), 3));
+            assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, 2, Optional.absent())));
+            assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 1, 3, Optional.absent()));
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt3));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
@@ -337,27 +337,27 @@ public class DatabaseSessionStoreManagerTest
             assertThat(ImmutableList.of(session2AfterRetry, session1, otherProjSession1),
                     is(store.getSessions(100, Optional.absent())));
             assertThat(ImmutableList.of(session1),
-                    is(store.getSessions(1, Optional.absent(), 2)));
+                    is(store.getSessions(1, 2, Optional.absent())));
             assertThat(ImmutableList.of(session2AfterRetry, session1),
                     is(store.getSessions(2, Optional.absent())));
             assertThat(ImmutableList.of(otherProjSession1),
-                    is(store.getSessions(2, Optional.absent(), 2)));
+                    is(store.getSessions(2, 2, Optional.absent())));
             assertThat(ImmutableList.of(session2AfterRetry),
                     is(store.getSessions(1, Optional.absent())));
             assertThat(ImmutableList.of(session1),
-                    is(store.getSessions(1, Optional.absent(), 2)));
+                    is(store.getSessions(1, 2, Optional.absent())));
             assertThat(ImmutableList.of(session1, otherProjSession1),
                     is(store.getSessions(100, Optional.of(session2AfterRetry.getId()))));
             assertThat(ImmutableList.of(otherProjSession1),
-                    is(store.getSessions(1, Optional.of(session2AfterRetry.getId()), 2)));
+                    is(store.getSessions(1, 2, Optional.of(session2AfterRetry.getId()))));
             assertThat(ImmutableList.of(otherProjSession1),
                     is(store.getSessions(100, Optional.of(session1.getId()))));
             assertThat(ImmutableList.of(otherProjSession1),
-              is(store.getSessions(100, Optional.of(session1.getId()), 1)));
+              is(store.getSessions(100, 1, Optional.of(session1.getId()))));
             assertEmpty(store.getSessions(100, Optional.of(otherProjSession1.getId())));
-            assertEmpty(store.getSessions(100, Optional.of(otherProjSession1.getId()), 2));
+            assertEmpty(store.getSessions(100, 2, Optional.of(otherProjSession1.getId())));
             assertEmpty(anotherSite.getSessions(100, Optional.absent()));
-            assertEmpty(anotherSite.getSessions(100, Optional.absent(), 2));
+            assertEmpty(anotherSite.getSessions(100, 2, Optional.absent()));
 
             ////
             // public attempt listings

@@ -11,7 +11,7 @@ public interface SessionStore
 {
     List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId);
 
-    List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId, int pageNumber);
+    List<StoredSessionWithLastAttempt> getSessions(int pageSize, int pageNumber, Optional<Long> lastId);
 
     Integer getSessionsCount(Optional<Long> lastId);
 
@@ -22,11 +22,11 @@ public interface SessionStore
 
     List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId);
 
-    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId, int pageNumber);
+    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, int pageNumber, Optional<Long> lastId);
 
     List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId);
 
-    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId, int pageNumber);
+    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, int pageNumber, Optional<Long> lastId);
 
     List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId);
 

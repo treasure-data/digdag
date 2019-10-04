@@ -78,7 +78,7 @@ public class SessionResource
 
             Integer sessionRecordsNumber = ss.getSessionsCount(Optional.fromNullable(lastId));
 
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId), validPageNumber);
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, validPageNumber, Optional.fromNullable(lastId));
             return RestModels.sessionCollection(rs, sessions, sessionRecordsNumber);
         });
     }
