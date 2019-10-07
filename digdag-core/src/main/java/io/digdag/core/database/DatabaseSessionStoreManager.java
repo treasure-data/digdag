@@ -1190,7 +1190,7 @@ public class DatabaseSessionStoreManager
         @Override
         public Integer getSessionsCountOfProject(Optional<Long> lastId, int projectId)
         {
-            return autoCommit((handle, dao) -> dao.getSessionsCountOfProject(lastId.or(Long.MAX_VALUE), projectId));
+            return autoCommit((handle, dao) -> dao.getSessionsCountOfProject(siteId, lastId.or(Long.MAX_VALUE), projectId));
         }
 
         @Override
@@ -1657,8 +1657,9 @@ public class DatabaseSessionStoreManager
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projectId" +
+                " and sa.site_id = :siteId" +
                 " and s.id < :lastId")
-        Integer getSessionsCountOfProject(@Bind("lastId") long lastId, @Bind("projectId") int projectId);
+        Integer getSessionsCountOfProject(@Bind("siteId") int siteId, @Bind("lastId") long lastId, @Bind("projectId") int projectId);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
