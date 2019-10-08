@@ -31,7 +31,6 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
             return invokeMain(invocation);
         }
         catch (Exception e) {
-            e.printStackTrace();
             logger.debug("invocationMain Failed. {}", e.toString());
             throw e;
         }
@@ -65,7 +64,6 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
             try {
                 metrics.timerStop(category, metricsName, taskTags.and(timed.extraTags()), sample);
             } catch (Exception e) {
-                e.printStackTrace();
                 logger.warn(e.toString());
                 // ignoring on purpose
             }
