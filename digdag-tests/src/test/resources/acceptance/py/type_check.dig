@@ -1,0 +1,6 @@
++task:
+  py>: scripts.type_check.run
+  age: foo
+  country: "USA"
+  py:
+    python: python3

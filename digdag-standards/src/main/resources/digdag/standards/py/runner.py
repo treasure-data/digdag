@@ -5,6 +5,10 @@ import types
 import inspect
 import collections
 import traceback
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 command = sys.argv[1]
 in_file = sys.argv[2]
@@ -111,9 +115,11 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
         return {}
     if hasattr(inspect, 'getfullargspec'): # Python3
         spec = inspect.getfullargspec(callable_type)
+        annotations = spec.annotations
         keywords_ = spec.varkw
     else: # Python 2
         spec = inspect.getargspec(callable_type)
+        annotations = {}
         keywords_ = spec.keywords
 
     args = {}
@@ -122,6 +128,11 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
             continue
         if key in params:
             args[key] = params[key]
+
+            if key in annotations and not isinstance(params[key], annotations[key]):
+                logger.warning("argument '%s' for '%s' is not an instance of \"%s\"" % (
+                        params[key], key, annotations[key]
+                    ))
         else:
             if spec.defaults is None or idx < len(spec.args) - len(spec.defaults):
                 # this keyword is required but not in params. raising an error.

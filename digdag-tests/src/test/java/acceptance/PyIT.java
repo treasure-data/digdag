@@ -203,4 +203,54 @@ public class PyIT
         assertThat(logs, containsString(", in run"));
         assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Python command failed with code 1: from MyError: my error message"));
     }
+
+    @Test
+    public void testPythonTypeCheckingWarning()
+            throws Exception
+    {
+        final Path tempdir = folder.getRoot().toPath().toAbsolutePath();
+        final Path projectDir = tempdir.resolve("py");
+        final Path scriptsDir = projectDir.resolve("scripts");
+
+        // Create new project
+        final CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.code(), is(0));
+        Files.createDirectories(scriptsDir);
+        copyResource("acceptance/py/type_check.dig", projectDir.resolve("type_check.dig"));
+        copyResource("acceptance/py/scripts/type_check.py", scriptsDir.resolve("type_check.py"));
+        copyResource("acceptance/py/scripts/__init__.py", scriptsDir.resolve("__init__.py"));
+
+        // Push the project
+        final CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "py",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+        // Start the workflow
+        final CommandStatus startStatus = main("start",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "py", "type_check",
+                "--session", "now");
+        assertThat(startStatus.code(), is(0));
+        final Id attemptId = getAttemptId(startStatus);
+
+        // Wait for the attempt to complete
+        RestSessionAttempt attempt = null;
+        for (int i = 0; i < 30; i++) {
+            attempt = client.getSessionAttempt(attemptId);
+            if (attempt.getDone()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+
+        final String logs = getAttemptLogs(client, attemptId);
+        assertThat(logs, containsString("'foo' for 'age' is not an instance of \"<class 'int'>\""));
+    }
 }
