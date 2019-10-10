@@ -105,6 +105,40 @@ Setting an alert if a workflow doesn't finish within expected time
     +long_running_job:
       sh>: long_running_job.sh
 
+In sla: directive, you can select either the ``time`` or ``duration`` option.
+
+=============================== ================================================== ==========================
+Syntax                          Description                                        Example
+=============================== ================================================== ==========================
+time>: ``HH:MM:SS``             Set this job must be completed by ``HH:MM:SS``     time>: 12:30:00
+duration>: ``HH:MM:SS``         Set this job must be completed during ``HH:MM:SS`` duration>: 00:05:00
+=============================== ================================================== ==========================
+
+Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This parameter supports fail: BOOLEAN and alert: BOOLEAN options. Setting fail: true makes the workflow failed. Setting alert: true sends an notification using above notification mechanism.
+
+* Setting ``fail: true`` makes the workflow failed.
+* Setting ``alert: true`` sends an notification using above notification mechanism.
+
+If you have a job that always finishes in 3 minutes, and you want to end it forcibly after 3 minutes, write the following:
+
+.. code-block:: yaml
+
+    timezone: UTC
+
+    schedule:
+      cron>: 0 * * * WED,THU
+
+    sla:
+      # Kill after 3 minutes
+      duration: 00:03:00
+      +kill:
+        sh>: digdag kill ${attempt_id}
+
+    +less_than_3_minutes_job:
+      sh>: less_than_3_minutes_job.sh
 
 Skipping a next workflow session
 ----------------------------------
