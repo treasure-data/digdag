@@ -60,7 +60,6 @@ import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.ac.AccessController;
-import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
@@ -77,7 +76,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -285,9 +283,14 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<Long> findAllReadyTaskIds(int maxEntries)
+    public List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch)
     {
-        return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
+        if (randomFetch) {
+            return autoCommit((handle, dao) -> dao.findAllTaskIdsByStateAtRandom(TaskStateCode.READY.get(), maxEntries));
+        }
+        else {
+            return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
+        }
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
@@ -1660,6 +1663,10 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
+
+        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
+        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
+
     }
 
     @UseStringTemplate3StatementLocator
@@ -1705,6 +1712,9 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update skip locked")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
+
+        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
+        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
     }
 
     public interface Dao
@@ -2003,6 +2013,8 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
+
+        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
 
         @SqlQuery("select id, session_id, state_flags, index from session_attempts where id = :attemptId for update")
         SessionAttemptSummary lockAttempt(@Bind("attemptId") long attemptId);
