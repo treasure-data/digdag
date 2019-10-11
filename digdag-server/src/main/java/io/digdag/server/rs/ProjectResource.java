@@ -538,9 +538,16 @@ public class ProjectResource
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
-    public Response getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
+    public Response getArchive(
+            @PathParam("id") int projId,
+            @QueryParam("revision") String revName,
+            @QueryParam("direct_download") Boolean directDownloadAllowed)
             throws ResourceNotFoundException, AccessControlException
     {
+        // Disable direct download (redirection to direct download URL by returning
+        // 303 See Other) if ?direct_download=false is given.
+        boolean enableDirectDownload = (directDownloadAllowed == null) || (boolean) directDownloadAllowed;
+
         return tm.<Response, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
@@ -558,14 +565,16 @@ public class ProjectResource
             else {
                 ArchiveManager.StoredArchive archive = archiveOrNone.get();
 
-                Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
-                if (direct.isPresent()) {
-                    try {
-                        return Response.seeOther(URI.create(String.valueOf(direct.get().getUrl()))).build();
-                    }
-                    catch (IllegalArgumentException ex) {
-                        logger.warn("Failed to create a HTTP response to redirect /api/projects/{id}/archive to a direct download URL. " +
-                                "Falling back to fetching from the server.", ex);
+                if (enableDirectDownload) {
+                    Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
+                    if (direct.isPresent()) {
+                        try {
+                            return Response.seeOther(URI.create(String.valueOf(direct.get().getUrl()))).build();
+                        }
+                        catch (IllegalArgumentException ex) {
+                            logger.warn("Failed to create a HTTP response to redirect /api/projects/{id}/archive to a direct download URL. " +
+                                    "Falling back to fetching from the server.", ex);
+                        }
                     }
                 }
 

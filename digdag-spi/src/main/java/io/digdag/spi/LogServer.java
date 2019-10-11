@@ -11,7 +11,7 @@ public interface LogServer
 
     Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId);
 
-    List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName);
+    List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName, boolean enableDirectDownload);
 
     byte[] getFile(LogFilePrefix prefix, String fileName)
         throws StorageFileNotFoundException;
