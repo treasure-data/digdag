@@ -100,7 +100,7 @@ public class LocalFileLogServerFactory
         }
 
         @Override
-        protected void listFiles(String dateDir, String attemptDir, FileMetadataConsumer consumer)
+        protected void listFiles(String dateDir, String attemptDir, boolean enableDirectDownload, FileMetadataConsumer consumer)
         {
             Path dir = getPrefixDir(dateDir, attemptDir);
             if (!Files.exists(dir)) {

@@ -39,7 +39,7 @@ public abstract class AbstractFileLogServer
     protected abstract byte[] getFile(String dateDir, String attemptDir, String fileName)
             throws StorageFileNotFoundException;
 
-    protected abstract void listFiles(String dateDir, String attemptDir, FileMetadataConsumer fileNameConsumer);
+    protected abstract void listFiles(String dateDir, String attemptDir, boolean enableDirectDownload, FileMetadataConsumer fileNameConsumer);
 
     public interface FileMetadataConsumer
     {
@@ -77,14 +77,14 @@ public abstract class AbstractFileLogServer
     }
 
     @Override
-    public List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName)
+    public List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName, boolean enableDirectDownload)
     {
         String dateDir = LogFiles.formatDataDir(prefix);
         String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
 
         List<LogFileHandle> handles = new ArrayList<>();
 
-        listFiles(dateDir, attemptDir, (name, size, direct) -> {
+        listFiles(dateDir, attemptDir, enableDirectDownload, (name, size, direct) -> {
             if (name.endsWith(LogFiles.LOG_GZ_FILE_SUFFIX) && (!taskName.isPresent() || name.startsWith(taskName.get()))) {
                 LogFileHandle handle = LogFiles.buildLogFileHandleFromFileName(name, size);
                 if (handle != null) {
