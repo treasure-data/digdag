@@ -384,6 +384,8 @@ In the config file, following parameters are available
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 * executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)
 * executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
+* executor.enqueue_random_fetch (enqueue ready tasks randomly. default: false)
+* executor.enqueue_fetch_size ( Number of tasks to be enqueued. default: 100)
 * api.max_attempts_page_size (integer. The max number of rows of attempts in api response)
 * api.max_sessions_page_size (integer. The max number of rows of sessions in api response)
 * api.max_archive_total_size_limit (integer. The maximum size of an archived project. i.e. ``digdag push`` size. default: 2MB(2\*1024\*1024))
