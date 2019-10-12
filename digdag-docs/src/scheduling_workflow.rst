@@ -134,7 +134,6 @@ If you have a job that always finishes in 3 minutes, and you want to end it forc
     sla:
       # Kill after 3 minutes
       duration: 00:03:00
-      fail: true
       +kill:
         sh>: digdag kill ${attempt_id}
 
