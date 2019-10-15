@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -61,7 +60,7 @@ public class FluencyDigdagMetricsIT
             }
         })
         .when(fluency)
-        .emit(any(String.class), any(EventTime.class), any(Map.class));
+        .emit(any(String.class), any(Long.class), any(Map.class));
 
         FluencyMeterRegistry meter = FluencyMeterRegistry.apply(regConfig, HierarchicalNameMapper.DEFAULT, Clock.SYSTEM, fluency);
 
