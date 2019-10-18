@@ -53,9 +53,13 @@ public class TDOperator
 
     public static TDOperator fromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config config, SecretProvider secrets)
     {
-        String database = secrets.getSecretOptional("database").or(config.get("database", String.class)).trim();
-        if (database.isEmpty()) {
-            throw new ConfigException("Parameter 'database' is empty");
+        String database = null;
+        String type = config.get("_type", String.class);
+        if (type != null && !type.equals("td_result_export")) {
+            database = secrets.getSecretOptional("database").or(config.get("database", String.class)).trim();
+            if (database.isEmpty()) {
+                throw new ConfigException("Parameter 'database' is empty");
+            }
         }
 
         TDClient client = TDClientFactory.clientFromConfig(systemDefaultConfig, env, config, secrets);
