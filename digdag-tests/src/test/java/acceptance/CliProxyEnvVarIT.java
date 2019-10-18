@@ -2,9 +2,9 @@ package acceptance;
 
 import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.http.HttpRequest;
-import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.tls.HandshakeCertificates;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -18,11 +18,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.digdag.client.DigdagVersion.buildVersion;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static okhttp3.tls.internal.TlsUtil.localhost;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static utils.TestUtils.main;
@@ -54,7 +57,11 @@ public class CliProxyEnvVarIT
         httpMockServer.start();
 
         httpsMockServer = new MockWebServer();
-        httpsMockServer.useHttps(SslClient.localhost().socketFactory, false);
+        HandshakeCertificates handshakeCertificates = localhost();
+        SSLSocketFactory socketFactory = handshakeCertificates.sslSocketFactory();
+
+
+        httpsMockServer.useHttps(socketFactory, false);
         httpsMockServer.start();
 
         httpProxy = DefaultHttpProxyServer

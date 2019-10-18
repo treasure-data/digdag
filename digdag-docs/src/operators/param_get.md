@@ -1,6 +1,6 @@
 # param_get>: Get persistent data from ParamServer and set it as a value of store parameters
 
-**param_get>** operator gets a value from a ParamServer and sets it as a value of [store parameters](../../concepts.html#export-and-store-parameters)
+**param_get>** operator gets a value from a ParamServer and sets it as a value of [store parameters](../concepts.html#export-and-store-parameters)
 
     +get_single_value:
       param_get>:

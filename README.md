@@ -88,7 +88,7 @@ It makes an executable in `pkg/`, e.g. `pkg/digdag-$VERSION.jar`.
 You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY` environment variables.
 In the following instructions, assumed that `upstream` is set to `treasure-data/digdag` and `origin` is set to your private repository.
 
-1. run `git pull upstream --tags`.
+1. run `git pull upstream master --tags`.
 1. run `./gradlew setVersion -Pto=<version>` command.
 1. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
 1. run `./gradlew clean cli site check releaseCheck`.
@@ -107,10 +107,10 @@ If you are expert, skip 5. to 7. and directly update master branch.
 
 You also need following steps after new version has been released.
 
-1. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
-1. push to master.
 1. create a tag `git tag -a v<version>` and push `git push upstream v<version>`
 1. create a release in [GitHub releases](https://github.com/treasure-data/digdag/releases).
+1. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
+1. push to master.
 
 
 ### Releasing a SNAPSHOT version

@@ -29,6 +29,8 @@
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **aws.redshift.password**: NAME
 
   Optional user password to use when connecting to the Redshift database.

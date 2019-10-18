@@ -2,7 +2,7 @@
 
 **sh>** operator runs a shell script.
 
-Running a shell command (Note: you can use [echo> operator](../echo.html) to show a message):
+Running a shell command (Note: you can use [echo> operator](echo.html) to show a message):
 
     +step1:
       sh>: echo "hello world"

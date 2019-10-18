@@ -25,6 +25,8 @@
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **http.authorization**: STRING
 
   A string that should be included in the HTTP request as the value of the `Authorization` header. This can be used to authenticate using e.g. Oauth bearer tokens.
