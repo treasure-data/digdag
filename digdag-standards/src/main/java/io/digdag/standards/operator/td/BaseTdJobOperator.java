@@ -49,44 +49,48 @@ abstract class BaseTdJobOperator
     }
 
     @Override
-    public final TaskResult runTask()
+    public TaskResult runTask()
     {
         try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
-            Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
-            TDJobOperator job;
-            if (!doneJobId.isPresent()) {
-                job = op.runJob(state, "job", pollInterval, retryInterval, (jobOperator, domainKey) -> startJob(jobOperator, domainKey));
-                state.params().set(DONE_JOB_ID, job.getJobId());
-            }
-            else {
-                job = op.newJobOperator(doneJobId.get());
-            }
-
-            // Get the job results
-            TaskResult taskResult = processJobResult(op, job);
-
-            long numRecords = 0L;
-            try {
-                // job.getJobInfo() may throw error after having retried 3 times
-                numRecords = job.getJobInfo().getNumRecords();
-            }
-            catch (Exception ex) {
-                logger.warn("Setting num_records failed. Ignoring this error.", ex);
-            }
-
-            // Set last_job_id param
-            taskResult.getStoreParams()
-                    .getNestedOrSetEmpty("td")
-                    .set("last_job_id", job.getJobId()) // for compatibility with old style
-                    .getNestedOrSetEmpty("last_job")
-                    .set("id", job.getJobId())
-                    .set("num_records", numRecords);
-
-            return taskResult;
-        }
-        catch (TDClientException ex) {
+            return runTask(op);
+        } catch (TDClientException ex) {
             throw propagateTDClientException(ex);
         }
+    }
+
+    private TaskResult runTask(TDOperator op)
+    {
+        Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
+        TDJobOperator job;
+        if (!doneJobId.isPresent()) {
+            job = op.runJob(state, "job", pollInterval, retryInterval, (jobOperator, domainKey) -> startJob(jobOperator, domainKey));
+            state.params().set(DONE_JOB_ID, job.getJobId());
+        }
+        else {
+            job = op.newJobOperator(doneJobId.get());
+        }
+
+        // Get the job results
+        TaskResult taskResult = processJobResult(op, job);
+
+        long numRecords = 0L;
+        try {
+            // job.getJobInfo() may throw error after having retried 3 times
+            numRecords = job.getJobInfo().getNumRecords();
+        }
+        catch (Exception ex) {
+            logger.warn("Setting num_records failed. Ignoring this error.", ex);
+        }
+
+        // Set last_job_id param
+        taskResult.getStoreParams()
+                .getNestedOrSetEmpty("td")
+                .set("last_job_id", job.getJobId()) // for compatibility with old style
+                .getNestedOrSetEmpty("last_job")
+                .set("id", job.getJobId())
+                .set("num_records", numRecords);
+
+        return taskResult;
     }
 
     protected static Optional<String> poolNameOfEngine(Config params, String engine)

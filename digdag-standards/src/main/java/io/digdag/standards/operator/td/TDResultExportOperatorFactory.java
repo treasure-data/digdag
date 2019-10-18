@@ -1,12 +1,14 @@
 package io.digdag.standards.operator.td;
 
 import com.google.inject.Inject;
+import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDExportResultJobRequest;
 import io.digdag.client.config.Config;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskResult;
 import io.digdag.util.UserSecretTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,16 @@ public class TDResultExportOperatorFactory
             logger.info("Started result export job id={}", jobId);
 
             return jobId;
+        }
+
+        @Override
+        public final TaskResult runTask()
+        {
+            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"), false)) {
+                return runTask(op);
+            } catch (TDClientException ex) {
+                throw propagateTDClientException(ex);
+            }
         }
     }
 }
