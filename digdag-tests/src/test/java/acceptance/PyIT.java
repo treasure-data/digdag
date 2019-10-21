@@ -199,8 +199,8 @@ public class PyIT
         }
 
         final String logs = getAttemptLogs(client, attemptId);
-        assertThat(logs, containsString("Task failed with unexpected error: Python command failed with code 1: from MyError: my error message"));
+        assertThat(logs, containsString("Task failed with unexpected error: Python command failed with code 1: my error message (MyError)"));
         assertThat(logs, containsString(", in run"));
-        assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Python command failed with code 1: from MyError: my error message"));
+        assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Python command failed with code 1: my error message (MyError)"));
     }
 }
