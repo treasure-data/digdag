@@ -2,7 +2,7 @@
 
 **rb>** operator runs a Ruby script using `ruby` command.
 
-See [Ruby API documents](../../ruby_api.html) for details including best practices how to configure the workflow using `_export: require:`.
+See [Ruby API documents](../ruby_api.html) for details including best practices how to configure the workflow using `_export: require:`.
 
     _export:
       rb:

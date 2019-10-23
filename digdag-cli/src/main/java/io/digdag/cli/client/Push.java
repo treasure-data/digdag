@@ -12,6 +12,7 @@ import io.digdag.cli.TimeUtil;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.core.DigdagEmbed;
 
 import java.io.PrintStream;
@@ -69,7 +70,10 @@ public class Push
         Path archivePath = Files.createTempFile(dir, "archive-", ".tar.gz");
         archivePath.toFile().deleteOnExit();
 
+        ConfigElement systemConfig = ConfigElement.fromJson("{ \"database.migrate\" : false } }");
+
         Injector injector = new DigdagEmbed.Bootstrap()
+                .setSystemConfig(systemConfig)
                 .withWorkflowExecutor(false)
                 .withScheduleExecutor(false)
                 .withLocalAgent(false)

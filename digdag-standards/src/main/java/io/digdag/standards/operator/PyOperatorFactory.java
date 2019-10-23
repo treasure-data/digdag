@@ -10,10 +10,13 @@ import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.Maps;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -146,7 +149,33 @@ public class PyOperatorFactory
                     // Remove the polling state after fetching the result so that the result fetch can be retried
                     // without resubmitting the code.
                     state.remove("commandStatus");
-                    throw new RuntimeException("Python command failed with code " + statusCode);
+
+                    StringBuilder reason = new StringBuilder();
+                    reason.append("Python command failed with code ").append(statusCode);
+                    // If the error message and stacktrace are available in outFile,
+                    // throw RuntimeException with them.
+                    final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
+                    try (final InputStream in = Files.newInputStream(outputPath)) {
+                        Config out = mapper.readValue(in, Config.class);
+                        Config err = out.getNestedOrGetEmpty("error");
+                        Optional<String> errClass = err.getOptional("class", String.class);
+                        Optional<String> errMessage = err.getOptional("message", String.class);
+                        List<String> errBacktrace = err.getListOrEmpty("backtrace", String.class);
+                        if (errMessage.isPresent()) {
+                            reason.append(": ").append(errMessage.get());
+                        }
+                        if (errClass.isPresent()) {
+                            reason.append(" (").append(errClass.get()).append(")");
+                        }
+                        if (!errBacktrace.isEmpty()) {
+                            reason.append("\n\tfrom ");
+                            reason.append(String.join("\n\tfrom ", errBacktrace));
+                        }
+                    }
+                    catch (JsonMappingException ex) {
+                        // comes here if runner.rb fails before writing outFile.
+                    }
+                    throw new RuntimeException(reason.toString());
                 }
 
                 final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);

@@ -123,8 +123,8 @@ subprojects {
     }
 
     ext {
-        jacksonVersion = "2.8.11"
-        jacksonDatabindVersion = "2.8.11.1"
+        jacksonVersion = "2.9.9"
+        jacksonDatabindVersion = "2.9.9"
         awsJavaSdkVersion = "1.11.545"
         guavaVersion = "19.0"
     }

@@ -10,13 +10,15 @@
       td_run>: 12345
     +step2:
       td_run>: myquery2
-      session_time: 2016-01-01T01:01:01+0000
+      session_time: 2016-01-01T01:01:01+00:00
 
 ## Examples
 
   * [Examples](https://github.com/treasure-data/workflow-examples/tree/master/td_run).
 
 ## Secrets
+
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
 
 * **td.apikey**: API_KEY
   The Treasure Data API key to use when running Treasure Data queries.

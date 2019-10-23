@@ -1,6 +1,6 @@
 # td_wait>: Waits for data arriving at Treasure Data table
 
-**td_wait>** operator runs a query periodically until it returns true. This operator can use more complex query compared to [td_wait_table> operator](../td_wait_table.html).
+**td_wait>** operator runs a query periodically until it returns true. This operator can use more complex query compared to [td_wait_table> operator](td_wait_table.html).
 
     _export:
       td:
@@ -19,6 +19,8 @@ Example queries:
     select count(*) > 1000 from target_table where TD_TIME_RANGE(time, '${last_session_time}')
 
 ## Secrets
+
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
 
 * **td.apikey**: API_KEY
 

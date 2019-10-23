@@ -73,7 +73,7 @@ public class HttpOperatorFactory
     private final boolean allowUserProxy;
     private final int maxRedirects;
     private final String userAgent;
-    final int maxStoredResponseContentSize;
+    private final int maxStoredResponseContentSize;
 
     @Inject
     public HttpOperatorFactory(Config systemConfig, @Environment Map<String, String> env)

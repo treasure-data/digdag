@@ -241,7 +241,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.37
+    $ digdag selfupdate 0.9.38
 
 Server-mode commands
 ----------------------------------
@@ -277,7 +277,7 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: ``--database digdag``
 
 :command:`-m, --memory`
-  Store status in memory. Data will be removed when the server exists.
+  Store status in memory. Data will be removed when the server exits.
 
   Example: ``--memory``
 

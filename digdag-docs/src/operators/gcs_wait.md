@@ -10,9 +10,11 @@
 
 ## Secrets
 
+When you set those parameters, use [digdag secrets command](https://docs.digdag.io/command_reference.html#secrets).
+
 * **gcp.credential**: CREDENTIAL
 
-  See [gcp.credential](../bq.html#secrets).
+  See [gcp.credential](bq.html#secrets).
 
 ## Options
 
