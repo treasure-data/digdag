@@ -79,6 +79,15 @@ public class RuntimeParams
         params.set("project_id", request.getProjectId());
         params.set("_digdag_project_id", request.getProjectId());
 
+        params.set("_digdag_project_name", request.getProjectName());
+
+        params.set("_digdag_workflow_name", request.getWorkflowName());
+        params.set("_digdag_workflow_id", request.getWorkflowDefinitionId());
+
+        params.set("_digdag_revision_id", request.getRevision());
+
+        params.set("_digdag_created_at", request.getCreatedAt());
+
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
         params.set("_digdag_retry_attempt_name", request.getRetryAttemptName().orNull());
         params.set("attempt_id", request.getAttemptId());
