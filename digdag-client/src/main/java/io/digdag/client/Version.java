@@ -73,7 +73,7 @@ public class Version
             return 1;
         }
 
-        // if both has qualifier, compare with dictionary order
+        // if both have qualifier, compare with dictionary order
         if (qualifier.isPresent() && another.qualifier.isPresent()) {
             int c = qualifier.get().compareTo(another.qualifier.get());
             if (c < 0) {
