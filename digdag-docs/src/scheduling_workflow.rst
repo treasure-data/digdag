@@ -122,23 +122,6 @@ This parameter supports fail: BOOLEAN and alert: BOOLEAN options. Setting fail: 
 * Setting ``fail: true`` makes the workflow failed.
 * Setting ``alert: true`` sends an notification using above notification mechanism.
 
-If you have a job that always finishes in 3 minutes, and you want to end it forcibly after 3 minutes, write the following:
-
-.. code-block:: yaml
-
-    timezone: UTC
-
-    schedule:
-      cron>: 0 * * * WED,THU
-
-    sla:
-      # Kill after 3 minutes
-      duration: 00:03:00
-      +kill:
-        sh>: digdag kill ${attempt_id}
-
-    +less_than_3_minutes_job:
-      sh>: less_than_3_minutes_job.sh
 
 Skipping a next workflow session
 ----------------------------------
