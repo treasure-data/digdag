@@ -50,7 +50,7 @@ public class DatabaseModule
         public void migrate()
         {
             if (migrator != null) {
-                migrator.migrateWithRetry();
+                migrator.migrate();
                 migrator = null;
             }
         }
