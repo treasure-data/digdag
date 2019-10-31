@@ -22,7 +22,10 @@ public interface Migration
      * This is introduced because 'create index concurrently' cannot run in transaction.
      * @return
      */
-    default boolean noTransaction() { return false; }
+    default boolean noTransaction(MigrationContext context)
+    {
+        return false;
+    }
 
     void migrate(Handle handle, MigrationContext context);
 }
