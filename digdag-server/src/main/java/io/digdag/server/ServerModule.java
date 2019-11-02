@@ -20,6 +20,7 @@ import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
+import io.digdag.server.rs.DiffRunner;
 import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.ProjectResource;
 import io.digdag.server.rs.ScheduleResource;
@@ -105,6 +106,7 @@ public class ServerModule
                 VersionResource.class,
                 AdminResource.class
             );
+        binder().bind(DiffRunner.class).in(Scopes.SINGLETON);
     }
 
     protected void bindAuthenticator()

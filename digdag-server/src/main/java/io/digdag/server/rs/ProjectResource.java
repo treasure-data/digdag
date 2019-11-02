@@ -2,6 +2,7 @@ package io.digdag.server.rs;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -31,6 +32,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import io.digdag.client.api.RestCompareResult;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevisionCollection;
@@ -49,6 +51,7 @@ import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchives;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.WorkflowResourceMatcher;
 import io.digdag.core.config.YamlConfigLoader;
@@ -157,6 +160,7 @@ public class ProjectResource
     private final SecretControlStoreManager scsp;
     private final TransactionManager tm;
     private final ProjectArchiveLoader projectArchiveLoader;
+    private final DiffRunner diffRunner;
     private final DigdagMetrics metrics;
 
     @Inject
@@ -174,6 +178,7 @@ public class ProjectResource
             SecretControlStoreManager scsp,
             TransactionManager tm,
             ProjectArchiveLoader projectArchiveLoader,
+            DiffRunner diffRunner,
             Config systemConfig,
             DigdagMetrics metrics)
     {
@@ -190,6 +195,7 @@ public class ProjectResource
         this.tm = tm;
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
+        this.diffRunner = diffRunner;
         this.metrics = metrics;
 
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
@@ -329,6 +335,96 @@ public class ProjectResource
 
             return RestModels.revisionCollection(proj, revs);
         }, ResourceNotFoundException.class, AccessControlException.class);
+    }
+
+    private static class CompareRevisions
+    {
+        final StoredProject project;
+        final StoredRevision fromRevision;
+        final StoredRevision toRevision;
+
+        CompareRevisions(StoredProject project, StoredRevision fromRevision, StoredRevision toRevision)
+        {
+            this.project = project;
+            this.fromRevision = fromRevision;
+            this.toRevision = toRevision;
+        }
+    }
+
+    @DigdagTimed(category = "api", appendMethodName = true)
+    @GET
+    @Path("/api/projects/{id}/compare")
+    public RestCompareResult getRevisions(
+            @PathParam("id") int projId,
+            @QueryParam("from") String fromRevName,
+            @QueryParam("to") String toRevName,
+            @QueryParam("format") String format)
+            throws ResourceNotFoundException, IOException, AccessControlException
+    {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(fromRevName), "from= is required");
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(toRevName), "to= is required");
+
+        int siteId = getSiteId();
+        CompareRevisions cmp = tm.<CompareRevisions, ResourceNotFoundException, AccessControlException>begin(() -> {
+            ProjectStore ps = rm.getProjectStore(siteId);
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
+            StoredRevision toRevision = ps.getRevisionByName(proj.getId(), fromRevName); // check NotFound first
+            StoredRevision fromRevision = ps.getRevisionByName(proj.getId(), toRevName); // check NotFound first
+
+            ac.checkGetProject( // AccessControl
+                    ProjectTarget.of(siteId, proj.getName(), proj.getId()),
+                    getAuthenticatedUser());
+
+            return new CompareRevisions(proj, toRevision, fromRevision);
+        }, ResourceNotFoundException.class, AccessControlException.class);
+
+        try (TempDir tempDir = tempFiles.createTempDir("api-compare-" + projId)) {
+            // download and extract archives in parallel
+            List<Exception> errors = Stream.of(cmp.toRevision, cmp.fromRevision)
+                .parallel()
+                .map(rev -> tm.<Exception>begin(() -> {
+                        // begin transaction again because parallel() might be in another thread and might not be
+                        // while transaction is thread-local.
+                        ProjectStore ps = rm.getProjectStore(siteId);
+                        try {
+                            Optional<StorageObject> in = archiveManager.openArchive(ps, projId, rev.getName());
+
+                            if (in.isPresent()) {
+                                // extract archive to tempFile/<revName>.
+                                ProjectArchives.extractTarArchive(
+                                        tempDir.child(rev.getName()),
+                                        in.get().getContentInputStream());
+                            }
+                        }
+                        catch (StorageFileNotFoundException | ResourceNotFoundException | IOException ex) {
+                            return (Exception) ex;
+                        }
+                        return null;
+                    }))
+                .collect(Collectors.toList());
+
+            // abort if either of extraction failed
+            for (Exception ex : errors) {
+                if (ex != null) {
+                    if (ex instanceof IOException) {
+                        throw (IOException) ex;
+                    }
+                    if (ex instanceof StorageFileNotFoundException || ex instanceof ResourceNotFoundException) {
+                        // throwing StorageFileNotFoundException returns 404 Not Found
+                        // to be consistent with /api/projects/{id}/archive (getArchive).
+                        throw new NotFoundException(
+                                GenericJsonExceptionHandler
+                                .toResponse(Response.Status.NOT_FOUND, "Archive file not found"));
+                    }
+                    throw new RuntimeException(ex);  // should never come here
+                }
+            }
+
+            // compare diff
+            return diffRunner.diff(
+                    tempDir.child(cmp.fromRevision.getName()), cmp.fromRevision.getName(),
+                    tempDir.child(cmp.toRevision.getName()), cmp.toRevision.getName());
+        }
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
