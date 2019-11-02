@@ -122,7 +122,6 @@ public class Server
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions(env, err);
         return systemExit(error);
     }
