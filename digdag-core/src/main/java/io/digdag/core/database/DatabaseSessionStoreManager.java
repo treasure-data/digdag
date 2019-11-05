@@ -1666,7 +1666,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.last_attempt_id = sa.id" +
-                " where s.project_id = :projectId" +
+                " where sa.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and sa.site_id = :siteId" +
                 " and sa.id < :lastId" +
@@ -1677,7 +1677,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
-                " where s.project_id = :projectId" +
+                " where sa.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and sa.site_id = :siteId" +
                 " and s.last_attempt_id is not null" +
@@ -1689,7 +1689,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.last_attempt_id = sa.id" +
-                " where s.project_id = :projectId" +
+                " where sa.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and sa.state_flags = 0" +
                 " and sa.site_id = :siteId" +
@@ -1717,7 +1717,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.last_attempt_id = sa.id" +
-                " where s.project_id = :projectId" +
+                " where sa.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and s.session_time = :sessionTime" +
                 " and sa.site_id = :siteId")
@@ -1726,7 +1726,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
-                " where s.project_id = :projectId" +
+                " where sa.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and s.session_time = :sessionTime" +
                 " and sa.attempt_name = :attemptName" +
