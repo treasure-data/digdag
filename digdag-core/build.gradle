@@ -24,6 +24,9 @@ dependencies {
     compile 'com.google.code.findbugs:annotations:3.0.1'
     compile 'org.weakref:jmxutils:1.19'
 
+    // JavaScript engine
+    compile 'org.graalvm.js:js:19.2.1'
+
     // mail
     compile 'javax.mail:javax.mail-api:1.5.6'
     compile 'com.sun.mail:javax.mail:1.5.6'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
