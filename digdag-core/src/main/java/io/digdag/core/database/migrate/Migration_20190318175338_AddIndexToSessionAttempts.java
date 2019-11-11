@@ -19,5 +19,8 @@ public class Migration_20190318175338_AddIndexToSessionAttempts
     }
 
     @Override
-    public boolean noTransaction() { return true; }
+    public boolean noTransaction(MigrationContext context)
+    {
+        return context.isPostgres();
+    }
 }

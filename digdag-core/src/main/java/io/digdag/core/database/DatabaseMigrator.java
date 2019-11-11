@@ -52,7 +52,7 @@ public class DatabaseMigrator
         this(dbi, config.getType());
     }
 
-    public DatabaseMigrator(DBI dbi, String databaseType)
+    DatabaseMigrator(DBI dbi, String databaseType)
     {
         this.dbi = dbi;
         this.databaseType = databaseType;
@@ -79,70 +79,84 @@ public class DatabaseMigrator
         }
     }
 
-    public void migrateWithRetry()
-    {
-        final int maxRetry = 3;
-        for (int i = 0; i < maxRetry; i++) {
-            try {
-                logger.info("Database migration started");
-                migrate();
-                logger.info("Database migration successfully finished.");
-                return;
-            }
-            catch (RuntimeException re) {
-                logger.warn(re.toString());
-                if (i == maxRetry - 1) {
-                    logger.error("Critical error!!. Database migration failed.");
-                }
-                else {
-                    logger.warn("Database migration failed. Retry");
-                    try {
-                        Thread.sleep(30 * 1000);
-                    }
-                    catch (InterruptedException ie) {
-
-                    }
-                }
-            }
-        }
-        logger.error("Database migration aborted.");
-    }
-
-    // Call from cli
     public int migrate()
     {
         int numApplied = 0;
         MigrationContext context = new MigrationContext(databaseType);
+        Set<String> appliedSet;
         try (Handle handle = dbi.open()) {
             boolean isInitial = !existsSchemaMigrationsTable(handle);
             if (isInitial) {
                 createSchemaMigrationsTable(handle, context);
             }
-
-            for (Migration m : migrations) {
-                Set<String> appliedSet = getAppliedMigrationNames(handle);
-                if (appliedSet.add(m.getVersion())) {
-                    logger.info("Applying database migration:" + m.getVersion());
+            appliedSet = getAppliedMigrationNames(handle);
+        }
+        for (Migration m : migrations) {
+            if (appliedSet.add(m.getVersion())) {
+                if (applyMigrationIfNotDone(context, m)) {
                     numApplied++;
-                    if (m.noTransaction()) {
-                        // In no transaction we can't lock schema_migrations table
-                        applyMigration(m, handle, context);
-                    }
-                    else {
-                        handle.inTransaction((h, session) -> {
-                            if (context.isPostgres()) {
-                                // lock tables not to run migration concurrently.
-                                // h2 doesn't support table lock.
-                                h.update("LOCK TABLE schema_migrations IN EXCLUSIVE MODE");
-                            }
-                            applyMigration(m, handle, context);
-                            return true;
-                        });
-                    }
                 }
             }
         }
+        if (numApplied > 0) {
+            if (context.isPostgres()) {
+                logger.info("{} migrations applied.", numApplied);
+            }
+            else {
+                logger.debug("{} migrations applied.", numApplied);
+            }
+        }
         return numApplied;
+    }
+
+    // add "synchronized" so that multiple threads don't run the same migration on the same database
+    private synchronized boolean applyMigrationIfNotDone(MigrationContext context, Migration m)
+    {
+        // recreate Handle for each time to be able to discard pg_advisory_lock.
+        try (Handle handle = dbi.open()) {
+            if (m.noTransaction(context)) {
+                // Advisory lock if available -> migrate
+                if (context.isPostgres()) {
+                    handle.select("SELECT pg_advisory_lock(23299, 0)");
+                    // re-check migration status after lock
+                    if (!checkIfMigrationApplied(handle, m.getVersion())) {
+                        logger.info("Applying database migration:" + m.getVersion());
+                        applyMigration(m, handle, context);
+                        return true;
+                    }
+                    return false;
+                }
+                else {
+                    // h2 doesn't support table lock and it's unnecessary because of synchronized
+                    logger.debug("Applying database migration:" + m.getVersion());
+                    applyMigration(m, handle, context);
+                    return true;
+                }
+
+            }
+            else {
+                // Start transaction -> Lock table -> Re-check migration status -> migrate
+                return handle.inTransaction((h, session) -> {
+                    if (context.isPostgres()) {
+                        // lock tables not to run migration concurrently.
+                        h.update("LOCK TABLE schema_migrations IN EXCLUSIVE MODE");
+                        // re-check migration status after lock
+                        if (!checkIfMigrationApplied(h, m.getVersion())) {
+                            logger.info("Applying database migration:" + m.getVersion());
+                            applyMigration(m, handle, context);
+                            return true;
+                        }
+                        return false;
+                    }
+                    else {
+                        // h2 doesn't support table lock and it's unnecessary because of synchronized
+                        logger.debug("Applying database migration:" + m.getVersion());
+                        applyMigration(m, handle, context);
+                        return true;
+                    }
+                });
+            }
+        }
     }
 
     // Called from cli migrate
@@ -171,12 +185,21 @@ public class DatabaseMigrator
         return applicableMigrations;
     }
 
-    Set<String> getAppliedMigrationNames(Handle handle)
+    private Set<String> getAppliedMigrationNames(Handle handle)
     {
         return new HashSet<>(
                 handle.createQuery("select name from schema_migrations")
-                        .mapTo(String.class)
-                        .list());
+                .mapTo(String.class)
+                .list());
+    }
+
+    private boolean checkIfMigrationApplied(Handle handle, String name)
+    {
+        return handle.createQuery("select name from schema_migrations where name = :name limit 1")
+            .bind("name", name)
+            .mapTo(String.class)
+            .list()
+            .size() > 0;
     }
 
     @VisibleForTesting

@@ -19,10 +19,19 @@ public interface Migration
 
     /**
      * If true, this Migration apply without transaction.
-     * This is introduced because 'create index concurrently' cannot run in transaction.
+     * This is introduced specifically for PostgreSQL's CREATE INDEX CONCURRENTLY statement.
+     *
+     * If this method returns true, the migration MUST RUN ONLY ONE DDL STATEMENT.
+     * Otherwise, a failure in the middle of multiple statements causes inconsistency, and
+     * retrying the migration may never success because the first DDL statement is already
+     * applied and next migration attempt will also apply the same DDL statement.
+     *
      * @return
      */
-    default boolean noTransaction() { return false; }
+    default boolean noTransaction(MigrationContext context)
+    {
+        return false;
+    }
 
     void migrate(Handle handle, MigrationContext context);
 }
