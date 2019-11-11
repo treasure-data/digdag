@@ -58,9 +58,16 @@ public class ConfigEvalEngine
 
     private static enum JsEngineType
     {
-        NASHORN,
-        GRAAL,
-        NASHORN_GRAAL_CHECK;
+        NASHORN("nashorn"),
+        GRAAL("graal"),
+        NASHORN_GRAAL_CHECK("nashorn-graal-check");
+
+        final String configName;
+
+        JsEngineType(String configName)
+        {
+            this.configName = configName;
+        }
     }
 
     private static JsEngineType parseJsEngineType(String type)
@@ -107,7 +114,7 @@ public class ConfigEvalEngine
     @VisibleForTesting
     ConfigEvalEngine(JsEngineType jsEngineType)
     {
-        logger.debug("Using JavaScript engine: {}", jsEngineType);
+        logger.debug("Using JavaScript engine: {}", jsEngineType.configName);
         this.jsEngineType = jsEngineType;
         switch (jsEngineType) {
         case NASHORN:
@@ -222,6 +229,32 @@ public class ConfigEvalEngine
         }
     }
 
+    private static class CheckingJsEvaluator
+        implements JsEngine.Evaluator
+    {
+        private final JsEngine.Evaluator evaluator;
+        private final JsEngine.Evaluator checker;
+
+        CheckingJsEvaluator(JsEngine.Evaluator evaluator, JsEngine.Evaluator checker)
+        {
+            this.evaluator = evaluator;
+            this.checker = checker;
+        }
+
+        @Override
+        public String evaluate(String code, Config scopedParams, ObjectMapper jsonMapper)
+            throws TemplateException
+        {
+            String resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
+            String checkText = checker.evaluate(code, scopedParams, jsonMapper);
+            if (resultText == null && checkText != null ||
+                    resultText != null && !resultText.equals(checkText)) {
+                logger.error("Detected incompatibility between Nashorn and Graal. Code: {}", code);
+            }
+            return resultText;
+        }
+    }
+
     protected Config eval(Config config, Config params)
         throws TemplateException
     {
@@ -242,8 +275,10 @@ public class ConfigEvalEngine
             break;
 
         case NASHORN_GRAAL_CHECK:
-            try (JsEngine.Evaluator evaluator = nashorn.newEvaluator(params)) {
-                built = new Context(params, evaluator).evalObjectRecursive(object);
+            try (JsEngine.Evaluator evaluator = nashorn.newEvaluator(params);
+                    JsEngine.Evaluator checker = graal.newEvaluator(params);
+                    JsEngine.Evaluator checkingEvaluator = new CheckingJsEvaluator(evaluator, checker)) {
+                built = new Context(params, checkingEvaluator).evalObjectRecursive(object);
             }
             break;
 
@@ -273,8 +308,10 @@ public class ConfigEvalEngine
             break;
 
         case NASHORN_GRAAL_CHECK:
-            try (JsEngine.Evaluator evaluator = nashorn.newEvaluator(params)) {
-                resultText = evaluator.evaluate(content, params, jsonMapper);
+            try (JsEngine.Evaluator evaluator = nashorn.newEvaluator(params);
+                    JsEngine.Evaluator checker = graal.newEvaluator(params);
+                    JsEngine.Evaluator checkingEvaluator = new CheckingJsEvaluator(evaluator, checker)) {
+                resultText = checkingEvaluator.evaluate(content, params, jsonMapper);
             }
             break;
 
