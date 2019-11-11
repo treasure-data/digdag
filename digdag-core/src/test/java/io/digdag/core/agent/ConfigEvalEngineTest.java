@@ -23,7 +23,7 @@ public class ConfigEvalEngineTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private ConfigEvalEngine engine = new ConfigEvalEngine();
+    private ConfigEvalEngine engine = new ConfigEvalEngine(ConfigEvalEngine.defaultJsEngineType());
 
     private Config params()
     {
