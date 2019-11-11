@@ -29,6 +29,10 @@ env:
     - CI_NODE_INDEX=5
     - CI_NODE_INDEX=6
     - CI_NODE_INDEX=7
+    - CI_NODE_INDEX=8
+    - CI_NODE_INDEX=9
+    - CI_NODE_INDEX=10
+    - CI_NODE_INDEX=11
 
 before_install:
   - sudo service --status-all
