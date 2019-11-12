@@ -16,6 +16,13 @@ import org.skife.jdbi.v2.DBI;
 public class DatabaseModule
         implements Module
 {
+    private boolean withTaskQueueServer;
+
+    public DatabaseModule(boolean withTaskQueueServer)
+    {
+        this.withTaskQueueServer = withTaskQueueServer;
+    }
+
     @Override
     public void configure(Binder binder)
     {
@@ -30,8 +37,10 @@ public class DatabaseModule
         binder.bind(QueueSettingStoreManager.class).to(DatabaseQueueSettingStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(SessionStoreManager.class).to(DatabaseSessionStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(ScheduleStoreManager.class).to(DatabaseScheduleStoreManager.class).in(Scopes.SINGLETON);
-        binder.bind(DatabaseTaskQueueConfig.class).in(Scopes.SINGLETON);
-        binder.bind(DatabaseTaskQueueServer.class).in(Scopes.SINGLETON);
+        if (withTaskQueueServer) {
+            binder.bind(DatabaseTaskQueueConfig.class).in(Scopes.SINGLETON);
+            binder.bind(DatabaseTaskQueueServer.class).in(Scopes.SINGLETON);
+        }
     }
 
     public static class AutoMigrator

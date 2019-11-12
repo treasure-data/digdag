@@ -57,6 +57,7 @@ public class DigdagEmbed
         private boolean withScheduleExecutor = true;
         private boolean withLocalAgent = true;
         private boolean withExtensionLoader = true;
+        private boolean withTaskQueueServer = true;
         private Map<String, String> environment = ImmutableMap.of();
 
         public Bootstrap addModules(Module... additionalModules)
@@ -128,6 +129,12 @@ public class DigdagEmbed
             return this;
         }
 
+        public Bootstrap withTaskQueueServer(boolean v)
+        {
+            this.withTaskQueueServer = v;
+            return this;
+        }
+
         public DigdagEmbed initialize()
         {
             return build(true);
@@ -171,13 +178,12 @@ public class DigdagEmbed
                         .registerModule(new JacksonTimeModule()),
                     new DynamicPluginModule(),
                     new SystemPluginModule(systemPlugins),
-                    new DatabaseModule(),
+                    new DatabaseModule(withTaskQueueServer),
                     new AgentModule(),
                     new LogModule(),
                     new ScheduleModule(),
                     new ConfigModule(),
                     new WorkflowModule(),
-                    new QueueModule(),
                     new NotificationModule(),
                     new StorageModule(),
                     new EnvironmentModule(environment),
@@ -204,6 +210,10 @@ public class DigdagEmbed
             }
             if (withExtensionLoader) {
                 builder.add(new ExtensionServiceLoaderModule());
+            }
+            if (withTaskQueueServer) {
+                builder.add(new QueueModule());
+
             }
             return builder.build();
         }

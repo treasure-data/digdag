@@ -99,6 +99,7 @@ public class Start
             .withWorkflowExecutor(false)
             .withScheduleExecutor(false)
             .withLocalAgent(false)
+            .withTaskQueueServer(false)
             .addModules(binder -> {
                 binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
             })
