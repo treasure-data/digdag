@@ -1,0 +1,9 @@
+dollor: $
+dollor_dollor: $
+dollor_dollor_format: p$s
+open: ${
+non_closed: ${v
+non_closed_prefix: p${v
+close: "}"
+format: p1s
+format_multi: p1m$m2s
