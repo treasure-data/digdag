@@ -90,7 +90,7 @@ public class KubernetesClientConfig
         final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
         return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
       }catch (java.io.IOException e) {
-        throw new ConfigException("Could not read kubeConfig, Please Check out kube_config_path.");
+        throw new ConfigException("Could not read kubeConfig, check out kube_config_path.");
       }
     }
 
