@@ -85,7 +85,7 @@ public class GraalJsEngine
                 throw new TemplateException("Failed to serialize parameters to JSON", ex);
             }
             try {
-                Value result = context.getBindings("js").invokeMember("template", code, paramsJson);
+                Value result = context.getBindings("js").getMember("template").execute(code, paramsJson);
                 return result.asString();
             }
             catch (PolyglotException ex) {
