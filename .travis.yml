@@ -18,7 +18,7 @@ cache:
 env:
   global:
     - TERM=dumb
-    - CI_NODE_TOTAL=8
+    - CI_NODE_TOTAL=12
     - BUILD_IMAGE=digdag/digdag-build:20190524T161614-143f954fdad17cdbe77c88a4732ca9bbd667229e
   matrix:
     - CI_NODE_INDEX=0
@@ -29,6 +29,10 @@ env:
     - CI_NODE_INDEX=5
     - CI_NODE_INDEX=6
     - CI_NODE_INDEX=7
+    - CI_NODE_INDEX=8
+    - CI_NODE_INDEX=9
+    - CI_NODE_INDEX=10
+    - CI_NODE_INDEX=11
 
 before_install:
   - sudo service --status-all
