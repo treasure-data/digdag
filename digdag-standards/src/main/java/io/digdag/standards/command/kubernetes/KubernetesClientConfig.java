@@ -80,15 +80,18 @@ public class KubernetesClientConfig
             ) {
             throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace: Or use_kube_config: kube_config_path");
         }
-      }
         return config;
     }
 
     private static io.fabric8.kubernetes.client.Config getKubeConfigFromPath(String path)
     {
-      final Path kubeConfigPath = Paths.get(path);
-      final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
-      return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
+      try{
+        final Path kubeConfigPath = Paths.get(path);
+        final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
+        return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
+      }catch (java.io.IOException e) {
+        throw new ConfigException("Could not read kubeConfig, Please Check out kube_config_path.");
+      }
     }
 
     private static KubernetesClientConfig create(final String name,
