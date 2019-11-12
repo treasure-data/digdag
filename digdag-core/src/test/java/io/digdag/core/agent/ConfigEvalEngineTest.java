@@ -47,6 +47,15 @@ public class ConfigEvalEngineTest
     }
 
     @Test
+    public void testTemplate()
+            throws Exception
+    {
+        assertThat(
+                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/template.dig"), params()),
+                is(loadYamlResource("/io/digdag/core/agent/eval/template_expected.dig")));
+    }
+
+    @Test
     public void undefinedVariable()
             throws Exception
     {
