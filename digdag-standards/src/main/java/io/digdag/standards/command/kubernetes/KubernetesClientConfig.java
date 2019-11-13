@@ -51,7 +51,7 @@ public class KubernetesClientConfig
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
         final Config extracted = validateParams(StorageManager.extractKeyPrefix(systemConfig, keyPrefix));
-        if (extracted.get("use_kube_config", boolean.class)){
+        if (extracted.get("use_kube_config", boolean.class, false)){
             io.fabric8.kubernetes.client.Config kubeConfig;
             kubeConfig = getKubeConfigFromPath(extracted.get("kube_config_path", String.class));
             return create(clusterName,
