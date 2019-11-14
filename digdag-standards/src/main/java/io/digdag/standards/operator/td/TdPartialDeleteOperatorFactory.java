@@ -20,12 +20,14 @@ public class TdPartialDeleteOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(TdPartialDeleteOperatorFactory.class);
     private final Map<String, String> env;
     private final Config systemConfig;
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TdPartialDeleteOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
+    public TdPartialDeleteOperatorFactory(@Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.env = env;
         this.systemConfig = systemConfig;
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -36,7 +38,7 @@ public class TdPartialDeleteOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdPartialDeleteOperator(context);
+        return new TdPartialDeleteOperator(context, clientFactory);
     }
 
     private class TdPartialDeleteOperator
@@ -47,9 +49,9 @@ public class TdPartialDeleteOperatorFactory
         private final Instant from;
         private final Instant to;
 
-        private TdPartialDeleteOperator(OperatorContext context)
+        private TdPartialDeleteOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-            super(context, env, systemConfig);
+            super(context, env, systemConfig, clientFactory);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

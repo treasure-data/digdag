@@ -40,14 +40,15 @@ public class TdForEachOperatorFactory
     private final ConfigFactory configFactory;
     private final Map<String, String> env;
     private final Config systemConfig;
-
+    private final BaseTDClientFactory clientFactory;
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env, Config systemConfig)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
         this.env = env;
         this.systemConfig = systemConfig;
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -58,7 +59,7 @@ public class TdForEachOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdForEachOperator(context);
+        return new TdForEachOperator(context, clientFactory);
     }
 
     private class TdForEachOperator
@@ -74,9 +75,9 @@ public class TdForEachOperatorFactory
 
         private final Config doConfig;
 
-        private TdForEachOperator(OperatorContext context)
+        private TdForEachOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-            super(context, env, systemConfig);
+            super(context, env, systemConfig, clientFactory);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

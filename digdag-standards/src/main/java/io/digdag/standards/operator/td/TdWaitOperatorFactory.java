@@ -47,9 +47,10 @@ public class TdWaitOperatorFactory
     private final DurationInterval pollInterval;
     private final DurationInterval retryInterval;
     private final SystemDefaultConfig systemDefaultConfig;
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig, @Environment Map<String, String> env)
+    public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig, @Environment Map<String, String> env, BaseTDClientFactory clientFactory)
     {
         super("td.wait", systemConfig);
         this.templateEngine = templateEngine;
@@ -57,6 +58,7 @@ public class TdWaitOperatorFactory
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
         this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -106,7 +108,7 @@ public class TdWaitOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
                 TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob);
 
                 // Fetch the job output to see if the query condition has been fulfilled

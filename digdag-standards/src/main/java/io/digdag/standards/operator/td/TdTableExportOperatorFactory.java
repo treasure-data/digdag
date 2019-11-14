@@ -27,12 +27,14 @@ public class TdTableExportOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(TdTableExportOperatorFactory.class);
     private final Map<String, String> env;
     private final Config systemConfig;
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TdTableExportOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
+    public TdTableExportOperatorFactory(@Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.env = env;
         this.systemConfig = systemConfig;
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -43,7 +45,7 @@ public class TdTableExportOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdTableExportOperator(context);
+        return new TdTableExportOperator(context, clientFactory);
     }
 
     private class TdTableExportOperator
@@ -53,9 +55,9 @@ public class TdTableExportOperatorFactory
         private final TableParam table;
         private final TDExportFileFormatType fileFormat;
 
-        private TdTableExportOperator(OperatorContext context)
+        private TdTableExportOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-            super(context, env, systemConfig);
+            super(context, env, systemConfig, clientFactory);
 
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

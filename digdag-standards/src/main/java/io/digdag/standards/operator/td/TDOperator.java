@@ -13,7 +13,6 @@ import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
@@ -51,14 +50,14 @@ public class TDOperator
     private static final int MAX_RETRY_WAIT = 2000;
     private static final int MAX_RETRY_LIMIT = 3;
 
-    public static TDOperator fromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config config, SecretProvider secrets)
+    public static TDOperator fromConfig(BaseTDClientFactory clientFactory, SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config config, SecretProvider secrets)
     {
         String database = secrets.getSecretOptional("database").or(config.get("database", String.class)).trim();
         if (database.isEmpty()) {
             throw new ConfigException("Parameter 'database' is empty");
         }
 
-        TDClient client = TDClientFactory.clientFromConfig(systemDefaultConfig, env, config, secrets);
+        TDClient client = clientFactory.createClient(systemDefaultConfig, env, config, secrets);
 
         return new TDOperator(client, database);
     }

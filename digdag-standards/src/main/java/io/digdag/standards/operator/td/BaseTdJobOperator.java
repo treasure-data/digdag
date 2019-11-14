@@ -2,8 +2,6 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.treasuredata.client.TDClientException;
-import com.treasuredata.client.TDClientHttpException;
-import com.treasuredata.client.model.TDJob;
 import io.digdag.client.config.Config;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
@@ -12,13 +10,10 @@ import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
-import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-
-import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
 
 abstract class BaseTdJobOperator
         extends BaseOperator
@@ -32,9 +27,12 @@ abstract class BaseTdJobOperator
     protected final DurationInterval pollInterval;
     protected final DurationInterval retryInterval;
     protected final SystemDefaultConfig systemDefaultConfig;
+
+    protected final BaseTDClientFactory clientFactory;
+
     private static Logger logger = LoggerFactory.getLogger(BaseTdJobOperator.class);
 
-    BaseTdJobOperator(OperatorContext context, Map<String, String> env, Config systemConfig)
+    BaseTdJobOperator(OperatorContext context, Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         super(context);
 
@@ -47,12 +45,13 @@ abstract class BaseTdJobOperator
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
         this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
+        this.clientFactory = clientFactory;
     }
 
     @Override
     public final TaskResult runTask()
     {
-        try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
+        try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
             Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
             if (!doneJobId.isPresent()) {
