@@ -13,8 +13,8 @@ import java.nio.file.Path;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
-import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
+import static io.digdag.standards.operator.td.TdOperatorTestingUtils.newOperatorFactory;
 
 
 public class TdLoadOperatorFactoryTest {

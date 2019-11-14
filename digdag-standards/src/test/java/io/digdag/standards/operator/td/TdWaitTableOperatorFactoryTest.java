@@ -13,8 +13,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
+import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
+import static io.digdag.standards.operator.td.TdOperatorTestingUtils.newOperatorFactory;
 import static io.digdag.client.config.ConfigUtils.newConfig;
-import static io.digdag.core.workflow.OperatorTestingUtils.*;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
