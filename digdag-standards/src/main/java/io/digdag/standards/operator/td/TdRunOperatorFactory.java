@@ -28,12 +28,14 @@ public class TdRunOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(TdRunOperatorFactory.class);
     private final Map<String, String> env;
     private final Config systemConfig;
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TdRunOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
+    public TdRunOperatorFactory(@Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.env = env;
         this.systemConfig = systemConfig;
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -44,7 +46,7 @@ public class TdRunOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdRunOperator(context);
+        return new TdRunOperator(context, clientFactory);
     }
 
     private class TdRunOperator
@@ -57,9 +59,9 @@ public class TdRunOperatorFactory
         private final boolean storeLastResults;
         private final boolean preview;
 
-        private TdRunOperator(OperatorContext context)
+        private TdRunOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-            super(context, env, systemConfig);
+            super(context, env, systemConfig, clientFactory);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

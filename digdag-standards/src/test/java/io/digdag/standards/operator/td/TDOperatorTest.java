@@ -57,6 +57,7 @@ public class TDOperatorTest
     };
 
     private static final ImmutableMap<String, String> EMPTY_ENV = ImmutableMap.of();
+    private static final BaseTDClientFactory clientFactory = new TDClientFactory();
 
     @Rule public final ExpectedException exception = ExpectedException.none();
 
@@ -88,7 +89,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", "foobar").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(clientFactory, DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -102,7 +103,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", "foobar").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(clientFactory, DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -116,7 +117,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", "").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(clientFactory, DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -130,7 +131,7 @@ public class TDOperatorTest
                 ImmutableMap.of("apikey", " \n\t").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(clientFactory, DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -141,7 +142,7 @@ public class TDOperatorTest
                 .set("database", "foobar");
         SecretProvider secrets = key -> Optional.fromNullable(
                 ImmutableMap.of("apikey", "quux").get(key));
-        TDOperator.fromConfig(DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
+        TDOperator.fromConfig(clientFactory, DEFAULT_DEFAULT_SYSTEM_CONFIG, EMPTY_ENV, config, secrets);
     }
 
     @Test

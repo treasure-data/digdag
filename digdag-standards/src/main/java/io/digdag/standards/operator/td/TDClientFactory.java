@@ -10,13 +10,24 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 import static org.jboss.resteasy.util.Encode.decode;
 
-class TDClientFactory
+public class TDClientFactory implements BaseTDClientFactory
 {
+
+    private static Logger logger = LoggerFactory.getLogger(TDClientFactory.class);
+
+    @Override
+    public TDClient createClient(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+    {
+        return clientFromConfig(systemDefaultConfig, env, params, secrets);
+    }
+
     @VisibleForTesting
     static TDClientBuilder clientBuilderFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
@@ -54,6 +65,7 @@ class TDClientFactory
                 ;
     }
 
+    @VisibleForTesting
     static TDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
         return clientBuilderFromConfig(systemDefaultConfig, env, params, secrets).build();

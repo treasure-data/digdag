@@ -3,24 +3,21 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.treasuredata.client.model.TDJobRequest;
 import io.digdag.client.config.Config;
-import io.digdag.util.BaseOperator;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
+import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
+import static io.digdag.standards.operator.td.TdOperatorTestingUtils.newOperatorFactory;
 import static io.digdag.client.config.ConfigUtils.newConfig;
-import static io.digdag.core.workflow.OperatorTestingUtils.*;
-import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
-import static org.hamcrest.Matchers.is;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 

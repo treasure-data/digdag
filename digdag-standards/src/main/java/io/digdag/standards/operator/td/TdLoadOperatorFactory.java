@@ -35,13 +35,15 @@ public class TdLoadOperatorFactory
     private final TemplateEngine templateEngine;
     private final Map<String, String> env;
     private final Config systemConfig;
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TdLoadOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env, Config systemConfig)
+    public TdLoadOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.templateEngine = templateEngine;
         this.env = env;
         this.systemConfig = systemConfig;
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -52,7 +54,7 @@ public class TdLoadOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdLoadOperator(context);
+        return new TdLoadOperator(context, clientFactory);
     }
 
     private class TdLoadOperator
@@ -66,9 +68,9 @@ public class TdLoadOperatorFactory
         private final Optional<String> sessionName;
         private final Optional<ObjectNode> embulkConfig;
 
-        protected TdLoadOperator(OperatorContext context)
+        protected TdLoadOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-            super(context, env, systemConfig);
+            super(context, env, systemConfig, clientFactory);
 
             params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

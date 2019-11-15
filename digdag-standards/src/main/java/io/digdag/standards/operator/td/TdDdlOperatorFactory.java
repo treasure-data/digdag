@@ -36,13 +36,16 @@ public class TdDdlOperatorFactory
     private final Map<String, String> env;
     private final DurationInterval retryInterval;
     private final SystemDefaultConfig systemDefaultConfig;
+    private final BaseTDClientFactory clientFactory;
+
 
     @Inject
-    public TdDdlOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
+    public TdDdlOperatorFactory(@Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.env = env;
         this.retryInterval = TDOperator.retryInterval(systemConfig);
         this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -122,7 +125,7 @@ public class TdDdlOperatorFactory
                 });
             }
 
-            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
                 // make sure that all "from" tables exist so that ignoring 404 Not Found in
                 // op.ensureExistentTableRenamed is valid.
                 if (!renameTableList.isEmpty()) {

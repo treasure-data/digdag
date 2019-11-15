@@ -52,15 +52,17 @@ public class TdWaitTableOperatorFactory
     private final DurationInterval pollInterval;
     private final DurationInterval retryInterval;
     private final SystemDefaultConfig systemDefaultConfig;
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
+    public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env, BaseTDClientFactory clientFactory)
     {
         super("td.wait", systemConfig);
         this.pollInterval = TDOperator.pollInterval(systemConfig);
         this.retryInterval = TDOperator.retryInterval(systemConfig);
         this.systemDefaultConfig = TDOperator.systemDefaultConfig(systemConfig);
         this.env = env;
+        this.clientFactory = clientFactory;
     }
 
     public String getType()
@@ -114,7 +116,7 @@ public class TdWaitTableOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
 
                 // Check if table exists using rest api
                 if (!state.params().get(TABLE_EXISTS, Boolean.class, false)) {
