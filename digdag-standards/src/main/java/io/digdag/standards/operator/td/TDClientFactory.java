@@ -25,7 +25,6 @@ public class TDClientFactory implements BaseTDClientFactory
     @Override
     public TDClient createClient(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
-        logger.info("YY createClient called");
         return clientFromConfig(systemDefaultConfig, env, params, secrets);
     }
 
