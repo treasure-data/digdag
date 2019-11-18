@@ -58,7 +58,7 @@ abstract class BaseTdJobOperator
         }
     }
 
-    private TaskResult runTask(TDOperator op)
+    public TaskResult runTask(TDOperator op)
     {
         Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
         TDJobOperator job;
