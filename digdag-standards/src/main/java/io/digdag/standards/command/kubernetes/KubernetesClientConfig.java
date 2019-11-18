@@ -51,7 +51,7 @@ public class KubernetesClientConfig
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
         final Config extracted = validateParams(StorageManager.extractKeyPrefix(systemConfig, keyPrefix));
-        if (extracted.get("use_kube_config", boolean.class, false)){
+        if (extracted.get("use_kube_config", boolean.class, false)) {
             io.fabric8.kubernetes.client.Config kubeConfig;
             kubeConfig = getKubeConfigFromPath(extracted.get("kube_config_path", String.class));
             return create(clusterName,
@@ -60,7 +60,7 @@ public class KubernetesClientConfig
                 kubeConfig.getOauthToken(),
                 kubeConfig.getNamespace()
               );
-        }else{
+        } else {
             return create(clusterName,
                     extracted.get("master", String.class),
                     extracted.get("certs_ca_data", String.class),
@@ -78,19 +78,19 @@ public class KubernetesClientConfig
                 !(config.has("use_kube_config") &&
                  config.has("kube_config_path"))
             ) {
-            throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace: Or use_kube_config: kube_config_path");
+            throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace:, or use_kube_config: and kube_config_path:");
         }
         return config;
     }
 
     private static io.fabric8.kubernetes.client.Config getKubeConfigFromPath(String path)
     {
-      try{
-        final Path kubeConfigPath = Paths.get(path);
-        final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
-        return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
-      }catch (java.io.IOException e) {
-        throw new ConfigException("Could not read kubeConfig, check out kube_config_path.");
+      try {
+          final Path kubeConfigPath = Paths.get(path);
+          final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
+          return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
+      } catch (java.io.IOException e) {
+          throw new ConfigException("Could not read kubeConfig, check out kube_config_path.");
       }
     }
 
