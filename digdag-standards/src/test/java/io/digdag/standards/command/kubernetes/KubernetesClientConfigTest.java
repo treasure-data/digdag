@@ -69,10 +69,11 @@ public class KubernetesClientConfigTest
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
-        String test = "test=";
+        String caCertData = "test=";
+        String oauthToken = "test=";
         assertThat(masterUrl, is(kubeConfig.getMasterUrl()));
-        assertThat(test, is(kubeConfig.getCaCertData()));
-        assertThat(test, is(kubeConfig.getOauthToken()));
+        assertThat(caCertData, is(kubeConfig.getCaCertData()));
+        assertThat(oauthToken, is(kubeConfig.getOauthToken()));
         assertThat(namespace, is(kubeConfig.getNamespace()));
     }
 }
