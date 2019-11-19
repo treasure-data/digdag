@@ -41,7 +41,13 @@ dependencies {
     compile ('com.google.apis:google-api-services-storage:v1-rev88-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
 
     // kubernetes
-    compile ('io.fabric8:kubernetes-client:3.1.5')
+    compile ('io.fabric8:kubernetes-client:4.6.2') {
+        // Avoid compilation failures due to dependencies
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        // TODO: digdag use version 3.12.0, upgrade to version 3.12.6.
+        exclude group: 'com.squareup.okhttp3', module: 'okhttp'
+        exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-module-jaxb-annotations'
+    }
 
     // dependency conflict resolution
     compile 'joda-time:joda-time:2.9.4'
