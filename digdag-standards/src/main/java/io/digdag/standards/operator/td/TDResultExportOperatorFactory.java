@@ -21,19 +21,21 @@ public class TDResultExportOperatorFactory
     private final Map<String, String> env;
     private final Config systemConfig;
     private static Logger logger = LoggerFactory.getLogger(TdTableExportOperatorFactory.class);
+    private final BaseTDClientFactory clientFactory;
 
     @Inject
-    public TDResultExportOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
+    public TDResultExportOperatorFactory(@Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.env = env;
         this.systemConfig = systemConfig;
+        this.clientFactory = clientFactory;
     }
 
     @Override
     public String getType() { return "td_result_export"; }
 
     @Override
-    public Operator newOperator(OperatorContext context) { return new TDResultExportOperator(context); }
+    public Operator newOperator(OperatorContext context) { return new TDResultExportOperator(context, clientFactory); }
 
     private class TDResultExportOperator
             extends BaseTdJobOperator
@@ -42,9 +44,9 @@ public class TDResultExportOperatorFactory
         private final String resultSettings;
         private final String resultConnection;
 
-        private TDResultExportOperator(OperatorContext context)
+        private TDResultExportOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-        super(context, env, systemConfig);
+        super(context, env, systemConfig, clientFactory);
         Config params = request.getConfig();
         this.jobId = params.get("job_id", String.class);
         this.resultConnection = params.get("result_connection", String.class);
@@ -71,7 +73,7 @@ public class TDResultExportOperatorFactory
         @Override
         public final TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"), false)) {
+            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"), false)) {
                 return runTask(op);
             } catch (TDClientException ex) {
                 throw propagateTDClientException(ex);
