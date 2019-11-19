@@ -23,8 +23,8 @@ public class KubernetesClientConfigTest
     private final ConfigFactory cf = new ConfigFactory(om);
 
     private static final String KUBERNETES_CLIENT_PARAMS_PREFIX = "agent.command_executor.kubernetes.";
-    private String kubeConfigPath;
     private final Optional<String> clusterName = Optional.of("test");
+    private String kubeConfigPath;
 
     @Before
     public void setUp()
@@ -38,18 +38,10 @@ public class KubernetesClientConfigTest
     public void testKubeConfigFromPath()
             throws Exception
     {
-
-        final Config systemConfig = cf.create()
-          .set("agent.command_executor.type", "kubernetes")
-          .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.kube_config_path", kubeConfigPath);
-        final Config requestConfig = cf.create();
-
-        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, requestConfig);
-
         Method method = KubernetesClientConfig.class.getDeclaredMethod("getKubeConfigFromPath", String.class);
         method.setAccessible(true);
 
-        io.fabric8.kubernetes.client.Config kubeConfig = (io.fabric8.kubernetes.client.Config)method.invoke(kubernetesClientConfig, kubeConfigPath);
+        io.fabric8.kubernetes.client.Config kubeConfig = (io.fabric8.kubernetes.client.Config)method.invoke(null, kubeConfigPath);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -59,5 +51,54 @@ public class KubernetesClientConfigTest
         assertThat(caCertData, is(kubeConfig.getCaCertData()));
         assertThat(oauthToken, is(kubeConfig.getOauthToken()));
         assertThat(namespace, is(kubeConfig.getNamespace()));
+    }
+
+    @Test
+    public void testCreateFromSystemConfig()
+            throws Exception
+    {
+        final Config systemConfig = cf.create()
+          .set("agent.command_executor.type", "kubernetes")
+          .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.master", "https://127.0.0.1")
+          .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.certs_ca_data", "test=")
+          .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
+          .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default");
+
+        Method method = KubernetesClientConfig.class.getDeclaredMethod("createFromSystemConfig", Optional.class, Config.class);
+        method.setAccessible(true);
+
+        KubernetesClientConfig kubernetesClientConfig = (KubernetesClientConfig)method.invoke(null, clusterName, systemConfig);
+
+        String masterUrl = "https://127.0.0.1";
+        String namespace = "default";
+        String caCertData = "test=";
+        String oauthToken = "test=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
+    }
+
+    @Test
+    public void testCreateFromSystemConfigWithKubeConfig()
+            throws Exception
+    {
+        final Config systemConfig = cf.create()
+          .set("agent.command_executor.type", "kubernetes")
+          .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.kube_config_path", kubeConfigPath);
+
+        Method method = KubernetesClientConfig.class.getDeclaredMethod("createFromSystemConfig", Optional.class, Config.class);
+        method.setAccessible(true);
+
+        KubernetesClientConfig kubernetesClientConfig = (KubernetesClientConfig)method.invoke(null, clusterName, systemConfig);
+
+        String masterUrl = "https://127.0.0.1";
+        String namespace = "default";
+        String caCertData = "test=";
+        String oauthToken = "test=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
     }
 }
