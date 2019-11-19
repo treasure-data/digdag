@@ -50,35 +50,32 @@ public class KubernetesClientConfig
             clusterName = name.get();
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = validateParams(StorageManager.extractKeyPrefix(systemConfig, keyPrefix));
-        if (extracted.get("use_kube_config", boolean.class, false)) {
+        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix)
+        if (extracted.has("kube_config_path")) {
             io.fabric8.kubernetes.client.Config kubeConfig;
             kubeConfig = getKubeConfigFromPath(extracted.get("kube_config_path", String.class));
             return create(clusterName,
-                kubeConfig.getMasterUrl(),
-                kubeConfig.getCaCertData(),
-                kubeConfig.getOauthToken(),
-                kubeConfig.getNamespace()
-              );
+                    kubeConfig.getMasterUrl(),
+                    kubeConfig.getCaCertData(),
+                    kubeConfig.getOauthToken(),
+                    kubeConfig.getNamespace());
         } else {
+            final Config validated = validateParams(extracted);
             return create(clusterName,
-                    extracted.get("master", String.class),
-                    extracted.get("certs_ca_data", String.class),
-                    extracted.get("oauth_token", String.class),
-                    extracted.get("namespace", String.class));
+                    validated.get("master", String.class),
+                    validated.get("certs_ca_data", String.class),
+                    validated.get("oauth_token", String.class),
+                    validated.get("namespace", String.class));
         }
     }
 
     private static Config validateParams(final Config config)
     {
-        if (!(config.has("master") &&
-                config.has("certs_ca_data") &&
-                config.has("oauth_token") &&
-                config.has("namespace")) &&
-                !(config.has("use_kube_config") &&
-                 config.has("kube_config_path"))
-            ) {
-            throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace:, or use_kube_config: and kube_config_path:");
+        if (!config.has("master") ||
+                !config.has("certs_ca_data") ||
+                !config.has("oauth_token") ||
+                !config.has("namespace")) {
+            throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace: or kube_config_path:");
         }
         return config;
     }
