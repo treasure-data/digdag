@@ -50,7 +50,7 @@ public class KubernetesClientConfig
             clusterName = name.get();
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix)
+        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
         if (extracted.has("kube_config_path")) {
             io.fabric8.kubernetes.client.Config kubeConfig;
             kubeConfig = getKubeConfigFromPath(extracted.get("kube_config_path", String.class));
