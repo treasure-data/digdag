@@ -1,5 +1,6 @@
 package io.digdag.standards.command.kubernetes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -36,7 +37,8 @@ public class KubernetesClientConfig
         throw new UnsupportedOperationException("Not support yet");
     }
 
-    private static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
+    @VisibleForTesting
+    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
             final io.digdag.client.config.Config systemConfig)
     {
         final String clusterName;
@@ -80,7 +82,8 @@ public class KubernetesClientConfig
         return config;
     }
 
-    private static io.fabric8.kubernetes.client.Config getKubeConfigFromPath(String path)
+    @VisibleForTesting
+    static io.fabric8.kubernetes.client.Config getKubeConfigFromPath(String path)
     {
       try {
           final Path kubeConfigPath = Paths.get(path);

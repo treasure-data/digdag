@@ -11,7 +11,6 @@ import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.File;
-import java.lang.reflect.Method;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -38,10 +37,7 @@ public class KubernetesClientConfigTest
     public void testKubeConfigFromPath()
             throws Exception
     {
-        Method method = KubernetesClientConfig.class.getDeclaredMethod("getKubeConfigFromPath", String.class);
-        method.setAccessible(true);
-
-        io.fabric8.kubernetes.client.Config kubeConfig = (io.fabric8.kubernetes.client.Config)method.invoke(null, kubeConfigPath);
+        io.fabric8.kubernetes.client.Config kubeConfig = KubernetesClientConfig.getKubeConfigFromPath(kubeConfigPath);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -64,10 +60,7 @@ public class KubernetesClientConfigTest
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default");
 
-        Method method = KubernetesClientConfig.class.getDeclaredMethod("createFromSystemConfig", Optional.class, Config.class);
-        method.setAccessible(true);
-
-        KubernetesClientConfig kubernetesClientConfig = (KubernetesClientConfig)method.invoke(null, clusterName, systemConfig);
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.createFromSystemConfig(clusterName, systemConfig);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -87,10 +80,7 @@ public class KubernetesClientConfigTest
           .set("agent.command_executor.type", "kubernetes")
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.kube_config_path", kubeConfigPath);
 
-        Method method = KubernetesClientConfig.class.getDeclaredMethod("createFromSystemConfig", Optional.class, Config.class);
-        method.setAccessible(true);
-
-        KubernetesClientConfig kubernetesClientConfig = (KubernetesClientConfig)method.invoke(null, clusterName, systemConfig);
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.createFromSystemConfig(clusterName, systemConfig);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
