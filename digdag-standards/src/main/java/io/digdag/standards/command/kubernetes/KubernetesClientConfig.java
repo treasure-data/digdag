@@ -54,30 +54,42 @@ public class KubernetesClientConfig
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
         final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
         if (extracted.has("kube_config_path")) {
-            io.fabric8.kubernetes.client.Config kubeConfig;
-            kubeConfig = getKubeConfigFromPath(extracted.get("kube_config_path", String.class));
+            String kubeConfigPath = extracted.get("kube_config_path", String.class);
+            io.fabric8.kubernetes.client.Config validatedKubeConfig;
+            validatedKubeConfig = validateKubeConfig(getKubeConfigFromPath(kubeConfigPath));
             return create(clusterName,
-                    kubeConfig.getMasterUrl(),
-                    kubeConfig.getCaCertData(),
-                    kubeConfig.getOauthToken(),
-                    kubeConfig.getNamespace());
+                    validatedKubeConfig.getMasterUrl(),
+                    validatedKubeConfig.getCaCertData(),
+                    validatedKubeConfig.getOauthToken(),
+                    validatedKubeConfig.getNamespace());
         } else {
-            final Config validated = validateParams(extracted);
+            final Config validatedConfig = validateConfig(extracted);
             return create(clusterName,
-                    validated.get("master", String.class),
-                    validated.get("certs_ca_data", String.class),
-                    validated.get("oauth_token", String.class),
-                    validated.get("namespace", String.class));
+                    validatedConfig.get("master", String.class),
+                    validatedConfig.get("certs_ca_data", String.class),
+                    validatedConfig.get("oauth_token", String.class),
+                    validatedConfig.get("namespace", String.class));
         }
     }
 
-    private static Config validateParams(final Config config)
+    private static Config validateConfig(final Config config)
     {
         if (!config.has("master") ||
                 !config.has("certs_ca_data") ||
                 !config.has("oauth_token") ||
                 !config.has("namespace")) {
             throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace: or kube_config_path:");
+        }
+        return config;
+    }
+
+    private static io.fabric8.kubernetes.client.Config validateKubeConfig(io.fabric8.kubernetes.client.Config config)
+    {
+        if (config.getMasterUrl() == null ||
+                config.getCaCertData() == null ||
+                config.getOauthToken() == null ||
+                config.getNamespace() == null) {
+            throw new ConfigException("kube config must have server:, certificate-authority-data: access-token: and namespace:");
         }
         return config;
     }
@@ -90,7 +102,7 @@ public class KubernetesClientConfig
           final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
           return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
       } catch (java.io.IOException e) {
-          throw new ConfigException("Could not read kubeConfig, check out kube_config_path.");
+          throw new ConfigException("Could not read kubeConfig, check kube_config_path.");
       }
     }
 
