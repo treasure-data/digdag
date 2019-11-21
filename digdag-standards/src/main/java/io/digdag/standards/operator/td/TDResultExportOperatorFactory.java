@@ -46,14 +46,14 @@ public class TDResultExportOperatorFactory
 
         private TDResultExportOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
-        super(context, env, systemConfig, clientFactory);
-        Config params = request.getConfig();
-        this.jobId = params.get("job_id", String.class);
-        this.resultConnection = params.get("result_connection", String.class);
+            super(context, env, systemConfig, clientFactory);
+            Config params = request.getConfig();
+            this.jobId = params.get("job_id", String.class);
+            this.resultConnection = params.get("result_connection", String.class);
 
-        UserSecretTemplate template = UserSecretTemplate.of(params.parseNested("result_settings").toString());
-        this.resultSettings = template.format(context.getSecrets());
-    }
+            UserSecretTemplate template = UserSecretTemplate.of(params.parseNested("result_settings").toString());
+            this.resultSettings = template.format(context.getSecrets());
+        }
 
         @Override
         protected String startJob(TDOperator op, String domainKey)
