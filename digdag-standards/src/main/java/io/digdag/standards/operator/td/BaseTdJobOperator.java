@@ -53,7 +53,8 @@ abstract class BaseTdJobOperator
     {
         try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
             return runTask(op);
-        } catch (TDClientException ex) {
+        }
+        catch (TDClientException ex) {
             throw propagateTDClientException(ex);
         }
     }
