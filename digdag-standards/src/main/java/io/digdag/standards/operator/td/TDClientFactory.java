@@ -28,8 +28,7 @@ public class TDClientFactory implements BaseTDClientFactory
         return clientFromConfig(systemDefaultConfig, env, params, secrets);
     }
 
-    @VisibleForTesting
-    static TDClientBuilder clientBuilderFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+    protected static TDClientBuilder clientBuilderFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
         TDClientBuilder builder = TDClient.newBuilder(false);
 
@@ -65,13 +64,12 @@ public class TDClientFactory implements BaseTDClientFactory
                 ;
     }
 
-    @VisibleForTesting
-    static TDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+    protected static TDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
         return clientBuilderFromConfig(systemDefaultConfig, env, params, secrets).build();
     }
 
-    private static ProxyConfig proxyConfig(Config config, SecretProvider secrets)
+    protected static ProxyConfig proxyConfig(Config config, SecretProvider secrets)
     {
         ProxyConfig.ProxyConfigBuilder builder = new ProxyConfig.ProxyConfigBuilder();
 
