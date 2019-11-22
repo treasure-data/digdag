@@ -28,8 +28,7 @@ public class TDClientFactory implements BaseTDClientFactory
         return clientFromConfig(systemDefaultConfig, env, params, secrets);
     }
 
-    @VisibleForTesting
-    static TDClientBuilder clientBuilderFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+    protected static TDClientBuilder clientBuilderFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
         TDClientBuilder builder = TDClient.newBuilder(false);
 
