@@ -5,20 +5,19 @@ import java.util.Map;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.charset.Charset;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.script.Invocable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
+import io.digdag.metrics.DigdagTimed;
+import io.digdag.spi.metrics.DigdagMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
@@ -63,6 +62,7 @@ public class ConfigEvalEngine
 
     private final ObjectMapper jsonMapper;
     private final NashornScriptEngineFactory jsEngineFactory;
+    private DigdagMetrics metrics;
 
     @Inject
     public ConfigEvalEngine()
@@ -71,6 +71,7 @@ public class ConfigEvalEngine
         this.jsEngineFactory = new NashornScriptEngineFactory();
     }
 
+    @DigdagTimed(value = "ceval_", category = "agent", appendMethodName = true)
     protected Config eval(Config config, Config params)
         throws TemplateException
     {
@@ -79,7 +80,8 @@ public class ConfigEvalEngine
         return config.getFactory().create(built);
     }
 
-    private Invocable newTemplateInvocable(Config params)
+    @DigdagTimed(value = "ceval_", category = "agent", appendMethodName = true)
+    protected Invocable newTemplateInvocable(Config params)
     {
         ScriptEngine jsEngine = jsEngineFactory.getScriptEngine(new String[] {
             //"--language=es6",  // this is not even accepted with jdk1.8.0_20 and has a bug with jdk1.8.0_51
@@ -98,7 +100,8 @@ public class ConfigEvalEngine
         return (Invocable) jsEngine;
     }
 
-    private String invokeTemplate(Invocable templateInvocable, String code, Config params)
+    @DigdagTimed(value = "ceval_", category = "agent", appendMethodName = true)
+    protected String invokeTemplate(Invocable templateInvocable, String code, Config params)
         throws TemplateException
     {
         String context;
@@ -109,7 +112,8 @@ public class ConfigEvalEngine
             throw new TemplateException("Failed to serialize parameters to JSON", ex);
         }
         try {
-            return (String) templateInvocable.invokeFunction("template", code, context);
+            String evaluated = (String) templateInvocable.invokeFunction("template", code, context);
+            return evaluated;
         }
         catch (ScriptException ex) {
             String message;
@@ -132,13 +136,23 @@ public class ConfigEvalEngine
     private class Context
     {
         private final Config params;
-        private final Invocable templateInvocable;
+        private Invocable templateInvocable = null;
         private final ImmutableList<String> noEvaluatedKeys = ImmutableList.of("_do",  "_else_do");
 
         public Context(Config params)
         {
             this.params = params;
-            this.templateInvocable = newTemplateInvocable(params);
+        }
+
+        // ToDo Lombok Getter(lazy=true)
+        private Invocable lazyGetTemplateInvocable()
+        {
+            if (templateInvocable == null) {
+                synchronized(this) {
+                    templateInvocable = newTemplateInvocable(params);
+                }
+            }
+            return templateInvocable;
         }
 
         private ObjectNode evalObjectRecursive(ObjectNode local)
@@ -203,7 +217,13 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
-            String resultText = invokeTemplate(templateInvocable, code, scopedParams);
+            String resultText = null;
+            if (requireInvokdetemplate(code)) {
+                resultText = invokeTemplate(lazyGetTemplateInvocable(), code, scopedParams);
+            }
+            else {
+                resultText = code;
+            }
             if (resultText == null) {
                 return jsonMapper.getNodeFactory().nullNode();
             }
@@ -213,12 +233,23 @@ public class ConfigEvalEngine
         }
     }
 
+    @VisibleForTesting
+    protected boolean requireInvokdetemplate(String code) {
+        return code != null && code.matches("^.*[$].*$");
+    }
+
     @Override
     public String template(String content, Config params)
         throws TemplateException
     {
-        Invocable templateInvocable = newTemplateInvocable(params);
-        String resultText = invokeTemplate(templateInvocable, content, params);
+        String resultText = null;
+        if (requireInvokdetemplate(content)) {
+            Invocable templateInvocable = newTemplateInvocable(params);
+            resultText = invokeTemplate(templateInvocable, content, params);
+        }
+        else {
+            resultText = content;
+        }
         if (resultText == null) {
             return "";
         }
