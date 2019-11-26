@@ -5,6 +5,7 @@ import java.util.Map;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.util.regex.Pattern;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.script.Invocable;
@@ -233,9 +234,11 @@ public class ConfigEvalEngine
         }
     }
 
+    private static final Pattern requireInvokdetemplatePattern = Pattern.compile("(?m)^.*[$].*$", Pattern.MULTILINE);
+
     @VisibleForTesting
     protected boolean requireInvokdetemplate(String code) {
-        return code != null && code.matches("^.*[$].*$");
+        return code != null && requireInvokdetemplatePattern.matcher(code).find();
     }
 
     @Override
