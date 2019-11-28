@@ -5,7 +5,7 @@ dependencies {
     compile project(':digdag-plugin-utils')
     testCompile project(':digdag-core')
 
-    compile ("com.google.cloud:google-cloud-storage:1.77.0") {
+    compile ("com.google.cloud:google-cloud-storage:1.101.0") {
         // Avoid compilation failures due to dependencies
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.google.j2objc', module: 'j2objc-annotations'

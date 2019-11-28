@@ -36,7 +36,7 @@ dependencies {
     compile ('com.google.apis:google-api-services-bigquery:v2-rev325-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
 
     // gcs
-    compile ('com.google.apis:google-api-services-storage:v1-rev20190426-1.28.0') {
+    compile ('com.google.apis:google-api-services-storage:v1-rev20190910-1.30.3') {
         exclude group: 'com.google.guava', module: 'guava-jdk5'
         exclude group: 'com.google.api-client', module: 'google-api-client'
     }
