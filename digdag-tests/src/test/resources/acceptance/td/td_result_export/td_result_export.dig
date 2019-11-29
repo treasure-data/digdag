@@ -1,16 +1,7 @@
 timezone: UTC
 
 +run:
-  td>: query.sql
-  database: sample_datasets
-
-+task:
   td_result_export>:
-    job_id: ${td.last_job_id}
-    result_connection: my_s3_connection
-    result_settings:
-      bucket: my_bucket
-      path: /logs/
-
-+post:
-  sh>: touch ${outfile}
+    job_id: ${job_id}
+    result_connection: ${result_connection}
+    result_settings: ${result_settings}
