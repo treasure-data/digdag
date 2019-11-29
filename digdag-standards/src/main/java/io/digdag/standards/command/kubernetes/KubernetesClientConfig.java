@@ -1,9 +1,15 @@
 package io.digdag.standards.command.kubernetes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.storage.StorageManager;
+
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class KubernetesClientConfig
 {
@@ -31,7 +37,8 @@ public class KubernetesClientConfig
         throw new UnsupportedOperationException("Not support yet");
     }
 
-    private static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
+    @VisibleForTesting
+    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
             final io.digdag.client.config.Config systemConfig)
     {
         final String clusterName;
@@ -45,23 +52,58 @@ public class KubernetesClientConfig
             clusterName = name.get();
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = validateParams(StorageManager.extractKeyPrefix(systemConfig, keyPrefix));
-        return create(clusterName,
-                extracted.get("master", String.class),
-                extracted.get("certs_ca_data", String.class),
-                extracted.get("oauth_token", String.class),
-                extracted.get("namespace", String.class));
+        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
+        if (extracted.has("kube_config_path")) {
+            String kubeConfigPath = extracted.get("kube_config_path", String.class);
+            io.fabric8.kubernetes.client.Config validatedKubeConfig;
+            validatedKubeConfig = validateKubeConfig(getKubeConfigFromPath(kubeConfigPath));
+            return create(clusterName,
+                    validatedKubeConfig.getMasterUrl(),
+                    validatedKubeConfig.getCaCertData(),
+                    validatedKubeConfig.getOauthToken(),
+                    validatedKubeConfig.getNamespace());
+        } else {
+            final Config validatedConfig = validateConfig(extracted);
+            return create(clusterName,
+                    validatedConfig.get("master", String.class),
+                    validatedConfig.get("certs_ca_data", String.class),
+                    validatedConfig.get("oauth_token", String.class),
+                    validatedConfig.get("namespace", String.class));
+        }
     }
 
-    private static Config validateParams(final Config config)
+    private static Config validateConfig(final Config config)
     {
         if (!config.has("master") ||
                 !config.has("certs_ca_data") ||
                 !config.has("oauth_token") ||
                 !config.has("namespace")) {
-            throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace:");
+            throw new ConfigException("kubernetes config must have master:, certs_ca_data:, oauth_token: and namespace: or kube_config_path:");
         }
         return config;
+    }
+
+    private static io.fabric8.kubernetes.client.Config validateKubeConfig(io.fabric8.kubernetes.client.Config config)
+    {
+        if (config.getMasterUrl() == null ||
+                config.getCaCertData() == null ||
+                config.getOauthToken() == null ||
+                config.getNamespace() == null) {
+            throw new ConfigException("kube config must have server:, certificate-authority-data: access-token: and namespace:");
+        }
+        return config;
+    }
+
+    @VisibleForTesting
+    static io.fabric8.kubernetes.client.Config getKubeConfigFromPath(String path)
+    {
+      try {
+          final Path kubeConfigPath = Paths.get(path);
+          final String kubeConfigContents = new String(Files.readAllBytes(kubeConfigPath), Charset.forName("UTF-8"));
+          return io.fabric8.kubernetes.client.Config.fromKubeconfig(kubeConfigContents);
+      } catch (java.io.IOException e) {
+          throw new ConfigException("Could not read kubeConfig, check kube_config_path.");
+      }
     }
 
     private static KubernetesClientConfig create(final String name,
