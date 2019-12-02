@@ -7,5 +7,5 @@ public interface StorageFactory
 {
     String getType();
 
-    Storage newStorage(Config config) throws ConfigException;
+    Storage newStorage(Config config);
 }
