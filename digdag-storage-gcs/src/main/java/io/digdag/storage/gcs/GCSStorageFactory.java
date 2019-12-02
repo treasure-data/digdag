@@ -29,7 +29,7 @@ public class GCSStorageFactory
     {
         com.google.cloud.storage.Storage storage;
         if (config.has("credentials.json")) {
-            storage = getStorageFromJsonKey(config, "credentials.json");
+            storage = getStorageFromJsonKey(config, "credentials.json.path");
         }
         else if (config.has("credentials.json.content")) {
             storage = getStorageFromJsonKey(config, "credentials.json.content");
@@ -54,8 +54,8 @@ public class GCSStorageFactory
     {
         try {
             InputStream in;
-            if (path == "credentials.json") {
-                String credentialsPath = config.get("credentials.json", String.class);
+            if (path == "credentials.json.path") {
+                String credentialsPath = config.get("credentials.json.path", String.class);
                 in = new FileInputStream(credentialsPath);
             }
             else if (path == "credentials.json.content") {
