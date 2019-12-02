@@ -199,7 +199,7 @@ public interface DatabaseConfig
         switch (config.getType()) {
         case "h2":
             if (config.getRemoteDatabaseConfig().isPresent()) {
-                throw new IllegalArgumentException("Database type is postgresql but remoteDatabaseConfig is not set unexpectedly");
+                throw new IllegalArgumentException("Database type is h2 but remoteDatabaseConfig is not set unexpectedly");
             }
             if (config.getPath().isPresent()) {
                 Path dir = FileSystems.getDefault().getPath(config.getPath().get());
