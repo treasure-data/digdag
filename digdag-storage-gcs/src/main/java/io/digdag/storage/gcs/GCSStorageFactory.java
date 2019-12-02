@@ -28,7 +28,7 @@ public class GCSStorageFactory
     public Storage newStorage(Config config)
     {
         com.google.cloud.storage.Storage storage;
-        if (config.has("credentials.json")) {
+        if (config.has("credentials.json.path")) {
             storage = getStorageFromJsonKey(config, "credentials.json.path");
         }
         else if (config.has("credentials.json.content")) {
