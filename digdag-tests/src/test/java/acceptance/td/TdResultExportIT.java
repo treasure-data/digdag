@@ -98,7 +98,7 @@ public class TdResultExportIT
     public void testSubmitResultExportJob()
             throws Exception
     {
-        String resultConnectorName =  "test_" + UUID.randomUUID().toString().replace('-', '_');
+        String resultConnectorName =  "digdag_test_" + UUID.randomUUID().toString().replace('-', '_');
         String json = "{\"description\":null,\"name\":\"" + resultConnectorName + "\"," +
                 "\"settings\":{\"api_key\":\"\",\"api_hostname\":\"\"}," +
                 "\"shared\":false,\"type\":\"treasure_data\"}";
