@@ -13,6 +13,7 @@ import io.digdag.standards.operator.pg.PgOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftLoadOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftUnloadOperatorFactory;
+import io.digdag.standards.operator.td.TDResultExportOperatorFactory;
 import io.digdag.standards.operator.td.TdDdlOperatorFactory;
 import io.digdag.standards.operator.td.TdForEachOperatorFactory;
 import io.digdag.standards.operator.td.TdLoadOperatorFactory;
@@ -46,6 +47,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, TdWaitOperatorFactory.class);
         addStandardOperatorFactory(binder, TdWaitTableOperatorFactory.class);
         addStandardOperatorFactory(binder, TdPartialDeleteOperatorFactory.class);
+        addStandardOperatorFactory(binder, TDResultExportOperatorFactory.class);
         addStandardOperatorFactory(binder, EchoOperatorFactory.class);
         addStandardOperatorFactory(binder, IfOperatorFactory.class);
         addStandardOperatorFactory(binder, FailOperatorFactory.class);
