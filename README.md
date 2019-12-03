@@ -13,7 +13,7 @@ Please check [digdag.io](https://digdag.io) and [docs.digdag.io](https://docs.di
 ### Prerequirements
 
 * JDK 8
-* Node.js 8.x
+* Node.js 12.x
 
 Installing Node.js using nodebrew:
 
@@ -21,8 +21,8 @@ Installing Node.js using nodebrew:
 $ curl -L git.io/nodebrew | perl - setup
 $ echo 'export PATH=$HOME/.nodebrew/current/bin:$PATH' >> ~/.bashrc
 $ source ~/.bashrc
-$ nodebrew install-binary v8.x
-$ nodebrew use v8.x
+$ nodebrew install-binary v12.x
+$ nodebrew use v12.x
 ```
 
 Installing Node.js using Homebrew on Mac OS X:
