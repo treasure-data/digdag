@@ -1,12 +1,16 @@
 package acceptance;
 
+import com.google.common.base.Optional;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.api.Id;
 import io.digdag.client.config.Config;
 
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.agent.RuntimeParams;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.spi.ImmutableTaskRequest;
+import io.digdag.spi.TaskRequest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,6 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -148,14 +155,12 @@ public class RuntimeParamsIT
 
         // These parameters must not be overwritten.
         assertNotEquals("-1", result.get("project_id", String.class));
-        assertNotEquals("-1", result.get("_digdag_project_id", String.class));
         assertNotEquals("-2", result.get("session_id", String.class));
         assertNotEquals("-3", result.get("attempt_id", String.class));
         assertNotEquals("2010-02-02T11:22:33+00:00", result.get("session_time", String.class));
         assertNotEquals("012345", result.get("session_uuid", String.class));
         assertEquals("UTC", result.get("timezone", String.class));
         assertEquals("+params1_no_sch+t_task_name", result.get("task_name", String.class));
-        assertEquals("+params1_no_sch+t_task_name", result.get("_digdag_task_name", String.class));
         assertEquals("retry01", result.get("retry_attempt_name", String.class));
 
         // These parameter is overwritten because no schedule.
@@ -199,5 +204,55 @@ public class RuntimeParamsIT
         assertEquals("UTC", result.get("timezone", String.class));
         assertEquals("+params2_sch+t_task_name", result.get("task_name", String.class));
         assertEquals("retry01", result.get("retry_attempt_name", String.class));
+    }
+
+    @Test
+    public void testbuildinParams()
+    {
+        Integer siteId = 1;
+        Integer projectId = 2;
+        String workflowName = "wf";
+        String revision = "wf";
+        Integer taskId = 3;
+        Integer attemptId = 4;
+        Integer sessionId = 5;
+        String taskName = "t";
+        String lockId = "l";
+        ZoneId timeZone = ZoneId.systemDefault();
+        UUID sessionUuid = UUID.randomUUID();
+        Instant sessionTime = Instant.now();
+        Instant createdAt = Instant.now();
+        Config config = TestUtils.configFactory().create();
+
+        ImmutableTaskRequest request = ImmutableTaskRequest.builder()
+                .siteId(siteId)
+                .projectId(projectId)
+                .workflowName(workflowName)
+                .revision(revision)
+                .taskId(taskId)
+                .attemptId(attemptId)
+                .sessionId(sessionId)
+                .taskName(taskName)
+                .lockId(lockId)
+                .timeZone(timeZone)
+                .sessionUuid(sessionUuid)
+                .sessionTime(sessionTime)
+                .createdAt(createdAt)
+                .config(config)
+                .localConfig(config)
+                .lastStateParams(config)
+                .build();
+
+        ConfigFactory configFactory = TestUtils.configFactory();
+        Config conf = RuntimeParams.buildRuntimeParams(configFactory, request);
+
+        assertEquals(timeZone.toString(), conf.get("_digdag_timezone", String.class));
+        assertEquals(sessionUuid.toString(), conf.get("_digdag_session_uuid", String.class));
+        assertEquals(sessionId, conf.get("_digdag_session_id", Integer.class));
+        assertEquals(projectId, conf.get("_digdag_project_id", Integer.class));
+        assertEquals(workflowName, conf.get("_digdag_workflow_name", String.class));
+        assertEquals(revision, conf.get("_digdag_revision_id", String.class));
+        assertEquals(attemptId, conf.get("_digdag_attempt_id", Integer.class));
+        assertEquals(taskName, conf.get("_digdag_task_name", String.class));
     }
 }
