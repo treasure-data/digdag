@@ -250,6 +250,7 @@ public class RuntimeParamsIT
         assertEquals(sessionUuid.toString(), conf.get("_digdag_session_uuid", String.class));
         assertEquals(sessionId, conf.get("_digdag_session_id", Integer.class));
         assertEquals(projectId, conf.get("_digdag_project_id", Integer.class));
+        assertEquals(taskName, conf.get("_digdag_task_name", String.class));
         assertEquals(workflowName, conf.get("_digdag_workflow_name", String.class));
         assertEquals(revision, conf.get("_digdag_revision_id", String.class));
         assertEquals(attemptId, conf.get("_digdag_attempt_id", Integer.class));
