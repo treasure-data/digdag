@@ -8,7 +8,6 @@ import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageException;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
-import io.digdag.spi.Storage;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageObjectSummary;
 import io.digdag.util.RetryExecutor;

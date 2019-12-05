@@ -18,6 +18,9 @@ import java.io.UnsupportedEncodingException;
 public class GCSStorageFactory
         implements StorageFactory
 {
+    private static final String PATH_KEY = "credentials.json.path";
+    private static final String CONTENT_KEY = "credentials.json.content";
+
     @Override
     public String getType()
     {
@@ -28,11 +31,11 @@ public class GCSStorageFactory
     public Storage newStorage(Config config)
     {
         com.google.cloud.storage.Storage storage;
-        if (config.has("credentials.json.path")) {
-            storage = getStorageFromJsonKey(config, "credentials.json.path");
+        if (config.has(PATH_KEY)) {
+            storage = getStorageFromJsonKey(config, PATH_KEY);
         }
-        else if (config.has("credentials.json.content")) {
-            storage = getStorageFromJsonKey(config, "credentials.json.content");
+        else if (config.has(CONTENT_KEY)) {
+            storage = getStorageFromJsonKey(config, CONTENT_KEY);
         }
         else {
             storage = StorageOptions.getDefaultInstance().getService();
@@ -49,17 +52,17 @@ public class GCSStorageFactory
         return new GCSStorage(config, storage, bucket);
     }
 
-    private static com.google.cloud.storage.Storage getStorageFromJsonKey(Config config, String path)
+    private static com.google.cloud.storage.Storage getStorageFromJsonKey(Config config, String configKey)
             throws ConfigException
     {
         try {
             InputStream in;
-            if (path == "credentials.json.path") {
-                String credentialsPath = config.get("credentials.json.path", String.class);
+            if (PATH_KEY.equals(configKey)) {
+                String credentialsPath = config.get(PATH_KEY, String.class);
                 in = new FileInputStream(credentialsPath);
             }
-            else if (path == "credentials.json.content") {
-                String credentials = config.get("credentials.json.content", String.class);
+            else if (CONTENT_KEY.equals(configKey)) {
+                String credentials = config.get(CONTENT_KEY, String.class);
                 in = new ByteArrayInputStream(credentials.getBytes("utf-8"));
             }
             else {
