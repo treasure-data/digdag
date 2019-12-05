@@ -9,7 +9,6 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.metrics.DigdagTimed;
 import io.digdag.server.metrics.fluency.FluencyMonitorSystemConfig;
-import io.digdag.server.metrics.jmx.DigdagJmxMeterRegistry;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.github.yoyama.micrometer.FluencyMeterRegistry;
 import io.github.yoyama.micrometer.FluencyRegistryConfig;
@@ -106,9 +105,7 @@ public class DigdagMetricsModule
     // To customize easily
     protected JmxMeterRegistry createJmxMeterRegistry(Category category)
     {
-        // Use DigdagJmxMeterRegistry to disable all metrics tag. Some metrics send TaskRequest as metrics tag
-        // and it is very noisy for JMX
-        return new DigdagJmxMeterRegistry(createJmxConfig(categoryToJMXdomain.get(category)), Clock.SYSTEM);
+        return new JmxMeterRegistry(createJmxConfig(categoryToJMXdomain.get(category)), Clock.SYSTEM);
     }
 
     private JmxConfig createJmxConfig(String domain)
@@ -132,9 +129,7 @@ public class DigdagMetricsModule
                 .getMonitorSystemConfig("fluency")
                 .or(() -> {throw new ConfigException("fluency is disabled");});
         Fluency fluency = FluencyMonitorSystemConfig.createFluency(fconfig);
-        //disableMetricsTagValue is set to true to avoid TaskRequest is added in some metrics.
-        //ToDo make it configurable in future.
-        FluencyRegistryConfig regConfig = FluencyRegistryConfig.apply(fconfig.getTag(), "digdag", Duration.ofSeconds(fconfig.getStep()), true);
+        FluencyRegistryConfig regConfig = FluencyRegistryConfig.apply(fconfig.getTag(), "digdag", Duration.ofSeconds(fconfig.getStep()), false);
         return FluencyMeterRegistry.apply(regConfig, HierarchicalNameMapper.DEFAULT, Clock.SYSTEM, fluency);
     }
 

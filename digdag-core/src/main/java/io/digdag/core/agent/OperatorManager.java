@@ -109,7 +109,7 @@ public class OperatorManager
         // TODO wait for shutdown completion?
     }
 
-    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    @DigdagTimed(value = "opm_", category = "agent", appendMethodName = true)
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
@@ -135,7 +135,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    @DigdagTimed(value = "opm_", category = "agent", appendMethodName = true)
     protected void runWithHeartbeat(TaskRequest request)
     {
         try {
@@ -181,7 +181,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    @DigdagTimed(value = "opm_", category = "agent", appendMethodName = true)
     protected Config evalConfig(TaskRequest request)
             throws RuntimeException, AssertionError
     {
@@ -202,7 +202,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    @DigdagTimed(value = "opm_", category = "agent", appendMethodName = true)
     protected void runWithWorkspace(Path projectPath, TaskRequest request)
         throws TaskExecutionException
     {
@@ -293,7 +293,7 @@ public class OperatorManager
         }
     }
 
-    @DigdagTimed(value = "opm_", category = "agent", taskRequest = true, appendMethodName = true)
+    @DigdagTimed(value = "opm_", category = "agent", appendMethodName = true)
     protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);
