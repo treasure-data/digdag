@@ -79,6 +79,18 @@ But loops and branches are useful. To solve this issue, Digdag dynamically appen
 
 `_error` task is generated after failure of a task. This is useful to notify failure of a task to external systems.
 
+The following example output `success` on succeeding the tasks. And also, It output the message `fail` on failing the tasks.
+
+```yaml
++example:
+  sh>: your_script.sh
+  _check:
+    +succeed:
+      echo>: success
+  _error:
+    +failed:
+      echo>: fail
+```
 
 ## Task naming and resuming
 
