@@ -64,6 +64,7 @@ public class CliLogIT
     {
         // --disable-direct-download
         {
+            requests.clear();
             CommandStatus status = main(env,
                     "log",
                     "2",
@@ -71,20 +72,40 @@ public class CliLogIT
                     "-e", server.endpoint(),
                     "--disable-direct-download"
             );
+            boolean match = false;
+            for (FullHttpRequest req :requests) {
+                if (req.uri().matches(".*/api/logs/2/.*")) {
+                    assertThat("direct_download=false must be set with --disable-direct-download",
+                            req.uri().matches(".*direct_download=false.*"));
+                    match = true;
+                }
+            }
+            assertThat("No record", match);
         }
 
         //Neither --disable-direct-download nor client.http.disable_direct_download=true
         {
+            requests.clear();
             CommandStatus status = main(env,
                     "log",
                     "1",
                     "-c", config.toString(),
                     "-e", server.endpoint()
             );
+            boolean match = false;
+            for (FullHttpRequest req :requests) {
+                if (req.uri().matches(".*/api/logs/1/.*")) {
+                    assertThat("direct_download= must not be set.",
+                            !req.uri().matches(".*direct_download=.*"));
+                    match = true;
+                }
+            }
+            assertThat("No record", match);
         }
 
         // client.http.disable_direct_download=true
         {
+            requests.clear();
             Files.write(config, Arrays.asList("client.http.disable_direct_download=true"));
             CommandStatus status = main(env,
                     "log",
@@ -92,21 +113,15 @@ public class CliLogIT
                     "-c", config.toString(),
                     "-e", server.endpoint()
             );
-        }
-
-        for (FullHttpRequest req :requests) {
-            if (req.uri().matches(".*/api/logs/1/.*")) {
-                assertThat("direct_download= must not be set.",
-                        !req.uri().matches(".*direct_download=.*"));
+            boolean match = false;
+            for (FullHttpRequest req :requests) {
+                if (req.uri().matches(".*/api/logs/3/.*")) {
+                    assertThat("direct_download=false must be set with client.http.disable_direct_download=true",
+                            req.uri().matches(".*direct_download=false.*"));
+                    match = true;
+                }
             }
-            if (req.uri().matches(".*/api/logs/2/.*")) {
-                assertThat("direct_download=false must be set with --disable-direct-download",
-                        req.uri().matches(".*direct_download=false.*"));
-            }
-            if (req.uri().matches(".*/api/logs/3/.*")) {
-                assertThat("direct_download=false must be set with client.http.disable_direct_download=true",
-                        req.uri().matches(".*direct_download=false.*"));
-            }
+            assertThat("No record", match);
         }
     }
 
