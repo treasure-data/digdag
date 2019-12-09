@@ -31,6 +31,7 @@ public abstract class ClientCommand
     private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
 
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
+    private static final String DEFAULT_DIRECT_DOWNLOAD = "false";
 
     @Inject Injector injector;
 
@@ -49,6 +50,9 @@ public abstract class ClientCommand
 
     @Parameter(names = {"--disable-cert-validation"})
     protected boolean disableCertValidation;
+
+    @Parameter(names = {"--disable-direct-download"})
+    protected Boolean disableDirectDownload = null;
 
     @Override
     public void main()
@@ -102,6 +106,10 @@ public abstract class ClientCommand
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
+        if ( disableDirectDownload == null) { //CLI option should have priority to system config
+            disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DIRECT_DOWNLOAD));
+        }
+
         httpHeaders = ParameterValidator.toMap(httpHeadersList);
 
         if (basicAuthUserPass != null) {
@@ -111,7 +119,7 @@ public abstract class ClientCommand
             );
         }
 
-        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
+        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, disableDirectDownload, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
             RestVersionCheckResult serverResponse = client.checkClientVersion(version.toString());
@@ -170,7 +178,8 @@ public abstract class ClientCommand
     }
 
     @VisibleForTesting
-    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation, Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
+    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation,
+                                    boolean disableDirectDownload, Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
             throws SystemExitException
     {
         String[] fragments = endpoint.split(":", 2);
@@ -219,6 +228,7 @@ public abstract class ClientCommand
                 .port(port)
                 .ssl(useSsl)
                 .disableCertValidation(disableCertValidation)
+                .disableDirectDownload(disableDirectDownload)
                 .headers(headers);
 
         Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(scheme, env);

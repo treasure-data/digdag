@@ -445,10 +445,16 @@ Client-mode common options:
 
   Example: ``-c digdag-server/client.properties``
 
+:command:`--disable-direct-download`
+  Disable direct download in `log` and `download`.
+  Effect to server v0.10.0(not yet released) or later.
+
+
 You can include following parameters in ~/.config/digdag/config file:
 
 * client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
+* client.http.disable_direct_download=true (equivalent to `--disable-direct-download`)
 
 
 start
