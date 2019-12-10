@@ -97,7 +97,7 @@ public class DefaultKubernetesClientTest
     {
         final Config taskRequestConfig = newConfig()
                 .set("kubernetes", newConfig().set(
-                        "pod", newConfig().set(
+                        "spec", newConfig().set(
                                 "affinity", newConfig().set(
                                         "nodeAffinity", newConfig().set(
                                                 "requiredDuringSchedulingIgnoredDuringExecution", newConfig().set(
