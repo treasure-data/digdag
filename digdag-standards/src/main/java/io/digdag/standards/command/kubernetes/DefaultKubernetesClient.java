@@ -149,16 +149,16 @@ public class DefaultKubernetesClient
                 .withArgs(arguments);
 
 
-      final JsonNode node = taskConfig.getInternalObjectNode();
-      if (node.has("kubernetes")) {
-          final JsonNode kubernetesNode = node.get("kubernetes");
-          if (kubernetesNode.has("container")) {
-              final JsonNode containerNode = kubernetesNode.get("container");
-              if (containerNode.has("volumeMounts")) {
-                  containerBuilder.withVolumeMounts(convertToResourceList(containerNode.get("volumeMounts"), VolumeMount.class));
-              }
-          }
-      }
+        final JsonNode node = taskConfig.getInternalObjectNode();
+        if (node.has("kubernetes")) {
+            final JsonNode kubernetesNode = node.get("kubernetes");
+            if (kubernetesNode.has("container")) {
+                final JsonNode containerNode = kubernetesNode.get("container");
+                if (containerNode.has("volumeMounts")) {
+                    containerBuilder.withVolumeMounts(convertToResourceList(containerNode.get("volumeMounts"), VolumeMount.class));
+                }
+            }
+        }
         return containerBuilder.build();
     }
 
@@ -180,25 +180,25 @@ public class DefaultKubernetesClient
                 // https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy
                 .withRestartPolicy("Never");
 
-      final JsonNode node = taskConfig.getInternalObjectNode();
-      if (node.has("kubernetes")) {
-          final JsonNode kubernetesNode = node.get("kubernetes");
-          if (kubernetesNode.has("pod")) {
-              final JsonNode podNode = kubernetesNode.get("pod");
-              if (podNode.has("affinity")) {
-                  podSpecBuilder.withAffinity(Serialization.unmarshal(podNode.get("affinity").toString(), Affinity.class));
-              }
+        final JsonNode node = taskConfig.getInternalObjectNode();
+        if (node.has("kubernetes")) {
+            final JsonNode kubernetesNode = node.get("kubernetes");
+            if (kubernetesNode.has("spec")) {
+                final JsonNode podNode = kubernetesNode.get("spec");
+                if (podNode.has("affinity")) {
+                    podSpecBuilder.withAffinity(Serialization.unmarshal(podNode.get("affinity").toString(), Affinity.class));
+                }
 
-              if (podNode.has("tolerations")) {
-                  podSpecBuilder.withTolerations(convertToResourceList(podNode.get("tolerations"), Toleration.class));
-              }
+                if (podNode.has("tolerations")) {
+                    podSpecBuilder.withTolerations(convertToResourceList(podNode.get("tolerations"), Toleration.class));
+                }
 
-              if (podNode.has("volumes")) {
-                  podSpecBuilder.withVolumes(convertToResourceList(podNode.get("volumes"), Volume.class));
-              }
-          }
-      }
-      return podSpecBuilder.build();
+                if (podNode.has("volumes")) {
+                    podSpecBuilder.withVolumes(convertToResourceList(podNode.get("volumes"), Volume.class));
+                }
+            }
+        }
+        return podSpecBuilder.build();
     }
 
     protected <T> List<T> convertToResourceList(final JsonNode node, final Class<T> type)
