@@ -31,7 +31,7 @@ public abstract class ClientCommand
     private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
 
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
-    private static final String DEFAULT_DIRECT_DOWNLOAD = "false";
+    private static final String DEFAULT_DISABLE_DIRECT_DOWNLOAD = "false";
 
     @Inject Injector injector;
 
@@ -51,8 +51,7 @@ public abstract class ClientCommand
     @Parameter(names = {"--disable-cert-validation"})
     protected boolean disableCertValidation;
 
-    @Parameter(names = {"--disable-direct-download"})
-    protected Boolean disableDirectDownload = null;
+    protected boolean disableDirectDownload;
 
     @Override
     public void main()
@@ -106,9 +105,7 @@ public abstract class ClientCommand
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
-        if ( disableDirectDownload == null) { //CLI option should have priority to system config
-            disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DIRECT_DOWNLOAD));
-        }
+        disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DISABLE_DIRECT_DOWNLOAD));
 
         httpHeaders = ParameterValidator.toMap(httpHeadersList);
 

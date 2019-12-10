@@ -83,7 +83,7 @@ public class CliLogIT
             assertThat("No record", match);
         }
 
-        //Neither --disable-direct-download nor client.http.disable_direct_download=true
+        // Neither --disable-direct-download nor client.http.disable_direct_download=true
         {
             requests.clear();
             CommandStatus status = main(env,

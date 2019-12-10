@@ -484,7 +484,7 @@ public class DigdagClient implements AutoCloseable
         WebTarget webTarget = target("/api/projects/{id}/archive")
                 .resolveTemplate("id", projId)
                 .queryParam("revision", revision);
-        webTarget = addDisableDirectDownloadParam(webTarget, disableDirectDownload);
+        webTarget = addDisableDirectDownloadParam(webTarget);
         return withFollowingRedirect(webTarget,
                 (wt, lastResponse) -> {
                     Invocation.Builder request = wt.request();
@@ -641,7 +641,7 @@ public class DigdagClient implements AutoCloseable
     {
         WebTarget webTarget = target("/api/logs/{id}/files")
                 .resolveTemplate("id", attemptId);
-        webTarget = addDisableDirectDownloadParam(webTarget, disableDirectDownload);
+        webTarget = addDisableDirectDownloadParam(webTarget);
 
         return doGet(RestLogFileHandleCollection.class, webTarget);
     }
@@ -652,7 +652,7 @@ public class DigdagClient implements AutoCloseable
             WebTarget webTarget = target("/api/logs/{id}/files")
                     .resolveTemplate("id", attemptId)
                     .queryParam("task", URLEncoder.encode(taskName, "UTF-8"));
-            webTarget = addDisableDirectDownloadParam(webTarget, disableDirectDownload);
+            webTarget = addDisableDirectDownloadParam(webTarget);
 
             return doGet(RestLogFileHandleCollection.class, webTarget);
         } catch (UnsupportedEncodingException ex) {
@@ -686,7 +686,7 @@ public class DigdagClient implements AutoCloseable
                 .readEntity(InputStream.class);
     }
 
-    private WebTarget addDisableDirectDownloadParam(WebTarget target, boolean disableDirectDownload)
+    private WebTarget addDisableDirectDownloadParam(WebTarget target)
     {
         // direct_download is default true
         // So only set direct_download=false when disableDirectDownload == true
