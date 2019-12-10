@@ -31,6 +31,7 @@ public abstract class ClientCommand
     private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
 
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
+    private static final String DEFAULT_DISABLE_DIRECT_DOWNLOAD = "false";
 
     @Inject Injector injector;
 
@@ -170,10 +171,12 @@ public abstract class ClientCommand
     }
 
     @VisibleForTesting
-    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation, Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
+    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation,
+                                    Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
             throws SystemExitException
     {
         String[] fragments = endpoint.split(":", 2);
+        boolean disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DISABLE_DIRECT_DOWNLOAD));
 
         boolean useSsl = false;
         if (fragments.length == 2 && fragments[1].startsWith("//")) {
@@ -219,6 +222,7 @@ public abstract class ClientCommand
                 .port(port)
                 .ssl(useSsl)
                 .disableCertValidation(disableCertValidation)
+                .disableDirectDownload(disableDirectDownload)
                 .headers(headers);
 
         Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(scheme, env);
