@@ -106,6 +106,7 @@ public class DigdagClient implements AutoCloseable
         private final Map<String, String> baseHeaders = new HashMap<>();
         private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
         private boolean disableCertValidation;
+        private boolean disableDirectDownload = false;
 
         public Builder host(String host)
         {
@@ -167,6 +168,12 @@ public class DigdagClient implements AutoCloseable
             return this;
         }
 
+        public Builder disableDirectDownload(boolean value)
+        {
+            this.disableDirectDownload = value;
+            return this;
+        }
+
         public DigdagClient build()
         {
             return new DigdagClient(this);
@@ -199,6 +206,7 @@ public class DigdagClient implements AutoCloseable
 
     private final Client client;
     private final ConfigFactory cf;
+    private final boolean disableDirectDownload;
 
     private DigdagClient(Builder builder)
     {
@@ -263,6 +271,9 @@ public class DigdagClient implements AutoCloseable
         this.client = clientBuilder.build();
 
         this.cf = new ConfigFactory(mapper);
+
+        this.disableDirectDownload = builder.disableDirectDownload;
+
     }
 
     @Override
@@ -475,7 +486,7 @@ public class DigdagClient implements AutoCloseable
         WebTarget webTarget = target("/api/projects/{id}/archive")
                 .resolveTemplate("id", projId)
                 .queryParam("revision", revision);
-
+        webTarget = addDisableDirectDownloadParam(webTarget);
         return withFollowingRedirect(webTarget,
                 (wt, lastResponse) -> {
                     Invocation.Builder request = wt.request();
@@ -637,18 +648,22 @@ public class DigdagClient implements AutoCloseable
 
     public RestLogFileHandleCollection getLogFileHandlesOfAttempt(Id attemptId)
     {
-        return doGet(RestLogFileHandleCollection.class,
-                target("/api/logs/{id}/files")
-                .resolveTemplate("id", attemptId));
+        WebTarget webTarget = target("/api/logs/{id}/files")
+                .resolveTemplate("id", attemptId);
+        webTarget = addDisableDirectDownloadParam(webTarget);
+
+        return doGet(RestLogFileHandleCollection.class, webTarget);
     }
 
     public RestLogFileHandleCollection getLogFileHandlesOfTask(Id attemptId, String taskName)
     {
         try {
-            return doGet(RestLogFileHandleCollection.class,
-                    target("/api/logs/{id}/files")
+            WebTarget webTarget = target("/api/logs/{id}/files")
                     .resolveTemplate("id", attemptId)
-                    .queryParam("task", URLEncoder.encode(taskName, "UTF-8")));
+                    .queryParam("task", URLEncoder.encode(taskName, "UTF-8"));
+            webTarget = addDisableDirectDownloadParam(webTarget);
+
+            return doGet(RestLogFileHandleCollection.class, webTarget);
         } catch (UnsupportedEncodingException ex) {
             throw Throwables.propagate(ex);
         }
@@ -678,6 +693,16 @@ public class DigdagClient implements AutoCloseable
 
         return invokeWithRetry(request)
                 .readEntity(InputStream.class);
+    }
+
+    private WebTarget addDisableDirectDownloadParam(WebTarget target)
+    {
+        // direct_download is default true
+        // So only set direct_download=false when disableDirectDownload == true
+        if (disableDirectDownload) {
+            target = target.queryParam("direct_download", false);
+        }
+        return target;
     }
 
     private Response invokeWithRetry(Invocation request)
