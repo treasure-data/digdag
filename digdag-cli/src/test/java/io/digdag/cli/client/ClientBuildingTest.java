@@ -17,7 +17,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        DigdagClient client = ClientCommand.buildClient(endpoint, ImmutableMap.of(), new Properties(), false, false, ImmutableMap.of(), ImmutableList.of());
+        DigdagClient client = ClientCommand.buildClient(endpoint, ImmutableMap.of(), new Properties(), false, ImmutableMap.of(), ImmutableList.of());
         Field f = client.getClass().getDeclaredField("endpoint");
         f.setAccessible(true);
         return (String) f.get(client);

@@ -62,28 +62,7 @@ public class CliLogIT
     public void disableDirectDownload()
             throws Exception
     {
-        // --disable-direct-download
-        {
-            requests.clear();
-            CommandStatus status = main(env,
-                    "log",
-                    "2",
-                    "-c", config.toString(),
-                    "-e", server.endpoint(),
-                    "--disable-direct-download"
-            );
-            boolean match = false;
-            for (FullHttpRequest req :requests) {
-                if (req.uri().matches(".*/api/logs/2/.*")) {
-                    assertThat("direct_download=false must be set with --disable-direct-download",
-                            req.uri().matches(".*direct_download=false.*"));
-                    match = true;
-                }
-            }
-            assertThat("No record", match);
-        }
-
-        // Neither --disable-direct-download nor client.http.disable_direct_download=true
+        // No configuration "client.http.disable_direct_download=true"
         {
             requests.clear();
             CommandStatus status = main(env,
@@ -103,7 +82,7 @@ public class CliLogIT
             assertThat("No record", match);
         }
 
-        // client.http.disable_direct_download=true
+        // Set configuration "client.http.disable_direct_download=true"
         {
             requests.clear();
             Files.write(config, Arrays.asList("client.http.disable_direct_download=true"));

@@ -51,8 +51,6 @@ public abstract class ClientCommand
     @Parameter(names = {"--disable-cert-validation"})
     protected boolean disableCertValidation;
 
-    protected boolean disableDirectDownload;
-
     @Override
     public void main()
             throws Exception
@@ -105,8 +103,6 @@ public abstract class ClientCommand
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
-        disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DISABLE_DIRECT_DOWNLOAD));
-
         httpHeaders = ParameterValidator.toMap(httpHeadersList);
 
         if (basicAuthUserPass != null) {
@@ -116,7 +112,7 @@ public abstract class ClientCommand
             );
         }
 
-        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, disableDirectDownload, httpHeaders, clientConfigurators);
+        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
             RestVersionCheckResult serverResponse = client.checkClientVersion(version.toString());
@@ -176,10 +172,11 @@ public abstract class ClientCommand
 
     @VisibleForTesting
     static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation,
-                                    boolean disableDirectDownload, Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
+                                    Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
             throws SystemExitException
     {
         String[] fragments = endpoint.split(":", 2);
+        boolean disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DISABLE_DIRECT_DOWNLOAD));
 
         boolean useSsl = false;
         if (fragments.length == 2 && fragments[1].startsWith("//")) {

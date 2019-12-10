@@ -79,29 +79,7 @@ public class CliDownloadIT
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         }
 
-        // --disable-direct-download
-        {
-            requests.clear();
-            CommandStatus status = main(env,
-                    "download",
-                    "test_proj",
-                    "-c", config.toString(),
-                    "-e", server.endpoint(),
-                    "-o", folder.getRoot().toPath().resolve("test2").toString(),
-                    "--disable-direct-download"
-            );
-            assertThat(status.errUtf8(), status.code(), is(0));
-            boolean match = false;
-            for (FullHttpRequest req : requests) {
-                if (req.uri().matches(".*/api/projects/.*/archive.*")) {
-                    match = true;
-                    assertThat("direct_download= must be set.", req.uri().matches(".*direct_download=.*"));
-                }
-            }
-            assertThat("No record", match);
-        }
-
-        //Neither --disable-direct-download nor client.http.disable_direct_download=true
+        // No configuration "client.http.disable_direct_download=true"
         {
             requests.clear();
             CommandStatus status = main(env,
@@ -123,7 +101,7 @@ public class CliDownloadIT
             assertThat("No record", match);
         }
 
-        // client.http.disable_direct_download=true
+        // Set configuration "client.http.disable_direct_download=true"
         {
             requests.clear();
             Files.write(config, Arrays.asList("client.http.disable_direct_download=true"));
