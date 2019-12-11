@@ -26,7 +26,9 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.PollingTimeoutException;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.util.Durations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +102,9 @@ public class S3WaitOperatorFactory
             Optional<String> key = params.getOptional("key", String.class);
             Optional<String> versionId = params.getOptional("version_id", String.class);
             Optional<Boolean> pathStyleAccess = params.getOptional("path_style_access", Boolean.class);
+            Optional<Duration> timeout = params.getOptional("timeout", String.class)
+                                            .transform( (t) -> Durations.parseDuration(t));
+            boolean ignoreTimeoutError = params.getOptional("ignore_timeout_error", Boolean.class).or(false);
 
             if (command.isPresent() && (bucket.isPresent() || key.isPresent()) ||
                     !command.isPresent() && (!bucket.isPresent() || !key.isPresent())) {
@@ -141,12 +146,13 @@ public class S3WaitOperatorFactory
 
             Aws.configureServiceClient(s3Client, endpoint, regionName);
 
-            S3ClientOptions clientOptions = new S3ClientOptions();
-            if (pathStyleAccess.isPresent()) {
-                clientOptions.setPathStyleAccess(pathStyleAccess.get());
+            {
+                S3ClientOptions.Builder builder = S3ClientOptions.builder();
+                if (pathStyleAccess.isPresent()) {
+                    builder.setPathStyleAccess(pathStyleAccess.get());
+                }
+                s3Client.setS3ClientOptions(builder.build());
             }
-            s3Client.setS3ClientOptions(clientOptions);
-
 
             GetObjectMetadataRequest req = new GetObjectMetadataRequest(bucket.get(), key.get());
 
@@ -168,27 +174,37 @@ public class S3WaitOperatorFactory
                 req.setSSECustomerKey(sseKey);
             }
 
-            ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
-                    .withPollInterval(POLL_INTERVAL)
-                    .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
-                    .await(pollState -> pollingRetryExecutor(pollState, "POLL")
-                            .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                            .run(s -> {
-                                try {
-                                    return Optional.of(s3Client.getObjectMetadata(req));
-                                }
-                                catch (AmazonS3Exception e) {
-                                    if (e.getStatusCode() == 404) {
-                                        return Optional.absent();
+            try {
+                ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
+                        .withPollInterval(POLL_INTERVAL)
+                        .withTimeout(timeout)
+                        .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
+                        .await(pollState -> pollingRetryExecutor(pollState, "POLL")
+                                .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
+                                .run(s -> {
+                                    try {
+                                        return Optional.of(s3Client.getObjectMetadata(req));
+                                    } catch (AmazonS3Exception e) {
+                                        if (e.getStatusCode() == 404) {
+                                            return Optional.absent();
+                                        }
+                                        throw e;
                                     }
-                                    throw e;
-                                }
-                            }));
-
-            return TaskResult.defaultBuilder(request)
-                    .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
-                    .storeParams(storeParams(objectMetadata))
-                    .build();
+                                }));
+                return TaskResult.defaultBuilder(request)
+                        .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
+                        .storeParams(storeParams(objectMetadata))
+                        .build();
+            }
+            catch (PollingTimeoutException e) {
+                logger.debug(e.toString());
+                if (ignoreTimeoutError) {
+                    return TaskResult.defaultBuilder(request)
+                            .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
+                            .build();
+                }
+                throw e;
+            }
         }
 
         private Config storeParams(ObjectMetadata objectMetadata)

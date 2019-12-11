@@ -1,0 +1,6 @@
+
++wait:
+  s3_wait>: ${path}
+  timeout: 10s
++end:
+  sh>: echo '${s3.last_object}' > '${outfile}'

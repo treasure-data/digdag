@@ -1,0 +1,11 @@
+
++wait:
+  s3_wait>: ${path}
+  timeout: 10s
+  ignore_timeout_error: true
+
++task1:
+  sh>: echo 'Finished task +wait' > '${outfile}'
+
++end:
+  sh>: echo 'Read s3 variable ${s3}' > '${outfile}'

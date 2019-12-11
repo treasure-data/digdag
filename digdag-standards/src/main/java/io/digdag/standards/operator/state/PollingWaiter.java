@@ -2,8 +2,6 @@ package io.digdag.standards.operator.state;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import io.digdag.client.config.ConfigElement;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.util.Durations;
 import org.slf4j.Logger;
@@ -11,10 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 public class PollingWaiter
 {
     private static final DurationInterval DEFAULT_POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
+    private static final Optional<Duration> DEFAULT_TIMEOUT = Optional.absent();
 
     private static Logger logger = LoggerFactory.getLogger(PollingWaiter.class);
 
@@ -24,20 +24,23 @@ public class PollingWaiter
     private static final String RESULT = "result";
     private static final String ITERATION = "iteration";
     private static final String OPERATION = "operation";
+    private static final String START_TIME = "start_time";
 
     private final TaskState state;
     private final String stateKey;
 
     private final DurationInterval pollInterval;
+    private final Optional<Duration> timeout;
 
     private final String waitMessage;
     private final Object[] waitMessageParameters;
 
-    private PollingWaiter(TaskState state, String stateKey, DurationInterval pollInterval, String waitMessage, Object... waitMessageParameters)
+    private PollingWaiter(TaskState state, String stateKey, DurationInterval pollInterval, Optional<Duration> timeout, String waitMessage, Object... waitMessageParameters)
     {
         this.state = Objects.requireNonNull(state, "state");
         this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
         this.pollInterval = Objects.requireNonNull(pollInterval, "pollInterval");
+        this.timeout = Objects.requireNonNull(timeout, "timeout");
         this.waitMessage = Objects.requireNonNull(waitMessage, "waitMessage");
         this.waitMessageParameters = Objects.requireNonNull(waitMessageParameters, "waitMessageParameters");
     }
@@ -48,6 +51,7 @@ public class PollingWaiter
                 state,
                 stateKey,
                 DEFAULT_POLL_INTERVAL,
+                DEFAULT_TIMEOUT,
                 DEFAULT_ERROR_MESSAGE,
                 DEFAULT_ERROR_MESSAGE_PARAMETERS);
     }
@@ -58,6 +62,7 @@ public class PollingWaiter
                 state,
                 stateKey,
                 pollInterval,
+                timeout,
                 waitMessage,
                 waitMessageParameters);
     }
@@ -68,6 +73,18 @@ public class PollingWaiter
                 state,
                 stateKey,
                 retryInterval,
+                timeout,
+                waitMessage,
+                waitMessageParameters);
+    }
+
+    public PollingWaiter withTimeout(Optional<Duration> timeout)
+    {
+        return new PollingWaiter(
+                state,
+                stateKey,
+                pollInterval,
+                timeout,
                 waitMessage,
                 waitMessageParameters);
     }
@@ -87,8 +104,17 @@ public class PollingWaiter
     public <T> T await(Operation<Optional<T>> f)
     {
         TaskState pollState = state.nestedState(stateKey);
-
+        Long startTime = pollState.params().get(START_TIME, Long.class, null);
+        if (startTime == null) {
+            startTime = System.currentTimeMillis();
+            pollState.params().set(START_TIME, startTime);
+        }
         TaskState operationState = pollState.nestedState(OPERATION);
+        Long now = System.currentTimeMillis();
+        if (timeout.isPresent() && timeout.get().toMillis() <= now - startTime) {
+            logger.debug("Timeout happened. startTime:{}, timeout:{}", startTime, timeout.get());
+            throw new PollingTimeoutException("Timeout happened");
+        }
 
         Optional<T> result;
 

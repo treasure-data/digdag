@@ -81,6 +81,21 @@ For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws
   An optional flag to control whether to use path-style or virtual hosted-style access when accessing S3.
   *Note:* Enabling `path_style_access` also requires specifying a `region`.
 
+* **timeout**: TIMEOUT
+
+  Set timeout.
+
+  Examples: wait 120 seconds
+
+  ```
+  timeout: 120s
+  ```
+
+* **ignore_timeout_error**: true/false (default:false)
+
+  If ignore_timeout_error is set to true, the task will finish successfully.
+  *Note* s3 variable is not accessible.
+
 ## Output Parameters
 
 * **s3.last_object**
