@@ -18,17 +18,17 @@ public class RuntimeParams
 
         ZoneId timeZone = request.getTimeZone();
         params.set("timezone", timeZone);
-        params.set("_digdag_timezone", timeZone);
+        params.set("digdag.timezone", timeZone);
 
         // session_*
         params.set("session_uuid", request.getSessionUuid().toString());
-        params.set("_digdag_session_uuid", request.getSessionUuid().toString());
+        params.set("digdag.session_uuid", request.getSessionUuid().toString());
         params.set("session_time", formatSessionTime(request.getSessionTime(), timeZone));
-        params.set("_digdag_session_time", formatSessionTime(request.getSessionTime(), timeZone));
+        params.set("digdag.session_time", formatSessionTime(request.getSessionTime(), timeZone));
         params.set("session_id", request.getSessionId());
-        params.set("_digdag_session_id", request.getSessionId());
+        params.set("digdag.session_id", request.getSessionId());
         setTimeParameters(params, "session_", timeZone, request.getSessionTime());
-        setTimeParameters(params, "_digdag_session_", timeZone, request.getSessionTime());
+        setTimeParameters(params, "digdag.session_", timeZone, request.getSessionTime());
 
         // last_session_*
         try {
@@ -37,7 +37,7 @@ public class RuntimeParams
             if (st != null) {
                 Instant instant = Instant.from(TIME_FORMAT.parse(st));
                 setTimeParameters(params, "last_session_", timeZone, instant);
-                setTimeParameters(params, "_digdag_last_session_", timeZone, instant);
+                setTimeParameters(params, "digdag.last_session_", timeZone, instant);
             }
         }
         catch (ConfigException | DateTimeParseException ex) {
@@ -51,10 +51,10 @@ public class RuntimeParams
             if (sat != null) {
                 Instant instant = Instant.from(TIME_FORMAT.parse(sat));
                 setTimeParameters(params, "last_executed_session_", timeZone, instant);
-                setTimeParameters(params, "_digdag_last_executed_session_", timeZone, instant);
+                setTimeParameters(params, "digdag.last_executed_session_", timeZone, instant);
             } else {
                 setEmptyTimeParameters(params, "last_executed_session_", timeZone);
-                setEmptyTimeParameters(params, "_digdag_last_executed_session_", timeZone);
+                setEmptyTimeParameters(params, "digdag.last_executed_session_", timeZone);
             }
         }
         catch (ConfigException | DateTimeParseException ex) {
@@ -68,7 +68,7 @@ public class RuntimeParams
             if (st != null) {
                 Instant instant = Instant.from(TIME_FORMAT.parse(st));
                 setTimeParameters(params, "next_session_", timeZone, instant);
-                setTimeParameters(params, "_digdag_next_session_", timeZone, instant);
+                setTimeParameters(params, "digdag.next_session_", timeZone, instant);
             }
         }
         catch (ConfigException | DateTimeParseException ex) {
@@ -77,25 +77,25 @@ public class RuntimeParams
 
         // project_*
         params.set("project_id", request.getProjectId());
-        params.set("_digdag_project_id", request.getProjectId());
+        params.set("digdag.project_id", request.getProjectId());
 
-        params.set("_digdag_project_name", request.getProjectName());
+        params.set("digdag.project_name", request.getProjectName());
 
-        params.set("_digdag_workflow_name", request.getWorkflowName());
-        params.set("_digdag_workflow_id", request.getWorkflowDefinitionId());
+        params.set("digdag.workflow_name", request.getWorkflowName());
+        params.set("digdag.workflow_id", request.getWorkflowDefinitionId());
 
-        params.set("_digdag_revision_id", request.getRevision());
+        params.set("digdag.revision_id", request.getRevision());
 
-        params.set("_digdag_created_at", request.getCreatedAt());
+        params.set("digdag.created_at", request.getCreatedAt());
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
-        params.set("_digdag_retry_attempt_name", request.getRetryAttemptName().orNull());
+        params.set("digdag.retry_attempt_name", request.getRetryAttemptName().orNull());
         params.set("attempt_id", request.getAttemptId());
-        params.set("_digdag_attempt_id", request.getAttemptId());
+        params.set("digdag.attempt_id", request.getAttemptId());
 
         // task_*
         params.set("task_name", request.getTaskName());
-        params.set("_digdag_task_name", request.getTaskName());
+        params.set("digdag.task_name", request.getTaskName());
 
         return params;
     }

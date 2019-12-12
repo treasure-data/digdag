@@ -155,27 +155,27 @@ public class RuntimeParamsIT
 
         // These parameters must not be overwritten.
         assertNotEquals("-1", result.get("project_id", String.class));
-        assertNotEquals("-1", result.get("_digdag_project_id", String.class));
+        assertNotEquals("-1", result.get("digdag.project_id", String.class));
         assertNotEquals("-2", result.get("session_id", String.class));
-        assertNotEquals("-2", result.get("_digdag_session_id", String.class));
+        assertNotEquals("-2", result.get("digdag.session_id", String.class));
         assertNotEquals("-3", result.get("attempt_id", String.class));
-        assertNotEquals("-3", result.get("_digdag_attempt_id", String.class));
+        assertNotEquals("-3", result.get("digdag.attempt_id", String.class));
         assertNotEquals("2010-02-02T11:22:33+00:00", result.get("session_time", String.class));
-        assertNotEquals("2010-02-02T11:22:33+00:00", result.get("_digdag_session_time", String.class));
+        assertNotEquals("2010-02-02T11:22:33+00:00", result.get("digdag.session_time", String.class));
         assertNotEquals("012345", result.get("session_uuid", String.class));
-        assertNotEquals("012345", result.get("_digdag_session_uuid", String.class));
+        assertNotEquals("012345", result.get("digdag.session_uuid", String.class));
         assertEquals("UTC", result.get("timezone", String.class));
-        assertEquals("UTC", result.get("_digdag_timezone", String.class));
+        assertEquals("UTC", result.get("digdag.timezone", String.class));
         assertEquals("+params1_no_sch+t_task_name", result.get("task_name", String.class));
-        assertEquals("+params1_no_sch+t_task_name", result.get("_digdag_task_name", String.class));
+        assertEquals("+params1_no_sch+t_task_name", result.get("digdag.task_name", String.class));
         assertEquals("retry01", result.get("retry_attempt_name", String.class));
-        assertEquals("retry01", result.get("_digdag_retry_attempt_name", String.class));
+        assertEquals("retry01", result.get("digdag.retry_attempt_name", String.class));
 
         // These parameter is overwritten because no schedule.
         assertEquals("2010-03-03T11:22:33+00:00", result.get("next_session_time", String.class));
-        assertEquals("2010-03-03T11:22:33+00:00", result.get("_digdag_next_session_time", String.class));
+        assertEquals("2010-03-03T11:22:33+00:00", result.get("digdag.next_session_time", String.class));
         assertEquals("2010-01-01T11:22:33+00:00", result.get("last_session_time", String.class));
-        assertEquals("2010-01-01T11:22:33+00:00", result.get("_digdag_last_session_time", String.class));
+        assertEquals("2010-01-01T11:22:33+00:00", result.get("digdag.last_session_time", String.class));
     }
 
     @Test
