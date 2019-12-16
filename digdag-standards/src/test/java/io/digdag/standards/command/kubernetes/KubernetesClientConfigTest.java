@@ -59,7 +59,7 @@ public class KubernetesClientConfigTest
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default");
 
-        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -79,7 +79,7 @@ public class KubernetesClientConfigTest
           .set("agent.command_executor.type", "kubernetes")
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.kube_config_path", kubeConfigPath);
 
-        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -90,4 +90,63 @@ public class KubernetesClientConfigTest
         assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
         assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
     }
+
+    @Test
+    public void testCreateFromLocalConfig()
+            throws Exception
+    {
+        final Config systemConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.master", "https://127.0.0.1")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.certs_ca_data", "test=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default");
+
+        final Config localConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.master", "https://localhost")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.certs_ca_data", "testlocal=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "testlocal=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "local");
+
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, localConfig);
+
+        String masterUrl = "https://localhost";
+        String namespace = "local";
+        String caCertData = "testlocal=";
+        String oauthToken = "testlocal=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
+    }
+
+    @Test
+    public void testCreateFromLocalConfigWithKubeConfig()
+            throws Exception
+    {
+
+        final Config systemConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.master", "https://localhost")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.certs_ca_data", "testlocal=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "testlocal=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "local");
+
+        final Config localConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.kube_config_path", kubeConfigPath);
+
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, localConfig);
+
+        String masterUrl = "https://127.0.0.1";
+        String namespace = "default";
+        String caCertData = "test=";
+        String oauthToken = "test=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
+    }
+
 }
