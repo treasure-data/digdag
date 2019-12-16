@@ -19,40 +19,33 @@ public class KubernetesClientConfig
             final Config systemConfig,
             final Config requestConfig)
     {
-        if (requestConfig.has("kubernetes")) {
+        Config config;
+        if (requestConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
             // from task request config
-            return KubernetesClientConfig.createFromTaskRequestConfig(name, requestConfig.getNested("kubernetes"));
+            config = requestConfig;
         }
         else {
             // from system config
-            return KubernetesClientConfig.createFromSystemConfig(name, systemConfig);
+            config = systemConfig;
         }
-    }
-
-    private static KubernetesClientConfig createFromTaskRequestConfig(final Optional<String> name,
-            final Config config)
-    {
-        // TODO
-        // We'd better to customize cluster config by task request config??
-        throw new UnsupportedOperationException("Not support yet");
+        return KubernetesClientConfig.create(name, config);
     }
 
     @VisibleForTesting
-    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
-            final io.digdag.client.config.Config systemConfig)
+    static KubernetesClientConfig create(final Optional<String> name, final Config config)
     {
         final String clusterName;
         if (!name.isPresent()) {
-            if (!systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
+            if (!config.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
                 throw new ConfigException("agent.command_executor.type: is not 'kubernetes'");
             }
-            clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
+            clusterName = config.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
         }
         else {
             clusterName = name.get();
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
+        final Config extracted = StorageManager.extractKeyPrefix(config, keyPrefix);
         if (extracted.has("kube_config_path")) {
             String kubeConfigPath = extracted.get("kube_config_path", String.class);
             io.fabric8.kubernetes.client.Config validatedKubeConfig;
