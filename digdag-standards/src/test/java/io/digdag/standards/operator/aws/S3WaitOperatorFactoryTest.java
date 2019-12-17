@@ -19,7 +19,6 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.operator.aws.S3WaitOperatorFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,7 +51,9 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class S3WaitOperatorFactoryTest
 {
+    private static final int MINI_POLL_INTERVAL = 5;
     private static final int MAX_POLL_INTERVAL = 300;
+    private static final double NEXT_INTERVAL_EXP_BASE = 1.2;
 
     private static final String BUCKET = "test.bucket";
     private static final String KEY = "a/test/key";
@@ -197,7 +198,7 @@ public class S3WaitOperatorFactoryTest
 
         List<Integer> retryIntervals = new ArrayList<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 30; i++) {
             try {
                 operator.run();
                 fail();
@@ -214,7 +215,7 @@ public class S3WaitOperatorFactoryTest
         for (int i = 1; i < retryIntervals.size(); i++) {
             int prevInterval = retryIntervals.get(i - 1);
             int interval = retryIntervals.get(i);
-            assertThat(interval, is(Math.min(MAX_POLL_INTERVAL, prevInterval * 2)));
+            assertThat(interval, is((int)Math.min(MAX_POLL_INTERVAL, MINI_POLL_INTERVAL * Math.pow(NEXT_INTERVAL_EXP_BASE, i))));
         }
 
         assertThat(retryIntervals.get(retryIntervals.size() - 1), is(MAX_POLL_INTERVAL));
