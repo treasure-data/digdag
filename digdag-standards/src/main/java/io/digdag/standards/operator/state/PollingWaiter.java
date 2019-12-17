@@ -131,7 +131,7 @@ public class PollingWaiter
         TaskState operationState = pollState.nestedState(OPERATION);
 
         //Check timeout
-        Long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
         if (timeout.isPresent() && timeout.get().toMillis() <= now - startTime) {
             logger.debug("Timeout happened. startTime:{}, timeout:{}", startTime, timeout.get());
             throw new PollingTimeoutException("Timeout happened");
