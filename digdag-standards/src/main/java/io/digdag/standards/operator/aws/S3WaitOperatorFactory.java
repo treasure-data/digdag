@@ -45,6 +45,7 @@ public class S3WaitOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(S3WaitOperatorFactory.class);
 
     private static final DurationInterval POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(5), Duration.ofMinutes(5));
+    private static final double NEXT_INTERVAL_EXP_BASE = 1.2; // interval time will increase 5sec *1.2**N until 5min.
 
     private final AmazonS3ClientFactory s3ClientFactory;
     private final Map<String, String> environment;
@@ -177,6 +178,7 @@ public class S3WaitOperatorFactory
             try {
                 ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
                         .withPollInterval(POLL_INTERVAL)
+                        .withNextIntervalExpBase(NEXT_INTERVAL_EXP_BASE)
                         .withTimeout(timeout)
                         .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
                         .await(pollState -> pollingRetryExecutor(pollState, "POLL")

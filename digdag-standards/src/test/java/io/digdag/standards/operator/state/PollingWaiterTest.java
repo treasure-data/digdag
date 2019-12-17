@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -59,6 +60,7 @@ public class PollingWaiterTest
     {
         Integer expected = 99;
         Integer answer = null;
+        List<Integer> intervalList = new ArrayList<>();
         List<Optional<Integer>> reterns = Arrays.asList(Optional.absent(), Optional.absent(), Optional.of(expected));
         TaskState state = TaskState.of(CF.create());
         for (Optional<Integer> ret: reterns) {
@@ -73,6 +75,7 @@ public class PollingWaiterTest
             catch (TaskExecutionException te) {
                 logger.debug("TaskExecutionException interval:{}", te.getRetryInterval());
                 if (te.getRetryInterval().isPresent()) {
+                    intervalList.add(te.getRetryInterval().get());
                     try {
                         Thread.sleep(te.getRetryInterval().get() * 1000);
                     }
@@ -82,5 +85,43 @@ public class PollingWaiterTest
                 }
             }
         }
+    }
+
+    @Test
+    public void testInterval()
+    {
+        Integer answer = null;
+        List<Integer> intervalList = new ArrayList<>();
+        TaskState state = TaskState.of(CF.create());
+        PollingTimeoutException pollException = null;
+        for (int loop = 0; loop < 10 && pollException == null; loop++){
+            try {
+                answer = pollingWaiter(state, "EXISTS")
+                        .withTimeout(Optional.of(Duration.ofSeconds(30)))
+                        .withPollInterval(POLL_INTERVAL)
+                        .withNextIntervalExpBase(1.2)
+                        .withWaitMessage("Return value does not exist")
+                        .await(pollstate -> {
+                            return Optional.absent();
+                        });
+            } catch (TaskExecutionException te) {
+                logger.debug("TaskExecutionException interval:{}", te.getRetryInterval());
+                if (te.getRetryInterval().isPresent()) {
+                    intervalList.add(te.getRetryInterval().get());
+                    try {
+                        Thread.sleep(te.getRetryInterval().get() * 1000);
+                    } catch (InterruptedException ie) {
+
+                    }
+                }
+            } catch (PollingTimeoutException pe) {
+                pollException = pe;
+            }
+        }
+        assertThat( "PollingTimeoutException must be caught", pollException != null);
+        // floor(5*1.2**N) : 5, 6, 7, 8, 10...
+        assertThat("First interval must be 5", intervalList.get(0).intValue() == 5);
+        assertThat("Second interval must be 6", intervalList.get(1).intValue() == 6);
+        assertThat("Second interval must be 7", intervalList.get(2).intValue() == 7);
     }
 }
