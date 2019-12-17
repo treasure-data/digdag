@@ -199,7 +199,7 @@ public class S3WaitOperatorFactory
                         .build();
             }
             catch (PollingTimeoutException e) {
-                logger.debug(e.toString());
+                logger.debug("s3_wait timed out: {} (making the task {})", (ignoreTimeoutError ? "continued" : "failed"), , e.toString());
                 if (ignoreTimeoutError) {
                     return TaskResult.defaultBuilder(request)
                             .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
