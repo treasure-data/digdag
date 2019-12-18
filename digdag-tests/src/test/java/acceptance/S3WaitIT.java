@@ -5,7 +5,6 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.StringInputStream;
@@ -213,7 +212,7 @@ public class S3WaitIT
     }
 
     @Test
-    public void testIgnoreTimeoutError()
+    public void testContinueOnTimeout()
             throws Exception
     {
         String key = UUID.randomUUID().toString();
@@ -221,7 +220,7 @@ public class S3WaitIT
         Path outfile = folder.newFolder().toPath().resolve("out");
 
         createProject(projectDir);
-        addWorkflow(projectDir, "acceptance/s3/s3_wait_ignore_timeout_error.dig");
+        addWorkflow(projectDir, "acceptance/s3/s3_wait_continue_on_timeout.dig");
 
         Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
@@ -232,7 +231,7 @@ public class S3WaitIT
 
         // Start workflow
         String projectName = projectDir.getFileName().toString();
-        Id attemptId = startWorkflow(server.endpoint(), projectName, "s3_wait_ignore_timeout_error", ImmutableMap.of(
+        Id attemptId = startWorkflow(server.endpoint(), projectName, "s3_wait_continue_on_timeout", ImmutableMap.of(
                 "path", bucket + "/" + key,
                 "outfile", outfile.toString()
         ));
@@ -246,13 +245,13 @@ public class S3WaitIT
         // Verify that the attempt is done and failed
         RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
         assertThat(attempt.getDone(), is(true));
-        assertThat(attempt.getSuccess(), is(false));
+        assertThat(attempt.getSuccess(), is(true));
         assertThat(attempt.getFinishedAt().isPresent(), is(true));
 
         //Verify outfile
         String outfileText = new String(Files.readAllBytes(outfile), UTF_8);
         assertThat(outfileText.contains("Finished task +wait"), is(true));
-        assertThat(outfileText.contains("Read s3 variable"), is(false));
+        assertThat(outfileText.contains("Read s3 variable"), is(true));
 
     }
 

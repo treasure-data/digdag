@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 public class PollingWaiter
@@ -30,19 +31,17 @@ public class PollingWaiter
     private final String stateKey;
 
     private final DurationInterval pollInterval;
-    private final double nextIntervalExpBase;
     private final Optional<Duration> timeout;
 
     private final String waitMessage;
     private final Object[] waitMessageParameters;
 
 
-    private PollingWaiter(TaskState state, String stateKey, DurationInterval pollInterval, double nextIntervalExpBase, Optional<Duration> timeout, String waitMessage, Object... waitMessageParameters)
+    private PollingWaiter(TaskState state, String stateKey, DurationInterval pollInterval, Optional<Duration> timeout, String waitMessage, Object... waitMessageParameters)
     {
         this.state = Objects.requireNonNull(state, "state");
         this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
         this.pollInterval = Objects.requireNonNull(pollInterval, "pollInterval");
-        this.nextIntervalExpBase = Objects.requireNonNull(nextIntervalExpBase, "pollInterval");
         this.timeout = Objects.requireNonNull(timeout, "timeout");
         this.waitMessage = Objects.requireNonNull(waitMessage, "waitMessage");
         this.waitMessageParameters = Objects.requireNonNull(waitMessageParameters, "waitMessageParameters");
@@ -54,7 +53,6 @@ public class PollingWaiter
                 state,
                 stateKey,
                 DEFAULT_POLL_INTERVAL,
-                DEFAULT_NEXT_INTERVAL_EXP_BASE,
                 DEFAULT_TIMEOUT,
                 DEFAULT_ERROR_MESSAGE,
                 DEFAULT_ERROR_MESSAGE_PARAMETERS);
@@ -66,7 +64,6 @@ public class PollingWaiter
                 state,
                 stateKey,
                 pollInterval,
-                nextIntervalExpBase,
                 timeout,
                 waitMessage,
                 waitMessageParameters);
@@ -78,7 +75,6 @@ public class PollingWaiter
                 state,
                 stateKey,
                 retryInterval,
-                nextIntervalExpBase,
                 timeout,
                 waitMessage,
                 waitMessageParameters);
@@ -90,19 +86,6 @@ public class PollingWaiter
                 state,
                 stateKey,
                 pollInterval,
-                nextIntervalExpBase,
-                timeout,
-                waitMessage,
-                waitMessageParameters);
-    }
-
-    public PollingWaiter withNextIntervalExpBase(double nextIntervalExpBase)
-    {
-        return new PollingWaiter(
-                state,
-                stateKey,
-                pollInterval,
-                nextIntervalExpBase,
                 timeout,
                 waitMessage,
                 waitMessageParameters);
@@ -123,19 +106,12 @@ public class PollingWaiter
     public <T> T await(Operation<Optional<T>> f)
     {
         TaskState pollState = state.nestedState(stateKey);
-        Long startTime = pollState.params().get(START_TIME, Long.class, null);
-        if (startTime == null) {
-            startTime = System.currentTimeMillis();
-            pollState.params().set(START_TIME, startTime);
+        Optional<Instant> startTime = pollState.params().getOptional(START_TIME, Instant.class);
+        if (!startTime.isPresent()) {
+            startTime = Optional.of(Instant.now());
+            pollState.params().set(START_TIME, startTime.get());
         }
         TaskState operationState = pollState.nestedState(OPERATION);
-
-        // Check timeout
-        long now = System.currentTimeMillis();
-        if (timeout.isPresent() && timeout.get().toMillis() <= now - startTime) {
-            logger.debug("Timeout happened. startTime:{}, timeout:{}", startTime, timeout.get());
-            throw new PollingTimeoutException("Timeout happened");
-        }
 
         Optional<T> result;
 
@@ -146,10 +122,17 @@ public class PollingWaiter
             throw Throwables.propagate(e);
         }
 
+        // Check timeout
+        Instant now = Instant.now();
+        if (timeout.isPresent() && timeout.get().toMillis() <= now.toEpochMilli() - startTime.get().toEpochMilli()) {
+            logger.trace("Timeout happened. startTime:{}, timeout:{}", startTime, timeout.get());
+            throw new PollingTimeoutException("Timeout happened");
+        }
+
         if (!result.isPresent()) {
             int iteration = pollState.params().get(ITERATION, int.class, 0);
             pollState.params().set(ITERATION, iteration + 1);
-            int interval = (int) Math.min(pollInterval.min().getSeconds() * Math.pow(nextIntervalExpBase, iteration), pollInterval.max().getSeconds());
+            int interval = calculateInterval(now, startTime.get(), iteration);
             String formattedErrorMessage = String.format(waitMessage, waitMessageParameters);
             logger.info("{}: checking again in {}", formattedErrorMessage, Durations.formatDuration(Duration.ofSeconds(interval)));
             throw pollState.pollingTaskExecutionException(interval);
@@ -159,5 +142,16 @@ public class PollingWaiter
         pollState.params().remove(ITERATION);
 
         return result.get();
+    }
+
+    private int calculateInterval(Instant now, Instant startTime, int iteration)
+    {
+        if (timeout.isPresent()) {
+            long remainingSecs = (timeout.get().toMillis() - (now.toEpochMilli() - startTime.toEpochMilli())) / 1000;
+            return (int) Math.max(pollInterval.min().getSeconds(), Math.min(remainingSecs, pollInterval.max().getSeconds()));
+        }
+        else { // If no timeout param, original formula is used
+            return (int) Math.min(pollInterval.min().getSeconds() * Math.pow(2, iteration), pollInterval.max().getSeconds());
+        }
     }
 }

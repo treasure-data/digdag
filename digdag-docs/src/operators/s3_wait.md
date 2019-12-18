@@ -91,10 +91,10 @@ For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws
   timeout: 120s
   ```
 
-* **ignore_timeout_error**: true/false (default:false)
+* **continue_on_timeout**: true/false (default:false)
 
-  If ignore_timeout_error is set to true, the task will finish successfully.
-  *Note* s3 variable is not accessible.
+  If continue_on_timeout is set to true, the task will finish successfully on timeout.
+  s3.last_object.result is set to false.
 
 ## Output Parameters
 

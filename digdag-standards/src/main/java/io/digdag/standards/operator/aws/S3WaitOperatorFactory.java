@@ -28,6 +28,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.PollingTimeoutException;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.util.DurationParam;
 import io.digdag.util.Durations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,9 +104,8 @@ public class S3WaitOperatorFactory
             Optional<String> key = params.getOptional("key", String.class);
             Optional<String> versionId = params.getOptional("version_id", String.class);
             Optional<Boolean> pathStyleAccess = params.getOptional("path_style_access", Boolean.class);
-            Optional<Duration> timeout = params.getOptional("timeout", String.class)
-                                            .transform( (t) -> Durations.parseDuration(t));
-            boolean ignoreTimeoutError = params.getOptional("ignore_timeout_error", Boolean.class).or(false);
+            Optional<Duration> timeout = params.getOptional("timeout", DurationParam.class).transform(DurationParam::getDuration);
+            boolean continueOnTimeout = params.getOptional("continue_on_timeout", Boolean.class).or(false);
 
             if (command.isPresent() && (bucket.isPresent() || key.isPresent()) ||
                     !command.isPresent() && (!bucket.isPresent() || !key.isPresent())) {
@@ -178,7 +178,6 @@ public class S3WaitOperatorFactory
             try {
                 ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
                         .withPollInterval(POLL_INTERVAL)
-                        .withNextIntervalExpBase(NEXT_INTERVAL_EXP_BASE)
                         .withTimeout(timeout)
                         .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
                         .await(pollState -> pollingRetryExecutor(pollState, "POLL")
@@ -195,26 +194,33 @@ public class S3WaitOperatorFactory
                                 }));
                 return TaskResult.defaultBuilder(request)
                         .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
-                        .storeParams(storeParams(objectMetadata))
+                        .storeParams(storeParams(Optional.of(objectMetadata)))
                         .build();
             }
             catch (PollingTimeoutException e) {
-                logger.debug("s3_wait timed out: {} (making the task {})", (ignoreTimeoutError ? "continued" : "failed"), , e.toString());
-                if (ignoreTimeoutError) {
+                logger.debug("s3_wait timed out: {} (making the task {})", (continueOnTimeout ? "continued" : "failed"), e.toString());
+                if (continueOnTimeout) {
                     return TaskResult.defaultBuilder(request)
                             .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
+                            .storeParams(storeParams(Optional.absent()))
                             .build();
                 }
                 throw e;
             }
         }
 
-        private Config storeParams(ObjectMetadata objectMetadata)
+        private Config storeParams(Optional<ObjectMetadata> objectMetadata)
         {
             Config params = request.getConfig().getFactory().create();
             Config object = params.getNestedOrSetEmpty("s3").getNestedOrSetEmpty("last_object");
-            object.set("metadata", objectMetadata.getRawMetadata());
-            object.set("user_metadata", objectMetadata.getUserMetadata());
+            if (objectMetadata.isPresent()) {
+                object.set("result", true);
+                object.set("metadata", objectMetadata.get().getRawMetadata());
+                object.set("user_metadata", objectMetadata.get().getUserMetadata());
+            }
+            else { // Timeout happen
+                object.set("result", false);
+            }
             return params;
         }
     }

@@ -2,7 +2,7 @@
 +wait:
   s3_wait>: ${path}
   timeout: 10s
-  ignore_timeout_error: true
+  continue_on_timeout: true
 
 +task1:
   sh>: echo 'Finished task +wait' > '${outfile}'

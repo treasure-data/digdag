@@ -22,7 +22,7 @@ public class PollingWaiterTest
     private static Logger logger = LoggerFactory.getLogger(PollingWaiterTest.class);
 
     private static final ConfigFactory CF = new ConfigFactory(DigdagClient.objectMapper());
-    private static final DurationInterval POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(5), Duration.ofSeconds(20));
+    private static final DurationInterval POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(5), Duration.ofSeconds(300));
 
     @Test
     public void testNotimeout()
@@ -97,9 +97,8 @@ public class PollingWaiterTest
         for (int loop = 0; loop < 10 && pollException == null; loop++){
             try {
                 answer = pollingWaiter(state, "EXISTS")
-                        .withTimeout(Optional.of(Duration.ofSeconds(30)))
+                        .withTimeout(Optional.of(Duration.ofSeconds(10)))
                         .withPollInterval(POLL_INTERVAL)
-                        .withNextIntervalExpBase(1.2)
                         .withWaitMessage("Return value does not exist")
                         .await(pollstate -> {
                             return Optional.absent();
@@ -119,9 +118,5 @@ public class PollingWaiterTest
             }
         }
         assertThat( "PollingTimeoutException must be caught", pollException != null);
-        // floor(5*1.2**N) : 5, 6, 7, 8, 10...
-        assertThat("First interval must be 5", intervalList.get(0).intValue() == 5);
-        assertThat("Second interval must be 6", intervalList.get(1).intValue() == 6);
-        assertThat("Second interval must be 7", intervalList.get(2).intValue() == 7);
     }
 }
