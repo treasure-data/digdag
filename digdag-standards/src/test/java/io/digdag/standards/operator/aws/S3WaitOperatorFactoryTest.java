@@ -19,7 +19,6 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.operator.aws.S3WaitOperatorFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -1,8 +1,11 @@
 package acceptance;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,13 +15,14 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.apache.commons.lang3.RandomUtils;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.littleshoot.proxy.HttpProxyServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
@@ -28,6 +32,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
@@ -41,6 +46,8 @@ import static utils.TestUtils.startWorkflow;
 
 public class S3WaitIT
 {
+    private static Logger logger = LoggerFactory.getLogger(S3WaitIT.class);
+
     private static final String TEST_S3_ENDPOINT = System.getenv("TEST_S3_ENDPOINT");
     private static final String TEST_S3_ACCESS_KEY_ID = System.getenv().getOrDefault("TEST_S3_ACCESS_KEY_ID", "test");
     private static final String TEST_S3_SECRET_ACCESS_KEY = System.getenv().getOrDefault("TEST_S3_SECRET_ACCESS_KEY", "test");
@@ -57,7 +64,7 @@ public class S3WaitIT
     private HttpProxyServer proxyServer;
     private String bucket;
 
-    private AmazonS3Client s3;
+    private AmazonS3 s3;
 
     @Before
     public void setUp()
@@ -87,8 +94,10 @@ public class S3WaitIT
         bucket = UUID.randomUUID().toString();
 
         AWSCredentials credentials = new BasicAWSCredentials(TEST_S3_ACCESS_KEY_ID, TEST_S3_SECRET_ACCESS_KEY);
-        s3 = new AmazonS3Client(credentials);
-        s3.setEndpoint(TEST_S3_ENDPOINT);
+        s3 = AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(TEST_S3_ENDPOINT, null))
+                .build();
         s3.createBucket(bucket);
     }
 
@@ -163,4 +172,87 @@ public class S3WaitIT
         int contentLength = objectMetadata.get("metadata").get("Content-Length").asInt();
         assertThat(contentLength, is(content.length()));
     }
+
+    @Test
+    public void testTimeout()
+            throws Exception
+    {
+        String key = UUID.randomUUID().toString();
+
+        Path outfile = folder.newFolder().toPath().resolve("out");
+
+        createProject(projectDir);
+        addWorkflow(projectDir, "acceptance/s3/s3_wait_timeout.dig");
+
+        Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+
+        // Configure AWS credentials
+        client.setProjectSecret(projectId, "aws.s3.access_key_id", TEST_S3_ACCESS_KEY_ID);
+        client.setProjectSecret(projectId, "aws.s3.secret_access_key", TEST_S3_SECRET_ACCESS_KEY);
+        client.setProjectSecret(projectId, "aws.s3.endpoint", TEST_S3_ENDPOINT);
+
+        // Start workflow
+        String projectName = projectDir.getFileName().toString();
+        Id attemptId = startWorkflow(server.endpoint(), projectName, "s3_wait_timeout", ImmutableMap.of(
+                "path", bucket + "/" + key,
+                "outfile", outfile.toString()
+        ));
+
+        // Wait for s3 polling finish because of timeout
+        expect(Duration.ofSeconds(60), () -> {
+            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            return attempt.getDone();
+        });
+
+        // Verify that the attempt is done and failed
+        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+        assertThat(attempt.getDone(), is(true));
+        assertThat(attempt.getSuccess(), is(false));
+        assertThat(attempt.getFinishedAt().isPresent(), is(true));
+    }
+
+    @Test
+    public void testContinueOnTimeout()
+            throws Exception
+    {
+        String key = UUID.randomUUID().toString();
+
+        Path outfile = folder.newFolder().toPath().resolve("out");
+
+        createProject(projectDir);
+        addWorkflow(projectDir, "acceptance/s3/s3_wait_continue_on_timeout.dig");
+
+        Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+
+        // Configure AWS credentials
+        client.setProjectSecret(projectId, "aws.s3.access_key_id", TEST_S3_ACCESS_KEY_ID);
+        client.setProjectSecret(projectId, "aws.s3.secret_access_key", TEST_S3_SECRET_ACCESS_KEY);
+        client.setProjectSecret(projectId, "aws.s3.endpoint", TEST_S3_ENDPOINT);
+
+        // Start workflow
+        String projectName = projectDir.getFileName().toString();
+        Id attemptId = startWorkflow(server.endpoint(), projectName, "s3_wait_continue_on_timeout", ImmutableMap.of(
+                "path", bucket + "/" + key,
+                "outfile", outfile.toString()
+        ));
+
+        // Wait for s3 polling finish because of timeout
+        expect(Duration.ofSeconds(60), () -> {
+            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            return attempt.getDone();
+        });
+
+        // Verify that the attempt is done and failed
+        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+        assertThat(attempt.getDone(), is(true));
+        assertThat(attempt.getSuccess(), is(true));
+        assertThat(attempt.getFinishedAt().isPresent(), is(true));
+
+        //Verify outfile
+        String outfileText = new String(Files.readAllBytes(outfile), UTF_8);
+        assertThat(outfileText.contains("Finished task +wait"), is(true));
+        assertThat(outfileText.contains("Empty is good"), is(true));
+
+    }
+
 }

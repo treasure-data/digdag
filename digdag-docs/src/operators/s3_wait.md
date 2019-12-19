@@ -81,6 +81,32 @@ For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws
   An optional flag to control whether to use path-style or virtual hosted-style access when accessing S3.
   *Note:* Enabling `path_style_access` also requires specifying a `region`.
 
+* **timeout**: TIMEOUT
+
+  Set timeout.
+
+  Examples: wait 120 seconds
+
+  ```
+  timeout: 120s
+  ```
+
+* **continue_on_timeout**: true/false (default:false)
+
+  If continue_on_timeout is set to true, the task will finish successfully on timeout.
+  s3.last_object is empty in this case. Empty check is required in following tasks if access to s3.last_object.
+
+  ```
+  +task1:
+    s3_wait>: bucket/object
+    timeout: 60s
+    continue_on_timeout: true
+  +task2:
+    if>: ${s3.last_object}
+    _do:
+      echo>: "No timeout"
+  ```
+
 ## Output Parameters
 
 * **s3.last_object**
