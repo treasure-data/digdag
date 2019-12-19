@@ -14,7 +14,6 @@ import java.util.Objects;
 public class PollingWaiter
 {
     private static final DurationInterval DEFAULT_POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
-    private static final double DEFAULT_NEXT_INTERVAL_EXP_BASE = 2.0;
     private static final Optional<Duration> DEFAULT_TIMEOUT = Optional.absent();
 
     private static Logger logger = LoggerFactory.getLogger(PollingWaiter.class);
@@ -143,7 +142,6 @@ public class PollingWaiter
 
         return result.get();
     }
-
 
     private int calculateNextInterval(Instant now, Instant startTime, int iteration)
     {

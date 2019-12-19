@@ -29,7 +29,6 @@ import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.PollingTimeoutException;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
-import io.digdag.util.Durations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,6 @@ public class S3WaitOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(S3WaitOperatorFactory.class);
 
     private static final DurationInterval POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(5), Duration.ofMinutes(5));
-    private static final double NEXT_INTERVAL_EXP_BASE = 1.2; // interval time will increase 5sec *1.2**N until 5min.
 
     private final AmazonS3ClientFactory s3ClientFactory;
     private final Map<String, String> environment;
