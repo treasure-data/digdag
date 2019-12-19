@@ -199,7 +199,7 @@ public class S3WaitIT
         ));
 
         // Wait for s3 polling finish because of timeout
-        expect(Duration.ofSeconds(30), () -> {
+        expect(Duration.ofSeconds(60), () -> {
             RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
             return attempt.getDone();
         });
@@ -237,7 +237,7 @@ public class S3WaitIT
         ));
 
         // Wait for s3 polling finish because of timeout
-        expect(Duration.ofSeconds(30), () -> {
+        expect(Duration.ofSeconds(60), () -> {
             RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
             return attempt.getDone();
         });
