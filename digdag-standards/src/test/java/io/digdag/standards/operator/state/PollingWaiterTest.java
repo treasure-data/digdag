@@ -61,13 +61,13 @@ public class PollingWaiterTest
         Integer expected = 99;
         Integer answer = null;
         List<Integer> intervalList = new ArrayList<>();
-        List<Optional<Integer>> reterns = Arrays.asList(Optional.absent(), Optional.absent(), Optional.of(expected));
+        List<Optional<Integer>> reterns = Arrays.asList(Optional.absent(), Optional.absent(), Optional.absent(), Optional.of(expected));
         TaskState state = TaskState.of(CF.create());
         for (Optional<Integer> ret: reterns) {
             logger.debug("state:{}", state);
             try {
                 answer = pollingWaiter(state, "EXISTS")
-                        .withTimeout(Optional.of(Duration.ofSeconds(10)))
+                        .withTimeout(Optional.of(Duration.ofSeconds(20)))
                         .withPollInterval(POLL_INTERVAL)
                         .withWaitMessage("Return value does not exist")
                         .await( pollstate  -> { return ret;} );
@@ -97,7 +97,7 @@ public class PollingWaiterTest
         for (int loop = 0; loop < 10 && pollException == null; loop++){
             try {
                 answer = pollingWaiter(state, "EXISTS")
-                        .withTimeout(Optional.of(Duration.ofSeconds(10)))
+                        .withTimeout(Optional.of(Duration.ofSeconds(20)))
                         .withPollInterval(POLL_INTERVAL)
                         .withWaitMessage("Return value does not exist")
                         .await(pollstate -> {
@@ -117,6 +117,9 @@ public class PollingWaiterTest
                 pollException = pe;
             }
         }
+        assertThat("First interval is 5", intervalList.get(0) == 5);
+        assertThat("Second interval is 10", intervalList.get(1) == 10);
+        assertThat("Third interval is less than 20", intervalList.get(2) < 20);
         assertThat( "PollingTimeoutException must be caught", pollException != null);
     }
 }

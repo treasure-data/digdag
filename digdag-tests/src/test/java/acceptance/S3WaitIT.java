@@ -251,7 +251,7 @@ public class S3WaitIT
         //Verify outfile
         String outfileText = new String(Files.readAllBytes(outfile), UTF_8);
         assertThat(outfileText.contains("Finished task +wait"), is(true));
-        assertThat(outfileText.contains("Read s3 variable"), is(true));
+        assertThat(outfileText.contains("Empty is good"), is(true));
 
     }
 

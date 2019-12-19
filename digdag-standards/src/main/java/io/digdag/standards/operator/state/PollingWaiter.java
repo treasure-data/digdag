@@ -132,7 +132,7 @@ public class PollingWaiter
         if (!result.isPresent()) {
             int iteration = pollState.params().get(ITERATION, int.class, 0);
             pollState.params().set(ITERATION, iteration + 1);
-            int interval = calculateInterval(now, startTime.get(), iteration);
+            int interval = calculateNextInterval(now, startTime.get(), iteration);
             String formattedErrorMessage = String.format(waitMessage, waitMessageParameters);
             logger.info("{}: checking again in {}", formattedErrorMessage, Durations.formatDuration(Duration.ofSeconds(interval)));
             throw pollState.pollingTaskExecutionException(interval);
@@ -144,14 +144,22 @@ public class PollingWaiter
         return result.get();
     }
 
-    private int calculateInterval(Instant now, Instant startTime, int iteration)
+
+    private int calculateNextInterval(Instant now, Instant startTime, int iteration)
     {
+        // Use exponential-backoff
+        double msec = pollInterval.min().toMillis() * Math.pow(2, iteration);
+        // But don't grow too much (limit by max)
+        msec = Math.min(msec, pollInterval.max().toMillis());
+        // If timeout is set, don't wait more than remaining time
         if (timeout.isPresent()) {
-            long remainingSecs = (timeout.get().toMillis() - (now.toEpochMilli() - startTime.toEpochMilli())) / 1000;
-            return (int) Math.max(pollInterval.min().getSeconds(), Math.min(remainingSecs, pollInterval.max().getSeconds()));
+            long remainingMsec = (timeout.get().toMillis() - (now.toEpochMilli() - startTime.toEpochMilli()));
+            msec = Math.min(msec, remainingMsec);
         }
-        else { // If no timeout param, original formula is used
-            return (int) Math.min(pollInterval.min().getSeconds() * Math.pow(2, iteration), pollInterval.max().getSeconds());
-        }
+        // Wait at least 5 seconds
+        msec = Math.max(msec, 5000);
+        // Convert to seconds with ceiling
+        // Ceiling is preferred than floor because if sum of time not exceed timeout, additional check will happen
+        return (int) Math.ceil(msec / 1000.0);
     }
 }

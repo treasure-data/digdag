@@ -212,14 +212,14 @@ public class S3WaitOperatorFactory
         private Config storeParams(Optional<ObjectMetadata> objectMetadata)
         {
             Config params = request.getConfig().getFactory().create();
-            Config object = params.getNestedOrSetEmpty("s3").getNestedOrSetEmpty("last_object");
+            Config s3object = params.getNestedOrSetEmpty("s3");
             if (objectMetadata.isPresent()) {
-                object.set("stored", true);
+                Config object = s3object.getNestedOrSetEmpty("last_object");
                 object.set("metadata", objectMetadata.get().getRawMetadata());
                 object.set("user_metadata", objectMetadata.get().getUserMetadata());
             }
             else { // Timeout happen
-                object.set("stored", false);
+                s3object.getNestedOrGetEmpty("last_object");
             }
             return params;
         }

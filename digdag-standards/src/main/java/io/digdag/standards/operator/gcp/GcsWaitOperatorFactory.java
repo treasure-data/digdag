@@ -67,6 +67,8 @@ class GcsWaitOperatorFactory
             Optional<String> bucket = params.getOptional("bucket", String.class);
             Optional<String> object = params.getOptional("object", String.class);
 
+            //ToDo implement timeout parameter. Please refer to s3_wait>
+
             if (command.isPresent() && (bucket.isPresent() || object.isPresent()) ||
                     !command.isPresent() && (!bucket.isPresent() || !object.isPresent())) {
                 throw new ConfigException("Either the gcs_wait operator command or both 'bucket' and 'object' parameters must be set");

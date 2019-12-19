@@ -53,7 +53,6 @@ public class S3WaitOperatorFactoryTest
 {
     private static final int MINI_POLL_INTERVAL = 5;
     private static final int MAX_POLL_INTERVAL = 300;
-    private static final double NEXT_INTERVAL_EXP_BASE = 1.2;
 
     private static final String BUCKET = "test.bucket";
     private static final String KEY = "a/test/key";
@@ -172,6 +171,7 @@ public class S3WaitOperatorFactoryTest
         expectedStoreParams
                 .getNestedOrSetEmpty("s3")
                 .getNestedOrSetEmpty("last_object")
+                .set("stored", true)
                 .set("metadata", objectMetadata.getRawMetadata())
                 .set("user_metadata", objectMetadata.getUserMetadata());
 
@@ -215,7 +215,7 @@ public class S3WaitOperatorFactoryTest
         for (int i = 1; i < retryIntervals.size(); i++) {
             int prevInterval = retryIntervals.get(i - 1);
             int interval = retryIntervals.get(i);
-            assertThat(interval, is((int)Math.min(MAX_POLL_INTERVAL, MINI_POLL_INTERVAL * Math.pow(NEXT_INTERVAL_EXP_BASE, i))));
+            assertThat(interval, is((int)Math.min(MAX_POLL_INTERVAL, prevInterval * 2)));
         }
 
         assertThat(retryIntervals.get(retryIntervals.size() - 1), is(MAX_POLL_INTERVAL));

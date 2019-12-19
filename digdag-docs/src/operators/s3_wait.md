@@ -94,7 +94,18 @@ For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws
 * **continue_on_timeout**: true/false (default:false)
 
   If continue_on_timeout is set to true, the task will finish successfully on timeout.
-  s3.last_object.result is set to false.
+  s3.last_object is empty in this case. Empty check is required in following tasks if access to s3.last_object.
+  
+  ```
+  +task1:
+    s3_wait>: bucket/object
+    timeout: 60s
+    continue_on_timeout: true
+  +task2:
+    if>: ${s3.last_object}
+    _do:
+      echo>: "No timeout"
+  ```
 
 ## Output Parameters
 
