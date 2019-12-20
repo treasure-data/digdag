@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretNotFoundException;
+import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 
 import java.io.ByteArrayInputStream;
