@@ -11,12 +11,14 @@ import io.digdag.spi.TaskExecutionException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Collections;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 class GcpCredentialProvider
 {
     private final ObjectMapper objectMapper;
+    private static final String IAM_SCOPE = "https://www.googleapis.com/auth/iam";
 
     @Inject
     GcpCredentialProvider(ObjectMapper objectMapper)
@@ -37,8 +39,7 @@ class GcpCredentialProvider
         catch(SecretNotFoundException e)
         {
             return ImmutableGcpCredential.builder()
-                    .projectId(googleCredential())
-                    .credential(Optional.ofNullabl(null))
+                    .credential(googleCredential())
                     .build();
         }
     }
@@ -71,10 +72,16 @@ class GcpCredentialProvider
 
     private GoogleCredential googleCredential()
     {
-        GoogleCredential credential = GoogleCredential.getApplicationDefault().createScoped(Collections.singleton(IAM_SCOPE));
-        if (credentials == null || !(credentials instanceof ServiceAccountCredentials)) {
-            throw new TaskExecutionException("Google credentials : service accounts credentials expected");
+        GoogleCredential credential;
+        try {
+            credential = GoogleCredential.getApplicationDefault().createScoped(Collections.singleton(IAM_SCOPE));
+            if (credential == null) {
+              throw new TaskExecutionException("Could not obtain gcp credential.");
+            }
         }
-        return credential
+        catch (IOException e) {
+            throw new TaskExecutionException(e);
+        }
+        return credential;
     }
 }
