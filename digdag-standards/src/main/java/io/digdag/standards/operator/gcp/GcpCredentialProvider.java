@@ -6,6 +6,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.spi.SecretProvider;
+import io.digdag.spi.SecretNotFoundException;
 import io.digdag.spi.TaskExecutionException;
 
 import java.io.ByteArrayInputStream;
@@ -25,11 +26,21 @@ class GcpCredentialProvider
 
     GcpCredential credential(SecretProvider secrets)
     {
-        String credential = secrets.getSecret("gcp.credential");
-        return ImmutableGcpCredential.builder()
-                .projectId(credentialProjectId(credential))
-                .credential(googleCredential(credential))
-                .build();
+        try
+        {
+            String credential = secrets.getSecret("gcp.credential");
+            return ImmutableGcpCredential.builder()
+                    .projectId(credentialProjectId(credential))
+                    .credential(googleCredential(credential))
+                    .build();
+        }
+        catch(SecretNotFoundException e)
+        {
+            return ImmutableGcpCredential.builder()
+                    .projectId(googleCredential())
+                    .credential(Optional.ofNullabl(null))
+                    .build();
+        }
     }
 
     private Optional<String> credentialProjectId(String credential)
@@ -56,5 +67,14 @@ class GcpCredentialProvider
         catch (IOException e) {
             throw new TaskExecutionException(e);
         }
+    }
+
+    private GoogleCredential googleCredential()
+    {
+        GoogleCredential credential = GoogleCredential.getApplicationDefault().createScoped(Collections.singleton(IAM_SCOPE));
+        if (credentials == null || !(credentials instanceof ServiceAccountCredentials)) {
+            throw new TaskExecutionException("Google credentials : service accounts credentials expected");
+        }
+        return credential
     }
 }
