@@ -39,6 +39,7 @@ public class AdminResource
         this.tm = tm;
     }
 
+    @Deprecated
     @GET
     @Path("/api/admin/attempts/{id}/userinfo")
     public Config getUserInfo(@PathParam("id") long id)

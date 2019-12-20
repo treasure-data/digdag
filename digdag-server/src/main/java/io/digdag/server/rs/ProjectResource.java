@@ -227,6 +227,7 @@ public class ProjectResource
         return proj;
     }
 
+    @Deprecated
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
@@ -299,6 +300,7 @@ public class ProjectResource
         }, ResourceNotFoundException.class);
     }
 
+    @Deprecated
     @GET
     @Path("/api/projects/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
