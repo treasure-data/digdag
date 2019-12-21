@@ -77,6 +77,7 @@ public class WorkflowResource
         this.tm = tm;
     }
 
+    @Deprecated
     @GET
     @Path("/api/workflow")
     public RestWorkflowDefinition getWorkflowDefinition(
