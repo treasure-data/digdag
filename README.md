@@ -8,6 +8,8 @@
 
 Please check [digdag.io](https://digdag.io) and [docs.digdag.io](https://docs.digdag.io) for installation & user manual.
 
+REST API document is available at [swagger.digdag.io](http://swagger.digdag.io/).
+
 ## Development
 
 ### Prerequirements
@@ -35,18 +37,6 @@ $ brew install node
   * sphinx
   * sphinx_rtd_theme
   * recommonmark
-
-### Check Digdag REST API
-
-Use `--enable-swagger` option to check the current Digdag REST API.
-
-```
-$ ./gradlew cli
-$ ./pkg/digdag-<current version>.jar server --memory --enable-swagger # Run server with --enable-swagger option
-
-$ docker run -dp 8080:8080 swaggerapi/swagger-ui # Run Swagger-UI on different console
-$ open http://localhost:8080/?url=http://localhost:65432/api/swagger.json # Open api/swagger.json on Swagger-UI
-```
 
 ### Running tests
 
@@ -119,6 +109,17 @@ You also need following steps after new version has been released.
 ./gradlew releaseSnapshot
 ```
 
+### Checking REST API document
+
+Use `--enable-swagger` option to check the current Digdag REST API.
+
+```
+$ ./gradlew cli
+$ ./pkg/digdag-<current version>.jar server --memory --enable-swagger # Run server with --enable-swagger option
+
+$ docker run -dp 8080:8080 swaggerapi/swagger-ui # Run Swagger-UI on different console
+$ open http://localhost:8080/?url=http://localhost:65432/api/swagger.json # Open api/swagger.json on Swagger-UI
+```
 
 ### Develop digdag-ui
 
