@@ -1,4 +1,4 @@
-var fs = require('node-fs-extra')
+var fs = require('fs-extra')
 var path = require('path')
 const getSha = require('./lib/git-sha1')
 
