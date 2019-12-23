@@ -413,7 +413,7 @@ task swaggerYaml(dependsOn: ':digdag-cli:shadowJar') {
         file("config/dummy.properties").write("")
         Process server = ["java", "-jar", "digdag-cli/build/libs/digdag-cli-${project.version}-all.jar", "server", "-c", "config/dummy.properties", "--memory", "--enable-swagger"].execute()
         sleep(5 * 1000)
-        ["curl", "http://127.0.0.1:65432/api/swagger.yaml", "-o", "digdag-docs/src/_static/swagger.yaml"].execute().waitFor()
+        ["curl", "http://127.0.0.1:65432/api/swagger.yaml", "-o", "digdag-docs/src/api/swagger.yaml"].execute().waitFor()
         server.destroy()
         server.waitForOrKill(1000)
     }
