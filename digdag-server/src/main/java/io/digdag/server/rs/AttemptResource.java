@@ -32,6 +32,8 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
 import io.digdag.spi.ScheduleTime;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 @Api("Attempt")
 @Path("/")
@@ -82,11 +84,17 @@ public class AttemptResource
 
     @GET
     @Path("/api/attempts")
+    @ApiOperation("List attempts with filters")
     public RestSessionAttemptCollection getAttempts(
+            @ApiParam(value="exact matching filter on project name", required=false)
             @QueryParam("project") String projName,
+            @ApiParam(value="exact matching filter on workflow name", required=false)
             @QueryParam("workflow") String wfName,
+            @ApiParam(value="list more than 1 attempts per session", required=false)
             @QueryParam("include_retried") boolean includeRetried,
+            @ApiParam(value="list attempts whose id is grater than this id for pagination", required=false)
             @QueryParam("last_id") Long lastId,
+            @ApiParam(value="number of attempts to return", required=false)
             @QueryParam("page_size") Integer pageSize)
             throws ResourceNotFoundException
     {
@@ -119,7 +127,10 @@ public class AttemptResource
 
     @GET
     @Path("/api/attempts/{id}")
-    public RestSessionAttempt getAttempt(@PathParam("id") long id)
+    @ApiOperation("Get an attempt")
+    public RestSessionAttempt getAttempt(
+            @ApiParam(value="attempt id", required=true)
+            @PathParam("id") long id)
             throws ResourceNotFoundException
     {
         return tm.begin(() -> {
@@ -134,7 +145,10 @@ public class AttemptResource
 
     @GET
     @Path("/api/attempts/{id}/retries")
-    public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
+    @ApiOperation("List attempts of a session of a given attempt")
+    public RestSessionAttemptCollection getAttemptRetries(
+            @ApiParam(value="attempt id", required=true)
+            @PathParam("id") long id)
             throws ResourceNotFoundException
     {
         return tm.begin(() -> {
@@ -147,7 +161,10 @@ public class AttemptResource
 
     @GET
     @Path("/api/attempts/{id}/tasks")
-    public RestTaskCollection getTasks(@PathParam("id") long id)
+    @ApiOperation("List tasks of an attempt")
+    public RestTaskCollection getTasks(
+            @ApiParam(value="attempt id", required=true)
+            @PathParam("id") long id)
     {
         return tm.begin(() -> {
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
@@ -159,6 +176,7 @@ public class AttemptResource
     @PUT
     @Consumes("application/json")
     @Path("/api/attempts")
+    @ApiOperation("Start a workflow execution as a new session or a new attempt of an existing session")
     public Response startAttempt(RestSessionAttemptRequest request)
             throws AttemptLimitExceededException, TaskLimitExceededException, ResourceNotFoundException
     {
@@ -273,7 +291,10 @@ public class AttemptResource
     @POST
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")
-    public void killAttempt(@PathParam("id") long id)
+    @ApiOperation("Set a cancel-requested flag on a running attempt")
+    public void killAttempt(
+            @ApiParam(value="attempt id", required=true)
+            @PathParam("id") long id)
             throws ResourceNotFoundException, ResourceConflictException
     {
         tm.<Void, ResourceNotFoundException, ResourceConflictException>begin(() -> {
