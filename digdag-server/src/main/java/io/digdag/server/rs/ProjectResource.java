@@ -33,6 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
+import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestSecret;
@@ -114,6 +115,7 @@ public class ProjectResource
     // GET  /api/projects                                # list projects
     // GET  /api/projects?name=<name>                    # lookup a project by name, or return an empty array
     // GET  /api/projects/{id}                           # show a project
+    // GET  /api/projects/{id}/revision?name=<name>      # lookup a revision of a project by name
     // GET  /api/projects/{id}/revisions                 # list revisions of a project from recent to old
     // GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
     // GET  /api/projects/{id}/workflows?revision=<name> # list workflows of a past revision of a project
@@ -309,6 +311,31 @@ public class ProjectResource
                     getAuthenticatedUser());
 
             return RestModels.project(proj, rev);
+        }, ResourceNotFoundException.class, AccessControlException.class);
+    }
+
+    @DigdagTimed(category = "api", appendMethodName = true)
+    @GET
+    @Path("/api/projects/{id}/revision")
+    public RestRevision getRevision(@PathParam("id") int projId, @QueryParam("name") String revName)
+            throws ResourceNotFoundException, AccessControlException
+    {
+        return tm.<RestRevision, ResourceNotFoundException, AccessControlException>begin(() -> {
+            ProjectStore ps = rm.getProjectStore(getSiteId());
+            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
+            StoredRevision rev;
+            if (revName == null) {
+                rev = ps.getLatestRevision(proj.getId()); // check NotFound first
+            }
+            else {
+                rev = ps.getRevisionByName(proj.getId(), revName); // check NotFound first
+            }
+
+            ac.checkGetProject( // AccessControl
+                    ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
+                    getAuthenticatedUser());
+
+            return RestModels.revision(proj, rev);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
