@@ -9,6 +9,7 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -42,6 +43,7 @@ public class AdminResource
     @Deprecated
     @GET
     @Path("/api/admin/attempts/{id}/userinfo")
+    @ApiOperation("(deprecated)")
     public Config getUserInfo(@PathParam("id") long id)
             throws ResourceNotFoundException
     {
