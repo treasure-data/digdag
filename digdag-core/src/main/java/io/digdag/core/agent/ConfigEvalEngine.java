@@ -237,7 +237,8 @@ public class ConfigEvalEngine
     private static final Pattern requireInvokdeTemplatePattern = Pattern.compile("\\$");
 
     @VisibleForTesting
-    protected boolean requireInvokdetemplate(String code) {
+    protected boolean requireInvokdeTemplate(String code)
+    {
         return code != null && requireInvokdetemplatePattern.matcher(code).find();
     }
 
