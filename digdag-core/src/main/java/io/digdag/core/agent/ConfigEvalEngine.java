@@ -234,7 +234,7 @@ public class ConfigEvalEngine
         }
     }
 
-    private static final Pattern requireInvokdetemplatePattern = Pattern.compile("(?m)^.*[$].*$", Pattern.MULTILINE);
+    private static final Pattern requireInvokdeTemplatePattern = Pattern.compile("\\$");
 
     @VisibleForTesting
     protected boolean requireInvokdetemplate(String code) {
