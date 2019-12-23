@@ -309,8 +309,9 @@ public class EcsCommandExecutor
 
         final ObjectNode nextStatus = previousStatus.deepCopy();
         nextStatus.set("executor_state", nextExecutorStatus);
-        final boolean isFinished;
-        if (isFinished = taskStatus.isFinished()) {
+
+        final boolean isFinished = EcsTaskStatus.of(task.getLastStatus()).isFinished();
+        if (isFinished) {
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
 
