@@ -22,6 +22,8 @@ import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
 
@@ -62,9 +64,13 @@ public class LogResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/logs/{attempt_id}/files")
+    @ApiOperation("List log files of an attempt with filters")
     public RestLogFileHandleCollection getFileHandles(
+            @ApiParam(value="attempt id", required=true)
             @PathParam("attempt_id") long attemptId,
+            @ApiParam(value="partial prefix match filter on task name", required=false)
             @QueryParam("task") String taskName,
+            @ApiParam(value="enable returning direct download handle", required=false)
             @QueryParam("direct_download") Boolean directDownloadAllowed)
             throws ResourceNotFoundException, AccessControlException
     {
@@ -86,8 +92,11 @@ public class LogResource
     @GET
     @Produces("application/gzip")
     @Path("/api/logs/{attempt_id}/files/{file_name}")
+    @ApiOperation("Download a log file")
     public byte[] getFile(
+            @ApiParam(value="attempt id", required=true)
             @PathParam("attempt_id") long attemptId,
+            @ApiParam(value="log file name", required=true)
             @PathParam("file_name") String fileName)
             throws ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException
     {
