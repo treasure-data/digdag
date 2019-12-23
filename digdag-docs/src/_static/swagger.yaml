@@ -1,0 +1,1711 @@
+---
+swagger: "2.0"
+info:
+  description: "Digdag server API"
+  version: "0.9.41-SNAPSHOT"
+  title: "Digdag"
+tags:
+- name: "Schedule"
+- name: "Project"
+- name: "Attempt"
+- name: "Admin"
+- name: "Workflow"
+- name: "Log"
+- name: "Session"
+- name: "Version"
+paths:
+  /api/admin/attempts/{id}/userinfo:
+    get:
+      tags:
+      - "Admin"
+      operationId: "getUserInfo"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Config"
+          headers: {}
+  /api/attempts:
+    get:
+      tags:
+      - "Attempt"
+      summary: "List attempts with filters"
+      description: ""
+      operationId: "getAttempts"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "project"
+        in: "query"
+        description: "exact matching filter on project name"
+        required: false
+        type: "string"
+      - name: "workflow"
+        in: "query"
+        description: "exact matching filter on workflow name"
+        required: false
+        type: "string"
+      - name: "include_retried"
+        in: "query"
+        description: "list more than 1 attempts per session"
+        required: false
+        type: "boolean"
+      - name: "last_id"
+        in: "query"
+        description: "list attempts whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "page_size"
+        in: "query"
+        description: "number of attempts to return"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionAttemptCollection"
+    put:
+      tags:
+      - "Attempt"
+      summary: "Start a workflow execution as a new session or a new attempt of an\
+        \ existing session"
+      description: ""
+      operationId: "startAttempt"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/RestSessionAttemptRequest"
+      responses:
+        default:
+          description: "successful operation"
+  /api/attempts/{id}:
+    get:
+      tags:
+      - "Attempt"
+      summary: "Get an attempt"
+      description: ""
+      operationId: "getAttempt"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "attempt id"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionAttempt"
+  /api/attempts/{id}/kill:
+    post:
+      tags:
+      - "Attempt"
+      summary: "Set a cancel-requested flag on a running attempt"
+      description: ""
+      operationId: "killAttempt"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "attempt id"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        default:
+          description: "successful operation"
+  /api/attempts/{id}/retries:
+    get:
+      tags:
+      - "Attempt"
+      summary: "List attempts of a session of a given attempt"
+      description: ""
+      operationId: "getAttemptRetries"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "attempt id"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionAttemptCollection"
+  /api/attempts/{id}/tasks:
+    get:
+      tags:
+      - "Attempt"
+      summary: "List tasks of an attempt"
+      description: ""
+      operationId: "getTasks"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "attempt id"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestTaskCollection"
+  /api/logs/{attempt_id}/files:
+    get:
+      tags:
+      - "Log"
+      summary: "List log files of an attempt with filters"
+      description: ""
+      operationId: "getFileHandles"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "attempt_id"
+        in: "path"
+        description: "attempt id"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "task"
+        in: "query"
+        description: "partial prefix match filter on task name"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestLogFileHandleCollection"
+    put:
+      tags:
+      - "Log"
+      operationId: "putFile"
+      consumes:
+      - "application/gzip"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "attempt_id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "task"
+        in: "query"
+        required: false
+        type: "string"
+      - name: "file_time"
+        in: "query"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "node_id"
+        in: "query"
+        required: false
+        type: "string"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/InputStream"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestLogFilePutResult"
+          headers: {}
+  /api/logs/{attempt_id}/files/{file_name}:
+    get:
+      tags:
+      - "Log"
+      summary: "Download a log file"
+      description: ""
+      operationId: "getFile"
+      produces:
+      - "application/gzip"
+      parameters:
+      - name: "attempt_id"
+        in: "path"
+        description: "attempt id"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "file_name"
+        in: "path"
+        description: "log file name"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              type: "string"
+              format: "byte"
+  /api/logs/{attempt_id}/upload_handle:
+    get:
+      tags:
+      - "Log"
+      operationId: "getFileHandles"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "attempt_id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "task"
+        in: "query"
+        required: false
+        type: "string"
+      - name: "file_time"
+        in: "query"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "node_id"
+        in: "query"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/DirectUploadHandle"
+          headers: {}
+  /api/project:
+    get:
+      tags:
+      - "Project"
+      operationId: "getProject"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "query"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestProject"
+          headers: {}
+  /api/projects:
+    get:
+      tags:
+      - "Project"
+      summary: "List projects with filters"
+      description: ""
+      operationId: "getProjects"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "query"
+        description: "exact matching filter on project name"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestProjectCollection"
+    put:
+      tags:
+      - "Project"
+      summary: "Upload a project archive as a new project or a new revision of an\
+        \ existing project"
+      description: ""
+      operationId: "putProject"
+      consumes:
+      - "application/gzip"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "project"
+        in: "query"
+        description: "project name"
+        required: true
+        type: "string"
+      - name: "revision"
+        in: "query"
+        description: "revision"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/InputStream"
+      - name: "Content-Length"
+        in: "header"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "schedule_from"
+        in: "query"
+        description: "start scheduling of new workflows from the given time instead\
+          \ of current time"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestProject"
+  /api/projects/{id}:
+    get:
+      tags:
+      - "Project"
+      summary: "Get a project"
+      description: ""
+      operationId: "getProject"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestProject"
+    delete:
+      tags:
+      - "Project"
+      summary: "Delete a project"
+      description: ""
+      operationId: "deleteProject"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestProject"
+  /api/projects/{id}/archive:
+    get:
+      tags:
+      - "Project"
+      summary: "Download a project archive file"
+      description: ""
+      operationId: "getArchive"
+      produces:
+      - "application/gzip"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "revision"
+        in: "query"
+        description: "use a given revision of a project instead of the latest revision"
+        required: true
+        type: "string"
+      responses:
+        default:
+          description: "successful operation"
+  /api/projects/{id}/revisions:
+    get:
+      tags:
+      - "Project"
+      summary: "List revisions of a project"
+      description: ""
+      operationId: "getRevisions"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "last_id"
+        in: "query"
+        description: "deprecated - do not use"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestRevisionCollection"
+  /api/projects/{id}/schedules:
+    get:
+      tags:
+      - "Project"
+      summary: "List schedules of a project with filters"
+      description: ""
+      operationId: "getSchedules"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "workflow"
+        in: "query"
+        description: "exact matching filter on workflow name"
+        required: false
+        type: "string"
+      - name: "last_id"
+        in: "query"
+        description: "list schedules whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestScheduleCollection"
+  /api/projects/{id}/secrets:
+    get:
+      tags:
+      - "Project"
+      summary: "List secret keys of a project"
+      description: ""
+      operationId: "getProjectSecrets"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSecretList"
+  /api/projects/{id}/secrets/{key}:
+    put:
+      tags:
+      - "Project"
+      summary: "Set a secret to a project"
+      description: ""
+      operationId: "putProjectSecret"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "key"
+        in: "path"
+        description: "secret key"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/RestSetSecretRequest"
+      responses:
+        default:
+          description: "successful operation"
+    delete:
+      tags:
+      - "Project"
+      summary: "Delete a secret from a project"
+      description: ""
+      operationId: "deleteProjectSecret"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "key"
+        in: "path"
+        description: "secret key"
+        required: true
+        type: "string"
+      responses:
+        default:
+          description: "successful operation"
+  /api/projects/{id}/sessions:
+    get:
+      tags:
+      - "Project"
+      summary: "List sessions of a project with filters"
+      description: ""
+      operationId: "getSessions"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "workflow"
+        in: "query"
+        description: "exact matching filter on workflow name"
+        required: false
+        type: "string"
+      - name: "last_id"
+        in: "query"
+        description: "list sessions whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "page_size"
+        in: "query"
+        description: "number of sessions to return"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionCollection"
+  /api/projects/{id}/workflow:
+    get:
+      tags:
+      - "Project"
+      operationId: "getWorkflow"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "name"
+        in: "query"
+        required: false
+        type: "string"
+      - name: "revision"
+        in: "query"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowDefinition"
+          headers: {}
+  /api/projects/{id}/workflows:
+    get:
+      tags:
+      - "Project"
+      summary: "List workflows of a project with filters"
+      description: ""
+      operationId: "getWorkflows"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "project id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "revision"
+        in: "query"
+        description: "use a given revision of the project instead of the latest revision"
+        required: true
+        type: "string"
+      - name: "name"
+        in: "query"
+        description: "exact matching filter on workflow name"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowDefinitionCollection"
+  /api/projects/{id}/workflows/{name}:
+    get:
+      tags:
+      - "Project"
+      operationId: "getWorkflowByName"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "integer"
+        format: "int32"
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "revision"
+        in: "query"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowDefinition"
+          headers: {}
+  /api/schedules:
+    get:
+      tags:
+      - "Schedule"
+      summary: "List schedules"
+      description: ""
+      operationId: "getSchedules"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "last_id"
+        in: "query"
+        description: "list schedules whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestScheduleCollection"
+  /api/schedules/{id}:
+    get:
+      tags:
+      - "Schedule"
+      summary: "Get a schedule"
+      description: ""
+      operationId: "getSchedules"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "schedule id"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSchedule"
+  /api/schedules/{id}/backfill:
+    post:
+      tags:
+      - "Schedule"
+      summary: "Re-schedule past sessions by count or duration"
+      description: ""
+      operationId: "backfillSchedule"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "session id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/RestScheduleBackfillRequest"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionAttemptCollection"
+  /api/schedules/{id}/disable:
+    post:
+      tags:
+      - "Schedule"
+      summary: "Disable scheduling of new sessions"
+      description: ""
+      operationId: "disableSchedule"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "session id"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestScheduleSummary"
+  /api/schedules/{id}/enable:
+    post:
+      tags:
+      - "Schedule"
+      summary: "Re-enable disabled scheduling"
+      description: ""
+      operationId: "enableSchedule"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "session id"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestScheduleSummary"
+  /api/schedules/{id}/skip:
+    post:
+      tags:
+      - "Schedule"
+      summary: "Skip future sessions by count or time"
+      description: ""
+      operationId: "skipSchedule"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "session id"
+        required: true
+        type: "integer"
+        format: "int32"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/RestScheduleSkipRequest"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestScheduleSummary"
+  /api/sessions:
+    get:
+      tags:
+      - "Session"
+      summary: "List sessions"
+      description: ""
+      operationId: "getSessions"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "last_id"
+        in: "query"
+        description: "list sessions whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "page_size"
+        in: "query"
+        description: "number of sessions to return"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionCollection"
+  /api/sessions/{id}:
+    get:
+      tags:
+      - "Session"
+      summary: "Get a session"
+      description: ""
+      operationId: "getSession"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "session id"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSession"
+  /api/sessions/{id}/attempts:
+    get:
+      tags:
+      - "Session"
+      summary: "List attempts of a session"
+      description: ""
+      operationId: "getSessionAttempts"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "session id"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "last_id"
+        in: "query"
+        description: "list attempts whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "page_size"
+        in: "query"
+        description: "number of attempts to return"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSessionAttemptCollection"
+  /api/version:
+    get:
+      tags:
+      - "Version"
+      summary: "Get server version"
+      description: ""
+      operationId: "getVersion"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            additionalProperties:
+              type: "object"
+  /api/version/check:
+    get:
+      tags:
+      - "Version"
+      summary: "Check client version compatibility"
+      description: ""
+      operationId: "checkClientVersion"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "client"
+        in: "query"
+        description: "client version"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestVersionCheckResult"
+  /api/workflow:
+    get:
+      tags:
+      - "Workflow"
+      operationId: "getWorkflowDefinition"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "project"
+        in: "query"
+        required: false
+        type: "string"
+      - name: "revision"
+        in: "query"
+        required: false
+        type: "string"
+      - name: "name"
+        in: "query"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowDefinition"
+          headers: {}
+  /api/workflows:
+    get:
+      tags:
+      - "Workflow"
+      summary: "List workflows"
+      description: ""
+      operationId: "getWorkflowDefinitions"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "last_id"
+        in: "query"
+        description: "list workflows whose id is grater than this id for pagination"
+        required: false
+        type: "integer"
+        format: "int64"
+      - name: "count"
+        in: "query"
+        description: "number of workflows to return"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowDefinitionCollection"
+  /api/workflows/{id}:
+    get:
+      tags:
+      - "Workflow"
+      summary: "Get a workflow"
+      description: ""
+      operationId: "getWorkflowDefinition"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "workflow id"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowDefinition"
+  /api/workflows/{id}/truncated_session_time:
+    get:
+      tags:
+      - "Workflow"
+      summary: "Get truncated local time based on the time zone of a workflow"
+      description: ""
+      operationId: "getWorkflowDefinition"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "workflow id"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "session_time"
+        in: "query"
+        description: "session time to be truncated"
+        required: true
+        type: "string"
+      - name: "mode"
+        in: "query"
+        description: "truncation mode - second, minute, hour, day, schedule, or next_schedule"
+        required: false
+        type: "string"
+        enum:
+        - "SECOND"
+        - "MINUTE"
+        - "HOUR"
+        - "DAY"
+        - "SCHEDULE"
+        - "NEXT_SCHEDULE"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestWorkflowSessionTime"
+definitions:
+  ResumeFrom:
+    allOf:
+    - $ref: "#/definitions/Resume"
+    - type: "object"
+      properties:
+        from:
+          type: "string"
+          readOnly: true
+  DirectUploadHandle:
+    type: "object"
+  Config:
+    type: "object"
+    properties:
+      empty:
+        type: "boolean"
+        default: false
+      factory:
+        $ref: "#/definitions/ConfigFactory"
+      keys:
+        type: "array"
+        items:
+          type: "string"
+  RestSession:
+    type: "object"
+    properties:
+      project:
+        $ref: "#/definitions/IdAndName"
+      id:
+        $ref: "#/definitions/Id"
+      sessionUuid:
+        type: "string"
+        format: "uuid"
+      sessionTime:
+        $ref: "#/definitions/OffsetDateTime"
+      workflow:
+        $ref: "#/definitions/NameOptionalId"
+      lastAttempt:
+        $ref: "#/definitions/Attempt"
+  RestSchedule:
+    type: "object"
+    properties:
+      project:
+        $ref: "#/definitions/IdAndName"
+      id:
+        $ref: "#/definitions/Id"
+      disabledAt:
+        type: "integer"
+        format: "int64"
+      nextScheduleTime:
+        $ref: "#/definitions/OffsetDateTime"
+      nextRunTime:
+        type: "integer"
+        format: "int64"
+      workflow:
+        $ref: "#/definitions/IdAndName"
+  RestProject:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      id:
+        $ref: "#/definitions/Id"
+      revision:
+        type: "string"
+      archiveType:
+        type: "string"
+      archiveMd5:
+        type: "array"
+        items:
+          type: "string"
+          format: "byte"
+      createdAt:
+        type: "integer"
+        format: "int64"
+      deletedAt:
+        type: "integer"
+        format: "int64"
+      updatedAt:
+        type: "integer"
+        format: "int64"
+  RestLogFileHandle:
+    type: "object"
+    properties:
+      fileSize:
+        type: "integer"
+        format: "int64"
+      agentId:
+        type: "string"
+      direct:
+        $ref: "#/definitions/RestDirectDownloadHandle"
+      fileName:
+        type: "string"
+      taskName:
+        type: "string"
+      fileTime:
+        type: "integer"
+        format: "int64"
+  IdAndName:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      id:
+        $ref: "#/definitions/Id"
+  ZoneOffset:
+    type: "object"
+    properties:
+      totalSeconds:
+        type: "integer"
+        format: "int32"
+      id:
+        type: "string"
+      rules:
+        $ref: "#/definitions/ZoneRules"
+  RestProjectCollection:
+    type: "object"
+    properties:
+      projects:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestProject"
+  RestVersionCheckResult:
+    type: "object"
+    properties:
+      apiCompatible:
+        type: "boolean"
+        default: false
+      serverVersion:
+        type: "string"
+      upgradeRecommended:
+        type: "boolean"
+        default: false
+  RestWorkflowDefinitionCollection:
+    type: "object"
+    properties:
+      workflows:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestWorkflowDefinition"
+  Attempt:
+    type: "object"
+    properties:
+      id:
+        $ref: "#/definitions/Id"
+      createdAt:
+        type: "integer"
+        format: "int64"
+      retryAttemptName:
+        type: "string"
+      params:
+        $ref: "#/definitions/Config"
+      finishedAt:
+        type: "integer"
+        format: "int64"
+      success:
+        type: "boolean"
+        default: false
+      done:
+        type: "boolean"
+        default: false
+      cancelRequested:
+        type: "boolean"
+        default: false
+  RestLogFilePutResult:
+    type: "object"
+    properties:
+      fileName:
+        type: "string"
+  RestWorkflowDefinition:
+    type: "object"
+    properties:
+      project:
+        $ref: "#/definitions/IdAndName"
+      name:
+        type: "string"
+      id:
+        $ref: "#/definitions/Id"
+      config:
+        $ref: "#/definitions/Config"
+      revision:
+        type: "string"
+      timezone:
+        readOnly: true
+        $ref: "#/definitions/ZoneId"
+  RestWorkflowSessionTime:
+    type: "object"
+    properties:
+      project:
+        $ref: "#/definitions/IdAndName"
+      revision:
+        type: "string"
+      sessionTime:
+        $ref: "#/definitions/OffsetDateTime"
+      timezone:
+        readOnly: true
+        $ref: "#/definitions/ZoneId"
+  RestScheduleBackfillRequest:
+    type: "object"
+    properties:
+      fromTime:
+        type: "integer"
+        format: "int64"
+      attemptName:
+        type: "string"
+      dryRun:
+        type: "boolean"
+        default: false
+      count:
+        type: "integer"
+        format: "int32"
+  ZoneOffsetTransition:
+    type: "object"
+    properties:
+      offsetBefore:
+        $ref: "#/definitions/ZoneOffset"
+      offsetAfter:
+        $ref: "#/definitions/ZoneOffset"
+      overlap:
+        type: "boolean"
+        default: false
+      instant:
+        type: "integer"
+        format: "int64"
+      duration:
+        $ref: "#/definitions/Duration"
+      gap:
+        type: "boolean"
+        default: false
+      dateTimeBefore:
+        type: "string"
+        format: "date-time"
+      dateTimeAfter:
+        type: "string"
+        format: "date-time"
+  RestRevision:
+    type: "object"
+    properties:
+      userInfo:
+        $ref: "#/definitions/Config"
+      revision:
+        type: "string"
+      archiveType:
+        type: "string"
+      archiveMd5:
+        type: "array"
+        items:
+          type: "string"
+          format: "byte"
+      createdAt:
+        type: "integer"
+        format: "int64"
+  RestSessionCollection:
+    type: "object"
+    properties:
+      sessions:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestSession"
+  RestTaskCollection:
+    type: "object"
+    properties:
+      tasks:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestTask"
+  ZoneOffsetTransitionRule:
+    type: "object"
+    properties:
+      month:
+        type: "string"
+        enum:
+        - "JANUARY"
+        - "FEBRUARY"
+        - "MARCH"
+        - "APRIL"
+        - "MAY"
+        - "JUNE"
+        - "JULY"
+        - "AUGUST"
+        - "SEPTEMBER"
+        - "OCTOBER"
+        - "NOVEMBER"
+        - "DECEMBER"
+      timeDefinition:
+        type: "string"
+        enum:
+        - "UTC"
+        - "WALL"
+        - "STANDARD"
+      standardOffset:
+        $ref: "#/definitions/ZoneOffset"
+      offsetBefore:
+        $ref: "#/definitions/ZoneOffset"
+      offsetAfter:
+        $ref: "#/definitions/ZoneOffset"
+      dayOfMonthIndicator:
+        type: "integer"
+        format: "int32"
+      localTime:
+        $ref: "#/definitions/LocalTime"
+      midnightEndOfDay:
+        type: "boolean"
+        default: false
+      dayOfWeek:
+        type: "string"
+        enum:
+        - "MONDAY"
+        - "TUESDAY"
+        - "WEDNESDAY"
+        - "THURSDAY"
+        - "FRIDAY"
+        - "SATURDAY"
+        - "SUNDAY"
+  RestSetSecretRequest:
+    type: "object"
+  LocalTime:
+    type: "object"
+    properties:
+      hour:
+        type: "integer"
+        format: "int32"
+      minute:
+        type: "integer"
+        format: "int32"
+      second:
+        type: "integer"
+        format: "int32"
+      nano:
+        type: "integer"
+        format: "int32"
+  ZoneId:
+    type: "object"
+    properties:
+      rules:
+        $ref: "#/definitions/ZoneRules"
+      id:
+        type: "string"
+  RestTask:
+    type: "object"
+    properties:
+      group:
+        type: "boolean"
+        default: false
+      id:
+        $ref: "#/definitions/Id"
+      state:
+        type: "string"
+      startedAt:
+        type: "integer"
+        format: "int64"
+      fullName:
+        type: "string"
+      parentId:
+        $ref: "#/definitions/Id"
+      upstreams:
+        type: "array"
+        items:
+          $ref: "#/definitions/Id"
+      retryAt:
+        type: "integer"
+        format: "int64"
+      config:
+        $ref: "#/definitions/Config"
+      exportParams:
+        $ref: "#/definitions/Config"
+      storeParams:
+        $ref: "#/definitions/Config"
+      stateParams:
+        $ref: "#/definitions/Config"
+      error:
+        $ref: "#/definitions/Config"
+      updatedAt:
+        type: "integer"
+        format: "int64"
+      cancelRequested:
+        type: "boolean"
+        default: false
+  TemporalUnit:
+    type: "object"
+    properties:
+      duration:
+        $ref: "#/definitions/Duration"
+      durationEstimated:
+        type: "boolean"
+        default: false
+      dateBased:
+        type: "boolean"
+        default: false
+      timeBased:
+        type: "boolean"
+        default: false
+  RestScheduleSummary:
+    type: "object"
+    properties:
+      id:
+        $ref: "#/definitions/Id"
+      disabledAt:
+        type: "integer"
+        format: "int64"
+      nextScheduleTime:
+        $ref: "#/definitions/OffsetDateTime"
+      nextRunTime:
+        type: "integer"
+        format: "int64"
+      createdAt:
+        type: "integer"
+        format: "int64"
+      updatedAt:
+        type: "integer"
+        format: "int64"
+      workflow:
+        $ref: "#/definitions/IdAndName"
+  InputStream:
+    type: "object"
+  RestScheduleSkipRequest:
+    type: "object"
+    properties:
+      nextRunTime:
+        type: "integer"
+        format: "int64"
+      fromTime:
+        type: "integer"
+        format: "int64"
+      dryRun:
+        type: "boolean"
+        default: false
+      nextTime:
+        $ref: "#/definitions/LocalTimeOrInstant"
+      count:
+        type: "integer"
+        format: "int32"
+  RestDirectDownloadHandle:
+    type: "object"
+  Duration:
+    type: "object"
+    properties:
+      seconds:
+        type: "integer"
+        format: "int64"
+      nano:
+        type: "integer"
+        format: "int32"
+      zero:
+        type: "boolean"
+        default: false
+      negative:
+        type: "boolean"
+        default: false
+      units:
+        type: "array"
+        items:
+          $ref: "#/definitions/TemporalUnit"
+  NameOptionalId:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      id:
+        $ref: "#/definitions/Id"
+  ConfigFactory:
+    type: "object"
+  RestRevisionCollection:
+    type: "object"
+    properties:
+      revisions:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestRevision"
+  RestSessionAttempt:
+    type: "object"
+    properties:
+      project:
+        $ref: "#/definitions/IdAndName"
+      id:
+        $ref: "#/definitions/Id"
+      createdAt:
+        type: "integer"
+        format: "int64"
+      sessionUuid:
+        type: "string"
+        format: "uuid"
+      retryAttemptName:
+        type: "string"
+      params:
+        $ref: "#/definitions/Config"
+      sessionId:
+        $ref: "#/definitions/Id"
+      finishedAt:
+        type: "integer"
+        format: "int64"
+      sessionTime:
+        $ref: "#/definitions/OffsetDateTime"
+      workflow:
+        $ref: "#/definitions/NameOptionalId"
+      success:
+        type: "boolean"
+        default: false
+      done:
+        type: "boolean"
+        default: false
+      cancelRequested:
+        type: "boolean"
+        default: false
+      index:
+        type: "integer"
+        format: "int32"
+  OffsetDateTime:
+    type: "object"
+    properties:
+      offset:
+        $ref: "#/definitions/ZoneOffset"
+      nano:
+        type: "integer"
+        format: "int32"
+      hour:
+        type: "integer"
+        format: "int32"
+      minute:
+        type: "integer"
+        format: "int32"
+      dayOfYear:
+        type: "integer"
+        format: "int32"
+      dayOfWeek:
+        type: "string"
+        enum:
+        - "MONDAY"
+        - "TUESDAY"
+        - "WEDNESDAY"
+        - "THURSDAY"
+        - "FRIDAY"
+        - "SATURDAY"
+        - "SUNDAY"
+      month:
+        type: "string"
+        enum:
+        - "JANUARY"
+        - "FEBRUARY"
+        - "MARCH"
+        - "APRIL"
+        - "MAY"
+        - "JUNE"
+        - "JULY"
+        - "AUGUST"
+        - "SEPTEMBER"
+        - "OCTOBER"
+        - "NOVEMBER"
+        - "DECEMBER"
+      dayOfMonth:
+        type: "integer"
+        format: "int32"
+      year:
+        type: "integer"
+        format: "int32"
+      second:
+        type: "integer"
+        format: "int32"
+      monthValue:
+        type: "integer"
+        format: "int32"
+  LocalTimeOrInstant:
+    type: "object"
+  RestScheduleCollection:
+    type: "object"
+    properties:
+      schedules:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestSchedule"
+  RestSecretList:
+    type: "object"
+  ZoneRules:
+    type: "object"
+    properties:
+      fixedOffset:
+        type: "boolean"
+        default: false
+      transitions:
+        type: "array"
+        items:
+          $ref: "#/definitions/ZoneOffsetTransition"
+      transitionRules:
+        type: "array"
+        items:
+          $ref: "#/definitions/ZoneOffsetTransitionRule"
+  RestSessionAttemptCollection:
+    type: "object"
+    properties:
+      attempts:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestSessionAttempt"
+  RestLogFileHandleCollection:
+    type: "object"
+    properties:
+      files:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestLogFileHandle"
+  Id:
+    type: "object"
+  ResumeFailed:
+    allOf:
+    - $ref: "#/definitions/Resume"
+    - type: "object"
+      properties: {}
+  RestSessionAttemptRequest:
+    type: "object"
+    properties:
+      retryAttemptName:
+        type: "string"
+      params:
+        $ref: "#/definitions/Config"
+      sessionTime:
+        type: "integer"
+        format: "int64"
+      workflowId:
+        $ref: "#/definitions/Id"
+      resume:
+        $ref: "#/definitions/Resume"
+  Resume:
+    type: "object"
+    discriminator: "mode"
+    properties:
+      attemptId:
+        readOnly: true
+        $ref: "#/definitions/Id"
+      mode:
+        type: "string"
+        readOnly: true
+        enum:
+        - "FROM"
+        - "FAILED"

@@ -21,6 +21,8 @@ import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -66,7 +68,10 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules")
-    public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
+    @ApiOperation("List schedules")
+    public RestScheduleCollection getSchedules(
+            @ApiParam(value="list schedules whose id is grater than this id for pagination", required=false)
+            @QueryParam("last_id") Integer lastId)
     {
         return tm.begin(() -> {
             List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
@@ -78,7 +83,10 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules/{id}")
-    public RestSchedule getSchedules(@PathParam("id") int id)
+    @ApiOperation("Get a schedule")
+    public RestSchedule getSchedules(
+            @ApiParam(value="schedule id", required=true)
+            @PathParam("id") int id)
             throws ResourceNotFoundException
     {
         return tm.begin(() -> {
@@ -94,7 +102,11 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
-    public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
+    @ApiOperation("Skip future sessions by count or time")
+    public RestScheduleSummary skipSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id,
+            RestScheduleSkipRequest request)
             throws ResourceConflictException, ResourceNotFoundException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() -> {
@@ -136,7 +148,11 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
-    public RestSessionAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
+    @ApiOperation("Re-schedule past sessions by count or duration")
+    public RestSessionAttemptCollection backfillSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id,
+            RestScheduleBackfillRequest request)
             throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException
     {
         return tm.<RestSessionAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException>begin(() ->
@@ -153,7 +169,10 @@ public class ScheduleResource
 
     @POST
     @Path("/api/schedules/{id}/disable")
-    public RestScheduleSummary disableSchedule(@PathParam("id") int id)
+    @ApiOperation("Disable scheduling of new sessions")
+    public RestScheduleSummary disableSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id)
             throws ResourceNotFoundException, ResourceConflictException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() ->
@@ -175,7 +194,10 @@ public class ScheduleResource
 
     @POST
     @Path("/api/schedules/{id}/enable")
-    public RestScheduleSummary enableSchedule(@PathParam("id") int id)
+    @ApiOperation("Re-enable disabled scheduling")
+    public RestScheduleSummary enableSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id)
             throws ResourceNotFoundException, ResourceConflictException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException>begin(() -> {
