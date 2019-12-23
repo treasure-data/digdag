@@ -18,7 +18,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import io.digdag.metrics.DigdagTimed;
-import io.digdag.spi.metrics.DigdagMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
@@ -63,7 +62,6 @@ public class ConfigEvalEngine
 
     private final ObjectMapper jsonMapper;
     private final NashornScriptEngineFactory jsEngineFactory;
-    private DigdagMetrics metrics;
 
     @Inject
     public ConfigEvalEngine()
@@ -113,8 +111,7 @@ public class ConfigEvalEngine
             throw new TemplateException("Failed to serialize parameters to JSON", ex);
         }
         try {
-            String evaluated = (String) templateInvocable.invokeFunction("template", code, context);
-            return evaluated;
+            return (String) templateInvocable.invokeFunction("template", code, context);
         }
         catch (ScriptException ex) {
             String message;
@@ -145,13 +142,10 @@ public class ConfigEvalEngine
             this.params = params;
         }
 
-        // ToDo Lombok Getter(lazy=true)
         private Invocable lazyGetTemplateInvocable()
         {
             if (templateInvocable == null) {
-                synchronized(this) {
-                    templateInvocable = newTemplateInvocable(params);
-                }
+                templateInvocable = newTemplateInvocable(params);
             }
             return templateInvocable;
         }
@@ -219,7 +213,7 @@ public class ConfigEvalEngine
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
             String resultText = null;
-            if (requireInvokdetemplate(code)) {
+            if (requireInvokedTemplate(code)) {
                 resultText = invokeTemplate(lazyGetTemplateInvocable(), code, scopedParams);
             }
             else {
@@ -234,12 +228,12 @@ public class ConfigEvalEngine
         }
     }
 
-    private static final Pattern requireInvokdeTemplatePattern = Pattern.compile("\\$");
+    private static final Pattern requireInvokedTemplatePattern = Pattern.compile("\\$");
 
     @VisibleForTesting
-    protected boolean requireInvokdeTemplate(String code)
+    protected boolean requireInvokedTemplate(String code)
     {
-        return code != null && requireInvokdetemplatePattern.matcher(code).find();
+        return code != null && requireInvokedTemplatePattern.matcher(code).find();
     }
 
     @Override
@@ -247,7 +241,7 @@ public class ConfigEvalEngine
         throws TemplateException
     {
         String resultText = null;
-        if (requireInvokdetemplate(content)) {
+        if (requireInvokedTemplate(content)) {
             Invocable templateInvocable = newTemplateInvocable(params);
             resultText = invokeTemplate(templateInvocable, content, params);
         }
