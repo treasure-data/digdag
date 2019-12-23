@@ -8,7 +8,7 @@ apt-get -y install maven
 
 # npm
 apt-get -y install curl
-curl -sL https://deb.nodesource.com/setup_8.x | bash -
+curl -sL https://deb.nodesource.com/setup_12.x | bash -
 apt-get -y install nodejs
 
 # Docker required by CircleCI to execute docker command in Docker container
