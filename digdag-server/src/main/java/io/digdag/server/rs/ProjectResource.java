@@ -115,8 +115,8 @@ public class ProjectResource
     // GET  /api/projects                                # list projects
     // GET  /api/projects?name=<name>                    # lookup a project by name, or return an empty array
     // GET  /api/projects/{id}                           # show a project
-    // GET  /api/projects/{id}/revision?name=<name>      # lookup a revision of a project by name
     // GET  /api/projects/{id}/revisions                 # list revisions of a project from recent to old
+    // GET  /api/projects/{id}/revisions?name=<name>     # lookup a revision of a project by name, or return an empty array
     // GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
     // GET  /api/projects/{id}/workflows?revision=<name> # list workflows of a past revision of a project
     // GET  /api/projects/{id}/workflows?name=<name>     # lookup a workflow of a project by name
@@ -316,39 +316,28 @@ public class ProjectResource
 
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
-    @Path("/api/projects/{id}/revision")
-    public RestRevision getRevision(@PathParam("id") int projId, @QueryParam("name") String revName)
-            throws ResourceNotFoundException, AccessControlException
-    {
-        return tm.<RestRevision, ResourceNotFoundException, AccessControlException>begin(() -> {
-            ProjectStore ps = rm.getProjectStore(getSiteId());
-            StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
-            StoredRevision rev;
-            if (revName == null) {
-                rev = ps.getLatestRevision(proj.getId()); // check NotFound first
-            }
-            else {
-                rev = ps.getRevisionByName(proj.getId(), revName); // check NotFound first
-            }
-
-            ac.checkGetProject( // AccessControl
-                    ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
-                    getAuthenticatedUser());
-
-            return RestModels.revision(proj, rev);
-        }, ResourceNotFoundException.class, AccessControlException.class);
-    }
-
-    @DigdagTimed(category = "api", appendMethodName = true)
-    @GET
     @Path("/api/projects/{id}/revisions")
-    public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
+    public RestRevisionCollection getRevisions(
+            @PathParam("id") int projId,
+            @QueryParam("last_id") Integer lastId,
+            @QueryParam("name") String revName)
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestRevisionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
-            List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+            List<StoredRevision> revs;
+            if (revName != null) {
+                try {
+                    StoredRevision rev = ps.getRevisionByName(proj.getId(), revName); // check NotFound first
+                    revs = ImmutableList.of(rev);
+                }
+                catch (ResourceNotFoundException ex) {
+                    revs = ImmutableList.of();
+                }
+            } else {
+                revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+            }
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
