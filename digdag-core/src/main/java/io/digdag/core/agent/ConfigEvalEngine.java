@@ -213,7 +213,7 @@ public class ConfigEvalEngine
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
             String resultText = null;
-            if (requireInvokedTemplate(code)) {
+            if (isInvokeTemplateRequired(code)) {
                 resultText = invokeTemplate(lazyGetTemplateInvocable(), code, scopedParams);
             }
             else {
@@ -228,12 +228,12 @@ public class ConfigEvalEngine
         }
     }
 
-    private static final Pattern requireInvokedTemplatePattern = Pattern.compile("\\$");
+    private static final Pattern InvokeTemplateRequiredPattern = Pattern.compile("\\$");
 
     @VisibleForTesting
-    protected boolean requireInvokedTemplate(String code)
+    protected boolean isInvokeTemplateRequired(String code)
     {
-        return code != null && requireInvokedTemplatePattern.matcher(code).find();
+        return code != null && InvokeTemplateRequiredPattern.matcher(code).find();
     }
 
     @Override
@@ -241,7 +241,7 @@ public class ConfigEvalEngine
         throws TemplateException
     {
         String resultText = null;
-        if (requireInvokedTemplate(content)) {
+        if (isInvokeTemplateRequired(content)) {
             Invocable templateInvocable = newTemplateInvocable(params);
             resultText = invokeTemplate(templateInvocable, content, params);
         }

@@ -113,10 +113,10 @@ public class ConfigEvalEngineTest
     }
 
     @Test
-    public void testRequireInvokdetemplate()
+    public void testIsInvokeTemplateRequired()
     {
-        assertThat(engine.requireInvokedTemplate(""), is(false));
-        assertThat(engine.requireInvokedTemplate("\n"), is(false));
-        assertThat(engine.requireInvokedTemplate("Digdag Notification\naa${hoge}bb"), is(true));
+        assertThat(engine.isInvokeTemplateRequired(""), is(false));
+        assertThat(engine.isInvokeTemplateRequired("\n"), is(false));
+        assertThat(engine.isInvokeTemplateRequired("Digdag Notification\naa${hoge}bb"), is(true));
     }
 }
