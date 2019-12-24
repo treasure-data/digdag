@@ -1,5 +1,5 @@
 REST API
 ==================================
 
-Open API document is available at `swagger.digdag.io <https://swagger.digdag.io/>`_.
+Open API document is available at `docs.digdag.io/api <https://docs.digdag.io/api/>`_.
 
