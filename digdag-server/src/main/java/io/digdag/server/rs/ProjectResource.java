@@ -33,6 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
+import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestSecret;
@@ -115,6 +116,7 @@ public class ProjectResource
     // GET  /api/projects?name=<name>                    # lookup a project by name, or return an empty array
     // GET  /api/projects/{id}                           # show a project
     // GET  /api/projects/{id}/revisions                 # list revisions of a project from recent to old
+    // GET  /api/projects/{id}/revisions?name=<name>     # lookup a revision of a project by name, or return an empty array
     // GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
     // GET  /api/projects/{id}/workflows?revision=<name> # list workflows of a past revision of a project
     // GET  /api/projects/{id}/workflows?name=<name>     # lookup a workflow of a project by name
@@ -315,13 +317,28 @@ public class ProjectResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/projects/{id}/revisions")
-    public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
+    public RestRevisionCollection getRevisions(
+            @PathParam("id") int projId,
+            @QueryParam("last_id") Integer lastId,
+            @QueryParam("name") String revName)
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestRevisionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
-            List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+            List<StoredRevision> revs;
+            if (revName != null) {
+                try {
+                    StoredRevision rev = ps.getRevisionByName(proj.getId(), revName); // check NotFound first
+                    revs = ImmutableList.of(rev);
+                }
+                catch (ResourceNotFoundException ex) {
+                    revs = ImmutableList.of();
+                }
+            }
+            else {
+                revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+            }
 
             ac.checkGetProject( // AccessControl
                     ProjectTarget.of(getSiteId(), proj.getName(), proj.getId()),
