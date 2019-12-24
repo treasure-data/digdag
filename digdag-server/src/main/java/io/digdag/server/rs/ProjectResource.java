@@ -335,7 +335,8 @@ public class ProjectResource
                 catch (ResourceNotFoundException ex) {
                     revs = ImmutableList.of();
                 }
-            } else {
+            }
+            else {
                 revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
             }
 
