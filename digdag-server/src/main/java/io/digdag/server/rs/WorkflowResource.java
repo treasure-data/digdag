@@ -68,8 +68,11 @@ public class WorkflowResource
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
+    // /<singular> style is deprecated. Use /api/workflows with filter instead
+    @Deprecated
     @GET
     @Path("/api/workflow")
+    @ApiOperation("(deprecated)")
     public RestWorkflowDefinition getWorkflowDefinition(
             @QueryParam("project") String projName,
             @QueryParam("revision") String revName,

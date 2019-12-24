@@ -211,8 +211,11 @@ public class ProjectResource
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
+    // /<singular> style is deprecated. Use /api/projects with filter instead
+    @Deprecated
     @GET
     @Path("/api/project")
+    @ApiOperation("(deprecated)")
     public RestProject getProject(@QueryParam("name") String name)
             throws ResourceNotFoundException, AccessControlException
     {
@@ -349,8 +352,11 @@ public class ProjectResource
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
+    // /<singular> style is deprecated. Use /api/projects/{id}/workflows with filter instead
+    @Deprecated
     @GET
     @Path("/api/projects/{id}/workflow")
+    @ApiOperation("(deprecated)")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
             throws ResourceNotFoundException, AccessControlException
     {
