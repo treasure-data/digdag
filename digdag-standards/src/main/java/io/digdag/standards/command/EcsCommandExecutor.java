@@ -289,16 +289,14 @@ public class EcsCommandExecutor
         final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
         final ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
         final ObjectNode nextExecutorStatus;
+        final boolean isFinished = taskStatus.isFinished();
+
         // If the container doesn't start yet, it cannot extract any log messages from the container.
-        if (taskStatus.isSameOrAfter(EcsTaskStatus.RUNNING)) {
-            // if previous status has 'awslogs' log driver configuration, it tries to fetch log events by that.
-            // Otherwise, it skips fetching logs.
-            if (!previousStatus.get("awslogs").isNull()) { // awslogs?
-                nextExecutorStatus = fetchLogEvents(client, task, previousStatus, previousExecutorStatus);
-            }
-            else {
-                nextExecutorStatus = previousExecutorStatus.deepCopy();
-            }
+        if (taskStatus.isSameOrAfter(EcsTaskStatus.RUNNING) && !isFinished) {
+            nextExecutorStatus = previousExecutorStatus.deepCopy();
+        }
+        else if (isFinished) {
+            nextExecutorStatus = fetchLogEvents(client, task, previousStatus, previousExecutorStatus);
         }
         else { // before running
             // Write task status to the command logger to avoid users confusing.
@@ -310,7 +308,6 @@ public class EcsCommandExecutor
         final ObjectNode nextStatus = previousStatus.deepCopy();
         nextStatus.set("executor_state", nextExecutorStatus);
 
-        final boolean isFinished = EcsTaskStatus.of(task.getLastStatus()).isFinished();
         if (isFinished) {
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
