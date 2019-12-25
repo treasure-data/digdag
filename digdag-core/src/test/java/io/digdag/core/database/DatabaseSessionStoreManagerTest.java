@@ -31,6 +31,7 @@ public class DatabaseSessionStoreManagerTest
 
     private SessionStoreManager manager;
     private SessionStore store;
+    private SessionStore store2;
 
     private WorkflowExecutor exec;
     private AttemptBuilder attemptBuilder;
@@ -57,6 +58,7 @@ public class DatabaseSessionStoreManagerTest
             projectStore = projectStoreManager.getProjectStore(0);
             manager = factory.getSessionStoreManager();
             store = manager.getSessionStore(0);
+            store2 = manager.getSessionStore(1);
 
             exec = factory.getWorkflowExecutor();
 
@@ -271,6 +273,11 @@ public class DatabaseSessionStoreManagerTest
             assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 1, 2, Optional.absent()));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf1.getName(), 100, Optional.absent()), containsInAnyOrder(attempt1));
             assertThat(store.getActiveAttemptsOfWorkflow(proj.getId(), wf2.getName(), 100, Optional.absent()), is(Matchers.empty()));
+
+            assertThat(store.getSessionsCount(Optional.absent()), is(2));
+            assertThat(store.getSessionsCountOfProject(Optional.absent(), proj.getId()), is(1));
+            assertThat(store2.getSessionsCount(Optional.absent()), is(0));
+            assertThat(store2.getSessionsCountOfProject(Optional.absent(), proj.getId()), is(0));
 
             // session + different session time
             AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
