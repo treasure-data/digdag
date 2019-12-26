@@ -255,6 +255,8 @@ public class EcsCommandExecutor
             final ObjectNode previousStatus)
             throws IOException
     {
+        System.out.println("digdag is called");
+        logger.info("digdag is called");
         // If executor is falled back in run method, this poll method needs not to be falled back because it's never
         // used in fall back mode. Please see more details of scripting operators.
         final Config taskConfig = commandContext.getTaskRequest().getConfig();
