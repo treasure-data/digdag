@@ -241,7 +241,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.38
+    $ digdag selfupdate 0.9.40
 
 Server-mode commands
 ----------------------------------
@@ -330,9 +330,9 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: ``-P params.yml``
 
 :command:`-c, --config PATH`
-  Server configuration property path. See the followings for details.
+  Configuration file to load. (default: ~/.config/digdag/config) See the followings for details.
 
-  Example: ``-c digdag.properties``
+  Example: ``-c digdag-server/server.properties``
 
 
 In the config file, following parameters are available
@@ -351,6 +351,7 @@ In the config file, following parameters are available
 * server.http.enable-http2 (enable HTTP/2. default: false)
 * server.http.headers.KEY = VALUE (HTTP header to set on API responses)
 * server.jmx.port (port to listen JMX in integer. default: JMX is disabled)
+* server.authenticator-class (string) The FQCN of the ``io.digdag.spi.Authenticator`` implementation to use. The implementation is to be provided by a system plugin. The auth plugin configuration is implementation specific. Default: ``io.digdag.standards.auth.jwt.JwtAuthenticator``
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
 * database.password (string)
@@ -366,14 +367,17 @@ In the config file, following parameters are available
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
 * database.leakDetectionThreshold (HikariCP leakDetectionThreshold milliseconds in integer. default: 0. To enable, set to >= 2000.)
 * database.migrate (enable DB migration. default: true)
-* archive.type (type of project archiving, "db" or "s3". default: "db")
+* archive.type (type of project archiving, "db", "s3" or "gcs". default: "db")
 * archive.s3.endpoint (string. default: "s3.amazonaws.com")
 * archive.s3.bucket (string)
 * archive.s3.path (string)
 * archive.s3.credentials.access-key-id (string. default: instance profile)
 * archive.s3.credentials.secret-access-key (string. default: instance profile)
 * archive.s3.path-style-access (boolean. default: false)
-* log-server.type (type of log storage, "local" , "null", or "s3". default: "null". This parameter will be overwritten with "local" if ``-O, --task-log DIR`` is set.)
+* archive.gcs.bucket (string)
+* archive.gcs.credentials.json.path (string. if not set, auth with local authentication information. Also if path and content are set, path has priority.)
+* archive.gcs.credentials.json.content (string. if not set, auth with local authentication information. Also if path and content are set, path has priority.)
+* log-server.type (type of log storage, "local" , "null", "s3" or "gcs". default: "null". This parameter will be overwritten with "local" if ``-O, --task-log DIR`` is set.)
 * log-server.s3.endpoint (string, default: "s3.amazonaws.com")
 * log-server.s3.bucket (string)
 * log-server.s3.path (string)
@@ -381,6 +385,11 @@ In the config file, following parameters are available
 * log-server.s3.credentials.access-key-id (string. default: instance profile)
 * log-server.s3.credentials.secret-access-key (string. default: instance profile)
 * log-server.s3.path-style-access (boolean. default: false)
+* log-server.gcs.bucket (string)
+* log-server.gcs.credentials.json.path (string. if not set, auth with local authentication information. Also if path and content are set, path has priority.)
+* log-server.gcs.credentials.json.content (string. if not set, auth with local authentication information. Also if path and content are set, path has priority.)
+* log-server.local.path (string. default: digdag.log)
+* log-server.local.split_size (long. max log file size in bytes(uncompressed).  default: 0  (not splitted))
 * digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
 * executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)
 * executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
@@ -389,6 +398,24 @@ In the config file, following parameters are available
 * api.max_attempts_page_size (integer. The max number of rows of attempts in api response)
 * api.max_sessions_page_size (integer. The max number of rows of sessions in api response)
 * api.max_archive_total_size_limit (integer. The maximum size of an archived project. i.e. ``digdag push`` size. default: 2MB(2\*1024\*1024))
+
+Authenticator Plugins
+*********************
+
+**Basic Auth**
+
+Enabled by setting the config parameter ``server.authenticator-class`` to ``io.digdag.standards.auth.basic.BasicAuthenticator``.
+
+Configuration:
+
+* basicauth.username (string) *required*
+* basicauth.password (string) *required*
+* basicauth.admin (boolean) optional, default ``false``
+
+
+**Jwt**
+
+Undocumented.
 
 
 Secret Encryption Key
@@ -418,15 +445,21 @@ Client-mode common options:
 :command:`-H, --header KEY=VALUE`
   Add a custom HTTP header. Use multiple times to set multiple headers.
 
+:command:`--basic-auth <user:pass>`
+  Add an Authorization header with the provided username and password.
+
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
 
   Example: ``-c digdag-server/client.properties``
 
+
+
 You can include following parameters in ~/.config/digdag/config file:
 
 * client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
+* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.10.0(not yet released) or later.)
 
 
 start

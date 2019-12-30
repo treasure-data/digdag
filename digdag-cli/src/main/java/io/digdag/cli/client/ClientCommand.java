@@ -1,24 +1,18 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.treasuredata.client.ProxyConfig;
-import io.digdag.cli.Command;
-import io.digdag.cli.Main;
-import io.digdag.cli.ParameterValidator;
-import io.digdag.cli.SystemExitException;
-import io.digdag.cli.YamlMapper;
+import io.digdag.cli.*;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
-import io.digdag.standards.td.TdDigdagClientConfigurationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +20,10 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static io.digdag.cli.SystemExitException.systemExit;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 
 public abstract class ClientCommand
         extends Command
@@ -40,6 +31,7 @@ public abstract class ClientCommand
     private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
 
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
+    private static final String DEFAULT_DISABLE_DIRECT_DOWNLOAD = "false";
 
     @Inject Injector injector;
 
@@ -49,6 +41,9 @@ public abstract class ClientCommand
     @Parameter(names = {"-H", "--header"}, validateWith = ParameterValidator.class)
     List<String> httpHeadersList = new ArrayList<>();
     Map<String, String> httpHeaders = new HashMap<>();
+
+    @Parameter(names = {"--basic-auth"}, validateWith = BasicAuthParameterValidator.class)
+    protected String basicAuthUserPass;
 
     @Parameter(names = {"--disable-version-check"})
     protected boolean disableVersionCheck;
@@ -109,6 +104,14 @@ public abstract class ClientCommand
         }
 
         httpHeaders = ParameterValidator.toMap(httpHeadersList);
+
+        if (basicAuthUserPass != null) {
+            httpHeaders.put(
+                    AUTHORIZATION,
+                    "Basic " + Base64.getEncoder().encodeToString(basicAuthUserPass.getBytes())
+            );
+        }
+
         DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
@@ -168,10 +171,12 @@ public abstract class ClientCommand
     }
 
     @VisibleForTesting
-    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation, Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
+    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation,
+                                    Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
             throws SystemExitException
     {
         String[] fragments = endpoint.split(":", 2);
+        boolean disableDirectDownload = Boolean.parseBoolean(props.getProperty("client.http.disable_direct_download", DEFAULT_DISABLE_DIRECT_DOWNLOAD));
 
         boolean useSsl = false;
         if (fragments.length == 2 && fragments[1].startsWith("//")) {
@@ -217,6 +222,7 @@ public abstract class ClientCommand
                 .port(port)
                 .ssl(useSsl)
                 .disableCertValidation(disableCertValidation)
+                .disableDirectDownload(disableDirectDownload)
                 .headers(headers);
 
         Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(scheme, env);

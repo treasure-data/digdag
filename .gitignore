@@ -10,6 +10,7 @@ venv*
 .venv*
 /dist/*.tar.gz
 /config/test_postgresql.properties
+/config/dummy.properties
 MANIFEST
 pom.xml
 .digdag

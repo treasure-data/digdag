@@ -1,6 +1,6 @@
 # require>: Depends on another workflow
 
-**require>** operator requires completion of another workflow. This operator is similar to [call> operator](call.html), but this operator doesn't start the other workflow if it's already running or has done for the same session time of this workflow. If the workflow is running or newly started, this operator waits until it completes.
+**require>** operator requires completion of another workflow. This operator is similar to [call> operator](call.html), but this operator doesn't start the other workflow if it's already running or has done for the same session time of this workflow. If the workflow is running or newly started, this operator waits until it completes. In  addition, require operator can kick the another project's workflow.
 
 ```
 # workflow1.dig
@@ -49,6 +49,17 @@
       session_time: ${moment(last_session_time).add(i, 'day')}
   ```
 
+* **project_id**: project_id
+
+  Id of another project. You can kick another project's workflow by setting this parameter.
+
+  Examples:
+
+  ```
+  require>: another_project_wf
+  project_id: 12345
+  ```
+
 * **ignore_failure**: BOOLEAN
 
   This operator fails when the dependent workflow finished with errors by default.
@@ -58,5 +69,18 @@
   ```
   require>: another_workflow
   ignore_failure: true
+  ```
+
+* **params**: MAP
+
+  This operator doesn't pass a parameter to another workflow. `params` options set parameters.
+
+  Examples:
+
+  ```yaml
+  +example:
+    require>: child
+    params:
+      param_name1: ${parent_param_name}
   ```
 

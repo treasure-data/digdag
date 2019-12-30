@@ -4,6 +4,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.Authenticator;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -45,11 +46,13 @@ public class AuthRequestFilter
 
         Authenticator.Result result = auth.authenticate(requestContext);
         if (result.isAccepted()) {
-            requestContext.setProperty("secrets", result.getSecrets().get());
-            requestContext.setProperty("authenticatedUser", result.getAuthenticatedUser().get());
+            requestContext.setProperty("siteId", result.getSiteId());
+            requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create()));
+            requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
+            requestContext.setProperty("admin", result.isAdmin());
         }
         else {
-            requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage().get()));
+            requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));
         }
     }
 }

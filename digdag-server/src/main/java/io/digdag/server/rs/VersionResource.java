@@ -6,6 +6,8 @@ import io.digdag.client.Version;
 import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.server.ClientVersionChecker;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 import java.util.Map;
 import javax.ws.rs.GET;
@@ -33,6 +35,7 @@ public class VersionResource
 
     @GET
     @Path("/api/version")
+    @ApiOperation("Get server version")
     public Map<String, Object> getVersion()
     {
         return ImmutableMap.of("version", version.toString());
@@ -40,7 +43,10 @@ public class VersionResource
 
     @GET
     @Path("/api/version/check")
-    public RestVersionCheckResult checkClientVersion(@QueryParam("client") String clientVersionString)
+    @ApiOperation("Check client version compatibility")
+    public RestVersionCheckResult checkClientVersion(
+            @ApiParam(value="client version", required=true)
+            @QueryParam("client") String clientVersionString)
     {
         Version clientVersion = Version.parse(clientVersionString);
         return RestVersionCheckResult.builder()
