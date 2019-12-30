@@ -336,7 +336,7 @@ public class DatabaseProjectStoreManagerTest
 
             // listing doesn't include deleted projects
             assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(), store.getProjectsWithLatestRevision(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(), store.getProjectsWithLatestRevision(100, Optional.absent()));
             assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
 
             // lookup by project/revision id succeeds and deletedAt is set
