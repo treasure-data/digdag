@@ -31,6 +31,7 @@ public interface ServerConfig
     public static final int DEFAULT_PORT = 65432;
     public static final String DEFAULT_BIND = "127.0.0.1";
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
+    public static final String DEFAULT_AUTHENTICATOR_CLASS = "io.digdag.standards.auth.jwt.JwtAuthenticator";
 
     public Optional<String> getServerRuntimeInfoPath();
 
@@ -52,12 +53,15 @@ public interface ServerConfig
 
     public Map<String,String> getEnvironment();
 
+    public String getAuthenticatorClass();
+
     public static ImmutableServerConfig.Builder defaultBuilder()
     {
         return ImmutableServerConfig.builder()
             .port(DEFAULT_PORT)
             .bind(DEFAULT_BIND)
             .accessLogPattern(DEFAULT_ACCESS_LOG_PATTERN)
+            .authenticatorClass(DEFAULT_AUTHENTICATOR_CLASS)
             .executorEnabled(true);
     }
 
@@ -93,6 +97,7 @@ public interface ServerConfig
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .environment(readPrefixed.apply("server.environment."))
+            .authenticatorClass(config.get("server.authenticator-class", String.class, DEFAULT_AUTHENTICATOR_CLASS))
             .build();
     }
 

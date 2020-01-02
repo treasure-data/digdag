@@ -9,6 +9,7 @@ import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -28,6 +29,8 @@ import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -80,7 +83,10 @@ public class ScheduleResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/schedules")
-    public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
+    @ApiOperation("List schedules")
+    public RestScheduleCollection getSchedules(
+            @ApiParam(value="list schedules whose id is grater than this id for pagination", required=false)
+            @QueryParam("last_id") Integer lastId)
             throws AccessControlException
     {
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
@@ -102,7 +108,10 @@ public class ScheduleResource
     @DigdagTimed(category = "api", value = "getScheduleById")
     @GET
     @Path("/api/schedules/{id}")
-    public RestSchedule getSchedules(@PathParam("id") int id)
+    @ApiOperation("Get a schedule")
+    public RestSchedule getSchedules(
+            @ApiParam(value="schedule id", required=true)
+            @PathParam("id") int id)
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestSchedule, ResourceNotFoundException, AccessControlException>begin(() -> {
@@ -125,7 +134,11 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
-    public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
+    @ApiOperation("Skip future sessions by count or time")
+    public RestScheduleSummary skipSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id,
+            RestScheduleSkipRequest request)
             throws ResourceConflictException, ResourceNotFoundException, AccessControlException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
@@ -174,7 +187,11 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
-    public RestScheduleAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
+    @ApiOperation("Re-schedule past sessions by count or duration")
+    public RestScheduleAttemptCollection backfillSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id,
+            RestScheduleBackfillRequest request)
             throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException
     {
         return tm.<RestScheduleAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException>begin(() ->
@@ -202,7 +219,10 @@ public class ScheduleResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Path("/api/schedules/{id}/disable")
-    public RestScheduleSummary disableSchedule(@PathParam("id") int id)
+    @ApiOperation("Disable scheduling of new sessions")
+    public RestScheduleSummary disableSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id)
             throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() ->
@@ -231,7 +251,10 @@ public class ScheduleResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @POST
     @Path("/api/schedules/{id}/enable")
-    public RestScheduleSummary enableSchedule(@PathParam("id") int id)
+    @ApiOperation("Re-enable disabled scheduling")
+    public RestScheduleSummary enableSchedule(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") int id)
             throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {

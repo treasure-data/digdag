@@ -19,6 +19,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
   const config = {
     mode: build ? 'production' : 'development',
     entry: {
+      tether: 'tether',
       bootstrap: 'bootstrap-loader/extractStyles',
       app: './index.jsx'
     },
@@ -81,7 +82,8 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       new webpack.ProvidePlugin({
         $: 'jquery',
         jQuery: 'jquery',
-        'window.jQuery': 'jquery'
+        'window.jQuery': 'jquery',
+        'window.Tether': 'tether'
       }),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': `'${build ? 'production' : 'development'}'`

@@ -65,6 +65,7 @@ public class ThreadLocalTransactionManager
                 DBI dbi = new DBI(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
+                dbi.registerMapper(new DatabaseProjectStoreManager.StoredProjectWithRevisionMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredRevisionMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionMapper(configMapper));
                 dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionWithProjectMapper(configMapper));

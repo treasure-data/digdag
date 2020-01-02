@@ -1,11 +1,10 @@
 package io.digdag.server;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.spi.AuthenticatedUser;
+import io.digdag.spi.Authenticator;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
@@ -21,43 +20,54 @@ public class AuthenticatorTest
     {
         Authenticator.Result rejection = Authenticator.Result.reject("foobar");
         assertThat(rejection.isAccepted(), is(false));
-        assertThat(rejection.getErrorMessage(), is(Optional.of("foobar")));
-        assertThat(rejection.getAuthenticatedUser(), is(Optional.absent()));
+        assertThat(rejection.getErrorMessage(), is("foobar"));
+        assertThat(rejection.isAdmin(), is(false));
     }
 
     @Test
     public void accept()
             throws Exception
     {
-        final Config userInfo = CF.create().set("k1", "v1");
-        final Config userContext = CF.create().set("k2", "v2");
+        {
+            Authenticator.Result acceptance = Authenticator.Result.accept(17);
+            assertThat(acceptance.isAccepted(), is(true));
+            assertThat(acceptance.getSiteId(), is(17));
+            assertThat(acceptance.getUserInfo(), is(Optional.absent()));
+            assertThat(acceptance.isAdmin(), is(false));
+        }
 
-        final AuthenticatedUser user = AuthenticatedUser.builder()
-                .siteId(17)
-                .isAdmin(false)
-                .userInfo(userInfo)
-                .userContext(userContext)
-                .build();
-        final Authenticator.Result acceptance = Authenticator.Result.accept(user, () -> ImmutableMap.of());
-        assertThat(acceptance.isAccepted(), is(true));
-        assertThat(acceptance.getAuthenticatedUser().get().getSiteId(), is(user.getSiteId()));
-        assertThat(acceptance.getAuthenticatedUser().get().isAdmin(), is(user.isAdmin()));
-        assertThat(acceptance.getAuthenticatedUser().get().getUserInfo(), is(userInfo));
-        assertThat(acceptance.getAuthenticatedUser().get().getUserContext(), is(userContext));
+        {
+            Config userinfo = CF.create();
+            userinfo.set("foo" ,"bar");
+            Authenticator.Result acceptance = Authenticator.Result.accept(17, userinfo);
+            assertThat(acceptance.isAccepted(), is(true));
+            assertThat(acceptance.getSiteId(), is(17));
+            assertThat(acceptance.getUserInfo(), is(Optional.of(userinfo)));
+            assertThat(acceptance.isAdmin(), is(false));
+        }
+
+        {
+            Config userinfo = CF.create();
+            userinfo.set("foo" ,"bar");
+            Authenticator.Result acceptance = Authenticator.Result.accept(17, Optional.of(userinfo));
+            assertThat(acceptance.isAccepted(), is(true));
+            assertThat(acceptance.getSiteId(), is(17));
+            assertThat(acceptance.getUserInfo(), is(Optional.of(userinfo)));
+            assertThat(acceptance.isAdmin(), is(false));
+        }
     }
 
     @Test
     public void admin()
             throws Exception
     {
-        final AuthenticatedUser user = AuthenticatedUser.builder()
+        Authenticator.Result acceptance = Authenticator.Result.builder()
                 .siteId(17)
                 .isAdmin(true)
-                .userInfo(CF.create())
-                .userContext(CF.create())
                 .build();
-        final Authenticator.Result acceptance = Authenticator.Result.accept(user, () -> ImmutableMap.of());
+
         assertThat(acceptance.isAccepted(), is(true));
-        assertThat(acceptance.getAuthenticatedUser().get().isAdmin(), is(true));
+        assertThat(acceptance.getSiteId(), is(17));
+        assertThat(acceptance.isAdmin(), is(true));
     }
 }

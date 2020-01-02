@@ -1,14 +1,12 @@
 package io.digdag.core.log;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.zip.GZIPOutputStream;
+import java.nio.file.FileAlreadyExistsException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Files;
@@ -21,16 +19,11 @@ import io.digdag.core.agent.AgentId;
 import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;
 import io.digdag.spi.LogFilePrefix;
-import io.digdag.spi.LogFileHandle;
-import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.client.config.Config;
-import java.time.format.DateTimeFormatter;
-import static java.util.Locale.ENGLISH;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.APPEND;
 
 public class LocalFileLogServerFactory
     implements LogServerFactory
@@ -38,6 +31,7 @@ public class LocalFileLogServerFactory
     private static final String LOG_GZ_FILE_SUFFIX = ".log.gz";
 
     private final Path logPath;
+    private final long logSplitSize;
     private final AgentId agentId;
 
     @Inject
@@ -47,6 +41,7 @@ public class LocalFileLogServerFactory
             .toAbsolutePath()
             .normalize();
         this.agentId = agentId;
+        this.logSplitSize = systemConfig.get("log-server.local.split_size", Long.class, 0L);
     }
 
     @Override
@@ -70,11 +65,15 @@ public class LocalFileLogServerFactory
             extends AbstractFileLogServer
     {
         private final Path logPath;
+        private final ReentrantReadWriteLock lock;
+        private final ReentrantReadWriteLock.ReadLock logAppendLock;
 
         public LocalFileLogServer(Path logPath)
             throws IOException
         {
             this.logPath = logPath;
+            this.lock = new ReentrantReadWriteLock();
+            this.logAppendLock = lock.readLock();
         }
 
         @Override
@@ -144,7 +143,7 @@ public class LocalFileLogServerFactory
         public LocalFileDirectTaskLogger newDirectTaskLogger(LogFilePrefix prefix, String taskName)
         {
             try {
-                return new LocalFileDirectTaskLogger(prefix, taskName);
+                return new LocalFileDirectTaskLogger(prefix, taskName, logSplitSize);
             }
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
@@ -154,20 +153,40 @@ public class LocalFileLogServerFactory
         class LocalFileDirectTaskLogger
             implements TaskLogger
         {
-            private final OutputStream output;
+            private CountingLogOutputStream output;
+            private final long splitSize;;
 
-            public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName)
+            private final LogFilePrefix prefix;
+            private final String taskName;
+
+            public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName, Long splitSize)
                 throws IOException
+            {
+                this.prefix = prefix;
+                this.taskName = taskName;
+                this.splitSize = splitSize;
+
+                this.output = createOutput(prefix, taskName, agentId);
+            }
+
+            protected CountingLogOutputStream createOutput(LogFilePrefix prefix, String taskName, AgentId agentId)
+                    throws IOException
             {
                 String dateDir = LogFiles.formatDataDir(prefix);
                 String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
                 String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
 
                 Path dir = getPrefixDir(dateDir, attemptDir);
-                Files.createDirectories(dir);
+                if (!Files.exists(dir)) {
+                    try {
+                        Files.createDirectories(dir);
+                    }
+                    catch (FileAlreadyExistsException e) {
+                        // do nothing
+                    }
+                }
                 Path path = dir.resolve(fileName);
-
-                this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024);
+                return new CountingLogOutputStream(path);
             }
 
             @Override
@@ -180,22 +199,49 @@ public class LocalFileLogServerFactory
             @Override
             public void log(byte[] data, int off, int len)
             {
+                write(data, off, len);
+            }
+
+            protected void write(byte[] data, int off, int len)
+            {
                 try {
-                    output.write(data, off, len);
+                    logAppendLock.lock();
+                    try {
+                        output.write(data, off, len);
+                        if (splitSize > 0 && output.getUncompressedSize() > splitSize) {
+                            switchLogFile();
+                        }
+                    }
+                    finally {
+                        logAppendLock.unlock();
+                    }
                 }
                 catch (IOException ex) {
+                    // here can do almost nothing. adding logs to logger causes infinite loop
                     throw Throwables.propagate(ex);
                 }
             }
 
+            private void switchLogFile()
+                    throws IOException
+            {
+                output.close();
+                output = createOutput(prefix, taskName, agentId);
+            }
+
+
             @Override
             public void close()
             {
+                logAppendLock.lock();
                 try {
                     output.close();
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
+                }
+                finally {
+                    logAppendLock.unlock();
                 }
             }
         }

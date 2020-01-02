@@ -13,6 +13,7 @@ apply plugin: 'maven'
 allprojects {
     group = 'io.digdag'
     version = '0.10.0-SNAPSHOT'
+    version = '0.9.41-SNAPSHOT'
 
     ext {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
@@ -127,6 +128,7 @@ subprojects {
         jacksonDatabindVersion = "2.9.10"
         awsJavaSdkVersion = "1.11.545"
         guavaVersion = "19.0"
+        guavaVersion = "27.1-jre"
     }
 
     tasks.withType(JavaCompile) {
@@ -418,6 +420,17 @@ bintrayUpload.dependsOn('cli')
 
 task classpath(dependsOn: [':digdag-cli:classpath']){
     doLast {
+    }
+}
+
+task swaggerYaml(dependsOn: ':digdag-cli:shadowJar') {
+    doLast {
+        file("config/dummy.properties").write("")
+        Process server = ["java", "-jar", "digdag-cli/build/libs/digdag-cli-${project.version}-all.jar", "server", "-c", "config/dummy.properties", "--memory", "--enable-swagger"].execute()
+        sleep(5 * 1000)
+        ["curl", "http://127.0.0.1:65432/api/swagger.yaml", "-o", "digdag-docs/src/_extra/api/swagger.yaml"].execute().waitFor()
+        server.destroy()
+        server.waitForOrKill(1000)
     }
 }
 

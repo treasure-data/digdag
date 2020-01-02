@@ -24,6 +24,8 @@ import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -76,8 +78,11 @@ public class SessionResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/sessions")
+    @ApiOperation("List sessions")
     public RestSessionCollection getSessions(
+            @ApiParam(value="list sessions whose id is grater than this id for pagination", required=false)
             @QueryParam("last_id") Long lastId,
+            @ApiParam(value="number of sessions to return", required=false)
             @QueryParam("page_size") Integer pageSize)
             throws AccessControlException
     {
@@ -105,7 +110,10 @@ public class SessionResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/sessions/{id}")
-    public RestSession getSession(@PathParam("id") long id)
+    @ApiOperation("Get a session")
+    public RestSession getSession(
+            @ApiParam(value="session id", required=true)
+            @PathParam("id") long id)
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestSession, ResourceNotFoundException, AccessControlException>begin(() -> {
@@ -125,9 +133,13 @@ public class SessionResource
     @DigdagTimed(category = "api", appendMethodName = true)
     @GET
     @Path("/api/sessions/{id}/attempts")
+    @ApiOperation("List attempts of a session")
     public RestSessionAttemptCollection getSessionAttempts(
+            @ApiParam(value="session id", required=true)
             @PathParam("id") long id,
+            @ApiParam(value="list attempts whose id is grater than this id for pagination", required=false)
             @QueryParam("last_id") Long lastId,
+            @ApiParam(value="number of attempts to return", required=false)
             @QueryParam("page_size") Integer pageSize)
             throws ResourceNotFoundException, AccessControlException
     {

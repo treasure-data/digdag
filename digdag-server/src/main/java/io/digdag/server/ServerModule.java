@@ -11,6 +11,7 @@ import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.database.DatabaseSecretControlStoreManager;
 import io.digdag.core.database.DatabaseSecretStoreManager;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
@@ -30,6 +31,7 @@ import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.Authenticator;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -50,6 +52,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static io.digdag.guice.rs.GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_ATTRIBUTE;
@@ -109,7 +112,7 @@ public class ServerModule
 
     protected void bindAuthenticator()
     {
-        binder().bind(Authenticator.class).to(JwtAuthenticator.class);
+        binder().bind(Authenticator.class).toProvider(AuthenticatorProvider.class);
     }
 
     protected void bindAuthorization()
@@ -171,6 +174,33 @@ public class ServerModule
         public JacksonJsonProvider get()
         {
             return new JacksonJsonProvider(mapper);
+        }
+    }
+
+    public static class AuthenticatorProvider
+            implements com.google.inject.Provider<Authenticator>
+    {
+        private final Authenticator authenticator;
+
+        @Inject
+        public AuthenticatorProvider(PluginSet.WithInjector pluginSet, ServerConfig serverConfig)
+        {
+            List<Authenticator> authenticators = pluginSet.getServiceProviders(Authenticator.class);
+            String configuredAuthenticatorClass = serverConfig.getAuthenticatorClass();
+
+            for (Authenticator candidate : authenticators) {
+                if (candidate.getClass().getName().equals(configuredAuthenticatorClass)) {
+                    authenticator = candidate;
+                    return;
+                }
+            }
+            throw new IllegalArgumentException("Configured authenticatorClass not found: " + configuredAuthenticatorClass);
+        }
+
+        @Override
+        public Authenticator get()
+        {
+            return authenticator;
         }
     }
 
