@@ -21,7 +21,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
 import static java.lang.ProcessBuilder.Redirect.PIPE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -81,28 +80,22 @@ public class ShellNotificationSender
                 }
             });
 
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    logger.info("[ShellNotification](" + command + "): " + line);
+                }
+            }
+
             boolean exited = process.waitFor(timeoutMs, MILLISECONDS);
-
-            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            Stream<String> lines = br.lines();
-            StringBuilder sb = new StringBuilder();
-            lines.forEach(line -> {
-                sb.append(line);
-                sb.append(System.lineSeparator());
-            });
-            String processLog = sb.toString();
-
             if (!exited) {
                 process.destroyForcibly();
-                throw new NotificationException("Notification shell command timed out: " + command + ", command log:" + System.lineSeparator() + processLog);
+                throw new NotificationException("Notification shell command timed out: " + command);
             }
             int exitCode = process.exitValue();
             if (exitCode != 0) {
-                throw new NotificationException("Notification shell command failed: " + command + ", exit code = " + exitCode + ", command log:" + System.lineSeparator() + processLog);
+                throw new NotificationException("Notification shell command failed: " + command + ", exit code = " + exitCode);
             }
-
-            logger.info("Notification shell command: " + command);
-            logger.info("Notification shell command log:" + System.lineSeparator() + processLog);
         }
         catch (IOException e) {
             throw new NotificationException("Failed to execute notification shell command: " + command, e);
