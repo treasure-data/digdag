@@ -49,6 +49,7 @@ public class AuthRequestFilter
             requestContext.setProperty("siteId", result.getSiteId());
             requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create()));
             requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
+            requestContext.setProperty("authenticatedUser", result.getAuthenticatedUser().get());
             requestContext.setProperty("admin", result.isAdmin());
         }
         else {

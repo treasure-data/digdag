@@ -19,6 +19,7 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.server.ClientVersionChecker;
 import io.digdag.server.JmxErrorReporter;
 import io.digdag.server.ServerBootstrap;
@@ -33,10 +34,14 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Map;
 
+import io.digdag.standards.auth.jwt.JwtAuthenticator;
+import io.digdag.standards.auth.jwt.JwtAuthenticatorConfig;
+import io.digdag.standards.auth.jwt.JwtAuthenticatorConfigProvider;
 import io.digdag.server.ac.DefaultAccessController;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.Authenticator;
 import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
@@ -98,7 +103,7 @@ public class AccessControllerIT
             extends Server
     {
         @Override
-        public ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig)
+        public ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig, final PluginSet systemPlugins)
         {
             return new ACTestServerBootstrap(version, serverConfig);
         }
@@ -138,6 +143,14 @@ public class AccessControllerIT
                         {
                             binder().bind(AccessController.class).to(ProjectBasedAccessController.class);
                         }
+
+                        @Override
+                        protected void bindAuthenticator()
+                        {
+                            binder().bind(JwtAuthenticatorConfig.class).toProvider(JwtAuthenticatorConfigProvider.class).asEagerSingleton();
+                            binder().bind(Authenticator.class).to(JwtAuthenticator.class);
+                        }
+
                     });
         }
 

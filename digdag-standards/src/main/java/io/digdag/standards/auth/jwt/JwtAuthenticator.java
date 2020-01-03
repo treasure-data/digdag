@@ -1,6 +1,7 @@
 package io.digdag.standards.auth.jwt;
 
 import com.google.inject.Inject;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.Authenticator;
 import io.jsonwebtoken.Claims;
@@ -24,10 +25,12 @@ public class JwtAuthenticator
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticator.class);
 
     private final JwtAuthenticatorConfig config;
+    private final ConfigFactory cf;
 
     @Inject
-    public JwtAuthenticator(JwtAuthenticatorConfig config)
+    public JwtAuthenticator(final ConfigFactory cf, JwtAuthenticatorConfig config)
     {
+        this.cf = cf;
         this.config = config;
     }
 
@@ -102,6 +105,12 @@ public class JwtAuthenticator
         return Result.builder()
                 .siteId(siteId)
                 .isAdmin(admin)
+                .authenticatedUser(AuthenticatedUser.builder()
+                      .siteId(siteId)
+                      .isAdmin(admin)
+                      .userInfo(cf.create())
+                      .userContext(cf.create())
+                      .build())
                 .build();
     }
 }

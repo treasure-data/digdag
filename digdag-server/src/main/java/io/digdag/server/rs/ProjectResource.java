@@ -275,7 +275,7 @@ public class ProjectResource
                             getAuthenticatedUser());
 
                     // TODO fix n-m db access
-                    collection = ps.getProjectsWithLatestRevision(100, Optional.absent(),
+                    collection = ps.getProjects(100, Optional.absent(),
                             ac.getListProjectsFilterOfSite(
                                     siteTarget,
                                     getAuthenticatedUser()))

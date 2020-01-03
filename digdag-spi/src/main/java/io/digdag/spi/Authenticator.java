@@ -66,6 +66,8 @@ public interface Authenticator
 
         Optional<Config> getUserInfo();
 
+        Optional<AuthenticatedUser> getAuthenticatedUser();
+
         Optional<Supplier<Map<String, String>>> getSecrets();
 
         static Builder builder() {
@@ -77,6 +79,7 @@ public interface Authenticator
             Builder userInfo(Config userInfo);
             Builder secrets(Supplier<Map<String, String>> secrets);
             Builder isAdmin(boolean admin);
+            Builder authenticatedUser(AuthenticatedUser authenticatedUser);
             Builder errorMessage(String errorMessage);
             Result build();
         }

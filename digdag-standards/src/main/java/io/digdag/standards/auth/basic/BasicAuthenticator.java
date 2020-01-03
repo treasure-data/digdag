@@ -1,7 +1,9 @@
 package io.digdag.standards.auth.basic;
 
 import com.google.inject.Inject;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Authenticator;
+import io.digdag.spi.AuthenticatedUser;
 import org.jboss.resteasy.util.BasicAuthHelper;
 
 import javax.ws.rs.container.ContainerRequestContext;
@@ -13,10 +15,12 @@ public class BasicAuthenticator
     implements Authenticator
 {
     private final Optional<BasicAuthenticatorConfig> config;
+    private final ConfigFactory cf;
 
     @Inject
-    public BasicAuthenticator(Optional<BasicAuthenticatorConfig> config)
+    public BasicAuthenticator(final ConfigFactory cf, Optional<BasicAuthenticatorConfig> config)
     {
+        this.cf = cf;
         this.config = config;
     }
 
@@ -43,6 +47,12 @@ public class BasicAuthenticator
             return Result.builder()
                     .isAdmin(isAdmin)
                     .siteId(0)
+                    .authenticatedUser(AuthenticatedUser.builder()
+                          .siteId(0)
+                          .isAdmin(isAdmin)
+                          .userInfo(cf.create())
+                          .userContext(cf.create())
+                          .build())
                     .build();
         } else {
             return Result.reject("unauthorized");

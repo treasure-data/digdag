@@ -1,10 +1,12 @@
 package io.digdag.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.Authenticator;
 import org.junit.Before;
 import org.junit.Test;
@@ -116,6 +118,12 @@ public class AuthRequestFilterTest
                 .userInfo(userInfo)
                 .secrets(secrets)
                 .isAdmin(true)
+                .authenticatedUser(AuthenticatedUser.builder()
+                      .siteId(17)
+                      .isAdmin(true)
+                      .userInfo(userInfo)
+                      .userContext(CONFIG_FACTORY.create())
+                      .build())
                 .build();
         when(containerRequestContext.getUriInfo()).thenReturn(uriInfo);
         when(authenticator.authenticate(containerRequestContext)).thenReturn(acceptance);

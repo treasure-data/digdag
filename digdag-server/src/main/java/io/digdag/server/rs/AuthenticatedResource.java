@@ -18,12 +18,12 @@ public abstract class AuthenticatedResource
     {
         // siteId is set by JwtAuthInterceptor
         // TODO validate before causing NPE. Improve guice-rs to call @PostConstruct
-        return getAuthenticatedUser().getSiteId();
+        return (int) request.getAttribute("siteId");
     }
 
     protected Config getUserInfo()
     {
-        return getAuthenticatedUser().getUserInfo();
+        return (Config) request.getAttribute("userInfo");
     }
 
     protected AuthenticatedUser getAuthenticatedUser()
