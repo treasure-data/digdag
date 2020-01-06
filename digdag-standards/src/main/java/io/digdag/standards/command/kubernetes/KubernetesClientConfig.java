@@ -19,35 +19,56 @@ public class KubernetesClientConfig
             final Config systemConfig,
             final Config requestConfig)
     {
-        Config config;
-        if (requestConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
+        if (requestConfig != null && requestConfig.has("kubernetes")) {
             // from task request config
-            config = requestConfig;
+            return KubernetesClientConfig.createFromTaskRequestConfig(name, requestConfig);
         }
         else {
             // from system config
-            config = systemConfig;
+            return KubernetesClientConfig.createFromSystemConfig(name, systemConfig);
         }
-        return KubernetesClientConfig.create(name, config);
     }
 
     @VisibleForTesting
-    static KubernetesClientConfig create(final Optional<String> name, final Config config)
+    private static KubernetesClientConfig createFromTaskRequestConfig(final Optional<String> name,
+                                                                      final Config requestConfig)
+    {
+        if (!requestConfig.has("kubernetes")) {
+            throw new ConfigException("not found 'kubernetes'");
+        }
+        final Config kubernetesConfig = requestConfig.getNested("kubernetes");
+
+        final String clusterName;
+        if (!name.isPresent()) {
+            clusterName = kubernetesConfig.get("name", String.class);
+        }
+        else {
+            clusterName = name.get();
+        }
+        return createKubeConfig(clusterName, kubernetesConfig);
+    }
+
+    @VisibleForTesting
+    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name, final Config systemConfig)
     {
         final String clusterName;
         if (!name.isPresent()) {
-            if (!config.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
+            if (!systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
                 throw new ConfigException("agent.command_executor.type: is not 'kubernetes'");
             }
-            clusterName = config.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
+            clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
         }
         else {
             clusterName = name.get();
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = StorageManager.extractKeyPrefix(config, keyPrefix);
-        if (extracted.has("kube_config_path")) {
-            String kubeConfigPath = extracted.get("kube_config_path", String.class);
+        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
+        return createKubeConfig(clusterName, extracted);
+    }
+
+    private static KubernetesClientConfig createKubeConfig(final String clusterName, final Config config){
+        if (config.has("kube_config_path")) {
+            String kubeConfigPath = config.get("kube_config_path", String.class);
             io.fabric8.kubernetes.client.Config validatedKubeConfig;
             validatedKubeConfig = validateKubeConfig(getKubeConfigFromPath(kubeConfigPath));
             return create(clusterName,
@@ -56,7 +77,7 @@ public class KubernetesClientConfig
                     validatedKubeConfig.getOauthToken(),
                     validatedKubeConfig.getNamespace());
         } else {
-            final Config validatedConfig = validateConfig(extracted);
+            final Config validatedConfig = validateConfig(config);
             return create(clusterName,
                     validatedConfig.get("master", String.class),
                     validatedConfig.get("certs_ca_data", String.class),
