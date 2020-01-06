@@ -21,7 +21,7 @@ public class KubernetesClientConfig
     {
         if (requestConfig != null && requestConfig.has("kubernetes")) {
             // from task request config
-            return KubernetesClientConfig.createFromTaskRequestConfig(name, requestConfig);
+            return KubernetesClientConfig.createFromTaskRequestConfig(name, requestConfig.getNested("kubernetes"));
         }
         else {
             // from system config
@@ -31,13 +31,8 @@ public class KubernetesClientConfig
 
     @VisibleForTesting
     private static KubernetesClientConfig createFromTaskRequestConfig(final Optional<String> name,
-                                                                      final Config requestConfig)
+            final Config kubernetesConfig)
     {
-        if (!requestConfig.has("kubernetes")) {
-            throw new ConfigException("not found 'kubernetes'");
-        }
-        final Config kubernetesConfig = requestConfig.getNested("kubernetes");
-
         final String clusterName;
         if (!name.isPresent()) {
             clusterName = kubernetesConfig.get("name", String.class);
@@ -49,7 +44,8 @@ public class KubernetesClientConfig
     }
 
     @VisibleForTesting
-    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name, final Config systemConfig)
+    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
+            final Config systemConfig)
     {
         final String clusterName;
         if (!name.isPresent()) {
