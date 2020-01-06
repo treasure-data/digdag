@@ -31,21 +31,21 @@ public class KubernetesClientConfig
 
     @VisibleForTesting
     private static KubernetesClientConfig createFromTaskRequestConfig(final Optional<String> name,
-            final Config kubernetesConfig)
+            final Config config)
     {
         final String clusterName;
         if (!name.isPresent()) {
-            clusterName = kubernetesConfig.get("name", String.class);
+            clusterName = config.get("name", String.class);
         }
         else {
             clusterName = name.get();
         }
-        return createKubeConfig(clusterName, kubernetesConfig);
+        return createKubeConfig(clusterName, config);
     }
 
     @VisibleForTesting
     static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
-            final Config systemConfig)
+            final io.digdag.client.config.Config systemConfig)
     {
         final String clusterName;
         if (!name.isPresent()) {
