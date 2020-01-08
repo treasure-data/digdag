@@ -110,8 +110,8 @@ In sla: directive, you can select either the ``time`` or ``duration`` option.
 =============================== ================================================== ==========================
 Syntax                          Description                                        Example
 =============================== ================================================== ==========================
-time>: ``HH:MM:SS``             Set this job must be completed by ``HH:MM:SS``     time>: 12:30:00
-duration>: ``HH:MM:SS``         Set this job must be completed during ``HH:MM:SS`` duration>: 00:05:00
+time: ``HH:MM:SS``             Set this job must be completed by ``HH:MM:SS``     time: 12:30:00
+duration: ``HH:MM:SS``         Set this job must be completed during ``HH:MM:SS`` duration: 00:05:00
 =============================== ================================================== ==========================
 
 Options
