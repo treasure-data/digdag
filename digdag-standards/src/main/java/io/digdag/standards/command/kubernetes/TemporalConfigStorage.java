@@ -1,7 +1,9 @@
 package io.digdag.standards.command.kubernetes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -17,8 +19,27 @@ public class TemporalConfigStorage
 
     public static TemporalConfigStorage createByTarget(final StorageManager storageManager, final String target, final Config systemConfig)
     {
-        final Storage storage = storageManager.create(systemConfig, TEMPORAL_CONFIG_STORAGE_PARAMS_PREFIX + target + ".");
+        Config validatedSystemConfig = validateSystemConfig(target, systemConfig);
+        final Storage storage = storageManager.create(validatedSystemConfig, TEMPORAL_CONFIG_STORAGE_PARAMS_PREFIX + target + ".");
         return new TemporalConfigStorage(storage);
+    }
+
+    @VisibleForTesting
+    static Config validateSystemConfig(String target, Config systemConfig)
+    {
+        String storageTypeKey = TEMPORAL_CONFIG_STORAGE_PARAMS_PREFIX + target + ".type";
+        if (!systemConfig.has(storageTypeKey))
+        {
+            throw new ConfigException(String.format("kubernetes config_storage must have %s", storageTypeKey));
+        }
+
+        String storageType = systemConfig.get(storageTypeKey, String.class);
+        String storageBucketKey = TEMPORAL_CONFIG_STORAGE_PARAMS_PREFIX + target + "." + storageType + ".bucket";
+        if (!systemConfig.has(storageBucketKey))
+        {
+            throw new ConfigException(String.format("kubernetes config_storage must have %s", storageBucketKey));
+        }
+        return systemConfig;
     }
 
     private final Storage storage;
