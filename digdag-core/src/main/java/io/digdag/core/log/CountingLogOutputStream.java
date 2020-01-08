@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.zip.GZIPOutputStream;
 
-public class CountingLogOutputStream
+class CountingLogOutputStream
     extends GZIPOutputStream
 {
     private final Path path;
