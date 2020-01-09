@@ -11,7 +11,7 @@ public interface ProjectStore
 {
     List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 
-    List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId);
+    List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 
     ProjectMap getProjectsByIdList(List<Integer> projIdList);
 
