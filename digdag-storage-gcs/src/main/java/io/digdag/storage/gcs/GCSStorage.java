@@ -4,6 +4,7 @@ import com.google.api.gax.paging.Page;
 import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.HttpMethod;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageException;
@@ -146,7 +147,7 @@ public class GCSStorage
         final long secondsToExpire = config.get("direct_download_expiration", Long.class, 10L*60);
 
         BlobInfo blobInfo = BlobInfo.newBuilder(bucket, object).build();
-        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.withV4Signature());
+        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.httpMethod(HttpMethod.GET), Storage.SignUrlOption.withV4Signature());
         String url = signedUrl.toString();
 
         return Optional.of(DirectDownloadHandle.of(url));
@@ -158,7 +159,7 @@ public class GCSStorage
         final long secondsToExpire = config.get("direct_upload_expiration", Long.class, 10L*60);
 
         BlobInfo blobInfo = BlobInfo.newBuilder(bucket, object).build();
-        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.withV4Signature());
+        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.httpMethod(HttpMethod.POST), Storage.SignUrlOption.withV4Signature());
         String url = signedUrl.toString();
 
         return Optional.of(DirectUploadHandle.of(url));
