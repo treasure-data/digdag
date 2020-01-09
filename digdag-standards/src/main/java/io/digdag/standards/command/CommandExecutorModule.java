@@ -1,6 +1,7 @@
 package io.digdag.standards.command;
 
 import com.google.inject.Binder;
+import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.standards.command.ecs.DefaultEcsClientFactory;
