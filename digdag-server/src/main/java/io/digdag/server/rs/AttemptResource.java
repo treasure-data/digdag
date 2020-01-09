@@ -166,7 +166,6 @@ public class AttemptResource
     public RestSessionAttempt getAttempt(
             @ApiParam(value="attempt id", required=true)
             @PathParam("id") long id)
-            throws ResourceNotFoundException
             throws ResourceNotFoundException, AccessControlException
     {
         return tm.<RestSessionAttempt, ResourceNotFoundException, AccessControlException >begin(() -> {

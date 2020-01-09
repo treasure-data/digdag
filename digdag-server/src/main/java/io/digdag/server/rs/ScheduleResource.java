@@ -9,6 +9,7 @@ import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -191,7 +192,6 @@ public class ScheduleResource
             @ApiParam(value="session id", required=true)
             @PathParam("id") int id,
             RestScheduleBackfillRequest request)
-            throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException
             throws ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException
     {
         return tm.<RestScheduleAttemptCollection, ResourceConflictException, ResourceLimitExceededException, ResourceNotFoundException, AccessControlException>begin(() ->

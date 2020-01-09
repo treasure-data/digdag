@@ -593,7 +593,7 @@ public class ProjectResource
             @ApiParam(value="project id", required=true)
             @PathParam("id") int projId,
             @ApiParam(value="use a given revision of a project instead of the latest revision", required=true)
-            @QueryParam("revision") String revName)
+            @QueryParam("revision") String revName,
             @ApiParam(value="enable returning direct download handle", required=false)
             @QueryParam("direct_download") Boolean directDownloadAllowed)
             throws ResourceNotFoundException, AccessControlException
