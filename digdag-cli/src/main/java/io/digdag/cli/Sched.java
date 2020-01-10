@@ -68,7 +68,6 @@ public class Sched
         err.println("        --max-task-threads N         limit maximum number of task execution threads");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions(env, err);
         return systemExit(error);
     }

@@ -330,9 +330,9 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Example: ``-P params.yml``
 
 :command:`-c, --config PATH`
-  Server configuration property path. See the followings for details.
+  Configuration file to load. (default: ~/.config/digdag/config) See the followings for details.
 
-  Example: ``-c digdag.properties``
+  Example: ``-c digdag-server/server.properties``
 
 
 In the config file, following parameters are available
