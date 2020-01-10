@@ -898,7 +898,7 @@ public class ProjectResource
     @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
     @ApiOperation("Set a secret to a project")
-    public void putProjectSecret(
+    public RestSecret putProjectSecret(
             @ApiParam(value="project id", required=true)
             @PathParam("id") int projectId,
             @ApiParam(value="secret key", required=true)
@@ -931,7 +931,7 @@ public class ProjectResource
     @DELETE
     @Path("/api/projects/{id}/secrets/{key}")
     @ApiOperation("Delete a secret from a project")
-    public void deleteProjectSecret(
+    public RestSecret deleteProjectSecret(
             @ApiParam(value="project id", required=true)
             @PathParam("id") int projectId,
             @ApiParam(value="secret key", required=true)

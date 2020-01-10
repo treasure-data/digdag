@@ -357,7 +357,7 @@ public class AttemptResource
     @Consumes("application/json")
     @Path("/api/attempts/{id}/kill")
     @ApiOperation("Set a cancel-requested flag on a running attempt")
-    public void killAttempt(
+    public Response killAttempt(
             @ApiParam(value="attempt id", required=true)
             @PathParam("id") long id)
             throws ResourceNotFoundException, ResourceConflictException, AccessControlException

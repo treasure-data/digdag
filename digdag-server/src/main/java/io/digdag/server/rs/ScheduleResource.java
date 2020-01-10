@@ -188,7 +188,7 @@ public class ScheduleResource
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
     @ApiOperation("Re-schedule past sessions by count or duration")
-    public RestSessionAttemptCollection backfillSchedule(
+    public RestScheduleAttemptCollection backfillSchedule(
             @ApiParam(value="session id", required=true)
             @PathParam("id") int id,
             RestScheduleBackfillRequest request)
