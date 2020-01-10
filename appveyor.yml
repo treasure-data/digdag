@@ -18,7 +18,7 @@ environment:
   - JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
 
 install:
-  - ps: Install-Product node '8'
+  - ps: Install-Product node '12'
   - node --version
   - npm --version
 
