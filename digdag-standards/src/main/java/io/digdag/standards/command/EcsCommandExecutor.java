@@ -66,6 +66,7 @@ public class EcsCommandExecutor
 
     private static final String ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     private static final String DEFAULT_COMMAND_TASK_TTL = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "default_command_task_ttl";
+    private static final String ECS_TASK_FINISHED = "ECS_TASK_FINISHED";
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -311,6 +312,11 @@ public class EcsCommandExecutor
         nextStatus.set("executor_state", nextExecutorStatus);
         final boolean isFinished;
         if (isFinished = taskStatus.isFinished()) {
+            ObjectNode currentExecutorStatus = fetchLogEvents(client, task, previousStatus, nextExecutorStatus);
+            while (currentExecutorStatus.get("logging_finished") == null) {
+                currentExecutorStatus = fetchLogEvents(client, task, previousStatus, currentExecutorStatus);
+            }
+
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
 
@@ -361,7 +367,12 @@ public class EcsCommandExecutor
         }
         else {
             for (final OutputLogEvent logEvent : logEvents) {
-                log(logEvent.getMessage() + "\n", clog);
+                String log = logEvent.getMessage();
+                if (log.equals(ECS_TASK_FINISHED)) {
+                    nextExecutorStatus.set("logging_finished", JsonNodeFactory.instance.textNode("true"));
+                } else {
+                    log(log + "\n", clog);
+                }
             }
             nextExecutorStatus.set("next_token", JsonNodeFactory.instance.textNode(nextForwardToken));
         }
@@ -618,6 +629,7 @@ public class EcsCommandExecutor
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         bashArguments.add(s("curl -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        bashArguments.add(s("echo %s", ECS_TASK_FINISHED));
         bashArguments.add(s("exit $exit_code"));
 
         final List<String> bashCommand = ImmutableList.<String>builder()
