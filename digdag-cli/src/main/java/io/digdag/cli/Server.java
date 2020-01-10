@@ -118,7 +118,8 @@ public class Server
         err.println("        --disable-executor-loop      disable workflow executor loop");
         err.println("        --disable-scheduler          disable scheduler");
         err.println("        --disable-local-agent        disable local task execution");
-        err.println("        --enable-swagger             enable swagger api");
+        err.println("        --enable-swagger             enable swagger api. Do not use in production because CORS");
+        err.println("                                     is also enabled on from any domains with all HTTP methods");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
