@@ -161,3 +161,5 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
   The id of the BigQuery job that executed this query.
 
+  Note: `bq.last_jobid` parameter is kept only for backward compatibility but you must not use it because it will be removed removed in a near future release.
+
