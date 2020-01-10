@@ -154,37 +154,29 @@ public class LocalFileLogServerFactory
             implements TaskLogger
         {
             private CountingLogOutputStream output;
-            private final long splitSize;;
+            private final long splitSize;
 
-            private final LogFilePrefix prefix;
+            private final Path dir;
             private final String taskName;
 
             public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName, Long splitSize)
                 throws IOException
             {
-                this.prefix = prefix;
-                this.taskName = taskName;
-                this.splitSize = splitSize;
-
-                this.output = createOutput(prefix, taskName, agentId);
-            }
-
-            protected CountingLogOutputStream createOutput(LogFilePrefix prefix, String taskName, AgentId agentId)
-                    throws IOException
-            {
                 String dateDir = LogFiles.formatDataDir(prefix);
                 String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
-                String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
+                this.dir = getPrefixDir(dateDir, attemptDir);
+                this.taskName = taskName;
 
-                Path dir = getPrefixDir(dateDir, attemptDir);
-                if (!Files.exists(dir)) {
-                    try {
-                        Files.createDirectories(dir);
-                    }
-                    catch (FileAlreadyExistsException e) {
-                        // do nothing
-                    }
-                }
+                this.splitSize = splitSize;
+
+                this.output = openNewFile();
+            }
+
+            private CountingLogOutputStream openNewFile()
+                    throws IOException
+            {
+                String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
+                Files.createDirectories(dir);
                 Path path = dir.resolve(fileName);
                 return new CountingLogOutputStream(path);
             }
@@ -197,24 +189,18 @@ public class LocalFileLogServerFactory
             }
 
             @Override
-            public void log(byte[] data, int off, int len)
-            {
-                write(data, off, len);
-            }
-
-            protected void write(byte[] data, int off, int len)
+            public synchronized void log(byte[] data, int off, int len)
             {
                 try {
-                    logAppendLock.lock();
-                    try {
-                        output.write(data, off, len);
-                        if (splitSize > 0 && output.getUncompressedSize() > splitSize) {
-                            switchLogFile();
-                        }
+                    if (output == null) {
+                        output = openNewFile();
                     }
-                    finally {
-                        logAppendLock.unlock();
+                    else if (splitSize > 0 && output.getUncompressedSize() > splitSize) {
+                        output.close();
+                        output = null;
+                        output = openNewFile();
                     }
+                    output.write(data, off, len);
                 }
                 catch (IOException ex) {
                     // here can do almost nothing. adding logs to logger causes infinite loop
@@ -222,26 +208,14 @@ public class LocalFileLogServerFactory
                 }
             }
 
-            private void switchLogFile()
-                    throws IOException
-            {
-                output.close();
-                output = createOutput(prefix, taskName, agentId);
-            }
-
-
             @Override
-            public void close()
+            public synchronized void close()
             {
-                logAppendLock.lock();
                 try {
                     output.close();
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
-                }
-                finally {
-                    logAppendLock.unlock();
                 }
             }
         }
