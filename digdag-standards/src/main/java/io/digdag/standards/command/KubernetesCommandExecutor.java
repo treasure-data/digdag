@@ -104,10 +104,8 @@ public class KubernetesCommandExecutor
             }
         }
         catch (ConfigException e) {
-            // TODO We'd better to implement chain of responsibility pattern for multiple CommandExecutor selection.
-
-            // fall back to DockerCommandExecutor
-            return docker.run(context, request);
+            logger.debug("Fall back to DockerCommandExecutor: {}", e.toString());
+            return docker.run(context, request); // fall back to DockerCommandExecutor
         }
     }
 
