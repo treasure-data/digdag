@@ -581,8 +581,9 @@ public class DatabaseProjectStoreManager
             " order by rev.id desc" +
             " limit 1" +
         ") rev" +
-        " where site_id = :siteId" +
-        " and id > :lastId" +
+        " where proj.site_id = :siteId" +
+        " and proj.name is not null" +
+        " and proj.id > :lastId" +
         " order by id asc" +
         " limit :limit")
         List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
