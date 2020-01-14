@@ -288,8 +288,24 @@ public class EcsCommandExecutor
         }
 
         final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
-        final ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
+        ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
         final ObjectNode nextExecutorStatus;
+
+        // To fetch log until all logs is written in CloudWatch, it should wait until getting finish marker in end of task.
+        // (finished previous poll once considering risk of crushing while running previous actual poll.)
+        final Optional<Long> taskFinishedAt = !previousStatus.has("task_finished_at") ?
+                Optional.absent() : Optional.of(previousStatus.get("task_finished_at").asLong());
+        if (taskFinishedAt.isPresent()) {
+            long timeout = taskFinishedAt.get() + 60;
+            do {
+                previousExecutorStatus = fetchLogEvents(client, task, previousStatus, previousExecutorStatus);
+                if (previousExecutorStatus.get("logging_finished") != null) {
+                    break;
+                }
+            } while (Instant.now().getEpochSecond() < timeout);
+            return EcsCommandStatus.of(true, previousStatus);
+        }
+
         // If the container doesn't start yet, it cannot extract any log messages from the container.
         if (taskStatus.isSameOrAfter(EcsTaskStatus.RUNNING)) {
             // if previous status has 'awslogs' log driver configuration, it tries to fetch log events by that.
@@ -310,13 +326,7 @@ public class EcsCommandExecutor
 
         final ObjectNode nextStatus = previousStatus.deepCopy();
         nextStatus.set("executor_state", nextExecutorStatus);
-        final boolean isFinished;
-        if (isFinished = taskStatus.isFinished()) {
-            ObjectNode currentExecutorStatus = fetchLogEvents(client, task, previousStatus, nextExecutorStatus);
-            while (currentExecutorStatus.get("logging_finished") == null) {
-                currentExecutorStatus = fetchLogEvents(client, task, previousStatus, currentExecutorStatus);
-            }
-
+        if (taskStatus.isFinished()) {
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
 
@@ -328,6 +338,9 @@ public class EcsCommandExecutor
 
             // Set exit code of container finished to nextStatus
             nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
+            // To fetch log until all logs is written in CloudWatch,
+            // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
+            nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
         }
         else if (defaultCommandTaskTTL.isPresent() && isRunningLongerThanTTL(previousStatus)) {
             final TaskRequest request = commandContext.getTaskRequest();
@@ -343,7 +356,8 @@ public class EcsCommandExecutor
             // Throw exception to stop the task as failure
             throw new TaskExecutionException(message);
         }
-        return EcsCommandStatus.of(isFinished, nextStatus);
+        // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
+        return EcsCommandStatus.of(false, nextStatus);
     }
 
     ObjectNode fetchLogEvents(final EcsClient client,
