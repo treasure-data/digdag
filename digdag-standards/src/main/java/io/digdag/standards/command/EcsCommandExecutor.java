@@ -289,7 +289,7 @@ public class EcsCommandExecutor
 
         final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
         ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
-        final ObjectNode nextExecutorStatus;
+        ObjectNode nextExecutorStatus;
 
         // To fetch log until all logs is written in CloudWatch, it should wait until getting finish marker in end of task.
         // (finished previous poll once considering risk of crushing while running previous actual poll.)
@@ -303,7 +303,22 @@ public class EcsCommandExecutor
                     break;
                 }
             } while (Instant.now().getEpochSecond() < timeout);
-            return EcsCommandStatus.of(true, previousStatus);
+
+            final String outputArchivePathName = "archive-output.tar.gz";
+            final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
+            // Download output config archive
+            final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(commandContext.getTaskRequest().getConfig());
+            try (final InputStream in = temporalStorage.getContentInputStream(outputArchiveKey)) {
+                ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
+            }
+
+            final ObjectNode nextStatus = previousStatus.deepCopy();
+            nextStatus.set("executor_state", previousExecutorStatus);
+
+            // Set exit code of container finished to nextStatus
+            nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
+
+            return EcsCommandStatus.of(true, nextStatus);
         }
 
         // If the container doesn't start yet, it cannot extract any log messages from the container.
@@ -326,18 +341,8 @@ public class EcsCommandExecutor
 
         final ObjectNode nextStatus = previousStatus.deepCopy();
         nextStatus.set("executor_state", nextExecutorStatus);
+
         if (taskStatus.isFinished()) {
-            final String outputArchivePathName = "archive-output.tar.gz";
-            final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
-
-            // Download output config archive
-            final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(commandContext.getTaskRequest().getConfig());
-            try (final InputStream in = temporalStorage.getContentInputStream(outputArchiveKey)) {
-                ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
-            }
-
-            // Set exit code of container finished to nextStatus
-            nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
             // To fetch log until all logs is written in CloudWatch,
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
