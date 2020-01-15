@@ -387,7 +387,7 @@ public class EcsCommandExecutor
         else {
             for (final OutputLogEvent logEvent : logEvents) {
                 String log = logEvent.getMessage();
-                if (log.equals(ECS_TASK_FINISHED)) {
+                if (log.contains(ECS_TASK_FINISHED)) {
                     nextExecutorStatus.set("logging_finished", JsonNodeFactory.instance.textNode("true"));
                 } else {
                     log(log + "\n", clog);
