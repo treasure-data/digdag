@@ -1,6 +1,7 @@
 package io.digdag.standards.auth.jwt;
 
 import com.google.inject.Inject;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.client.api.RestApiKey;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;

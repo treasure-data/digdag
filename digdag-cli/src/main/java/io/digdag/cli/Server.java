@@ -9,6 +9,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
 
@@ -134,7 +135,7 @@ public class Server
         Properties props = buildServerProperties();
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig serverConfig = ServerConfig.convertFrom(ce);
-        ServerBootstrap.start(buildServerBootstrap(version, serverConfig));
+        ServerBootstrap.start(buildServerBootstrap(version, serverConfig, loadSystemPlugins(props)));
     }
 
     protected Properties buildServerProperties()
@@ -214,8 +215,8 @@ public class Server
         return props;
     }
 
-    protected ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig)
+    protected ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig, PluginSet systemPlugins)
     {
-        return new ServerBootstrap(version, serverConfig, loadSystemPlugins(props));
+        return new ServerBootstrap(version, serverConfig, systemPlugins);
     }
 }

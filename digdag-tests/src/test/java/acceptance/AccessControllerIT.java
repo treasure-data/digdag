@@ -19,6 +19,7 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.server.ClientVersionChecker;
 import io.digdag.server.JmxErrorReporter;
 import io.digdag.server.ServerBootstrap;
@@ -98,18 +99,18 @@ public class AccessControllerIT
             extends Server
     {
         @Override
-        public ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig)
+        public ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig, PluginSet systemPlugins)
         {
-            return new ACTestServerBootstrap(version, serverConfig);
+            return new ACTestServerBootstrap(version, serverConfig, systemPlugins);
         }
     }
 
     static class ACTestServerBootstrap
             extends ServerBootstrap
     {
-        ACTestServerBootstrap(Version version, ServerConfig serverConfig)
+        ACTestServerBootstrap(Version version, ServerConfig serverConfig, PluginSet systemPlugins)
         {
-            super(version, serverConfig);
+            super(version, serverConfig, systemPlugins);
         }
 
         protected DigdagEmbed.Bootstrap digdagBootstrap()
