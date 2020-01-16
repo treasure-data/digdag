@@ -241,7 +241,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.9.40
+    $ digdag selfupdate 0.9.41
 
 Server-mode commands
 ----------------------------------
@@ -457,7 +457,7 @@ You can include following parameters in ~/.config/digdag/config file:
 
 * client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
-* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.10.0(not yet released) or later.)
+* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.9.41(not yet released) or later.)
 
 
 start
