@@ -5,18 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.DigdagVersion;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.database.DatabaseSecretControlStoreManager;
 import io.digdag.core.database.DatabaseSecretStoreManager;
-import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
+import io.digdag.server.auth.BasicAuthenticatorFactory;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -28,6 +30,7 @@ import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.Authenticator;
+import io.digdag.spi.AuthenticatorFactory;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -107,7 +110,9 @@ public class ServerModule
 
     protected void bindAuthenticator()
     {
-        binder().bind(Authenticator.class).toProvider(AuthenticatorProvider.class);
+        Multibinder.newSetBinder(binder(), AuthenticatorFactory.class)
+            .addBinding().to(BasicAuthenticatorFactory.class).in(Scopes.SINGLETON);
+        binder().bind(Authenticator.class).toProvider(AuthenticatorProvider.class).in(Scopes.SINGLETON);
     }
 
     protected void bindExceptionhandlers(ApplicationBindingBuilder builder)
@@ -163,33 +168,6 @@ public class ServerModule
         public JacksonJsonProvider get()
         {
             return new JacksonJsonProvider(mapper);
-        }
-    }
-
-    public static class AuthenticatorProvider
-            implements com.google.inject.Provider<Authenticator>
-    {
-        private final Authenticator authenticator;
-
-        @Inject
-        public AuthenticatorProvider(PluginSet.WithInjector pluginSet, ServerConfig serverConfig)
-        {
-            List<Authenticator> authenticators = pluginSet.getServiceProviders(Authenticator.class);
-            String configuredAuthenticatorClass = serverConfig.getAuthenticatorClass();
-
-            for (Authenticator candidate : authenticators) {
-                if (candidate.getClass().getName().equals(configuredAuthenticatorClass)) {
-                    authenticator = candidate;
-                    return;
-                }
-            }
-            throw new IllegalArgumentException("Configured authenticatorClass not found: " + configuredAuthenticatorClass);
-        }
-
-        @Override
-        public Authenticator get()
-        {
-            return authenticator;
         }
     }
 

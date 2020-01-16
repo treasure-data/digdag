@@ -25,9 +25,9 @@ public class BasicAuthIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration("server.authenticator-class = io.digdag.standards.auth.basic.BasicAuthenticator")
-            .configuration("basicauth.username = user123")
-            .configuration("basicauth.password = secret456")
+            .configuration("server.authenticator.type = basic")
+            .configuration("server.authenticator.basic.username = user123")
+            .configuration("server.authenticator.basic.password = secret456")
             .build();
 
     private HttpClient httpClient;
