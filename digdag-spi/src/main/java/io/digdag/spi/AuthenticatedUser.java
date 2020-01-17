@@ -8,7 +8,10 @@ public interface AuthenticatedUser
 {
     int getSiteId();
 
-    boolean isAdmin();
+    default boolean isAdmin()
+    {
+        return false;
+    }
 
     Config getUserInfo();
 

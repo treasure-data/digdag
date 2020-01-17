@@ -3,6 +3,8 @@ package acceptance;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.Authenticator;
 import io.digdag.spi.AuthenticatorFactory;
 import io.digdag.spi.Plugin;
@@ -30,11 +32,13 @@ public class TestingAuthenticatorPlugin
             implements AuthenticatorFactory
     {
         private final Config systemConfig;
+        private final ConfigFactory cf;
 
         @Inject
-        public TestingAuthenticatorFactory(Config systemConfig)
+        public TestingAuthenticatorFactory(Config systemConfig, ConfigFactory cf)
         {
             this.systemConfig = systemConfig;
+            this.cf = cf;
         }
 
         public String getType()
@@ -45,17 +49,19 @@ public class TestingAuthenticatorPlugin
         public Authenticator newAuthenticator()
         {
             String headerName = systemConfig.get("server.authenticator.testing.header", String.class);
-            return new TestingAuthenticator(headerName);
+            return new TestingAuthenticator(cf, headerName);
         }
     }
 
     static class TestingAuthenticator
             implements Authenticator
     {
+        private final ConfigFactory cf;
         private final String headerName;
 
-        public TestingAuthenticator(String headerName)
+        public TestingAuthenticator(ConfigFactory cf, String headerName)
         {
+            this.cf = cf;
             this.headerName = headerName;
         }
 
@@ -67,7 +73,12 @@ public class TestingAuthenticatorPlugin
                 return Result.reject("Unauthorized");
             }
             else {
-                return Result.accept(0);
+                AuthenticatedUser user = AuthenticatedUser.builder()
+                    .siteId(0)
+                    .userInfo(cf.create())
+                    .userContext(cf.create())
+                    .build();
+                return Result.accept(user);
             }
         }
     }

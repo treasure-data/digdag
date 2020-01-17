@@ -2,6 +2,7 @@ package io.digdag.server.auth;
 
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Authenticator;
 import io.digdag.spi.AuthenticatorFactory;
 import org.slf4j.Logger;
@@ -13,11 +14,13 @@ public class BasicAuthenticatorFactory
     private static final Logger logger = LoggerFactory.getLogger(BasicAuthenticatorFactory.class);
 
     private final Config systemConfig;
+    private final ConfigFactory cf;
 
     @Inject
-    public BasicAuthenticatorFactory(Config systemConfig)
+    public BasicAuthenticatorFactory(Config systemConfig, ConfigFactory cf)
     {
         this.systemConfig = systemConfig;
+        this.cf = cf;
     }
 
     @Override
@@ -31,17 +34,17 @@ public class BasicAuthenticatorFactory
     {
         if (systemConfig.has("basicauth.username")) {
             logger.warn("Setting basicauth.username or basicauth.password works but is deprecated. It is going to be removed in a near future version. Use server.authenticator.basic.username and server.authenticator.basic.password instead.");
-            return new BasicAuthenticator(
+            return new BasicAuthenticator(cf,
                     systemConfig.get("basicauth.username", String.class),
                     systemConfig.get("basicauth.password", String.class));
         }
         else if (systemConfig.has("server.authenticator.basic.username")) {
-            return new BasicAuthenticator(
+            return new BasicAuthenticator(cf,
                     systemConfig.get("server.authenticator.basic.username", String.class),
                     systemConfig.get("server.authenticator.basic.password", String.class));
         }
         else {
-            return new NoAuthenticator();
+            return new NoAuthenticator(cf);
         }
     }
 }
