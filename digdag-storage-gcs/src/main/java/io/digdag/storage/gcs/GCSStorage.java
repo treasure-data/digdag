@@ -159,7 +159,7 @@ public class GCSStorage
         final long secondsToExpire = config.get("direct_upload_expiration", Long.class, 10L*60);
 
         BlobInfo blobInfo = BlobInfo.newBuilder(bucket, object).build();
-        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.httpMethod(HttpMethod.POST), Storage.SignUrlOption.withV4Signature());
+        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.httpMethod(HttpMethod.PUT), Storage.SignUrlOption.withV4Signature());
         String url = signedUrl.toString();
 
         return Optional.of(DirectUploadHandle.of(url));
