@@ -47,7 +47,7 @@ public class RemotePluginLoader
 
     private static final List<RemoteRepository> DEFAULT_REPOSITORIES = ImmutableList.copyOf(new RemoteRepository[] {
         new RemoteRepository.Builder("central", "default", "https://repo1.maven.org/maven2/").build(),
-        new RemoteRepository.Builder("jcenter", "default", "http://jcenter.bintray.com/").build(),
+        new RemoteRepository.Builder("jcenter", "default", "https://jcenter.bintray.com/").build(),
     });
 
     private static final List<String> PARENT_FIRST_PACKAGES = ImmutableList.copyOf(new String[] {
