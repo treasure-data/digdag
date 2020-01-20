@@ -73,7 +73,7 @@ public class ShOperatorFactory
             extends BaseOperator
     {
         // TODO extract as config params.
-        final int scriptPollInterval = (int) Duration.ofSeconds(3).getSeconds();
+        final int scriptPollInterval = (int) Duration.ofSeconds(10).getSeconds();
 
         public ShOperator(OperatorContext context)
         {
