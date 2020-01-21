@@ -4,10 +4,15 @@ import com.google.api.gax.paging.Page;
 import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.HttpMethod;
+import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageException;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.spi.DirectDownloadHandle;
+import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageObjectSummary;
 import io.digdag.util.RetryExecutor;
@@ -18,11 +23,13 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -132,6 +139,30 @@ public class GCSStorage
             );
         }
         callback.accept(objectSummaryList);
+    }
+
+    @Override
+    public Optional<DirectDownloadHandle> getDirectDownloadHandle(String object)
+    {
+        final long secondsToExpire = config.get("direct_download_expiration", Long.class, 10L*60);
+
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucket, object).build();
+        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.httpMethod(HttpMethod.GET), Storage.SignUrlOption.withV4Signature());
+        String url = signedUrl.toString();
+
+        return Optional.of(DirectDownloadHandle.of(url));
+    }
+
+    @Override
+    public Optional<DirectUploadHandle> getDirectUploadHandle(String object)
+    {
+        final long secondsToExpire = config.get("direct_upload_expiration", Long.class, 10L*60);
+
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucket, object).build();
+        URL signedUrl = this.storage.signUrl(blobInfo, secondsToExpire, TimeUnit.SECONDS, Storage.SignUrlOption.httpMethod(HttpMethod.PUT), Storage.SignUrlOption.withV4Signature());
+        String url = signedUrl.toString();
+
+        return Optional.of(DirectUploadHandle.of(url));
     }
 
     private <T> T getWithRetry(String message, Callable<T> callable)
