@@ -1166,7 +1166,7 @@ public class WorkflowExecutor
 
         TaskTree tree = new TaskTree(sm.getTaskRelations(task.getAttemptId()));
         List<Long> childrenIdList = tree.getRecursiveChildrenIdList(task.getId());
-        lockedTask.copyInitialTasksForRetry(childrenIdList);
+        lockedTask.copyInitialTasksForRetry(task.getFullName(), childrenIdList);
 
         lockedTask.setGroupRetryReadyToPlanned();
 
