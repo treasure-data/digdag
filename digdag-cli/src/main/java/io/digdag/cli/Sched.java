@@ -15,6 +15,7 @@ import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
 import org.embulk.guice.Bootstrap;
@@ -104,15 +105,15 @@ public class Sched
         ServerConfig serverConfig = ServerConfig.convertFrom(ce);
 
         // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
-        ServerBootstrap.start(new SchedulerServerBootStrap(version, serverConfig));
+        ServerBootstrap.start(new SchedulerServerBootStrap(version, serverConfig, loadSystemPlugins(props)));
     }
 
     public static class SchedulerServerBootStrap
             extends ServerBootstrap
     {
-        public SchedulerServerBootStrap(Version version, ServerConfig serverConfig)
+        public SchedulerServerBootStrap(Version version, ServerConfig serverConfig, PluginSet systemPlugins)
         {
-            super(version, serverConfig);
+            super(version, serverConfig, systemPlugins);
         }
 
         @Override
