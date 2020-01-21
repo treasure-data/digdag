@@ -110,8 +110,8 @@ In sla: directive, you can select either the ``time`` or ``duration`` option.
 =============================== ================================================== ==========================
 Syntax                          Description                                        Example
 =============================== ================================================== ==========================
-time>: ``HH:MM:SS``             Set this job must be completed by ``HH:MM:SS``     time>: 12:30:00
-duration>: ``HH:MM:SS``         Set this job must be completed during ``HH:MM:SS`` duration>: 00:05:00
+time: ``HH:MM:SS``             Set this job must be completed by ``HH:MM:SS``     time: 12:30:00
+duration: ``HH:MM:SS``         Set this job must be completed during ``HH:MM:SS`` duration: 00:05:00
 =============================== ================================================== ==========================
 
 Options
@@ -132,13 +132,13 @@ For example, let’s say we have a workflow that is running hourly, and it norma
 
 It’s this case it’s best to skip the next hour’s workflow session, and instead utilize the subsequent session to process 2 hours of data. To do this, we’ve added the following:
 
-* Added a `skip_on_overtime: true | false` schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.
-* Scheduled workflow sessions now have a `last_executed_session_time` variable which contains the previously executed session time. It is usually same with `last_session_time` but has different value when `skip_on_overtime: true` is set or the session is the first execution.
+* Added a ``skip_on_overtime: true | false`` schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.
+* Scheduled workflow sessions now have a ``last_executed_session_time`` variable which contains the previously executed session time. It is usually same with ``last_session_time`` but has different value when ``skip_on_overtime: true`` is set or the session is the first execution.
 
 Skipping backfill.
 ------------------
 
-The `skip_delayed_by` option enables `backfill <command_reference.html#backfill>`_ command to skip creating sessions delayed by the specified time. When Digdag restarts, sessions of a schedule are automatically created until the next of `last_session_time`.
+The ``skip_delayed_by`` option enables `backfill <command_reference.html#backfill>`_ command to skip creating sessions delayed by the specified time. When Digdag restarts, sessions of a schedule are automatically created until the next of ``last_session_time``.
 
 For example, If Digdag restarts at 20:00:00 and a workflow scheduled as below, it creates three sessions (19:59:00, 19:58:00 and 19:57:00). And then, Digdag doesn't create sessions which are before 19:56:00 by the option.
 
