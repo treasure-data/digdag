@@ -223,9 +223,9 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
 * **password_override**: NAME
 
-  Secret key name that has a non-default database password as its value. This would be useful whey you want to use multiple database credentials. If it's set, Digdag looks up secrets with this value as a secret key name. If not, the default secret key `redshift.password` is used.
+  Secret key name that has a non-default database password as its value. This would be useful whey you want to use multiple database credentials. If it's set, Digdag looks up secrets with this value as a secret key name. If not, the default secret key `aws.redshift.password` is used.
 
-  Examples (let's say you've already added a secret key value `redshift.another_password=password1234`):
+  Examples (let's say you've already added a secret key value `aws.redshift.another_password=password1234`):
 
   ```
   password_override: another_password
