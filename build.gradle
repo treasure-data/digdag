@@ -37,10 +37,10 @@ allprojects {
         mavenCentral()
         jcenter()
         maven {
-            url  "http://dl.bintray.com/digdag/maven"
+            url  "https://dl.bintray.com/digdag/maven"
         }
         maven {
-            url  "http://dl.bintray.com/digdag/maven-snapshots"
+            url  "https://dl.bintray.com/digdag/maven-snapshots"
         }
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots"
