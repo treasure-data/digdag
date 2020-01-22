@@ -547,7 +547,7 @@ task pom {
                 repositories {
                     repository {
                         id 'jcenter'
-                        url 'http://jcenter.bintray.com'
+                        url 'https://jcenter.bintray.com'
                         releases {
                             enabled 'true'
                         }
