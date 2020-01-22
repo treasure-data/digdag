@@ -1,11 +1,8 @@
 package io.digdag.core.agent;
 
-import com.google.common.base.Optional;
 
 import io.digdag.client.config.Config;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.TemplateException;
-import io.digdag.spi.SecretSelector;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -113,5 +110,13 @@ public class ConfigEvalEngineTest
         assertThat(
                 engine.eval(newConfig().set("key", "${moment().format()}"), params()).get("key", String.class),
                 not(is("")));
+    }
+
+    @Test
+    public void testIsInvokeTemplateRequired()
+    {
+        assertThat(engine.isInvokeTemplateRequired(""), is(false));
+        assertThat(engine.isInvokeTemplateRequired("\n"), is(false));
+        assertThat(engine.isInvokeTemplateRequired("Digdag Notification\naa${hoge}bb"), is(true));
     }
 }
