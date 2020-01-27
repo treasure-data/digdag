@@ -109,11 +109,12 @@ public class EcsCommandExecutor
             final EcsClientConfig clientConfig = createEcsClientConfig(clusterName, systemConfig, taskConfig); // ConfigException
             try (final EcsClient client = ecsClientFactory.createClient(clientConfig)) { // ConfigException
                 final TaskDefinition td = findTaskDefinition(commandContext, client, taskConfig); // ConfigException
-                final Optional<ObjectNode> awsLogs = getAwsLogsConfiguration(td); // Nullable, ConfigException
                 // When RuntimeException is thrown by submitTask method, it will be handled and retried by BaseOperator, which is one of base
                 // classes of operator implementation.
                 final Task runTask = submitTask(commandContext, commandRequest, client, td); // ConfigException, RuntimeException
-                final ObjectNode currentStatus = createCurrentStatus(commandContext, commandRequest, clientConfig, runTask, awsLogs);
+                final Optional<ObjectNode> awsLogs = getAwsLogsConfiguration(td, runTask.getTaskArn()); // Nullable, ConfigException
+
+                final ObjectNode currentStatus = createCurrentStatus(commandRequest, clientConfig, runTask, awsLogs);
                 return EcsCommandStatus.of(false, currentStatus);
             }
         }
@@ -211,7 +212,7 @@ public class EcsCommandExecutor
         return null;
     }
 
-    protected Optional<ObjectNode> getAwsLogsConfiguration(final TaskDefinition td)
+    protected Optional<ObjectNode> getAwsLogsConfiguration(final TaskDefinition td, final String taskArn)
             throws ConfigException
     {
         // Assume that a single container will run in the task.
@@ -221,9 +222,13 @@ public class EcsCommandExecutor
         final Optional<ObjectNode> awsLogs;
         if (logDriver.equals("awslogs")) {
             final ObjectNode logs = JsonNodeFactory.instance.objectNode();
-            for (final Map.Entry<String, String> e : logConfig.getOptions().entrySet()) {
-                logs.put(e.getKey(), e.getValue());
-            }
+            final String streamPrefix = logConfig.getOptions().get("awslogs-stream-prefix");
+            final String containerDefinitionName = td.getContainerDefinitions().get(0).getName();
+            final String taskArnPostfix = taskArn.substring(taskArn.lastIndexOf('/') + 1);
+            final String awsLogsStream = String.format(Locale.ENGLISH, "%s/%s/%s", streamPrefix, containerDefinitionName, taskArnPostfix);
+            logs.put("awslogs-group", logConfig.getOptions().get("awslogs-group"));
+            logs.put("awslogs-stream", awsLogsStream);
+
             awsLogs = Optional.of(logs);
         }
         else {
@@ -234,7 +239,6 @@ public class EcsCommandExecutor
     }
 
     protected ObjectNode createCurrentStatus(
-            final CommandContext commandContext,
             final CommandRequest commandRequest,
             final EcsClientConfig clientConfig,
             final Task runTask,
@@ -273,22 +277,6 @@ public class EcsCommandExecutor
             final ObjectNode previousStatus)
             throws IOException
     {
-        final String cluster = previousStatus.get("cluster_name").asText();
-        final String taskArn = previousStatus.get("task_arn").asText();
-        final Task task;
-        try {
-            task = client.getTask(cluster, taskArn);
-        } catch (TaskSetNotFoundException e) {
-            // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
-            logger.info("Cannot get the Ecs task status. Will be retried.");
-            return EcsCommandStatus.of(false, previousStatus.deepCopy());
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("Get task: " + task);
-        }
-
-        final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
         ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
         ObjectNode nextExecutorStatus;
 
@@ -299,7 +287,7 @@ public class EcsCommandExecutor
         if (taskFinishedAt.isPresent()) {
             long timeout = taskFinishedAt.get() + 60;
             do {
-                previousExecutorStatus = fetchLogEvents(client, task, previousStatus, previousExecutorStatus);
+                previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
                 }
@@ -319,12 +307,28 @@ public class EcsCommandExecutor
             return EcsCommandStatus.of(true, nextStatus);
         }
 
+        final String cluster = previousStatus.get("cluster_name").asText();
+        final String taskArn = previousStatus.get("task_arn").asText();
+        final Task task;
+        try {
+            task = client.getTask(cluster, taskArn);
+        } catch (TaskSetNotFoundException e) {
+            // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
+            logger.info("Cannot get the Ecs task status. Will be retried.");
+            return EcsCommandStatus.of(false, previousStatus.deepCopy());
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Get task: " + task);
+        }
+
+        final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
         // If the container doesn't start yet, it cannot extract any log messages from the container.
         if (taskStatus.isSameOrAfter(EcsTaskStatus.RUNNING)) {
             // if previous status has 'awslogs' log driver configuration, it tries to fetch log events by that.
             // Otherwise, it skips fetching logs.
             if (!previousStatus.get("awslogs").isNull()) { // awslogs?
-                nextExecutorStatus = fetchLogEvents(client, task, previousStatus, previousExecutorStatus);
+                nextExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
             }
             else {
                 nextExecutorStatus = previousExecutorStatus.deepCopy();
@@ -366,15 +370,13 @@ public class EcsCommandExecutor
     }
 
     ObjectNode fetchLogEvents(final EcsClient client,
-            final Task task,
             final ObjectNode previousStatus,
             final ObjectNode previousExecutorStatus)
             throws IOException
     {
-        final TaskDefinition td = client.getTaskDefinition(task.getTaskDefinitionArn());
         final Optional<String> previousToken = !previousExecutorStatus.has("next_token") ?
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
-        final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(td, previousStatus), previousToken);
+        final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
@@ -404,14 +406,9 @@ public class EcsCommandExecutor
         return previousStatus.get("awslogs").get("awslogs-group").asText();
     }
 
-    private static String toLogStreamName(final TaskDefinition td, final ObjectNode previousStatus)
+    private static String toLogStreamName(final ObjectNode previousStatus)
     {
-        final JsonNode logConfig = previousStatus.get("awslogs");
-        final String streamPrefix = logConfig.get("awslogs-stream-prefix").asText();
-        final String containerDefinitionName = td.getContainerDefinitions().get(0).getName();
-        final String taskArn = previousStatus.get("task_arn").asText();
-        final String taskArnPostfix = taskArn.substring(taskArn.lastIndexOf('/') + 1);
-        return String.format(Locale.ENGLISH, "%s/%s/%s", streamPrefix, containerDefinitionName, taskArnPostfix);
+        return previousStatus.get("awslogs").get("awslogs-stream").asText();
     }
 
     private boolean isRunningLongerThanTTL(final ObjectNode previousStatus)
