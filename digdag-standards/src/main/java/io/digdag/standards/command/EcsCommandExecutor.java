@@ -41,6 +41,7 @@ import io.digdag.standards.command.ecs.EcsClientFactory;
 import io.digdag.standards.command.ecs.EcsTaskStatus;
 import io.digdag.standards.command.ecs.TemporalProjectArchiveStorage;
 import io.digdag.util.DurationParam;
+import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public class EcsCommandExecutor
 
     private static final String ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     private static final String DEFAULT_COMMAND_TASK_TTL = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "default_command_task_ttl";
-    private static final String ECS_TASK_FINISHED = "ECS_TASK_FINISHED";
+    private static final String ECS_END_OF_TASK_LOG_MARK = "--RWNzQ29tbWFuZEV4ZWN1dG9y--"; // base64("EcsCommandExecutor")
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -387,7 +388,7 @@ public class EcsCommandExecutor
         else {
             for (final OutputLogEvent logEvent : logEvents) {
                 String log = logEvent.getMessage();
-                if (log.contains(ECS_TASK_FINISHED)) {
+                if (log.contains(ECS_END_OF_TASK_LOG_MARK)) {
                     nextExecutorStatus.set("logging_finished", JsonNodeFactory.instance.textNode("true"));
                 } else {
                     log(log + "\n", clog);
@@ -648,7 +649,7 @@ public class EcsCommandExecutor
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         bashArguments.add(s("curl -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
-        bashArguments.add(s("echo %s", ECS_TASK_FINISHED));
+        bashArguments.add(s("echo %s", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
         final List<String> bashCommand = ImmutableList.<String>builder()
