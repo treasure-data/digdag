@@ -390,7 +390,8 @@ public class EcsCommandExecutor
                 String log = logEvent.getMessage();
                 if (log.contains(ECS_END_OF_TASK_LOG_MARK)) {
                     nextExecutorStatus.put("logging_finished_at", Instant.now().getEpochSecond());
-                } else {
+                } 
+                else {
                     log(log + "\n", clog);
                 }
             }
