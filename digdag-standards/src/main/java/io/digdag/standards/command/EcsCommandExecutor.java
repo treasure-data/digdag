@@ -300,7 +300,7 @@ public class EcsCommandExecutor
             long timeout = taskFinishedAt.get() + 60;
             do {
                 previousExecutorStatus = fetchLogEvents(client, task, previousStatus, previousExecutorStatus);
-                if (previousExecutorStatus.get("logging_finished") != null) {
+                if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
                 }
             } while (Instant.now().getEpochSecond() < timeout);
@@ -389,7 +389,7 @@ public class EcsCommandExecutor
             for (final OutputLogEvent logEvent : logEvents) {
                 String log = logEvent.getMessage();
                 if (log.contains(ECS_END_OF_TASK_LOG_MARK)) {
-                    nextExecutorStatus.set("logging_finished", JsonNodeFactory.instance.textNode("true"));
+                    nextExecutorStatus.put("logging_finished_at", Instant.now().getEpochSecond());
                 } else {
                     log(log + "\n", clog);
                 }
