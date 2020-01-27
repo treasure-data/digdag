@@ -390,7 +390,7 @@ public class EcsCommandExecutor
                 String log = logEvent.getMessage();
                 if (log.contains(ECS_END_OF_TASK_LOG_MARK)) {
                     nextExecutorStatus.put("logging_finished_at", Instant.now().getEpochSecond());
-                } 
+                }
                 else {
                     log(log + "\n", clog);
                 }
@@ -650,7 +650,7 @@ public class EcsCommandExecutor
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         bashArguments.add(s("curl -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
-        bashArguments.add(s("echo %s", ECS_END_OF_TASK_LOG_MARK));
+        bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
         final List<String> bashCommand = ImmutableList.<String>builder()
