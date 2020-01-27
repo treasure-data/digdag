@@ -316,9 +316,6 @@ public class EcsCommandExecutor
             final ObjectNode nextStatus = previousStatus.deepCopy();
             nextStatus.set("executor_state", previousExecutorStatus);
 
-            // Set exit code of container finished to nextStatus
-            nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
-
             return EcsCommandStatus.of(true, nextStatus);
         }
 
@@ -347,6 +344,8 @@ public class EcsCommandExecutor
             // To fetch log until all logs is written in CloudWatch,
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
+            // Set exit code of container finished to nextStatus
+            nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
         }
         else if (defaultCommandTaskTTL.isPresent() && isRunningLongerThanTTL(previousStatus)) {
             final TaskRequest request = commandContext.getTaskRequest();
