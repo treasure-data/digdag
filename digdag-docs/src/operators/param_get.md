@@ -40,6 +40,38 @@
 
   String of the password of the ParamServer
 
+* **param_server.loginTimeout (optional)**:
+
+  Seconds in integer. default: 30
+
+* **param_server.socketTimeout (optional)**:
+
+  Seconds in integer. default: 1800
+
+* **param_server.ssl (optional)**:
+
+  Boolean. default: false
+
+* **param_server.connectionTimeout (optional)**:
+
+  Seconds in integer. default: 30
+
+* **param_server.idleTimeout (optional)**:
+
+  Seconds in integer. default: 600
+
+* **param_server.validationTimeout (optional)**:
+
+  Seconds in integer. default: 5
+
+* **param_server.maximumPoolSize (optional)**:
+
+  Integer. default: available CPU cores * 32
+
+* **param_server.minimumPoolSize (optional)**:
+
+  Integer. default: same as param_server.maximumPoolSize
+
 
 ### When using Redis
 
