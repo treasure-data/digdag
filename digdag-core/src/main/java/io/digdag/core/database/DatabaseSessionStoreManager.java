@@ -922,12 +922,9 @@ public class DatabaseSessionStoreManager
                 String pfname = parentFullName.get();
                 String chfname = s.getFullName();
                 int pfnameLen = pfname.length();
-                int chfnameLen = chfname.length();
 
                 if (chfname.startsWith(pfname)
                         && chfname.substring(pfnameLen).contains("^sub")) {
-                    // && chfnameLen > pfnameLen + "^sub".length()) {
-                    logger.debug("Exclude generated task:{} from retry target", chfname);
                     return false;
                 }
                 else {
