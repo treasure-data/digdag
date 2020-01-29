@@ -263,6 +263,14 @@ public class WorkflowExecutorTest
     }
 
     @Test
+    public void forEachRetry()
+            throws Exception
+    {
+        runWorkflow("for_each_retry", loadYamlResource("/io/digdag/core/workflow/for_each_retry.dig"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("012failed (runtime)012failed (runtime)012failed (runtime)"));
+    }
+
+    @Test
     public void ifOperatorDelayedEvalElseDo()
             throws Exception
     {
