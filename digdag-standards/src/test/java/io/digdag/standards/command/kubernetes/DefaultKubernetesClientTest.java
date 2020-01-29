@@ -26,6 +26,8 @@ import io.fabric8.kubernetes.api.model.NodeAffinityBuilder;
 import io.fabric8.kubernetes.api.model.NodeSelectorBuilder;
 import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
 import io.fabric8.kubernetes.api.model.NodeSelectorRequirementBuilder;
+import io.fabric8.kubernetes.api.model.Toleration;
+import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.Container;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,8 +68,8 @@ public class DefaultKubernetesClientTest
     {
         final Config taskRequestConfig = newConfig()
                 .set("kubernetes", newConfig().set(
-                        "container", newConfig().set(
-                                "volumeMounts", ImmutableList.of(
+                        "container", newConfig()
+                                .set("volumeMounts", ImmutableList.of(
                                       newConfig().set("mountPath", "/test-ebs").set("name", "test")))))
                 .set("docker", newConfig().set("image", "test"));
 
@@ -78,14 +80,15 @@ public class DefaultKubernetesClientTest
         String podName = "test";
         List<String> commands = new ArrayList<>();
         List<String> arguments = new ArrayList<>();
-        Container container = defaultKubernetesClient.createContainer(commandContext, commandRequest, podName, commands, arguments);
+        final Config kubernetesConfig = taskRequest.getConfig().getNested("kubernetes");
+        Container container = defaultKubernetesClient.createContainer(commandContext, commandRequest, kubernetesConfig, podName, commands, arguments);
 
         Container desiredContainer = new ContainerBuilder()
             .withName(podName)
             .withImage("test")
             .withCommand(commands)
             .withArgs(arguments)
-            .withResources(defaultKubernetesClient.toResourceRequirements(defaultKubernetesClient.getResourceLimits(commandContext, commandRequest), defaultKubernetesClient.getResourceRequests(commandContext, commandRequest)))
+            .withResources(null)
             .withVolumeMounts(Arrays.asList(new VolumeMountBuilder().withName("test").withMountPath("/test-ebs").build())).build();
 
         assertThat(container, is(desiredContainer));
@@ -115,7 +118,8 @@ public class DefaultKubernetesClientTest
         DefaultKubernetesClient defaultKubernetesClient = new DefaultKubernetesClient(kubernetesClientConfig, k8sDefaultKubernetesClient);
 
         Container container = mock(Container.class);
-        PodSpec podSpec = defaultKubernetesClient.createPodSpec(commandContext, commandRequest, container);
+        final Config kubernetesConfig = taskRequest.getConfig().getNested("kubernetes");
+        PodSpec podSpec = defaultKubernetesClient.createPodSpec(commandContext, commandRequest, kubernetesConfig, container);
 
         PodSpec desiredPodSpec = new PodSpecBuilder()
             .addToContainers(container)
