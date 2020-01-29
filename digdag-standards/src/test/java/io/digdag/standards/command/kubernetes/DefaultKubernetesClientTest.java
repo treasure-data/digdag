@@ -1,47 +1,35 @@
 package io.digdag.standards.command.kubernetes;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
+import io.digdag.client.config.Config;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
-import static io.digdag.client.config.ConfigUtils.newConfig;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
-
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-
+import io.digdag.spi.TaskRequest;
+import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.NodeAffinityBuilder;
+import io.fabric8.kubernetes.api.model.NodeSelectorBuilder;
+import io.fabric8.kubernetes.api.model.NodeSelectorRequirementBuilder;
+import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
-import io.fabric8.kubernetes.api.model.AffinityBuilder;
-import io.fabric8.kubernetes.api.model.NodeAffinityBuilder;
-import io.fabric8.kubernetes.api.model.NodeSelectorBuilder;
-import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
-import io.fabric8.kubernetes.api.model.NodeSelectorRequirementBuilder;
-import io.fabric8.kubernetes.api.model.Toleration;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.Container;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import io.digdag.spi.TaskRequest;
-import io.digdag.client.config.Config;
-import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
-import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
-
-import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static io.digdag.client.config.ConfigUtils.newConfig;
+import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultKubernetesClientTest
