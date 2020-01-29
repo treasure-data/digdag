@@ -347,8 +347,8 @@ public class KubernetesCommandExecutor
     private static String createUniquePodName(final TaskRequest request)
     {
         // name format: digdag-pod-{workflowName}-{taskName}-{taskId}-{siteId}-{UUIDv4}
-        final String workflowName = request.getWorkflowName();
-        final String taskName = request.getTaskName();
+        final String workflowName = request.getWorkflowName().replaceAll("[^a-z0-9]", "-");
+        final String taskName = request.getTaskName().replaceAll("[^a-z0-9]", "-");
         final int siteId = request.getSiteId();
         final long taskId = request.getTaskId();
         return new StringBuilder()
