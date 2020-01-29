@@ -70,7 +70,6 @@ public class DefaultKubernetesClient
                 .endMetadata()
                 .withSpec(podSpec)
                 .done();
-
         return Pod.of(pod);
     }
 
