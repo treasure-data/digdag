@@ -183,6 +183,59 @@ public class WorkflowExecutorTest
         assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("try1try2try1try2try1try2"));
     }
 
+    @Test
+    public void retryAllCall()
+            throws Exception
+    {
+        String subFailContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_fail.dig"), UTF_8);
+        Path subFailPath = folder.getRoot().toPath().resolve("call_sub_fail.dig");
+        System.out.println(subFailPath.toAbsolutePath().toString());
+        Files.write(subFailPath, subFailContent.getBytes(UTF_8));
+
+        String subSuccessContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_success.dig"), UTF_8);
+        Path subSuccessPath = folder.getRoot().toPath().resolve("call_sub_success.dig");
+        System.out.println(subSuccessPath.toAbsolutePath().toString());
+        Files.write(subSuccessPath, subSuccessContent.getBytes(UTF_8));
+
+        String parentBase = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_main_retry.dig"), UTF_8);
+
+        //Full path not work in AppVeyor
+        //String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " + childPath.toString());
+        String parentContent = parentBase.replaceFirst("call_sub_success_path: dummy", "call_sub_success_path: " +  "call_sub_success.dig")
+                                         .replaceFirst("call_sub_fail_path: dummy", "call_sub_fail_path: " +  "call_sub_fail.dig");
+
+        Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
+        runWorkflow("call_main_retry", parent);
+        Path outPath = folder.getRoot().toPath().resolve("out");
+        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successfail (runtime)successfail (runtime)successfail (runtime)"));
+    }
+
+    @Test
+    public void retryOnlyFailedSub()
+            throws Exception
+    {
+        String subFailContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_fail_retry.dig"), UTF_8);
+        Path subFailPath = folder.getRoot().toPath().resolve("call_sub_fail_retry.dig");
+        System.out.println(subFailPath.toAbsolutePath().toString());
+        Files.write(subFailPath, subFailContent.getBytes(UTF_8));
+
+        String subSuccessContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_success.dig"), UTF_8);
+        Path subSuccessPath = folder.getRoot().toPath().resolve("call_sub_success.dig");
+        System.out.println(subSuccessPath.toAbsolutePath().toString());
+        Files.write(subSuccessPath, subSuccessContent.getBytes(UTF_8));
+
+        String parentBase = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_main.dig"), UTF_8);
+
+        //Full path not work in AppVeyor
+        //String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " + childPath.toString());
+        String parentContent = parentBase.replaceFirst("call_sub_success_path: dummy", "call_sub_success_path: " +  "call_sub_success.dig")
+                                         .replaceFirst("call_sub_fail_path: dummy", "call_sub_fail_path: " +  "call_sub_fail_retry.dig");
+
+        Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
+        runWorkflow("call_main", parent);
+        Path outPath = folder.getRoot().toPath().resolve("out");
+        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successfail (runtime)fail (runtime)fail (runtime)"));
+    }
 
     @Test
     public void retryInLoop()

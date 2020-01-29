@@ -1,0 +1,10 @@
+_export:
+  call_sub_success_path: dummy
+  call_sub_fail_path: dummy
++call_main_retry:
+  _retry: 2
+  +call_success:
+    call>: ${call_sub_success_path}
+  +call_fail:
+    call>: ${call_sub_fail_path}
+

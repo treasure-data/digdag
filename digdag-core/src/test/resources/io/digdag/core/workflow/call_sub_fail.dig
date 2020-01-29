@@ -1,0 +1,5 @@
++call_sub_fail:
+  _error:
+    echo>: ${error.message}
+    append_file: out
+  fail>: fail
