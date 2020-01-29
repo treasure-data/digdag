@@ -247,6 +247,22 @@ public class WorkflowExecutorTest
     }
 
     @Test
+    public void ifOperatorFailRetry()
+            throws Exception
+    {
+        runWorkflow("if_operator_fail_retry", loadYamlResource("/io/digdag/core/workflow/if_operator_fail_retry.dig"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("taskfailed (runtime)taskfailed (runtime)taskfailed (runtime)taskfailed (runtime)"));
+    }
+
+    @Test
+    public void ifOperatorFailRetryOnlySub()
+            throws Exception
+    {
+        runWorkflow("if_operator_fail_retry_only_sub", loadYamlResource("/io/digdag/core/workflow/if_operator_fail_retry_only_sub.dig"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("taskfailed (runtime)failed (runtime)failed (runtime)failed (runtime)"));
+    }
+
+    @Test
     public void ifOperatorDelayedEvalElseDo()
             throws Exception
     {

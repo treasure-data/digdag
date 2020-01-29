@@ -1,0 +1,14 @@
++tasks:
+  +task:
+    echo>: task
+    append_file: out
+  +if_fail:
+    _retry:
+      limit: 3
+    if>: true
+    _do:
+      _error:
+        echo>: ${error.message}
+        append_file: out
+      +fail:
+        fail>: failed
