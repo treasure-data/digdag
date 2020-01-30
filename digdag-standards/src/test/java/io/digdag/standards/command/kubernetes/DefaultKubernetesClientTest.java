@@ -22,6 +22,14 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolume;
+import io.fabric8.kubernetes.api.model.PersistentVolumeBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeSpec;
+import io.fabric8.kubernetes.api.model.PersistentVolumeSpecBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpec;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpecBuilder;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +38,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
@@ -95,55 +104,53 @@ public class DefaultKubernetesClientTest
               PersistentVolumeClaim:
                 accessModes:
                 - ReadWriteOnce
-                volumeMode: Block
                 resources:
                   requests:
                     storage: 10Gi
+                  limits:
+                    storage: 8Gi
               PersistentVolume:
-                capacity:
-                  storage: 10Gi
-                accessModes:
-                - ReadWriteOnce
-                volumeMode: "Block"
-                persistentVolumeReclaimPolicy: "ReadWriteOnce"
-                fc:
-                  targetWWNs: ["50060e801049cfd1"]
-                  lun: 0
-                  readOnly: false
+                name: testPersistentVolume
+                spec:
+                  capacity:
+                    storage: 10Gi
+                  accessModes:
+                  - ReadWriteOnce
+                  persistentVolumeReclaimPolicy: "ReadWriteOnce"
         */
         testKubernetesConfig = newConfig()
-                .set("Pod", newConfig()
-                        .set("volumeMounts", ImmutableList.of(
-                                newConfig().set("mountPath", "/test-ebs").set("name", "test"),
-                                newConfig().set("mountPath", "/test-ebs2").set("name", "test2")))
-                        .set("volumes", ImmutableList.of(
-                                newConfig().set("name", "test").set("emptyDir", newConfig()),
-                                newConfig().set("name", "test2").set("emptyDir", newConfig())))
-                        .set("resources", newConfig()
-                                .set("limits", newConfig().set("memory", "200Mi"))
-                                .set("requests", newConfig().set("memory", "100Mi")))
-                        .set("affinity", newConfig()
-                                .set("nodeAffinity", newConfig()
-                                        .set("requiredDuringSchedulingIgnoredDuringExecution", newConfig()
-                                                .set("nodeSelectorTerms", ImmutableList.of(
-                                                        newConfig().set("matchExpressions", ImmutableList.of(
-                                                                newConfig().set("key", "test1").set("operator", "In").set("values", ImmutableList.of("test1")))))))))
-                        .set("tolerations", ImmutableList.of(
-                                newConfig().set("key", "test").set("operator", "Exists").set("effect", "NoSchedule"),
-                                newConfig().set("key", "test2").set("operator", "Exists").set("effect", "NoSchedule"))))
-                .set("PersistentVolumeClaim", newConfig()
-                        .set("accessModes", ImmutableList.of("ReadWriteOnce"))
-                        .set("volumeMode", "Block")
-                        .set("resources", newConfig().set("requests", newConfig().set("storage", "10Gi"))))
-                .set("PersistentVolume", newConfig()
-                        .set("capacity", newConfig().set("storage", "10Gi"))
-                        .set("accessModes", ImmutableList.of("ReadWriteOnce"))
-                        .set("volumeMode", "Block")
-                        .set("persistentVolumeReclaimPolicy", "Retain")
-                        .set("fc", newConfig()
-                                .set("targetWWNs", ImmutableList.of("50060e801049cfd1"))
-                                .set("lun", "0")
-                                .set("readOnly", "false")));
+            .set("Pod", newConfig()
+                .set("volumeMounts", ImmutableList.of(
+                    newConfig().set("mountPath", "/test-ebs").set("name", "test"),
+                    newConfig().set("mountPath", "/test-ebs2").set("name", "test2")))
+                .set("volumes", ImmutableList.of(
+                    newConfig().set("name", "test").set("emptyDir", newConfig()),
+                    newConfig().set("name", "test2").set("emptyDir", newConfig())))
+                .set("resources", newConfig()
+                    .set("limits", newConfig().set("memory", "200Mi"))
+                    .set("requests", newConfig().set("memory", "100Mi")))
+                .set("affinity", newConfig()
+                    .set("nodeAffinity", newConfig()
+                        .set("requiredDuringSchedulingIgnoredDuringExecution", newConfig()
+                            .set("nodeSelectorTerms", ImmutableList.of(
+                                newConfig().set("matchExpressions", ImmutableList.of(
+                                    newConfig().set("key", "test1").set("operator", "In").set("values", ImmutableList.of("test1")))))))))
+                .set("tolerations", ImmutableList.of(
+                    newConfig().set("key", "test").set("operator", "Exists").set("effect", "NoSchedule"),
+                    newConfig().set("key", "test2").set("operator", "Exists").set("effect", "NoSchedule"))))
+            .set("PersistentVolumeClaim", newConfig()
+                .set("name", "testPersistentVolumeClaim")
+                .set("spec", newConfig()
+                    .set("accessModes", ImmutableList.of("ReadWriteOnce"))
+                    .set("resources", newConfig()
+                      .set("requests", newConfig().set("storage", "10Gi"))
+                      .set("limits", newConfig().set("storage", "8Gi")))))
+            .set("PersistentVolume", newConfig()
+                .set("name", "testPersistentVolume")
+                .set("spec", newConfig()
+                    .set("capacity", newConfig().set("storage", "10Gi"))
+                    .set("accessModes", ImmutableList.of("ReadWriteOnce"))
+                    .set("persistentVolumeReclaimPolicy", "Retain")));
     }
 
     @Test
@@ -180,8 +187,8 @@ public class DefaultKubernetesClientTest
     {
         final Config kubernetesPodConfig = testKubernetesConfig.get("Pod", Config.class);
         final Config taskRequestConfig = newConfig()
-                .set("kubernetes", testKubernetesConfig)
-                .set("docker", newConfig().set("image", "test"));
+            .set("kubernetes", testKubernetesConfig)
+            .set("docker", newConfig().set("image", "test"));
 
         final TaskRequest taskRequest = newTaskRequest().withConfig(taskRequestConfig);
         when(commandContext.getTaskRequest()).thenReturn(taskRequest);
@@ -194,18 +201,18 @@ public class DefaultKubernetesClientTest
         Container container = defaultKubernetesClient.createContainer(commandContext, commandRequest, kubernetesPodConfig, podName, commands, arguments);
 
         Container desiredContainer = new ContainerBuilder()
-                .withName(podName)
-                .withImage("test")
-                .withCommand(commands)
-                .withArgs(arguments)
-                .withResources(new ResourceRequirementsBuilder()
-                        .addToLimits("memory", new Quantity("200Mi"))
-                        .addToRequests("memory", new Quantity("100Mi"))
-                        .build())
-                .withVolumeMounts(Arrays.asList(
-                        new VolumeMountBuilder().withName("test").withMountPath("/test-ebs").build(),
-                        new VolumeMountBuilder().withName("test2").withMountPath("/test-ebs2").build()))
-                .build();
+            .withName(podName)
+            .withImage("test")
+            .withCommand(commands)
+            .withArgs(arguments)
+            .withResources(new ResourceRequirementsBuilder()
+                .addToLimits("memory", new Quantity("200Mi"))
+                .addToRequests("memory", new Quantity("100Mi"))
+                .build())
+            .withVolumeMounts(Arrays.asList(
+                new VolumeMountBuilder().withName("test").withMountPath("/test-ebs").build(),
+                new VolumeMountBuilder().withName("test2").withMountPath("/test-ebs2").build()))
+            .build();
 
         assertThat(container, is(desiredContainer));
     }
@@ -240,8 +247,8 @@ public class DefaultKubernetesClientTest
     {
         final Config kubernetesPodConfig = testKubernetesConfig.get("Pod", Config.class);
         final Config taskRequestConfig = newConfig()
-                .set("kubernetes", testKubernetesConfig)
-                .set("docker", newConfig().set("image", "test"));
+            .set("kubernetes", testKubernetesConfig)
+            .set("docker", newConfig().set("image", "test"));
 
         final TaskRequest taskRequest = newTaskRequest().withConfig(taskRequestConfig);
         when(commandContext.getTaskRequest()).thenReturn(taskRequest);
@@ -255,26 +262,62 @@ public class DefaultKubernetesClientTest
             .withRestartPolicy("Never")
             .withAffinity(new AffinityBuilder()
                 .withNodeAffinity(new NodeAffinityBuilder()
-                        .withRequiredDuringSchedulingIgnoredDuringExecution(new NodeSelectorBuilder()
-                                .addToNodeSelectorTerms(0,
-                                        new NodeSelectorTermBuilder()
-                                                .addToMatchExpressions(0, new NodeSelectorRequirementBuilder()
-                                                        .withKey("test1")
-                                                        .addToValues(0, "test1")
-                                                        .withOperator("In")
-                                                        .build()
-                                                ).build()
+                    .withRequiredDuringSchedulingIgnoredDuringExecution(new NodeSelectorBuilder()
+                        .addToNodeSelectorTerms(0,
+                            new NodeSelectorTermBuilder()
+                                .addToMatchExpressions(0, new NodeSelectorRequirementBuilder()
+                                    .withKey("test1")
+                                    .addToValues(0, "test1")
+                                    .withOperator("In")
+                                    .build()
                                 ).build()
                         ).build()
+                    ).build()
                 ).build())
-                .withTolerations(Arrays.asList(
-                        new TolerationBuilder().withKey("test").withOperator("Exists").withEffect("NoSchedule").build(),
-                        new TolerationBuilder().withKey("test2").withOperator("Exists").withEffect("NoSchedule").build()))
-                .withVolumes(Arrays.asList(
-                        new VolumeBuilder().withName("test").withEmptyDir(new EmptyDirVolumeSource()).build(),
-                        new VolumeBuilder().withName("test2").withEmptyDir(new EmptyDirVolumeSource()).build()))
+            .withTolerations(Arrays.asList(
+                new TolerationBuilder().withKey("test").withOperator("Exists").withEffect("NoSchedule").build(),
+                new TolerationBuilder().withKey("test2").withOperator("Exists").withEffect("NoSchedule").build()))
+            .withVolumes(Arrays.asList(
+                new VolumeBuilder().withName("test").withEmptyDir(new EmptyDirVolumeSource()).build(),
+                new VolumeBuilder().withName("test2").withEmptyDir(new EmptyDirVolumeSource()).build()))
             .build();
 
         assertThat(podSpec, is(desiredPodSpec));
+    }
+
+    @Test
+    public void testGetPersistentVolume()
+            throws Exception
+    {
+        final Config persistentVolumeConfig = testKubernetesConfig.get("PersistentVolume", Config.class).get("spec", Config.class);
+        DefaultKubernetesClient defaultKubernetesClient = new DefaultKubernetesClient(kubernetesClientConfig, k8sDefaultKubernetesClient);
+        PersistentVolumeSpec persistentVolumeSpec = defaultKubernetesClient.getPersistentVolume(persistentVolumeConfig);
+
+        PersistentVolumeSpec desiredPersistentVolumeSpec = new PersistentVolumeSpecBuilder()
+            .withCapacity(Collections.singletonMap("storage", new Quantity("10Gi")))
+            .withAccessModes("ReadWriteOnce")
+            .withPersistentVolumeReclaimPolicy("Retain")
+            .build();
+
+        assertThat(persistentVolumeSpec, is(desiredPersistentVolumeSpec));
+    }
+
+    @Test
+    public void testGetPersistentVolumeClaim()
+            throws Exception
+    {
+        final Config persistentVolumeClaimConfig = testKubernetesConfig.get("PersistentVolumeClaim", Config.class).get("spec", Config.class);
+        DefaultKubernetesClient defaultKubernetesClient = new DefaultKubernetesClient(kubernetesClientConfig, k8sDefaultKubernetesClient);
+        PersistentVolumeClaimSpec persistentVolumeClaimSpec = defaultKubernetesClient.getPersistentVolumeClaim(persistentVolumeClaimConfig);
+
+        PersistentVolumeClaimSpec desiredPersistentVolumeClaimSpec = new PersistentVolumeClaimSpecBuilder()
+            .withAccessModes("ReadWriteOnce")
+            .withResources(new ResourceRequirementsBuilder()
+                .addToRequests("storage", new Quantity("10Gi"))
+                .addToLimits("storage", new Quantity("8Gi"))
+                .build())
+            .build();
+
+        assertThat(persistentVolumeClaimSpec, is(desiredPersistentVolumeClaimSpec));
     }
 }

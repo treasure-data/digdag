@@ -21,6 +21,10 @@ import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.Toleration;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.PersistentVolume;
+import io.fabric8.kubernetes.api.model.PersistentVolumeSpec;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpec;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.utils.Serialization;
 import org.slf4j.Logger;
@@ -57,11 +61,11 @@ public class DefaultKubernetesClient
     public Pod runPod(final CommandContext context, final CommandRequest request,
             final String name, final List<String> commands, final List<String> arguments)
     {
-        final TaskRequest taskRequest = context.getTaskRequest();
-        final Config kubernetesConfig = taskRequest.getConfig().get("kubernetes", Config.class);
-        Config kubernetesPodConfig = null;
-        if (kubernetesConfig != null && kubernetesConfig.has("Pod")) kubernetesPodConfig = kubernetesConfig.get("Pod", Config.class);
+        // If PersistentVolume or PersistentVolumeClaim is set, create PersistentVolume or PersistentVolumeClaim before making pod.
+        createPersistentVolume(context);
+        createPersistentVolumeClaim(context);
 
+        final Config kubernetesPodConfig = extractTargetKindConfig(context, "Pod");
         final Container container = createContainer(context, request, kubernetesPodConfig, name, commands, arguments);
         final PodSpec podSpec = createPodSpec(context, request, kubernetesPodConfig, container);
         io.fabric8.kubernetes.api.model.Pod pod = client.pods()
@@ -169,6 +173,58 @@ public class DefaultKubernetesClient
                 .withRestartPolicy("Never")
                 .build();
         return podSpec;
+    }
+
+    protected PersistentVolume createPersistentVolume(final CommandContext context)
+    {
+        final Config kubernetesPvConfig = extractTargetKindConfig(context, "PersistentVolume");
+        if (kubernetesPvConfig != null && kubernetesPvConfig.has("spec"))
+            return client.persistentVolumes()
+                .createOrReplaceWithNew()
+                .withNewMetadata()
+                .withName(kubernetesPvConfig.get("name", String.class))
+                .withNamespace(client.getNamespace())
+                .endMetadata()
+                .withSpec(getPersistentVolume(kubernetesPvConfig.get("spec", Config.class)))
+                .done();
+        else
+            return null;
+    }
+
+    protected PersistentVolumeClaim createPersistentVolumeClaim(final CommandContext context)
+    {
+        final Config kubernetesPvcConfig = extractTargetKindConfig(context, "PersistentVolumeClaim");
+        if (kubernetesPvcConfig != null && kubernetesPvcConfig.has("spec"))
+            return client.persistentVolumeClaims()
+                .createOrReplaceWithNew()
+                .withNewMetadata()
+                .withName(kubernetesPvcConfig.get("name", String.class))
+                .withNamespace(client.getNamespace())
+                .endMetadata()
+                .withSpec(getPersistentVolumeClaim(kubernetesPvcConfig.get("spec", Config.class)))
+                .done();
+        else
+            return null;
+    }
+
+    protected Config extractTargetKindConfig(final CommandContext context, final String kind) {
+        final TaskRequest taskRequest = context.getTaskRequest();
+        final Config kubernetesConfig = taskRequest.getConfig().get("kubernetes", Config.class);
+        Config kubernetesTargetKindConfig = null;
+        if (kubernetesConfig != null && kubernetesConfig.has(kind)) kubernetesTargetKindConfig = kubernetesConfig.get(kind, Config.class);
+        return kubernetesTargetKindConfig;
+    }
+
+    @VisibleForTesting
+    PersistentVolumeSpec getPersistentVolume(Config kubernetesPvSpecConfig) {
+        final JsonNode persistentVolumeSpecNode = kubernetesPvSpecConfig.getInternalObjectNode();
+        return Serialization.unmarshal(persistentVolumeSpecNode.toString(), PersistentVolumeSpec.class);
+    }
+
+    @VisibleForTesting
+    PersistentVolumeClaimSpec getPersistentVolumeClaim(Config kubernetesPvcSpecConfig) {
+        final JsonNode persistentVolumeClaimSpecNode = kubernetesPvcSpecConfig.getInternalObjectNode();
+        return Serialization.unmarshal(persistentVolumeClaimSpecNode.toString(), PersistentVolumeClaimSpec.class);
     }
 
     protected ResourceRequirements getResources(Config kubernetesPodConfig) {
