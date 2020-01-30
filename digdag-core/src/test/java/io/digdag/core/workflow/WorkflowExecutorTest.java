@@ -238,6 +238,72 @@ public class WorkflowExecutorTest
     }
 
     @Test
+    public void retryNestCall()
+            throws Exception
+    {
+        String subFailContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_fail.dig"), UTF_8);
+        Path subFailPath = folder.getRoot().toPath().resolve("call_sub_fail.dig");
+        System.out.println(subFailPath.toAbsolutePath().toString());
+        Files.write(subFailPath, subFailContent.getBytes(UTF_8));
+
+        String subSuccessContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_success.dig"), UTF_8);
+        Path subSuccessPath = folder.getRoot().toPath().resolve("call_sub_success.dig");
+        System.out.println(subSuccessPath.toAbsolutePath().toString());
+        Files.write(subSuccessPath, subSuccessContent.getBytes(UTF_8));
+
+        String subNestContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_nest.dig"), UTF_8);
+        Path subNestPath = folder.getRoot().toPath().resolve("call_sub_nest.dig");
+        System.out.println(subNestPath.toAbsolutePath().toString());
+        Files.write(subNestPath, subNestContent.getBytes(UTF_8));
+
+        String parentBase = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_nest_retry.dig"), UTF_8);
+
+        //Full path not work in AppVeyor
+        //String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " + childPath.toString());
+        String parentContent = parentBase.replaceFirst("call_sub_success_path: dummy", "call_sub_success_path: " +  "call_sub_success.dig")
+                                         .replaceFirst("call_sub_fail_path: dummy", "call_sub_fail_path: " +  "call_sub_fail.dig")
+                                         .replaceFirst("call_sub_nest_path: dummy", "call_sub_nest_path: " +  "call_sub_nest.dig");
+
+        Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
+        runWorkflow("call_nest_retry", parent);
+        Path outPath = folder.getRoot().toPath().resolve("out");
+        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successnestfailedsuccessnestfailedsuccessnestfailed"));
+    }
+
+    @Test
+    public void retryMainAndNestCall()
+            throws Exception
+    {
+        String subFailContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_fail_retry.dig"), UTF_8);
+        Path subFailPath = folder.getRoot().toPath().resolve("call_sub_fail_retry.dig");
+        System.out.println(subFailPath.toAbsolutePath().toString());
+        Files.write(subFailPath, subFailContent.getBytes(UTF_8));
+
+        String subSuccessContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_success.dig"), UTF_8);
+        Path subSuccessPath = folder.getRoot().toPath().resolve("call_sub_success.dig");
+        System.out.println(subSuccessPath.toAbsolutePath().toString());
+        Files.write(subSuccessPath, subSuccessContent.getBytes(UTF_8));
+
+        String subNestContent = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_sub_nest.dig"), UTF_8);
+        Path subNestPath = folder.getRoot().toPath().resolve("call_sub_nest.dig");
+        System.out.println(subNestPath.toAbsolutePath().toString());
+        Files.write(subNestPath, subNestContent.getBytes(UTF_8));
+
+        String parentBase = Resources.toString(WorkflowExecutorTest.class.getResource("/io/digdag/core/workflow/call_nest_retry.dig"), UTF_8);
+
+        //Full path not work in AppVeyor
+        //String parentContent = parentBase.replaceFirst("child_path: dummy", "child_path: " + childPath.toString());
+        String parentContent = parentBase.replaceFirst("call_sub_success_path: dummy", "call_sub_success_path: " +  "call_sub_success.dig")
+                                         .replaceFirst("call_sub_fail_path: dummy", "call_sub_fail_path: " +  "call_sub_fail_retry.dig")
+                                         .replaceFirst("call_sub_nest_path: dummy", "call_sub_nest_path: " +  "call_sub_nest.dig");
+
+        Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
+        runWorkflow("call_nest_retry", parent);
+        Path outPath = folder.getRoot().toPath().resolve("out");
+        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successnestfailedfailedfailedsuccessnestfailedfailedfailedsuccessnestfailedfailedfailed"));
+    }
+
+    @Test
     public void retryInLoop()
             throws Exception
     {
