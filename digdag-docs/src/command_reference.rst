@@ -365,6 +365,7 @@ In the config file, following parameters are available
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
+* database.minimumPoolSize (integer, default: same as database.maximumPoolSize)
 * database.leakDetectionThreshold (HikariCP leakDetectionThreshold milliseconds in integer. default: 0. To enable, set to >= 2000.)
 * database.migrate (enable DB migration. default: true)
 * archive.type (type of project archiving, "db", "s3" or "gcs". default: "db")
