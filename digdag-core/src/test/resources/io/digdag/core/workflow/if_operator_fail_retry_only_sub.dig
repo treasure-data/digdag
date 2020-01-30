@@ -12,3 +12,4 @@
         append_file: out
       +fail:
         fail>: failed
+        
