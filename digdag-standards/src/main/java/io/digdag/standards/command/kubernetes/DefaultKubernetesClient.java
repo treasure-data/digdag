@@ -21,6 +21,7 @@ import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.Toleration;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.utils.Serialization;
 import org.slf4j.Logger;
@@ -58,9 +59,12 @@ public class DefaultKubernetesClient
             final String name, final List<String> commands, final List<String> arguments)
     {
         final TaskRequest taskRequest = context.getTaskRequest();
-        final Config kubernetesConfig = taskRequest.getConfig().getNested("kubernetes");
-        final Container container = createContainer(context, request, kubernetesConfig, name, commands, arguments);
-        final PodSpec podSpec = createPodSpec(context, request, kubernetesConfig, container);
+        final Config kubernetesConfig = taskRequest.getConfig().get("kubernetes", Config.class);
+        Config kubernetesPodConfig = null;
+        if (kubernetesConfig != null && kubernetesConfig.has("Pod")) kubernetesPodConfig = kubernetesConfig.get("Pod", Config.class);
+
+        final Container container = createContainer(context, request, kubernetesPodConfig, name, commands, arguments);
+        final PodSpec podSpec = createPodSpec(context, request, kubernetesPodConfig, container);
         io.fabric8.kubernetes.api.model.Pod pod = client.pods()
                 .createNew()
                 .withNewMetadata()
@@ -132,17 +136,14 @@ public class DefaultKubernetesClient
 
     @VisibleForTesting
     Container createContainer(final CommandContext context, final CommandRequest request,
-            final Config kubernetesConfig, final String name, final List<String> commands, final List<String> arguments)
+            final Config kubernetesPodConfig, final String name, final List<String> commands, final List<String> arguments)
     {
-        Config kubernetesContainerConfig = null;
-        if (kubernetesConfig.has("container")) kubernetesContainerConfig = kubernetesConfig.getNested("container");
-
         Container container = new ContainerBuilder()
                 .withName(name)
                 .withImage(getContainerImage(context, request))
                 .withEnv(toEnvVars(getEnvironments(context, request)))
-                .withResources(getResources(kubernetesContainerConfig))
-                .withVolumeMounts(getVolumeMounts(kubernetesContainerConfig))
+                .withResources(getResources(kubernetesPodConfig))
+                .withVolumeMounts(getVolumeMounts(kubernetesPodConfig))
                 .withCommand(commands)
                 .withArgs(arguments)
                 .build();
@@ -151,19 +152,17 @@ public class DefaultKubernetesClient
 
     @VisibleForTesting
     PodSpec createPodSpec(final CommandContext context, final CommandRequest request,
-            final Config kubernetesConfig, final Container container)
+            final Config kubernetesPodConfig, final Container container)
     {
         // TODO
         // Revisit what values should be extracted as config params or system config params
-        Config kubernetesPodSpecConfig = null;
-        if (kubernetesConfig.has("spec")) kubernetesPodSpecConfig = kubernetesConfig.getNested("spec");
         PodSpec podSpec =  new PodSpecBuilder()
                 //.withHostNetwork(true);
                 //.withDnsPolicy("ClusterFirstWithHostNet");
                 .addToContainers(container)
-                .withAffinity(getAffinity(kubernetesPodSpecConfig))
-                .withTolerations(getTolerations(kubernetesPodSpecConfig))
-                .withVolumes(getVolumes(kubernetesPodSpecConfig))
+                .withAffinity(getAffinity(kubernetesPodConfig))
+                .withTolerations(getTolerations(kubernetesPodConfig))
+                .withVolumes(getVolumes(kubernetesPodConfig))
                 // TODO extract as config parameter
                 // Restart policy is "Never" by default since it needs to avoid executing the operator multiple times. It might not
                 // make the script idempotent.
@@ -173,45 +172,45 @@ public class DefaultKubernetesClient
         return podSpec;
     }
 
-    protected ResourceRequirements getResources(Config kubernetesContainerConfig) {
-        if (kubernetesContainerConfig != null && kubernetesContainerConfig.has("resources")) {
-            final JsonNode resourcesNode = kubernetesContainerConfig.getInternalObjectNode().get("resources");
+    protected ResourceRequirements getResources(Config kubernetesPodConfig) {
+        if (kubernetesPodConfig != null && kubernetesPodConfig.has("resources")) {
+            final JsonNode resourcesNode = kubernetesPodConfig.getInternalObjectNode().get("resources");
             return Serialization.unmarshal(resourcesNode.toString(), ResourceRequirements.class);
         } else {
             return null;
         }
     }
 
-    protected List<VolumeMount> getVolumeMounts(Config kubernetesContainerConfig) {
-        if (kubernetesContainerConfig != null && kubernetesContainerConfig.has("volumeMounts")) {
-            final JsonNode volumeMountsNode = kubernetesContainerConfig.getInternalObjectNode().get("volumeMounts");
+    protected List<VolumeMount> getVolumeMounts(Config kubernetesPodConfig) {
+        if (kubernetesPodConfig != null && kubernetesPodConfig.has("volumeMounts")) {
+            final JsonNode volumeMountsNode = kubernetesPodConfig.getInternalObjectNode().get("volumeMounts");
             return convertToResourceList(volumeMountsNode, VolumeMount.class);
         } else {
             return null;
         }
     }
 
-    protected Affinity getAffinity(Config kubernetesPodSpecConfig) {
-        if (kubernetesPodSpecConfig != null && kubernetesPodSpecConfig.has("affinity")) {
-            final JsonNode affinityNode = kubernetesPodSpecConfig.getInternalObjectNode().get("affinity");
+    protected Affinity getAffinity(Config kubernetesPodConfig) {
+        if (kubernetesPodConfig != null && kubernetesPodConfig.has("affinity")) {
+            final JsonNode affinityNode = kubernetesPodConfig.getInternalObjectNode().get("affinity");
             return Serialization.unmarshal(affinityNode.toString(), Affinity.class);
         } else {
             return null;
         }
     }
 
-    protected List<Toleration> getTolerations(Config kubernetesPodSpecConfig) {
-        if (kubernetesPodSpecConfig != null && kubernetesPodSpecConfig.has("tolerations")) {
-            final JsonNode tolerationsNode = kubernetesPodSpecConfig.getInternalObjectNode().get("tolerations");
+    protected List<Toleration> getTolerations(Config kubernetesPodConfig) {
+        if (kubernetesPodConfig != null && kubernetesPodConfig.has("tolerations")) {
+            final JsonNode tolerationsNode = kubernetesPodConfig.getInternalObjectNode().get("tolerations");
             return convertToResourceList(tolerationsNode, Toleration.class);
         } else {
             return null;
         }
     }
 
-    protected List<Volume> getVolumes(Config kubernetesPodSpecConfig) {
-        if (kubernetesPodSpecConfig != null && kubernetesPodSpecConfig.has("volumes")) {
-            final JsonNode volumesNode = kubernetesPodSpecConfig.getInternalObjectNode().get("volumes");
+    protected List<Volume> getVolumes(Config kubernetesPodConfig) {
+        if (kubernetesPodConfig != null && kubernetesPodConfig.has("volumes")) {
+            final JsonNode volumesNode = kubernetesPodConfig.getInternalObjectNode().get("volumes");
             return convertToResourceList(volumesNode, Volume.class);
         } else {
             return null;
