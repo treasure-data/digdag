@@ -102,13 +102,15 @@ public class DefaultKubernetesClientTest
                   operator: Exists
                   effect: NoSchedule
               PersistentVolumeClaim:
-                accessModes:
-                - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: 10Gi
-                  limits:
-                    storage: 8Gi
+                name: testPersistentVolumeClaim
+                spec:
+                  accessModes:
+                  - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 10Gi
+                    limits:
+                      storage: 8Gi
               PersistentVolume:
                 name: testPersistentVolume
                 spec:
