@@ -92,6 +92,24 @@ public class DefaultKubernetesClientTest
                 - key: test2
                   operator: Exists
                   effect: NoSchedule
+              PersistentVolumeClaim:
+                accessModes:
+                - ReadWriteOnce
+                volumeMode: Block
+                resources:
+                  requests:
+                    storage: 10Gi
+              PersistentVolume:
+                capacity:
+                  storage: 10Gi
+                accessModes:
+                - ReadWriteOnce
+                volumeMode: "Block"
+                persistentVolumeReclaimPolicy: "ReadWriteOnce"
+                fc:
+                  targetWWNs: ["50060e801049cfd1"]
+                  lun: 0
+                  readOnly: false
         */
         testKubernetesConfig = newConfig()
                 .set("Pod", newConfig()
@@ -112,7 +130,20 @@ public class DefaultKubernetesClientTest
                                                                 newConfig().set("key", "test1").set("operator", "In").set("values", ImmutableList.of("test1")))))))))
                         .set("tolerations", ImmutableList.of(
                                 newConfig().set("key", "test").set("operator", "Exists").set("effect", "NoSchedule"),
-                                newConfig().set("key", "test2").set("operator", "Exists").set("effect", "NoSchedule"))));
+                                newConfig().set("key", "test2").set("operator", "Exists").set("effect", "NoSchedule"))))
+                .set("PersistentVolumeClaim", newConfig()
+                        .set("accessModes", ImmutableList.of("ReadWriteOnce"))
+                        .set("volumeMode", "Block")
+                        .set("resources", newConfig().set("requests", newConfig().set("storage", "10Gi"))))
+                .set("PersistentVolume", newConfig()
+                        .set("capacity", newConfig().set("storage", "10Gi"))
+                        .set("accessModes", ImmutableList.of("ReadWriteOnce"))
+                        .set("volumeMode", "Block")
+                        .set("persistentVolumeReclaimPolicy", "Retain")
+                        .set("fc", newConfig()
+                                .set("targetWWNs", ImmutableList.of("50060e801049cfd1"))
+                                .set("lun", "0")
+                                .set("readOnly", "false")));
     }
 
     @Test
