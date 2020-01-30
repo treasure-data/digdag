@@ -7,9 +7,8 @@
       limit: 3
     if>: true
     _do:
-      _error:
-        echo>: ${error.message}
+      +echo:
+        echo>: failed
         append_file: out
       +fail:
-        fail>: failed
-        
+        fail>: fail

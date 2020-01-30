@@ -5,10 +5,10 @@
     echo>: task
     append_file: out
   +if_fail:
-    _error:
-      echo>: ${error.message}
-      append_file: out
     if>: true
     _do:
+      +echo:
+        echo>: failed
+        append_file: out
       +fail:
-        fail>: failed
+        fail>: fail

@@ -11,11 +11,11 @@ _retry: 2
       echo>: ${count}
       append_file: out
   +failure:
-    _error:
-      echo>: ${error.message}
-      append_file: out
     for_each>:
       count: ${counts}
     _do:
+      +echo:
+        echo>: failed
+        append_file: out
       +fail:
-        fail>: failed
+        fail>: fail

@@ -1,6 +1,7 @@
 _retry: 2
 +call_sub_fail:
-  _error:
-    echo>: ${error.message}
+  +echo:
+    echo>: failed
     append_file: out
-  fail>: fail
+  +fail:
+    fail>: fail

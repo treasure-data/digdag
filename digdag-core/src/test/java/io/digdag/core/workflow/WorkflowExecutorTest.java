@@ -207,7 +207,7 @@ public class WorkflowExecutorTest
         Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
         runWorkflow("call_main_retry", parent);
         Path outPath = folder.getRoot().toPath().resolve("out");
-        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successfail (runtime)successfail (runtime)successfail (runtime)"));
+        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successfailedsuccessfailedsuccessfailed"));
     }
 
     @Test
@@ -234,7 +234,7 @@ public class WorkflowExecutorTest
         Config parent = new YamlConfigLoader().loadString(parentContent).toConfig(ConfigUtils.configFactory);
         runWorkflow("call_main", parent);
         Path outPath = folder.getRoot().toPath().resolve("out");
-        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successfail (runtime)fail (runtime)fail (runtime)"));
+        assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("successfailedfailedfailed"));
     }
 
     @Test
@@ -304,7 +304,7 @@ public class WorkflowExecutorTest
             throws Exception
     {
         runWorkflow("if_operator_fail_retry", loadYamlResource("/io/digdag/core/workflow/if_operator_fail_retry.dig"));
-        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("taskfailed (runtime)taskfailed (runtime)taskfailed (runtime)taskfailed (runtime)"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("taskfailedtaskfailedtaskfailedtaskfailed"));
     }
 
     @Test
@@ -312,7 +312,7 @@ public class WorkflowExecutorTest
             throws Exception
     {
         runWorkflow("if_operator_fail_retry_only_sub", loadYamlResource("/io/digdag/core/workflow/if_operator_fail_retry_only_sub.dig"));
-        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("taskfailed (runtime)failed (runtime)failed (runtime)failed (runtime)"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("taskfailedfailedfailedfailed"));
     }
 
     @Test
@@ -320,7 +320,7 @@ public class WorkflowExecutorTest
             throws Exception
     {
         runWorkflow("for_each_retry", loadYamlResource("/io/digdag/core/workflow/for_each_retry.dig"));
-        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("012failed (runtime)012failed (runtime)012failed (runtime)"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("012failed012failed012failed"));
     }
 
     @Test
