@@ -4,8 +4,6 @@
 
 This operator exports `${range.from}`, `${range.to}`, and `${range.index}` variables for the subtasks. Index begins from 0.
 
-(This operator is EXPERIMENTAL. Parameters may change in a future release)
-
     +repeat:
       for_range>:
         from: 10
