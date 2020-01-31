@@ -2,8 +2,6 @@
 
 **for_each>** operator runs subtasks multiple times using sets of variables.
 
-(This operator is EXPERIMENTAL. Parameters may change in a future release)
-
     +repeat:
       for_each>:
         fruit: [apple, orange]
