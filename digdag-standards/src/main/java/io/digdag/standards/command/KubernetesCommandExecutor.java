@@ -265,9 +265,9 @@ public class KubernetesCommandExecutor
         final ObjectNode nextStatusJson = previousStatusJson.deepCopy();
         nextStatusJson.set("executor_state", nextExecutorState);
 
-
         // If the Pod completed, it needs to create output contents to pass them to the command executor.
         final boolean isFinished = podPhase.equals("Succeeded") || podPhase.equals("Failed");
+
         if (isFinished) {
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(context.getTaskRequest(), outputArchivePathName); // url format
