@@ -1,0 +1,4 @@
++call_sub_success:
+  echo>: "success"
+  append_file: out
+  

@@ -1,0 +1,7 @@
+_retry: 2
++call_sub_fail:
+  +echo:
+    echo>: failed
+    append_file: out
+  +fail:
+    fail>: fail

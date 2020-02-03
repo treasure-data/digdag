@@ -1,0 +1,11 @@
+_export:
+  call_sub_success_path: dummy
+  call_sub_nest_path: dummy
+  call_sub_fail_path: dummy
++call_main_retry:
+  _retry: 2
+  +call_success:
+    call>: ${call_sub_success_path}
+  +call_nest:
+    call>: ${call_sub_nest_path}
+

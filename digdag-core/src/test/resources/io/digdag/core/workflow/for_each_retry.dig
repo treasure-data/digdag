@@ -1,0 +1,21 @@
+_retry: 2
++test:
+  _export:
+    counts: [
+      0, 1, 2
+    ]
+  +echo:
+    for_each>:
+      count: ${counts}
+    _do:
+      echo>: ${count}
+      append_file: out
+  +failure:
+    for_each>:
+      count: ${counts}
+    _do:
+      +echo:
+        echo>: failed
+        append_file: out
+      +fail:
+        fail>: fail

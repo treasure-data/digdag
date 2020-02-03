@@ -79,6 +79,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -905,8 +906,36 @@ public class DatabaseSessionStoreManager
         }
 
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
+        /**
+         * Filter the child task if it is generated sub task.
+         * Check the child task full name has '^sub' position later the parent full name.
+         * @param parentFullName
+         * @return
+         */
+        @VisibleForTesting
+        public Predicate<StoredTask> funcFilterGeneratedSubtasks(Optional<String>parentFullName)
+        {
+            Predicate<StoredTask> filterGeneratedSubtasks = (s) -> {
+                if (!parentFullName.isPresent()) {
+                    return true;
+                }
+                String pfname = parentFullName.get();
+                String chfname = s.getFullName();
+                int pfnameLen = pfname.length();
+
+                if (chfname.startsWith(pfname)
+                        && chfname.substring(pfnameLen).contains("^sub")) {
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            };
+            return filterGeneratedSubtasks;
+        }
+
         @Override
-        public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
+        public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList, Optional<String>parentFullName)
         {
             List<StoredTask> tasks = handle.createQuery(
                     selectTaskDetailsQuery() + " where t.id " + inLargeIdListExpression(recursiveChildrenIdList) +
@@ -914,7 +943,10 @@ public class DatabaseSessionStoreManager
                     " order by t.id asc" // to ensure that tasks are sorted in the newest order
                 )
                 .map(stm)
-                .list();
+                .list()
+                .stream()
+                .filter(funcFilterGeneratedSubtasks(parentFullName))
+                .collect(Collectors.toList());
             if (tasks.isEmpty()) {
                 return false;
             }

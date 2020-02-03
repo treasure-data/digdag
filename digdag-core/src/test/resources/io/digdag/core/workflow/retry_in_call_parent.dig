@@ -7,4 +7,3 @@ _export:
   append_file: out
 +call_child:
   call>: ${child_path}
-
