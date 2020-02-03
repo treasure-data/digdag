@@ -11,11 +11,11 @@
 
     +export_query_result:
       td_result_export>:
-        job_id: 12345
-        result_connection: my_s3_connection
-        result_settings:
-          bucket: my_bucket
-          path: /logs/
+      job_id: 12345
+      result_connection: my_s3_connection
+      result_settings:
+        bucket: my_bucket
+        path: /logs/
 
 ## Options
 

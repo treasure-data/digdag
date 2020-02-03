@@ -2,6 +2,6 @@ timezone: UTC
 
 +run:
   td_result_export>:
-    job_id: ${job_id}
-    result_connection: ${result_connection}
-    result_settings: ${result_settings}
+  job_id: ${test_job_id}
+  result_connection: ${test_result_connection}
+  result_settings: ${test_result_settings}
