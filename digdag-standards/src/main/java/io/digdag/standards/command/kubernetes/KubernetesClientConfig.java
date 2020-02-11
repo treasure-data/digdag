@@ -19,47 +19,45 @@ public class KubernetesClientConfig
             final Config systemConfig,
             final Config requestConfig)
     {
-        if (requestConfig != null && requestConfig.has("kubernetes")) {
-            // from task request config
-            return KubernetesClientConfig.createFromTaskRequestConfig(name, requestConfig.getNested("kubernetes"));
-        }
-        else {
-            // from system config
-            return KubernetesClientConfig.createFromSystemConfig(name, systemConfig);
-        }
-    }
 
-    @VisibleForTesting
-    private static KubernetesClientConfig createFromTaskRequestConfig(final Optional<String> name,
-            final Config config)
-    {
-        final String clusterName;
-        if (!name.isPresent()) {
-            clusterName = config.get("name", String.class);
-        }
-        else {
+        String clusterName = null;
+        if (name.isPresent()) {
             clusterName = name.get();
         }
-        return createKubeConfig(clusterName, config);
-    }
 
-    @VisibleForTesting
-    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
-            final io.digdag.client.config.Config systemConfig)
-    {
-        final String clusterName;
-        if (!name.isPresent()) {
-            if (!systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
-                throw new ConfigException("agent.command_executor.type: is not 'kubernetes'");
+        Config extractedSystemConfig = null;
+        if (systemConfig != null && systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
+            if (clusterName == null) {
+                clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
             }
-            clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
+            final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
+            extractedSystemConfig = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
         }
-        else {
-            clusterName = name.get();
+
+        Config extractedRequestConfig = null;
+        if (requestConfig != null && requestConfig.has("kubernetes")) {
+            if (clusterName == null) {
+                clusterName = requestConfig.get("name", String.class);
+            }
+            extractedRequestConfig = requestConfig.getNested("kubernetes");
         }
-        final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
-        return createKubeConfig(clusterName, extracted);
+
+        // Create a config that merges RequestConfig with SystemConfig
+        final Config config;
+        if (extractedSystemConfig != null && extractedRequestConfig != null) {
+            config = extractedSystemConfig.merge(extractedRequestConfig);
+
+        } else if (extractedRequestConfig != null) {
+            config = extractedRequestConfig;
+
+        } else if (extractedSystemConfig != null) {
+            config = extractedSystemConfig;
+
+        } else {
+            throw new ConfigException("systemConfig and requestConfig does not exist");
+        }
+
+        return KubernetesClientConfig.createKubeConfig(clusterName, config);
     }
 
     private static KubernetesClientConfig createKubeConfig(final String clusterName, final Config config){
