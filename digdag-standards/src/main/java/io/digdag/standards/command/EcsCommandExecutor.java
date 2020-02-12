@@ -15,11 +15,13 @@ import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
 import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
+import com.amazonaws.services.logs.model.AWSLogsException;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -369,6 +371,48 @@ public class EcsCommandExecutor
         return EcsCommandStatus.of(false, nextStatus);
     }
 
+    @VisibleForTesting
+    void waitWithRandomJitter(long baseWaitSecs, long baseJitterSecs)
+    {
+        try {
+            long jitterSecs = (long) (baseJitterSecs * Math.random());
+            Thread.sleep((baseWaitSecs + jitterSecs) * 1000);
+        }
+        catch (InterruptedException ex) {
+            // Nothing to do
+        }
+    }
+
+    /**
+     * Catch ThrottlingException of AWSLogs.getLogEvents() and retry with random jitter.
+     * @param client
+     * @param previousStatus
+     * @param previousToken
+     * @return
+     */
+    GetLogEventsResult getLogWithRetry(final EcsClient client, final ObjectNode previousStatus, final Optional<String> previousToken)
+    {
+        final int maxRetry = 60;
+        final long baseJitterSecs = 10; // 0.0 <= jitterSecs < 10.0
+        final int maxBaseWaitSecs = 50; // maxBaseWaitSecs + jitter < 60
+        for (int i = 0; i < maxRetry; i++) {
+            try {
+                waitWithRandomJitter(10*i > maxBaseWaitSecs? maxBaseWaitSecs: 10*i, baseJitterSecs);
+                return client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
+            }
+            catch (AWSLogsException ex) {
+                if ("ThrottlingException".equals(ex.getErrorCode())) {
+                    logger.debug("Rate exceed in AWSLogs.getLogEvents: {}. Will be retried.", ex.toString());
+                }
+                else {
+                    throw new RuntimeException("Unknown AWSLogsException happened.", ex);
+                }
+            }
+        }
+        logger.error("Failed to call EcsClient.getLog() after Retried {} times", maxRetry);
+        throw new RuntimeException("Failed to call EcsClient.getLog()");
+    }
+
     ObjectNode fetchLogEvents(final EcsClient client,
             final ObjectNode previousStatus,
             final ObjectNode previousExecutorStatus)
@@ -376,7 +420,7 @@ public class EcsCommandExecutor
     {
         final Optional<String> previousToken = !previousExecutorStatus.has("next_token") ?
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
-        final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
+        final GetLogEventsResult result = getLogWithRetry(client, previousStatus, previousToken);
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
