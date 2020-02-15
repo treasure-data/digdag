@@ -200,7 +200,7 @@ public class S3Storage
     @Override
     public Optional<DirectDownloadHandle> getDirectDownloadHandle(String key)
     {
-        final long secondsToExpire = config.get("direct_download_expiration", Long.class, 10L*60);
+        final long secondsToExpire = getDirectUploadExpiration();
 
         GeneratePresignedUrlRequest req = new GeneratePresignedUrlRequest(bucket, key);
         req.setExpiration(Date.from(Instant.now().plusSeconds(secondsToExpire)));
@@ -213,7 +213,7 @@ public class S3Storage
     @Override
     public Optional<DirectUploadHandle> getDirectUploadHandle(String key)
     {
-        final long secondsToExpire = config.get("direct_upload_expiration", Long.class, 10L*60);
+        final long secondsToExpire = getDirectUploadExpiration();
 
         GeneratePresignedUrlRequest req = new GeneratePresignedUrlRequest(bucket, key);
         req.setMethod(HttpMethod.PUT);
@@ -222,6 +222,18 @@ public class S3Storage
         String url = client.generatePresignedUrl(req).toString();
 
         return Optional.of(DirectUploadHandle.of(url));
+    }
+
+    @Override
+    public Long getDirectDownloadExpiration()
+    {
+        return config.get("direct_download_expiration", Long.class, 10L*60);
+    }
+
+    @Override
+    public Long getDirectUploadExpiration()
+    {
+        return config.get("direct_upload_expiration", Long.class, 10L*60);
     }
 
     private <T> T getWithRetry(String message, Callable<T> callable)

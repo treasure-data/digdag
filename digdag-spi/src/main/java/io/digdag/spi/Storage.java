@@ -35,4 +35,8 @@ public interface Storage
     {
         return Optional.absent();
     }
+
+    Long getDirectDownloadExpiration();
+
+    Long getDirectUploadExpiration();
 }
