@@ -25,7 +25,7 @@ dependencies {
     compile 'org.weakref:jmxutils:1.19'
 
     // JavaScript engine
-    compile 'org.graalvm.js:js:19.2.1'
+    compile 'org.graalvm.js:js:19.3.1'
 
     // mail
     compile 'javax.mail:javax.mail-api:1.5.6'
