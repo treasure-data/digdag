@@ -1,5 +1,11 @@
 package io.digdag.core.agent;
 
+import java.util.Map;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,16 +14,16 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
+import io.digdag.metrics.DigdagTimed;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ConfigEvalEngine
@@ -219,7 +225,13 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
-            String resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
+            String resultText = null;
+            if (isInvokeTemplateRequired(code)) {
+                resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
+            }
+            else {
+                resultText = code;
+            }
             if (resultText == null) {
                 return jsonMapper.getNodeFactory().nullNode();
             }
@@ -255,6 +267,7 @@ public class ConfigEvalEngine
         }
     }
 
+    @DigdagTimed(value = "ceval_", category = "agent", appendMethodName = true)
     protected Config eval(Config config, Config params)
         throws TemplateException
     {
@@ -289,8 +302,34 @@ public class ConfigEvalEngine
         return config.getFactory().create(built);
     }
 
+    private static final Pattern InvokeTemplateRequiredPattern = Pattern.compile("\\$");
+
+    @VisibleForTesting
+    protected boolean isInvokeTemplateRequired(String code)
+    {
+        return code != null && InvokeTemplateRequiredPattern.matcher(code).find();
+    }
+
     @Override
     public String template(String content, Config params)
+            throws TemplateException
+    {
+        String resultText = null;
+        if (isInvokeTemplateRequired(content)) {
+            resultText = callTemplate(content, params);
+        }
+        else {
+            resultText = content;
+        }
+        if (resultText == null) {
+            return "";
+        }
+        else {
+            return resultText;
+        }
+    }
+
+    public String callTemplate(String content, Config params)
         throws TemplateException
     {
         String resultText;
