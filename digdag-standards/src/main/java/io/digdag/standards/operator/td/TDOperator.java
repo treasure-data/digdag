@@ -70,6 +70,13 @@ public class TDOperator
         return new TDOperator(client, database);
     }
 
+    public TDOperator updateApikey(SecretProvider secrets)
+    {
+        String apikey = TDClientFactory.getApikey(secrets);
+        TDClient client = this.client.withApiKey(apikey);
+        return new TDOperator(client, database);
+    }
+
     static final RetryExecutor defaultRetryExecutor = retryExecutor()
             .withInitialRetryWait(INITIAL_RETRY_WAIT)
             .withMaxRetryWait(MAX_RETRY_WAIT)
@@ -408,17 +415,27 @@ public class TDOperator
     static boolean isDeterministicClientException(Exception ex)
     {
         if (ex instanceof TDClientHttpException) {
-            int statusCode = ((TDClientHttpException) ex).getStatusCode();
-            switch (statusCode) {
-                case HttpStatus.TOO_MANY_REQUESTS_429:
-                case HttpStatus.REQUEST_TIMEOUT_408:
-                    return false;
-                default:
-                    // return true if 4xx
-                    return statusCode >= 400 && statusCode < 500;
-            }
+            return isAuthenticationErrorException((TDClientHttpException)ex);
         }
-        else if (ex instanceof TDClientException) {
+        return isFailedBeforeSendClientException(ex);
+    }
+
+    static boolean isAuthenticationErrorException(TDClientHttpException ex)
+    {
+        int statusCode = ex.getStatusCode();
+        switch (statusCode) {
+            case HttpStatus.TOO_MANY_REQUESTS_429:
+            case HttpStatus.REQUEST_TIMEOUT_408:
+                return false;
+            default:
+                // return true if 4xx
+                return statusCode >= 400 && statusCode < 500;
+        }
+    }
+
+    static boolean isFailedBeforeSendClientException(Exception ex)
+    {
+        if (ex instanceof TDClientException) {
             // failed before sending HTTP request or receiving HTTP response
             TDClientException.ErrorType errorType = ((TDClientException) ex).getErrorType();
             switch (errorType) {

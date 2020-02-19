@@ -48,6 +48,17 @@ public class TDClientFactory implements BaseTDClientFactory
             }
         }
 
+        String apikey = getApikey(secrets);
+
+        return builder
+                .setEndpoint(secrets.getSecretOptional("endpoint").or(() -> params.get("endpoint", String.class, systemDefaultConfig.getEndpoint())))
+                .setUseSSL(useSSL)
+                .setApiKey(apikey)
+                .setRetryLimit(0)  // disable td-client's retry mechanism
+                ;
+    }
+
+    static String getApikey(SecretProvider secrets) {
         Optional<String> apikey = secrets.getSecretOptional("apikey").transform(String::trim);
         if (!apikey.isPresent()) {
             throw new ConfigException("The 'td.apikey' secret is missing");
@@ -55,13 +66,7 @@ public class TDClientFactory implements BaseTDClientFactory
         if (apikey.get().isEmpty()) {
             throw new ConfigException("The 'td.apikey' secret is empty");
         }
-
-        return builder
-                .setEndpoint(secrets.getSecretOptional("endpoint").or(() -> params.get("endpoint", String.class, systemDefaultConfig.getEndpoint())))
-                .setUseSSL(useSSL)
-                .setApiKey(apikey.get())
-                .setRetryLimit(0)  // disable td-client's retry mechanism
-                ;
+        return apikey.get();
     }
 
     protected static TDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
