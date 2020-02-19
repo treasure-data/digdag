@@ -163,7 +163,7 @@ public class TdOperatorFactory
                 if (insertInto.isPresent() || createTable.isPresent()) {
                     TableParam destTable = insertInto.isPresent() ? insertInto.get() : createTable.get();
                     TDJobOperator jobOperator = op.runJob(state, "previewJob", pollInterval, retryInterval, (operator, domainKey) ->
-                            startSelectPreviewJob(operator, "job id " + j.getJobId(), destTable, domainKey));
+                            startSelectPreviewJob(operator, "job id " + j.getJobId(), destTable, domainKey), context.getSecrets().getSecrets("td"));
                     downloadPreviewRows(jobOperator, "table " + destTable.toString(), state, retryInterval);
                 }
                 else {

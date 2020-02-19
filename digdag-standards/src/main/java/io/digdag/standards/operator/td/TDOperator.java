@@ -294,7 +294,7 @@ public class TDOperator
     /**
      * Run a TD job in a polling non-blocking fashion. Throws TaskExecutionException.ofNextPolling with the passed in state until the job is done.
      */
-    public TDJobOperator runJob(TaskState state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter)
+    public TDJobOperator runJob(TaskState state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter, SecretProvider secrets)
     {
         ///////////////////////////////////////////////////////////////////////////////////////////
         // TODO: remove this migration code
@@ -333,6 +333,11 @@ public class TDOperator
                 newJobId = starter.startJob(this, domainKey.get());
             }
             catch (TDClientException e) {
+                if (e instanceof TDClientHttpException) {
+                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) e))) {
+                        this.updateApikey(secrets);
+                    }
+                }
                 logger.warn("failed to start job: domainKey={}", domainKey.get(), e);
                 if (isDeterministicClientException(e)) {
                     throw e;
@@ -356,6 +361,11 @@ public class TDOperator
             status = job.checkStatus();
         }
         catch (TDClientException e) {
+            if (e instanceof TDClientHttpException) {
+                if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) e))) {
+                    this.updateApikey(secrets);
+                }
+            }
             logger.warn("failed to check job status: domainKey={}, jobId={}", domainKey.get(), jobId.get(), e);
             if (isDeterministicClientException(e)) {
                 throw e;
@@ -378,6 +388,11 @@ public class TDOperator
                 jobInfo = job.getJobInfo();
             }
             catch (TDClientException e) {
+                if (e instanceof TDClientHttpException) {
+                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) e))) {
+                        this.updateApikey(secrets);
+                    }
+                }
                 logger.warn("failed to get job failure info: domainKey={}, jobId={}, status={}", domainKey.get(), jobId.get(), status.getStatus(), e);
                 if (isDeterministicClientException(e)) {
                     throw e;
