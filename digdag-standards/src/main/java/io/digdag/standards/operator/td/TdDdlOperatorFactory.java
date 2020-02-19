@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientException;
+import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -149,7 +150,7 @@ public class TdDdlOperatorFactory
                                     try {
                                         return op.withDatabase(database).tableExists(from.getTable());
                                     }
-                                    catch (TDClientHttpNotFoundException ex) {
+                                    catch (TDClientHttpException ex) {
                                         if (TDOperator.isAuthenticationErrorException(ex)) {
                                             op.updateApikey(secrets);
                                         }

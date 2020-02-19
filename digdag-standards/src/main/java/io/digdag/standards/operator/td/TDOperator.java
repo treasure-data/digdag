@@ -415,7 +415,15 @@ public class TDOperator
     static boolean isDeterministicClientException(Exception ex)
     {
         if (ex instanceof TDClientHttpException) {
-            return isAuthenticationErrorException((TDClientHttpException)ex);
+            int statusCode = ((TDClientHttpException) ex).getStatusCode();
+            switch (statusCode) {
+                case HttpStatus.TOO_MANY_REQUESTS_429:
+                case HttpStatus.REQUEST_TIMEOUT_408:
+                    return false;
+                default:
+                    // return true if 4xx
+                    return statusCode >= 400 && statusCode < 500;
+            }
         }
         return isFailedBeforeSendClientException(ex);
     }
@@ -424,12 +432,12 @@ public class TDOperator
     {
         int statusCode = ex.getStatusCode();
         switch (statusCode) {
-            case HttpStatus.TOO_MANY_REQUESTS_429:
-            case HttpStatus.REQUEST_TIMEOUT_408:
-                return false;
+            case HttpStatus.UNAUTHORIZED_401:
+            // This is not for authentication basically, but it may be 403 for auth token error. https://tools.ietf.org/html/rfc6750
+            case HttpStatus.FORBIDDEN_403:
+                return true;
             default:
-                // return true if 4xx
-                return statusCode >= 400 && statusCode < 500;
+                return false;
         }
     }
 
