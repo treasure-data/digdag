@@ -24,6 +24,11 @@ public class GraalJsEngine
         this.engine = Engine.newBuilder()
             .allowExperimentalOptions(true)
             .option("js.nashorn-compat", "true")
+            .option("js.ecmascript-version", "5")
+            .option("js.syntax-extensions", "false")
+            .option("js.console", "false")
+            .option("js.load", "true")           //Same as default. Should be false?
+            .option("js.load-from-url", "false") //Same as default
             .build();
         try {
             this.libraryJsSources = new Source[LIBRARY_JS_CONTENTS.length];
