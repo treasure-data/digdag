@@ -6,6 +6,8 @@ import io.digdag.core.agent.ConfigEvalEngine.JsEngine;
 import io.digdag.spi.TemplateException;
 import java.io.IOException;
 import java.time.ZoneId;
+import java.util.function.Supplier;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
@@ -43,24 +45,29 @@ public class GraalJsEngine
 
     public JsEngine.Evaluator newEvaluator(Config params)
     {
-        Context.Builder contextBuilder = Context.newBuilder()
-            .engine(engine)
-            .allowAllAccess(false)
-            .timeZone(getWorkflowZoneId(params));
-        Context context = contextBuilder.build();
-        try {
-            for (Source lib : libraryJsSources) {
-                context.eval(lib);
+        GraalEvaluator evaluator = new GraalEvaluator(createContextSupplier(params));
+        return evaluator;
+    }
+
+    private Supplier<Context> createContextSupplier(Config params)
+    {
+        return () -> {
+            Context.Builder contextBuilder = Context.newBuilder()
+                    .engine(engine)
+                    .allowAllAccess(false)
+                    .timeZone(getWorkflowZoneId(params));
+            Context context = contextBuilder.build();
+            try {
+                for (Source lib : libraryJsSources) {
+                    context.eval(lib);
+                }
             }
-            GraalEvaluator evaluator = new GraalEvaluator(context);
-            context = null;
-            return evaluator;
-        }
-        finally {
-            if (context != null) {
+            catch (RuntimeException ex) {
                 context.close();
+                throw ex;
             }
-        }
+            return context;
+        };
     }
 
     private static ZoneId getWorkflowZoneId(Config params)
@@ -71,44 +78,40 @@ public class GraalJsEngine
     private static class GraalEvaluator
             implements JsEngine.Evaluator
     {
-        private final Context context;
+        private final Supplier<Context> contextSupplier;
 
-        GraalEvaluator(Context context)
+        GraalEvaluator(Supplier<Context> contextSupplier)
         {
-            this.context = context;
+            this.contextSupplier = contextSupplier;
         }
 
         @Override
         public String evaluate(String code, Config scopedParams, ObjectMapper jsonMapper)
                 throws TemplateException
         {
-            String paramsJson;
-            try {
-                paramsJson = jsonMapper.writeValueAsString(scopedParams);
-            }
-            catch (RuntimeException | IOException ex) {
-                throw new TemplateException("Failed to serialize parameters to JSON", ex);
-            }
-            try {
-                Value result = context.getBindings("js").getMember("template").execute(code, paramsJson);
-                return result.asString();
-            }
-            catch (PolyglotException ex) {
-                String message;
-                if (ex.getCause() != null) {
-                    message = ex.getCause().getMessage();
+            try(Context context = contextSupplier.get()) {
+                String paramsJson;
+                try {
+                    paramsJson = jsonMapper.writeValueAsString(scopedParams);
                 }
-                else {
-                    message = ex.getMessage();
+                catch (RuntimeException | IOException ex) {
+                    throw new TemplateException("Failed to serialize parameters to JSON", ex);
                 }
-                throw new TemplateException("Failed to evaluate a variable " + code + " (" + message + ")");
+                try {
+                    Value result = context.getBindings("js").getMember("template").execute(code, paramsJson);
+                    return result.asString();
+                }
+                catch (PolyglotException ex) {
+                    String message;
+                    if (ex.getCause() != null) {
+                        message = ex.getCause().getMessage();
+                    }
+                    else {
+                        message = ex.getMessage();
+                    }
+                    throw new TemplateException("Failed to evaluate a variable " + code + " (" + message + ")");
+                }
             }
-        }
-
-        @Override
-        public void close()
-        {
-            context.close();
         }
     }
 }
