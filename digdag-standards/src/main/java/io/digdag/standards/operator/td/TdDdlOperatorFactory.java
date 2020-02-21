@@ -177,7 +177,7 @@ public class TdDdlOperatorFactory
                                 try {
                                     o.accept(op);
                                 }
-                                catch (TDClientHttpNotFoundException ex) {
+                                catch (TDClientHttpException ex) {
                                     if (TDOperator.isAuthenticationErrorException(ex)) {
                                         op.updateApikey(secrets);
                                     }
