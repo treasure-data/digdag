@@ -257,11 +257,37 @@ public class ConfigEvalEngine
         public String evaluate(String code, Config scopedParams, ObjectMapper jsonMapper)
             throws TemplateException
         {
-            String resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
-            String checkText = checker.evaluate(code, scopedParams, jsonMapper);
+            String resultText = null;
+            String checkText = null;
+            TemplateException resultEx = null;
+            Exception checkEx = null;
+            try {
+                resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
+            }
+            catch (TemplateException ex) {
+                resultEx = ex;
+            }
+
+            try {
+                checkText = checker.evaluate(code, scopedParams, jsonMapper);
+            }
+            catch (Exception ex) { // We should catch all exception to avoid GraalJS side effect.
+                checkEx = ex;
+            }
+
             if (resultText == null && checkText != null ||
                     resultText != null && !resultText.equals(checkText)) {
-                logger.error("Detected incompatibility between Nashorn and Graal. Code: {}", code);
+                logger.error("Detected incompatibility between Nashorn and GraalJS. Code: {}", code);
+                logger.error("Incompatibility info: Nashorn return:{} exception:{} GraalJS return:{} exception:{}",
+                        resultText == null? "null" : resultText,
+                        resultEx == null? "null" : resultEx.toString(),
+                        checkText == null? "null" : checkText,
+                        checkEx == null? "null" : checkEx.toString()
+                        );
+            }
+
+            if (resultEx != null) {
+                throw resultEx;
             }
             return resultText;
         }
