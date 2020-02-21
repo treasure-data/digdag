@@ -134,7 +134,7 @@ public class TdWaitTableOperatorFactory
                     state.params().set(TABLE_EXISTS, true);
                 }
 
-                TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob, context.getSecrets().getSecrets("td"));
+                TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob);
 
                 // Fetch the job output to see if the row count condition was fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());

@@ -143,7 +143,7 @@ public class TdDdlOperatorFactory
                         String database = from.getDatabase().or(op.getDatabase());
 
                         boolean exists = pollingRetryExecutor(state, "rename_check_retry")
-                                .retryUnless(TDOperator::isFailedBeforeSendClientException)
+                                .retryUnless(TDOperator::isDeterministicClientException)
                                 .withRetryInterval(retryInterval)
                                 .withErrorMessage("Failed check existence of table %s.%s", database, from.getTable())
                                 .run(s -> {
@@ -170,7 +170,7 @@ public class TdDdlOperatorFactory
 
                     Consumer<TDOperator> o = operations.get(i);
                     pollingRetryExecutor(state, "retry")
-                            .retryUnless(TDOperator::isFailedBeforeSendClientException)
+                            .retryUnless(TDOperator::isDeterministicClientException)
                             .withRetryInterval(retryInterval)
                             .withErrorMessage("DDL operation failed")
                             .runAction(s -> {

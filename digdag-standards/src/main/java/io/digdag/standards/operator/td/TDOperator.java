@@ -67,21 +67,20 @@ public class TDOperator
 
         TDClient client = clientFactory.createClient(systemDefaultConfig, env, config, secrets);
 
-        return new TDOperator(client, database);
+        return new TDOperator(client, database, secrets);
     }
 
-    public TDOperator updateApikey(SecretProvider secrets)
+    public void updateApikey(SecretProvider secrets)
     {
         String apikey = TDClientFactory.getApikey(secrets);
-        TDClient client = this.client.withApiKey(apikey);
-        return new TDOperator(client, database);
+        client = client.withApiKey(apikey);
     }
 
     static final RetryExecutor defaultRetryExecutor = retryExecutor()
             .withInitialRetryWait(INITIAL_RETRY_WAIT)
             .withMaxRetryWait(MAX_RETRY_WAIT)
             .withRetryLimit(MAX_RETRY_LIMIT)
-            .retryIf((exception) -> !isDeterministicClientException(exception));
+            .retryIf((exception) -> !isNeedNotRetryException(exception));
 
     public static String escapeHiveIdent(String ident)
     {
@@ -115,18 +114,20 @@ public class TDOperator
         }
     }
 
-    private final TDClient client;
+    private TDClient client;
     private final String database;
+    private final SecretProvider secrets;
 
-    TDOperator(TDClient client, String database)
+    TDOperator(TDClient client, String database, SecretProvider secrets)
     {
         this.client = client;
         this.database = database;
+        this.secrets = secrets;
     }
 
     public TDOperator withDatabase(String anotherDatabase)
     {
-        return new TDOperator(client, anotherDatabase);
+        return new TDOperator(client, anotherDatabase, secrets);
     }
 
     public String getDatabase()
@@ -134,11 +135,27 @@ public class TDOperator
         return database;
     }
 
+    public RetryExecutor defaultRetryExecutor() {
+        return retryExecutor()
+            .withInitialRetryWait(INITIAL_RETRY_WAIT)
+            .withMaxRetryWait(MAX_RETRY_WAIT)
+            .withRetryLimit(MAX_RETRY_LIMIT)
+            .onRetry((exception, retryCount, retryLimit, retryWait) -> {
+                if (exception instanceof TDClientHttpException) {
+                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) exception))) {
+                        logger.debug("apikey will be tried to update by retrying");
+                        updateApikey(secrets);
+                    }
+                }
+            })
+            .retryIf((exception) -> !isDeterministicClientException(exception));
+    }
+
     public void ensureDatabaseCreated(String name)
             throws TDClientException
     {
         try {
-            defaultRetryExecutor.run(() -> client.createDatabase(name));
+            defaultRetryExecutor().run(() -> client.createDatabase(name));
         }
         catch (RetryGiveupException ex) {
             if (ex.getCause() instanceof TDClientHttpConflictException) {
@@ -153,7 +170,7 @@ public class TDOperator
             throws TDClientException
     {
         try {
-            defaultRetryExecutor.run(() -> client.deleteDatabase(name));
+            defaultRetryExecutor().run(() -> client.deleteDatabase(name));
         }
         catch (RetryGiveupException ex) {
             if (ex.getCause() instanceof TDClientHttpNotFoundException) {
@@ -169,7 +186,7 @@ public class TDOperator
     {
         try {
             // TODO set include_v=false option
-            defaultRetryExecutor.run(() -> client.createTable(database, tableName));
+            defaultRetryExecutor().run(() -> client.createTable(database, tableName));
         }
         catch (RetryGiveupException ex) {
             if (ex.getCause() instanceof TDClientHttpConflictException) {
@@ -185,7 +202,7 @@ public class TDOperator
     {
         try {
             // TODO set include_v=false option
-            defaultRetryExecutor.run(() -> client.deleteTable(database, tableName));
+            defaultRetryExecutor().run(() -> client.deleteTable(database, tableName));
         }
         catch (RetryGiveupException ex) {
             if (ex.getCause() instanceof TDClientHttpNotFoundException) {
@@ -200,7 +217,7 @@ public class TDOperator
             throws TDClientException
     {
         try {
-            defaultRetryExecutor.run(() -> client.renameTable(database, existentTable, toName, true));
+            defaultRetryExecutor().run(() -> client.renameTable(database, existentTable, toName, true));
         }
         catch (RetryGiveupException ex) {
             if (ex.getCause() instanceof TDClientHttpNotFoundException) {
@@ -214,7 +231,7 @@ public class TDOperator
     public boolean tableExists(String table)
     {
         try {
-            return defaultRetryExecutor.run(() -> client.existsTable(database, table));
+            return defaultRetryExecutor().run(() -> client.existsTable(database, table));
         }
         catch (RetryGiveupException ex) {
             throw Throwables.propagate(ex.getCause());
@@ -224,7 +241,7 @@ public class TDOperator
     public long lookupConnection(String name)
     {
         try {
-            return defaultRetryExecutor.run(() -> client.lookupConnection(name));
+            return defaultRetryExecutor().run(() -> client.lookupConnection(name));
         }
         catch (RetryGiveupException ex) {
             throw Throwables.propagate(ex.getCause());
@@ -279,7 +296,7 @@ public class TDOperator
     public String submitNewJobWithRetry(Submitter submitter)
     {
         try {
-            return defaultRetryExecutor.run(() -> submitNewJob(submitter));
+            return defaultRetryExecutor().run(() -> submitNewJob(submitter));
         }
         catch (RetryGiveupException ex) {
             throw Throwables.propagate(ex.getCause());
@@ -294,7 +311,7 @@ public class TDOperator
     /**
      * Run a TD job in a polling non-blocking fashion. Throws TaskExecutionException.ofNextPolling with the passed in state until the job is done.
      */
-    public TDJobOperator runJob(TaskState state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter, SecretProvider secrets)
+    public TDJobOperator runJob(TaskState state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter)
     {
         ///////////////////////////////////////////////////////////////////////////////////////////
         // TODO: remove this migration code
@@ -333,11 +350,6 @@ public class TDOperator
                 newJobId = starter.startJob(this, domainKey.get());
             }
             catch (TDClientException e) {
-                if (e instanceof TDClientHttpException) {
-                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) e))) {
-                        this.updateApikey(secrets);
-                    }
-                }
                 logger.warn("failed to start job: domainKey={}", domainKey.get(), e);
                 if (isDeterministicClientException(e)) {
                     throw e;
@@ -361,11 +373,6 @@ public class TDOperator
             status = job.checkStatus();
         }
         catch (TDClientException e) {
-            if (e instanceof TDClientHttpException) {
-                if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) e))) {
-                    this.updateApikey(secrets);
-                }
-            }
             logger.warn("failed to check job status: domainKey={}, jobId={}", domainKey.get(), jobId.get(), e);
             if (isDeterministicClientException(e)) {
                 throw e;
@@ -388,11 +395,6 @@ public class TDOperator
                 jobInfo = job.getJobInfo();
             }
             catch (TDClientException e) {
-                if (e instanceof TDClientHttpException) {
-                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) e))) {
-                        this.updateApikey(secrets);
-                    }
-                }
                 logger.warn("failed to get job failure info: domainKey={}, jobId={}, status={}", domainKey.get(), jobId.get(), status.getStatus(), e);
                 if (isDeterministicClientException(e)) {
                     throw e;
@@ -434,6 +436,24 @@ public class TDOperator
             switch (statusCode) {
                 case HttpStatus.TOO_MANY_REQUESTS_429:
                 case HttpStatus.REQUEST_TIMEOUT_408:
+                    return false;
+                default:
+                    // return true if 4xx
+                    return statusCode >= 400 && statusCode < 500;
+            }
+        }
+        return isFailedBeforeSendClientException(ex);
+    }
+
+    static boolean isNeedNotRetryException(Exception ex)
+    {
+        if (ex instanceof TDClientHttpException) {
+            int statusCode = ((TDClientHttpException) ex).getStatusCode();
+            switch (statusCode) {
+                case HttpStatus.TOO_MANY_REQUESTS_429:
+                case HttpStatus.REQUEST_TIMEOUT_408:
+                case HttpStatus.UNAUTHORIZED_401:
+                case HttpStatus.FORBIDDEN_403:
                     return false;
                 default:
                     // return true if 4xx

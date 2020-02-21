@@ -109,7 +109,7 @@ public class TdWaitOperatorFactory
         public TaskResult runTask()
         {
             try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
-                TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob, context.getSecrets().getSecrets("td"));
+                TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob);
 
                 // Fetch the job output to see if the query condition has been fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());

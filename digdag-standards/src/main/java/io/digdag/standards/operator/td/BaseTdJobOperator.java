@@ -65,7 +65,7 @@ abstract class BaseTdJobOperator
         Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
         TDJobOperator job;
         if (!doneJobId.isPresent()) {
-            job = op.runJob(state, "job", pollInterval, retryInterval, (jobOperator, domainKey) -> startJob(jobOperator, domainKey), context.getSecrets().getSecrets("td"));
+            job = op.runJob(state, "job", pollInterval, retryInterval, (jobOperator, domainKey) -> startJob(jobOperator, domainKey));
             state.params().set(DONE_JOB_ID, job.getJobId());
         }
         else {
