@@ -200,7 +200,7 @@ public class S3Storage
     @Override
     public Optional<DirectDownloadHandle> getDirectDownloadHandle(String key)
     {
-        final long secondsToExpire = getDirectUploadExpiration();
+        final long secondsToExpire = getDirectDownloadExpiration();
 
         GeneratePresignedUrlRequest req = new GeneratePresignedUrlRequest(bucket, key);
         req.setExpiration(Date.from(Instant.now().plusSeconds(secondsToExpire)));
