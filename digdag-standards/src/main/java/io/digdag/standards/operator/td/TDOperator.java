@@ -80,7 +80,7 @@ public class TDOperator
             .withInitialRetryWait(INITIAL_RETRY_WAIT)
             .withMaxRetryWait(MAX_RETRY_WAIT)
             .withRetryLimit(MAX_RETRY_LIMIT)
-            .retryIf((exception) -> !isNeedNotRetryException(exception));
+            .retryIf((exception) -> !isDeterministicClientException(exception));
 
     public static String escapeHiveIdent(String ident)
     {
@@ -143,12 +143,12 @@ public class TDOperator
             .onRetry((exception, retryCount, retryLimit, retryWait) -> {
                 if (exception instanceof TDClientHttpException) {
                     if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) exception))) {
-                        logger.debug("apikey will be tried to update by retrying");
+                        logger.warn("apikey will be tried to update by retrying");
                         updateApikey(secrets);
                     }
                 }
             })
-            .retryIf((exception) -> !isDeterministicClientException(exception));
+            .retryIf((exception) -> !isNeedNotRetryException(exception));
     }
 
     public void ensureDatabaseCreated(String name)
