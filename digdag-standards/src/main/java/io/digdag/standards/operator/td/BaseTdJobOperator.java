@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.treasuredata.client.TDClientException;
 import io.digdag.client.config.Config;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;

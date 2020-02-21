@@ -4,15 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientException;
-import com.treasuredata.client.TDClientHttpException;
-import com.treasuredata.client.TDClientHttpNotFoundException;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
-import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
@@ -128,9 +125,7 @@ public class TdDdlOperatorFactory
                 });
             }
 
-            SecretProvider secrets = context.getSecrets().getSecrets("td");
-
-            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, secrets)) {
+            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) {
                 // make sure that all "from" tables exist so that ignoring 404 Not Found in
                 // op.ensureExistentTableRenamed is valid.
                 if (!renameTableList.isEmpty()) {
@@ -146,17 +141,7 @@ public class TdDdlOperatorFactory
                                 .retryUnless(TDOperator::isDeterministicClientException)
                                 .withRetryInterval(retryInterval)
                                 .withErrorMessage("Failed check existence of table %s.%s", database, from.getTable())
-                                .run(s -> {
-                                    try {
-                                        return op.withDatabase(database).tableExists(from.getTable());
-                                    }
-                                    catch (TDClientHttpException ex) {
-                                        if (TDOperator.isAuthenticationErrorException(ex)) {
-                                            op.updateApikey(secrets);
-                                        }
-                                        throw ex;
-                                    }
-                                });
+                                .run(s -> op.withDatabase(database).tableExists(from.getTable()));
                         if (!exists) {
                             throw new ConfigException(String.format(ENGLISH,
                                         "Renaming table %s.%s doesn't exist", database, from.getTable()));
@@ -173,17 +158,7 @@ public class TdDdlOperatorFactory
                             .retryUnless(TDOperator::isDeterministicClientException)
                             .withRetryInterval(retryInterval)
                             .withErrorMessage("DDL operation failed")
-                            .runAction(s -> {
-                                try {
-                                    o.accept(op);
-                                }
-                                catch (TDClientHttpException ex) {
-                                    if (TDOperator.isAuthenticationErrorException(ex)) {
-                                        op.updateApikey(secrets);
-                                    }
-                                    throw ex;
-                                }
-                            });
+                            .runAction(s -> o.accept(op));
                 }
             }
             catch (TDClientException ex) {
