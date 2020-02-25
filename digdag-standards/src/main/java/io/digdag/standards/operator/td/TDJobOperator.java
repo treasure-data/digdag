@@ -7,14 +7,19 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.treasuredata.client.TDClient;
+import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
+import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
+import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ArrayValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,13 +31,35 @@ import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
 
 class TDJobOperator
 {
-    private final TDClient client;
+    private TDClient client;
     private final String jobId;
+    private final SecretProvider secrets;
 
-    TDJobOperator(TDClient client, String jobId)
+    private static final Logger logger = LoggerFactory.getLogger(TDJobOperator.class);
+
+    TDJobOperator(TDClient client, String jobId, SecretProvider secrets)
     {
         this.client = client;
         this.jobId = jobId;
+        this.secrets = secrets;
+    }
+
+    void updateApikey(SecretProvider secrets)
+    {
+        String apikey = TDClientFactory.getApikey(secrets);
+        client = client.withApiKey(apikey);
+    }
+
+    RetryExecutor defaultRetryExecutor() {
+        return defaultRetryExecutor
+            .onRetry((exception, retryCount, retryLimit, retryWait) -> {
+                if (exception instanceof TDClientHttpException) {
+                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) exception))) {
+                        logger.warn("apikey will be tried to update by retrying");
+                        updateApikey(secrets);
+                    }
+                }
+            });
     }
 
     String getJobId()
@@ -43,7 +70,7 @@ class TDJobOperator
     TDJobSummary getJobStatus()
     {
         try {
-            return defaultRetryExecutor
+            return defaultRetryExecutor()
                     .run(() -> client.jobStatus(jobId));
         }
         catch (RetryGiveupException ex) {
@@ -54,7 +81,7 @@ class TDJobOperator
     TDJob getJobInfo()
     {
         try {
-            return defaultRetryExecutor
+            return defaultRetryExecutor()
                     .run(() -> client.jobInfo(jobId));
         }
         catch (RetryGiveupException ex) {
@@ -99,7 +126,7 @@ class TDJobOperator
     <R> R getResult(Function<Iterator<ArrayValue>, R> resultStreamHandler)
     {
         try {
-            return defaultRetryExecutor.run(() ->
+            return defaultRetryExecutor().run(() ->
                     client.jobResult(jobId, TDResultFormat.MESSAGE_PACK_GZ, (in) -> {
                         try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new GZIPInputStream(in, 32 * 1024))) {
                             return resultStreamHandler.apply(new Iterator<ArrayValue>()

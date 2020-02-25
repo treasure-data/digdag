@@ -305,7 +305,7 @@ public class TDOperator
 
     public TDJobOperator newJobOperator(String jobId)
     {
-        return new TDJobOperator(client, jobId);
+        return new TDJobOperator(client, jobId, secrets);
     }
 
     /**
