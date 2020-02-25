@@ -80,7 +80,7 @@ public class TDOperator
             .withInitialRetryWait(INITIAL_RETRY_WAIT)
             .withMaxRetryWait(MAX_RETRY_WAIT)
             .withRetryLimit(MAX_RETRY_LIMIT)
-            .retryIf((exception) -> !isDeterministicClientException(exception));
+            .retryIf((exception) -> !isDeterministicException(exception));
 
     public static String escapeHiveIdent(String ident)
     {
@@ -148,7 +148,7 @@ public class TDOperator
                     }
                 }
             })
-            .retryIf((exception) -> !isNeedNotRetryException(exception));
+            .retryIf((exception) -> !isDeterministicException(exception));
     }
 
     public void ensureDatabaseCreated(String name)
@@ -445,7 +445,7 @@ public class TDOperator
         return isFailedBeforeSendClientException(ex);
     }
 
-    static boolean isNeedNotRetryException(Exception ex)
+    static boolean isDeterministicException(Exception ex)
     {
         if (ex instanceof TDClientHttpException) {
             int statusCode = ((TDClientHttpException) ex).getStatusCode();
