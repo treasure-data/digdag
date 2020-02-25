@@ -62,7 +62,7 @@ public class ConfigEvalEngine
 
     private static ImmutableList<String> NO_EVALUATE_PARAMETERS = ImmutableList.of("_do",  "_else_do");
 
-    private static enum JsEngineType
+    enum JsEngineType
     {
         NASHORN("nashorn"),
         GRAAL("graal"),
@@ -114,11 +114,13 @@ public class ConfigEvalEngine
     {
         this(systemConfig.getOptional("eval.js-engine-type", String.class)
                 .transform(type -> parseJsEngineType(type))
-                .or(() -> defaultJsEngineType()));
+                .or(() -> defaultJsEngineType()),
+             systemConfig.get("eval.extended-syntax", Boolean.class, true)
+         );
     }
 
     @VisibleForTesting
-    ConfigEvalEngine(JsEngineType jsEngineType)
+    ConfigEvalEngine(JsEngineType jsEngineType, boolean extendedSyntax)
     {
         logger.debug("Using JavaScript engine: {}", jsEngineType.configName);
         this.jsEngineType = jsEngineType;
@@ -129,11 +131,11 @@ public class ConfigEvalEngine
             break;
         case GRAAL:
             this.nashorn = null;
-            this.graal = new GraalJsEngine();
+            this.graal = new GraalJsEngine(extendedSyntax);
             break;
         case NASHORN_GRAAL_CHECK:
             this.nashorn = new NashornJsEngine();
-            this.graal = new GraalJsEngine();
+            this.graal = new GraalJsEngine(extendedSyntax);
             break;
         default:
             throw new UnsupportedOperationException();
