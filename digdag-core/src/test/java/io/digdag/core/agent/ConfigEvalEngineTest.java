@@ -20,7 +20,7 @@ public class ConfigEvalEngineTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private ConfigEvalEngine engine = new ConfigEvalEngine();
+    private ConfigEvalEngine engine = new ConfigEvalEngine(ConfigEvalEngine.defaultJsEngineType());
 
     private Config params()
     {
@@ -44,6 +44,15 @@ public class ConfigEvalEngineTest
         assertThat(
                 engine.eval(loadYamlResource("/io/digdag/core/agent/eval/literal.dig"), params()),
                 is(loadYamlResource("/io/digdag/core/agent/eval/literal_expected.dig")));
+    }
+
+    @Test
+    public void testTemplate()
+            throws Exception
+    {
+        assertThat(
+                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/template.dig"), params()),
+                is(loadYamlResource("/io/digdag/core/agent/eval/template_expected.dig")));
     }
 
     @Test
