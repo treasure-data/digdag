@@ -165,6 +165,8 @@ public class KubernetesCommandExecutor
         // Revisit we need it or not for debugging. If the command will be enabled, pods will show commands are executed
         // by the executor and will include pre-signed URLs in the commands.
         //bashArguments.add("set -eux");
+        bashArguments.add(s("mkdir -p %s", projectPath.toString()));
+        bashArguments.add(s("cd %s", projectPath.toString()));
         bashArguments.add(s("mkdir -p %s", ioDirectoryPath.toString()));
 
         // Create project archive on local. Input contents, e.g. input config file and runner script, are included
