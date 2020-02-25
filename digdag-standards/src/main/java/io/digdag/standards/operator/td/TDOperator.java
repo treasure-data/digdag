@@ -173,7 +173,7 @@ public class TDOperator
         }
     }
 
-    private void runWithRetryIgnoreNotFound(Runnable op)
+    private void runWithRetry(Runnable op, Class ignoreException)
     {
         try {
             defaultRetryExecutor().run(() -> {
@@ -185,7 +185,7 @@ public class TDOperator
             });
         }
         catch (RetryGiveupException ex) {
-            if (ex.getCause() instanceof TDClientHttpConflictException) {
+            if (ignoreException.isInstance(ex.getCause())) {
                 // ignore
                 return;
             }
@@ -196,33 +196,33 @@ public class TDOperator
     public void ensureDatabaseCreated(String name)
             throws TDClientException
     {
-        runWithRetryIgnoreNotFound(() -> client.createDatabase(name));
+        runWithRetry(() -> client.createDatabase(name), TDClientHttpConflictException.class);
     }
 
     public void ensureDatabaseDeleted(String name)
             throws TDClientException
     {
-        runWithRetryIgnoreNotFound(() -> client.deleteDatabase(name));
+        runWithRetry(() -> client.deleteDatabase(name), TDClientHttpNotFoundException.class);
     }
 
     public void ensureTableCreated(String tableName)
             throws TDClientException
     {
         // TODO set include_v=false option
-        runWithRetryIgnoreNotFound(() -> client.createTable(database, tableName));
+        runWithRetry(() -> client.createTable(database, tableName), TDClientHttpConflictException.class);
     }
 
     public void ensureTableDeleted(String tableName)
             throws TDClientException
     {
         // TODO set include_v=false option
-        runWithRetryIgnoreNotFound(() -> client.deleteTable(database, tableName));
+        runWithRetry(() -> client.deleteTable(database, tableName), TDClientHttpNotFoundException.class);
     }
 
     public void ensureExistentTableRenamed(String existentTable, String toName)
             throws TDClientException
     {
-        runWithRetryIgnoreNotFound(() -> client.renameTable(database, existentTable, toName, true));
+        runWithRetry(() -> client.renameTable(database, existentTable, toName, true), TDClientHttpNotFoundException.class);
     }
 
     public boolean tableExists(String table)
