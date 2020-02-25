@@ -246,8 +246,10 @@ public class KubernetesCommandExecutor
 
         final ObjectNode previousExecutorState = (ObjectNode) previousStatusJson.get("executor_state");
         final ObjectNode nextExecutorState = previousExecutorState.deepCopy();
+
         // If the container doesn't start yet, it cannot extract any log messages from the container.
-        if (!client.isWaitingContainerCreation(pod)) { // not 'waiting'
+        final String podPhase = pod.getPhase();
+        if (!podPhase.equals("Pending") && !client.isWaitingContainerCreation(pod)) { // not 'waiting'
             // Read log and write it to CommandLogger
             final long offset = !previousExecutorState.has("log_offset") ? 0L : previousExecutorState.get("log_offset").asLong();
             final String logMessage = client.getLog(podName, offset);
@@ -264,7 +266,6 @@ public class KubernetesCommandExecutor
         nextStatusJson.set("executor_state", nextExecutorState);
 
         // If the Pod completed, it needs to create output contents to pass them to the command executor.
-        final String podPhase = pod.getPhase();
         final boolean isFinished = podPhase.equals("Succeeded") || podPhase.equals("Failed");
 
         if (isFinished) {
