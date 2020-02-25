@@ -22,8 +22,7 @@ public class TDClientFactory implements BaseTDClientFactory
 
     private static Logger logger = LoggerFactory.getLogger(TDClientFactory.class);
 
-    @Override
-    public TDClient createClient(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+    public static DigdagTDClient createClient(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
         return clientFromConfig(systemDefaultConfig, env, params, secrets);
     }
@@ -64,9 +63,10 @@ public class TDClientFactory implements BaseTDClientFactory
                 ;
     }
 
-    protected static TDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+    protected static DigdagTDClient clientFromConfig(SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
     {
-        return clientBuilderFromConfig(systemDefaultConfig, env, params, secrets).build();
+        TDClient client = clientBuilderFromConfig(systemDefaultConfig, env, params, secrets).build();
+        return new DigdagTDClient(client, secrets);
     }
 
     protected static ProxyConfig proxyConfig(Config config, SecretProvider secrets)
