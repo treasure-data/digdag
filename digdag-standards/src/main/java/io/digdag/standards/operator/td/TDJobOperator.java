@@ -25,9 +25,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.zip.GZIPInputStream;
 
+import static io.digdag.standards.operator.td.TDOperator.AUTH_MAX_RETRY_LIMIT;
 import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
+import static io.digdag.standards.operator.td.TDOperator.isAuthenticationErrorException;
+import static io.digdag.util.RetryExecutor.retryExecutor;
 
 class TDJobOperator
 {
@@ -54,7 +58,7 @@ class TDJobOperator
         return defaultRetryExecutor
             .onRetry((exception, retryCount, retryLimit, retryWait) -> {
                 if (exception instanceof TDClientHttpException) {
-                    if (TDOperator.isAuthenticationErrorException(((TDClientHttpException) exception))) {
+                    if (isAuthenticationErrorException(((TDClientHttpException) exception))) {
                         logger.warn("apikey will be tried to update by retrying");
                         updateApikey(secrets);
                     }
@@ -62,31 +66,45 @@ class TDJobOperator
             });
     }
 
+    RetryExecutor authenticatinRetryExecutor() {
+        return defaultRetryExecutor()
+            .withRetryLimit(AUTH_MAX_RETRY_LIMIT)
+            .onRetry((exception, retryCount, retryLimit, retryWait) -> {
+                logger.warn("apikey will be tried to update by retrying");
+                updateApikey(secrets);
+            })
+            .retryIf((exception) -> !isAuthenticationErrorException(exception));
+    }
+
     String getJobId()
     {
         return jobId;
     }
 
-    TDJobSummary getJobStatus()
+    private <T> T callWithRetry(Callable<T> op)
     {
         try {
-            return defaultRetryExecutor()
-                    .run(() -> client.jobStatus(jobId));
+            return defaultRetryExecutor().run(() -> {
+                try {
+                    return authenticatinRetryExecutor().run(() -> op.call());
+                } catch (RetryGiveupException ex) {
+                    throw Throwables.propagate(ex.getCause());
+                }
+            });
         }
         catch (RetryGiveupException ex) {
             throw Throwables.propagate(ex.getCause());
         }
     }
 
+    TDJobSummary getJobStatus()
+    {
+        return callWithRetry(() -> client.jobStatus(jobId));
+    }
+
     TDJob getJobInfo()
     {
-        try {
-            return defaultRetryExecutor()
-                    .run(() -> client.jobInfo(jobId));
-        }
-        catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
-        }
+        return callWithRetry(() -> client.jobInfo(jobId));
     }
 
     TDJobSummary ensureRunningOrSucceeded()
@@ -125,42 +143,36 @@ class TDJobOperator
 
     <R> R getResult(Function<Iterator<ArrayValue>, R> resultStreamHandler)
     {
-        try {
-            return defaultRetryExecutor().run(() ->
-                    client.jobResult(jobId, TDResultFormat.MESSAGE_PACK_GZ, (in) -> {
-                        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new GZIPInputStream(in, 32 * 1024))) {
-                            return resultStreamHandler.apply(new Iterator<ArrayValue>()
-                            {
-                                public boolean hasNext()
-                                {
-                                    try {
-                                        return unpacker.hasNext();
-                                    }
-                                    catch (IOException ex) {
-                                        throw new UncheckedIOException(ex);
-                                    }
-                                }
+        return callWithRetry(() ->
+            client.jobResult(jobId, TDResultFormat.MESSAGE_PACK_GZ, (in) -> {
+                try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new GZIPInputStream(in, 32 * 1024))) {
+                    return resultStreamHandler.apply(new Iterator<ArrayValue>()
+                    {
+                        public boolean hasNext()
+                        {
+                            try {
+                                return unpacker.hasNext();
+                            }
+                            catch (IOException ex) {
+                                throw new UncheckedIOException(ex);
+                            }
+                        }
 
-                                public ArrayValue next()
-                                {
-                                    try {
-                                        return unpacker.unpackValue().asArrayValue();
-                                    }
-                                    catch (IOException ex) {
-                                        throw new UncheckedIOException(ex);
-                                    }
-                                }
-                            });
+                        public ArrayValue next()
+                        {
+                            try {
+                                return unpacker.unpackValue().asArrayValue();
+                            }
+                            catch (IOException ex) {
+                                throw new UncheckedIOException(ex);
+                            }
                         }
-                        catch (IOException ex) {
-                            throw new UncheckedIOException(ex);
-                        }
-                    })
-            );
-        }
-        catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
-        }
+                    });
+                }
+                catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            }));
     }
 
     TDJobSummary checkStatus()

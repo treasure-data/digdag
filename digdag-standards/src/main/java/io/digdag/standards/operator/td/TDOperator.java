@@ -50,7 +50,7 @@ public class TDOperator
     private static final int INITIAL_RETRY_WAIT = 500;
     private static final int MAX_RETRY_WAIT = 2000;
     private static final int MAX_RETRY_LIMIT = 3;
-    private static final int AUTH_MAX_RETRY_LIMIT = 1;
+    public static final int AUTH_MAX_RETRY_LIMIT = 1;
 
     public static TDOperator fromConfig(BaseTDClientFactory clientFactory, SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config config, SecretProvider secrets)
     {
@@ -151,10 +151,8 @@ public class TDOperator
             .withMaxRetryWait(MAX_RETRY_WAIT)
             .withRetryLimit(AUTH_MAX_RETRY_LIMIT)
             .onRetry((exception, retryCount, retryLimit, retryWait) -> {
-                if (exception instanceof TDClientHttpException) {
-                    logger.warn("apikey will be tried to update by retrying");
-                    updateApikey(secrets);
-                }
+                logger.warn("apikey will be tried to update by retrying");
+                updateApikey(secrets);
             })
             .retryIf((exception) -> !isAuthenticationErrorException(exception));
     }
