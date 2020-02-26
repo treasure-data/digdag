@@ -54,26 +54,14 @@ class TDJobOperator
         client = client.withApiKey(apikey);
     }
 
-    RetryExecutor defaultRetryExecutor() {
-        return defaultRetryExecutor
-            .onRetry((exception, retryCount, retryLimit, retryWait) -> {
-                if (exception instanceof TDClientHttpException) {
-                    if (isAuthenticationErrorException(((TDClientHttpException) exception))) {
-                        logger.warn("apikey will be tried to update by retrying");
-                        updateApikey(secrets);
-                    }
-                }
-            });
-    }
-
     RetryExecutor authenticatinRetryExecutor() {
-        return defaultRetryExecutor()
+        return defaultRetryExecutor
             .withRetryLimit(AUTH_MAX_RETRY_LIMIT)
             .onRetry((exception, retryCount, retryLimit, retryWait) -> {
                 logger.warn("apikey will be tried to update by retrying");
                 updateApikey(secrets);
             })
-            .retryIf((exception) -> !isAuthenticationErrorException(exception));
+            .retryIf((exception) -> isAuthenticationErrorException(exception));
     }
 
     String getJobId()
@@ -84,7 +72,7 @@ class TDJobOperator
     private <T> T callWithRetry(Callable<T> op)
     {
         try {
-            return defaultRetryExecutor().run(() -> {
+            return defaultRetryExecutor.run(() -> {
                 try {
                     return authenticatinRetryExecutor().run(() -> op.call());
                 } catch (RetryGiveupException ex) {

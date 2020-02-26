@@ -137,14 +137,6 @@ public class TDOperator
         return database;
     }
 
-    public RetryExecutor defaultRetryExecutor() {
-        return retryExecutor()
-            .withInitialRetryWait(INITIAL_RETRY_WAIT)
-            .withMaxRetryWait(MAX_RETRY_WAIT)
-            .withRetryLimit(MAX_RETRY_LIMIT)
-            .retryIf((exception) -> !isDeterministicClientException(exception));
-    }
-
     public RetryExecutor authenticatinRetryExecutor() {
         return retryExecutor()
             .withInitialRetryWait(INITIAL_RETRY_WAIT)
@@ -154,13 +146,13 @@ public class TDOperator
                 logger.warn("apikey will be tried to update by retrying");
                 updateApikey(secrets);
             })
-            .retryIf((exception) -> !isAuthenticationErrorException(exception));
+            .retryIf((exception) -> isAuthenticationErrorException(exception));
     }
 
     private <T> T callWithRetry(Callable<T> op)
     {
         try {
-            return defaultRetryExecutor().run(() -> {
+            return defaultRetryExecutor.run(() -> {
                 try {
                     return authenticatinRetryExecutor().run(() -> op.call());
                 } catch (RetryGiveupException ex) {
@@ -176,7 +168,7 @@ public class TDOperator
     private void runWithRetry(Runnable op, Class ignoreException)
     {
         try {
-            defaultRetryExecutor().run(() -> {
+            defaultRetryExecutor.run(() -> {
                 try {
                     authenticatinRetryExecutor().run(() -> op.run());
                 } catch (RetryGiveupException ex) {
