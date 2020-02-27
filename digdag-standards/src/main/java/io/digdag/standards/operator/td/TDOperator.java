@@ -143,7 +143,7 @@ public class TDOperator
             .withMaxRetryWait(MAX_RETRY_WAIT)
             .withRetryLimit(AUTH_MAX_RETRY_LIMIT)
             .onRetry((exception, retryCount, retryLimit, retryWait) -> {
-                logger.warn("apikey will be tried to update by retrying");
+                logger.debug("apikey will be tried to update by retrying");
                 updateApikey(secrets);
             })
             .retryIf((exception) -> isAuthenticationErrorException(exception));
