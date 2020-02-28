@@ -59,7 +59,7 @@ public class NashornJsEngine
             throw new TemplateException("Failed to serialize parameters to JSON", ex);
         }
         try {
-            return (String) templateInvocable.invokeFunction("template", code, paramsJson);
+            return (String) templateInvocable.invokeFunction("template", code, paramsJson, false);
         }
         catch (ScriptException ex) {
             String message;

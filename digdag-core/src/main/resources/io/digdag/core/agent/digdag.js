@@ -1,4 +1,4 @@
-function template(input, variables)
+function template(input, variables, extendedSyntax)
 {
   var escapes = {
     "'":      "'",
@@ -15,7 +15,7 @@ function template(input, variables)
     return '\\' + escapes[match];
   };
 
-  if (typeof Graal != 'undefined') {
+  if (extendedSyntax) {
     // (?![a-z]+:) => exclude operator-defined templates such as ${secret:sec.ret.key}
     var matcher = /\$\{(?![a-z]+:)([\s\S]+)|$/;
 

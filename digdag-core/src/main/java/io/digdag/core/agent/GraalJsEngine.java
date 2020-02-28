@@ -20,8 +20,9 @@ public class GraalJsEngine
 {
     private final Engine engine;
     private final Source[] libraryJsSources;
+    private final boolean extendedSyntax;
 
-    public GraalJsEngine()
+    public GraalJsEngine(boolean extendedSyntax)
     {
         this.engine = Engine.newBuilder()
             .allowExperimentalOptions(true)
@@ -32,6 +33,7 @@ public class GraalJsEngine
             .option("js.load", "true")           //Same as default. Should be false?
             .option("js.load-from-url", "false") //Same as default
             .build();
+        this.extendedSyntax = extendedSyntax;
         try {
             this.libraryJsSources = new Source[LIBRARY_JS_CONTENTS.length];
             for (int i = 0; i < LIBRARY_JS_CONTENTS.length; i++) {
@@ -45,7 +47,7 @@ public class GraalJsEngine
 
     public JsEngine.Evaluator newEvaluator(Config params)
     {
-        GraalEvaluator evaluator = new GraalEvaluator(createContextSupplier(params));
+        GraalEvaluator evaluator = new GraalEvaluator(createContextSupplier(params), extendedSyntax);
         return evaluator;
     }
 
@@ -79,10 +81,12 @@ public class GraalJsEngine
             implements JsEngine.Evaluator
     {
         private final Supplier<Context> contextSupplier;
+        private final boolean extendedSyntax;
 
-        GraalEvaluator(Supplier<Context> contextSupplier)
+        GraalEvaluator(Supplier<Context> contextSupplier, boolean extendedSyntax)
         {
             this.contextSupplier = contextSupplier;
+            this.extendedSyntax = extendedSyntax;
         }
 
         @Override
@@ -98,7 +102,7 @@ public class GraalJsEngine
                     throw new TemplateException("Failed to serialize parameters to JSON", ex);
                 }
                 try {
-                    Value result = context.getBindings("js").getMember("template").execute(code, paramsJson);
+                    Value result = context.getBindings("js").getMember("template").execute(code, paramsJson, extendedSyntax);
                     return result.asString();
                 }
                 catch (PolyglotException ex) {

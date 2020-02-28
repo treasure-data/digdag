@@ -8,6 +8,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Arrays;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -20,7 +22,7 @@ public class ConfigEvalEngineTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private ConfigEvalEngine engine = new ConfigEvalEngine(ConfigEvalEngine.defaultJsEngineType());
+    private ConfigEvalEngine engine = new ConfigEvalEngine(ConfigEvalEngine.defaultJsEngineType(), false);
 
     private Config params()
     {
@@ -127,5 +129,18 @@ public class ConfigEvalEngineTest
         assertThat(engine.isInvokeTemplateRequired(""), is(false));
         assertThat(engine.isInvokeTemplateRequired("\n"), is(false));
         assertThat(engine.isInvokeTemplateRequired("Digdag Notification\naa${hoge}bb"), is(true));
+    }
+
+    @Test
+    public void testExtendedSyntax()
+            throws Exception
+    {
+        ConfigEvalEngine graal = new ConfigEvalEngine(ConfigEvalEngine.JsEngineType.GRAAL, true);
+        assertThat(
+                graal.eval(
+                    newConfig().set("key", "${v1.map(function(item){return item*5})}"),
+                    params().set("v1", Arrays.asList(1,2,3,4,5))).get("key", String.class),
+                is("[5,10,15,20,25]")
+        );
     }
 }

@@ -392,7 +392,8 @@ In the config file, following parameters are available
 * api.max_attempts_page_size (integer. The max number of rows of attempts in api response)
 * api.max_sessions_page_size (integer. The max number of rows of sessions in api response)
 * api.max_archive_total_size_limit (integer. The maximum size of an archived project. i.e. ``digdag push`` size. default: 2MB(2\*1024\*1024))
-
+* eval.js-engine-type (type of ConfigEvalEngine. "nashorn" or "graal". "nashorn" is default on Java8 and "graal" is default on Java11)
+* eval.extended-syntax (boolean, default: true. Enable or disable extended syntax in graal. If true, nested ``{..}`` is allowed)
 
 Secret Encryption Key
 *********************
