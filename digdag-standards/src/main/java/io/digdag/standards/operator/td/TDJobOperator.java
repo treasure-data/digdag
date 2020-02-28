@@ -7,39 +7,24 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.treasuredata.client.TDClient;
-import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.util.RetryExecutor;
-import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ArrayValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.zip.GZIPInputStream;
 
-import static io.digdag.standards.operator.td.TDOperator.AUTH_MAX_RETRY_LIMIT;
-import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
-import static io.digdag.standards.operator.td.TDOperator.isAuthenticationErrorException;
-import static io.digdag.util.RetryExecutor.retryExecutor;
-
-class TDJobOperator
+class TDJobOperator extends BaseTDOperator
 {
-    private TDClient client;
     private final String jobId;
-    private final SecretProvider secrets;
-
-    private static final Logger logger = LoggerFactory.getLogger(TDJobOperator.class);
 
     TDJobOperator(TDClient client, String jobId, SecretProvider secrets)
     {
@@ -48,41 +33,9 @@ class TDJobOperator
         this.secrets = secrets;
     }
 
-    void updateApikey(SecretProvider secrets)
-    {
-        String apikey = TDClientFactory.getApikey(secrets);
-        client = client.withApiKey(apikey);
-    }
-
-    RetryExecutor authenticatinRetryExecutor() {
-        return defaultRetryExecutor
-            .withRetryLimit(AUTH_MAX_RETRY_LIMIT)
-            .onRetry((exception, retryCount, retryLimit, retryWait) -> {
-                logger.debug("apikey will be tried to update by retrying");
-                updateApikey(secrets);
-            })
-            .retryIf((exception) -> isAuthenticationErrorException(exception));
-    }
-
     String getJobId()
     {
         return jobId;
-    }
-
-    private <T> T callWithRetry(Callable<T> op)
-    {
-        try {
-            return defaultRetryExecutor.run(() -> {
-                try {
-                    return authenticatinRetryExecutor().run(() -> op.call());
-                } catch (RetryGiveupException ex) {
-                    throw Throwables.propagate(ex.getCause());
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
-        }
     }
 
     TDJobSummary getJobStatus()
