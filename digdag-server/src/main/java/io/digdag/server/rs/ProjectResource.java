@@ -417,9 +417,9 @@ public class ProjectResource
             @QueryParam("revision") String revName,
             @ApiParam(value="exact matching filter on workflow name", required=false)
             @QueryParam("name") String name)
-            throws ResourceNotFoundException
+            throws ResourceNotFoundException, AccessControlException
     {
-        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException>begin(() -> {
+        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId)); // check NotFound first
 
@@ -470,7 +470,7 @@ public class ProjectResource
                 }
             }
             return RestModels.workflowDefinitionCollection(proj, rev, collection);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
     @DigdagTimed(category = "api", value = "getProjectSchedules")
