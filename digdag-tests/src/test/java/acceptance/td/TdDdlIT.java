@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.main;
@@ -282,6 +285,43 @@ public class TdDdlIT
 
         List<String> tables = client.listTables(database).stream().map(TDTable::getName).collect(toList());
         assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2", "rename_table_1_to", "rename_table_2_to"));
+    }
+
+    @Test
+    public void testRetryAndTryUpdateApikeyforDdl()
+            throws Exception
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(out));
+
+        try {
+            String dummyKey = "dummy";
+            noTdConf = folder.newFolder().toPath().resolve("non-existing-td.conf").toString();
+            projectDir = folder.newFolder().toPath();
+            config = folder.newFile().toPath();
+            Files.write(config, asList(
+                    "secrets.td.apikey = " + dummyKey,
+                    "config.td.min_retry_interval = 1s",
+                    "config.td.max_retry_interval = 1s"
+            ), APPEND);
+
+            env = new HashMap<>();
+            env.put("TD_CONFIG_PATH", noTdConf);
+
+            addWorkflow(projectDir, "acceptance/td/td_ddl/td_ddl.dig");
+            CommandStatus runStatus = runWorkflow("td_ddl.dig",
+                    "database=" + database,
+                    "drop_db_1=" + dropDb1,
+                    "drop_db_2=" + dropDb2,
+                    "create_db_1=" + createDb1,
+                    "create_db_2=" + createDb2,
+                    "empty_db_1=" + emptyDb1,
+                    "empty_db_2=" + emptyDb2);
+
+            assertTrue(out.toString().contains("apikey will be tried to update by retrying"));
+        } finally {
+            System.setOut(System.out);
+        }
     }
 
     @Test

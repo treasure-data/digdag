@@ -36,7 +36,9 @@ import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -66,6 +68,7 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
@@ -365,6 +368,27 @@ public class TdIT
         CommandStatus status = runWorkflow();
 
         assertThat(status.errUtf8(), Matchers.containsString("The 'td.apikey' secret is missing"));
+    }
+
+    @Test
+    public void testRetryAndTryUpdateApikeyWithInvalidApikey()
+            throws Exception
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(out));
+
+        try {
+            Files.write(config, asList("secrets.td.apikey = " + "dummy"));
+
+            copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+            copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+
+            runWorkflow();
+
+            assertTrue(out.toString().contains("apikey will be tried to update by retrying"));
+        } finally {
+            System.setOut(System.out);
+        }
     }
 
     @Test

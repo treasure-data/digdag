@@ -30,9 +30,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Duration;
+import java.util.Date;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -149,7 +152,10 @@ public class TDOperatorTest
     public void testRunJob()
             throws Exception
     {
-        TDOperator operator = new TDOperator(client, "foobar");
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
 
         Config state0 = configFactory.create();
 
@@ -203,7 +209,10 @@ public class TDOperatorTest
     public void verifyRetries()
             throws Exception
     {
-        TDOperator operator = new TDOperator(client, "foobar");
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
 
         String jobStateKey = "fooJob";
 
@@ -336,10 +345,26 @@ public class TDOperatorTest
     }
 
     @Test
+    public void checkAuthenticationErrorException()
+            throws Exception
+    {
+        TDClientHttpException ex = new TDClientHttpException(TDClientException.ErrorType.AUTHENTICATION_FAILURE, "unauthorized", 401, new Date());
+        boolean isAuthenticationError = TDOperator.isAuthenticationErrorException(ex);
+        assertTrue(isAuthenticationError);
+
+        ex = new TDClientHttpException(TDClientException.ErrorType.TARGET_NOT_FOUND, "not found", 404, new Date());
+        isAuthenticationError = TDOperator.isAuthenticationErrorException(ex);
+        assertFalse(isAuthenticationError);
+    }
+
+    @Test
     public void verifyNoRetryOn404()
             throws Exception
     {
-        TDOperator operator = new TDOperator(client, "foobar");
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
 
         String jobStateKey = "fooJob";
 
@@ -359,7 +384,10 @@ public class TDOperatorTest
     public void verifyNoRetryInvalidTableName()
             throws Exception
     {
-        TDOperator operator = new TDOperator(client, "foobar");
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
 
         String jobStateKey = "fooJob";
 
@@ -379,7 +407,10 @@ public class TDOperatorTest
     public void testRunJobMigrateState()
             throws Exception
     {
-        TDOperator operator = new TDOperator(client, "foobar");
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
 
         Config state0 = configFactory.create();
 
