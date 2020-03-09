@@ -279,8 +279,8 @@ public class ConfigEvalEngine
 
             if (resultText == null && checkText != null ||
                     resultText != null && !resultText.equals(checkText)) {
-                logger.error("Detected incompatibility between Nashorn and GraalJS. Code: {}", code);
-                logger.error("Incompatibility info: Nashorn return:{} exception:{} GraalJS return:{} exception:{}",
+                logger.debug("Detected incompatibility between Nashorn and GraalJS. Code: {}", code);
+                logger.debug("Incompatibility info: Nashorn return:{} exception:{} GraalJS return:{} exception:{}",
                         resultText == null? "null" : resultText,
                         resultEx == null? "null" : resultEx.toString(),
                         checkText == null? "null" : checkText,

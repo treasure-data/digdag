@@ -132,6 +132,21 @@ public class ConfigEvalEngineTest
     }
 
     @Test
+    public void testStringInteroperability()
+            throws Exception
+    {
+        ConfigEvalEngine graal = new ConfigEvalEngine(ConfigEvalEngine.JsEngineType.GRAAL, false);
+        for (ConfigEvalEngine e: Arrays.asList(engine, graal)) {
+            assertThat(
+                    graal.eval(
+                            newConfig().set("key", "${\"aaa\".replaceAll(\"a\", \"A\")}"),
+                            params()).get("key", String.class),
+                    is("AAA")
+            );
+        }
+    }
+
+    @Test
     public void testExtendedSyntax()
             throws Exception
     {
