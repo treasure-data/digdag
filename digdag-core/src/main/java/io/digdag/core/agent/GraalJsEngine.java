@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -21,6 +22,10 @@ public class GraalJsEngine
     private final Engine engine;
     private final Source[] libraryJsSources;
     private final boolean extendedSyntax;
+
+    private static final HostAccess hostAccess = HostAccess.newBuilder()
+            .allowPublicAccess(true)
+            .build();
 
     public GraalJsEngine(boolean extendedSyntax)
     {
@@ -57,6 +62,15 @@ public class GraalJsEngine
             Context.Builder contextBuilder = Context.newBuilder()
                     .engine(engine)
                     .allowAllAccess(false)
+                    .allowHostAccess(hostAccess) // Need interoperability for String methods (e.g. replaceAll)
+                    .allowHostClassLookup(className -> {
+                        if (className.matches("java\\.lang\\.String")) { // Restrict to java.lang.String
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    })
                     .timeZone(getWorkflowZoneId(params));
             Context context = contextBuilder.build();
             try {
