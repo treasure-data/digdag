@@ -579,6 +579,7 @@ public class TdIT
         List<String> args = new ArrayList<>();
         args.addAll(asList("run",
                 "-o", projectDir.toString(),
+                "--log-level", "debug",
                 "--config", config.toString(),
                 "--project", projectDir.toString(),
                 "-p", "outfile=" + outfile));
