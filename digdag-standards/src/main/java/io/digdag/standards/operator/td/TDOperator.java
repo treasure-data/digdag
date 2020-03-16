@@ -137,6 +137,10 @@ public class TDOperator extends BaseTDOperator
             throws TDClientException
     {
         runWithRetry(() -> client.createDatabase(name), TDClientHttpConflictException.class);
+        // Check database existing and retry only once if it doesn't exit by session error(WM-763)
+        if (!client.existsDatabase(name)){
+            runWithRetry(() -> client.createDatabase(name), TDClientHttpConflictException.class);
+        }
     }
 
     public void ensureDatabaseDeleted(String name)
@@ -150,6 +154,10 @@ public class TDOperator extends BaseTDOperator
     {
         // TODO set include_v=false option
         runWithRetry(() -> client.createTable(database, tableName), TDClientHttpConflictException.class);
+        // Check table existing and retry only once if it doesn't exit by session error(WM-763)
+        if (!client.existsTable(database, tableName)){
+            runWithRetry(() -> client.createTable(database, tableName), TDClientHttpConflictException.class);
+        }
     }
 
     public void ensureTableDeleted(String tableName)
