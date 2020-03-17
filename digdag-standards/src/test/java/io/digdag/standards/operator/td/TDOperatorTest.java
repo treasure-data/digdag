@@ -21,6 +21,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +39,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -445,6 +451,62 @@ public class TDOperatorTest
                 .set("config.td.default_endpoint", "api.treasuredata.co.jp");
         SystemDefaultConfig overrides = TDOperator.systemDefaultConfig(overrideConfig);
         assertThat(overrides.getEndpoint(), is("api.treasuredata.co.jp"));
+    }
+
+    @Test
+    public void testDatabaseCreateSuccess()
+    {
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+        doNothing().when(client).createDatabase(anyString());
+        doReturn(true).when(client).existsDatabase(anyString());
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
+
+        operator.ensureDatabaseCreated("test");
+
+        verify(client, atMost(1)).createDatabase("test");
+    }
+
+    @Test
+    public void testDatabaseCreateFail()
+    {
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+        doNothing().when(client).createDatabase(anyString());
+        doReturn(false).when(client).existsDatabase(anyString());
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
+
+        operator.ensureDatabaseCreated("test");
+
+        verify(client, atLeast(2)).createDatabase("test");
+    }
+
+    @Test
+    public void testTableCreateSuccess()
+    {
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+        doNothing().when(client).createTable(anyString(), anyString());
+        doReturn(true).when(client).existsTable(anyString(), anyString());
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
+
+        operator.ensureTableCreated("test");
+
+        verify(client,atMost(1)).createTable(anyString(), anyString());
+    }
+
+    @Test
+    public void testTableCreateFail()
+    {
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+        doNothing().when(client).createTable(anyString(), anyString());
+        doReturn(false).when(client).existsTable(anyString(), anyString());
+        TDOperator operator = new TDOperator(client, "foobar", secrets);
+
+        operator.ensureTableCreated("test");
+
+        verify(client,atLeast(2)).createTable(anyString(), anyString());
     }
 
     private TDJobSummary summary(String jobId, TDJob.Status status) {
