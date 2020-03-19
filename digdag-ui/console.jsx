@@ -1920,7 +1920,8 @@ class AttemptLogsView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetch()
+    // Don't attempt to fetch logs automatically when the component is mounted
+    // this.fetch()
   }
 
   componentWillUnmount () {
@@ -1953,11 +1954,6 @@ class AttemptLogsView extends React.Component {
 
   fetch () {
     const { attemptId } = this.props
-    model().fetchAttempt(attemptId).then(attempt => {
-      if (!this.ignoreLastFetch) {
-        this.setState({ done: attempt.done })
-      }
-    })
     model().fetchAttemptLogFileHandles(attemptId).then(({ files }) => {
       if (!this.ignoreLastFetch) {
         const sortedFiles = _.sortBy(files, 'fileTime')
@@ -1967,7 +1963,6 @@ class AttemptLogsView extends React.Component {
   }
 
   render () {
-    const { done } = this.state
     return (
       <div>
         <h2 className='d-inline-flex'>Logs</h2>
@@ -1978,7 +1973,6 @@ class AttemptLogsView extends React.Component {
           REFRESH LOGS
         </button>
         {this.logFiles()}
-        <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
       </div>
     )
   }
