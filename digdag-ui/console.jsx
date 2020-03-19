@@ -1970,7 +1970,13 @@ class AttemptLogsView extends React.Component {
     const { done } = this.state
     return (
       <div>
-        <h2>Logs</h2>
+        <h2 className='d-inline-flex'>Logs</h2>
+        <button
+          className='btn btn-sm btn-info float-right'
+          onClick={this.fetch.bind(this)}
+        >
+          REFRESH LOGS
+        </button>
         {this.logFiles()}
         <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
       </div>
