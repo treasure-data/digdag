@@ -309,6 +309,12 @@ public class TDOperator extends BaseTDOperator
             }
             throw errorPollingException(state, key, jobState, retryInterval);
         }
+        catch (TaskExecutionException ex) {
+            if (ex.getMessage().contains("HTTP request execution failed with code 401")) {
+                updateApikey(secrets);
+            }
+            throw Throwables.propagate(ex);
+        }
 
         // Reset error state
         jobState = jobState.withErrorPollIteration(Optional.absent());
