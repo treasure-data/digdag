@@ -47,6 +47,7 @@ import javax.annotation.PreDestroy;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executors;
@@ -59,6 +60,7 @@ public class ScheduleExecutor
         implements BackgroundExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleExecutor.class);
+    public static final List<String> BUILT_IN_SCHEDULE_PARAMS = Arrays.asList("skip_on_overtime", "skip_delayed_by");
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;

@@ -1,0 +1,8 @@
+timezone: "Asia/Tokyo"
+
+schedule:
+  minutes_interval>: 1
+  skip_on_over_time: true  #<- this is wrong
+
++touch_foo_out:
+  sh>: "touch foo.out"
