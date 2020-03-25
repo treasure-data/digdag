@@ -224,7 +224,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
             ac.checkGetTasksFromAttempt( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), attempt.getSession().getWorkflowName(), proj.getName()),
                     getAuthenticatedUser());
 
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
