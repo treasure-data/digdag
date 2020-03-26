@@ -14,12 +14,12 @@ import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+
 import static io.digdag.core.agent.ConfigEvalEngine.LIBRARY_JS_CONTENTS;
 
 public class GraalJsEngine
     implements JsEngine
 {
-    private final Engine engine;
     private final Source[] libraryJsSources;
     private final boolean extendedSyntax;
 
@@ -29,15 +29,6 @@ public class GraalJsEngine
 
     public GraalJsEngine(boolean extendedSyntax)
     {
-        this.engine = Engine.newBuilder()
-            .allowExperimentalOptions(true)
-            .option("js.nashorn-compat", "true")
-            .option("js.ecmascript-version", "5")
-            .option("js.syntax-extensions", "false")
-            .option("js.console", "false")
-            .option("js.load", "true")           //Same as default. Should be false?
-            .option("js.load-from-url", "false") //Same as default
-            .build();
         this.extendedSyntax = extendedSyntax;
         try {
             this.libraryJsSources = new Source[LIBRARY_JS_CONTENTS.length];
@@ -56,8 +47,22 @@ public class GraalJsEngine
         return evaluator;
     }
 
+    private static Engine createEngine()
+    {
+        return Engine.newBuilder()
+                .allowExperimentalOptions(true)
+                .option("js.nashorn-compat", "true")
+                .option("js.ecmascript-version", "5")
+                .option("js.syntax-extensions", "false")
+                .option("js.console", "false")
+                .option("js.load", "true")           //Same as default. Should be false?
+                .option("js.load-from-url", "false") //Same as default
+                .build();
+    }
+
     private Supplier<Context> createContextSupplier(Config params)
     {
+        Engine engine = createEngine();
         return () -> {
             Context.Builder contextBuilder = Context.newBuilder()
                     .engine(engine)
