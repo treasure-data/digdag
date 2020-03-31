@@ -203,7 +203,7 @@ public class AccessControllerIT
         public void checkRunWorkflow(WorkflowTarget target, AuthenticatedUser user)
                 throws AccessControlException
         {
-            switch (target.getName()) {
+            switch (target.getProjectName()) {
                 case "run_workflow_in_attempt_403":
                     throw new AccessControlException("not allow"); // 403
                 default:
