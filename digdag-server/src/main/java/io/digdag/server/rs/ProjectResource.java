@@ -390,7 +390,7 @@ public class ProjectResource
             StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // check NotFound first
 
             ac.checkGetWorkflow( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), name),
+                    WorkflowTarget.of(getSiteId(), name, proj.getName()),
                     getAuthenticatedUser());
 
             return RestModels.workflowDefinition(proj, rev, def);
