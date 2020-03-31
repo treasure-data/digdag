@@ -6,7 +6,7 @@ build:
 build_script:
   - gradlew.bat cleanTest test --info --stacktrace --no-daemon
   # TODO: come up with a better way to list tests that we want to run on appveyor
-  - gradlew.bat :digdag-test:test --info --stacktrace --no-daemon -Dtest.single=InitIT
+  - gradlew.bat :digdag-test:test --tests acceptance.InitIT --info --stacktrace --no-daemon
 
 cache:
   - C:\Users\appveyor\.gradle
