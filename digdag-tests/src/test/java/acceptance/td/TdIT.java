@@ -385,7 +385,7 @@ public class TdIT
 
             runWorkflow();
 
-            assertTrue(out.toString().contains("apikey will be tried to update by retrying"));
+            assertThat(out.toString(), Matchers.containsString("apikey will be tried to update by retrying"));
         } finally {
             System.setOut(System.out);
         }
