@@ -133,6 +133,8 @@ public class HttpCallOperatorFactory
 
             // parse content based on response media type
             String digFileSource = reformatDigFile(content, response.getMediaType(), mediaTypeOverride);
+            // write workflow definition to log
+            logger.info("Fetched definition for http_call>:\n{}", digFileSource);
             // write to http_call.dig file
             Path workflowPath = writeDigFile(digFileSource);
 
