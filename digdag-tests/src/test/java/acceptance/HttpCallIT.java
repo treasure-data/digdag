@@ -300,6 +300,27 @@ public class HttpCallIT
     }
 
     @Test
+    public void testSystemProxyWithAltConfig()
+            throws Exception
+    {
+        proxy = TestUtils.startRequestFailingProxy(5, requests);
+        httpMockWebServer.enqueue(
+                new MockResponse()
+                .addHeader("Content-Type: application/json")
+                .setBody("{}"));
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http_call/http_call.dig",
+                ImmutableMap.of(
+                        "test_uri", uri
+                ),
+                ImmutableMap.of(
+                        "config.http.proxy.enabled", "false"
+                ));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        assertThat(requests.get(uri), is(not(empty())));
+    }
+
+    @Test
     public void testUserProxy()
             throws Exception
     {

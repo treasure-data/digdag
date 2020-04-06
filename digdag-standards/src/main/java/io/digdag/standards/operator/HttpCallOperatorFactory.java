@@ -53,7 +53,7 @@ public class HttpCallOperatorFactory
     public HttpCallOperatorFactory(ConfigFactory cf,
             Config systemConfig, @Environment Map<String, String> env)
     {
-        super(systemConfig, env);
+        super(systemConfig, env, "http_call");
         this.cf = cf;
         this.mapper = new ObjectMapper();
         this.yaml = new YAMLFactory()

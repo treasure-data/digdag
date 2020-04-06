@@ -68,33 +68,55 @@ public class HttpOperatorFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(HttpOperatorFactory.class);
 
-    private final Optional<ProxyConfiguration.Proxy> systemProxy;
-    private final Map<String, String> env;
     private final boolean allowUserProxy;
+    private final Optional<ProxyConfiguration.Proxy> systemProxy;
     private final int maxRedirects;
-    private final String userAgent;
     private final int maxStoredResponseContentSize;
+    private final String userAgent;
+    private final Map<String, String> env;
 
     @Inject
     public HttpOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
     {
-        this.allowUserProxy = systemConfig.get("config.http.allow_user_proxy", boolean.class, true);
-        this.systemProxy = systemProxy(systemConfig);
-        this.maxRedirects = systemConfig.get("config.http.max_redirects", int.class, 8);
-        this.maxStoredResponseContentSize = systemConfig.get("config.http.max_stored_response_content_size", int.class, 64 * 1024);
-        this.env = env;
-        this.userAgent = systemConfig.get("config.http.user_agent", String.class, "Digdag/" + DigdagVersion.buildVersion());
+        this(systemConfig, env, null);
     }
 
-    private static Optional<ProxyConfiguration.Proxy> systemProxy(Config systemConfig)
+    HttpOperatorFactory(Config systemConfig, @Environment Map<String, String> env, String altOperatorName)
     {
-        boolean enabled = systemConfig.get("config.http.proxy.enabled", boolean.class, false);
-        if (!enabled) {
-            return Optional.absent();
+        this.env = env;
+
+        boolean allowUserProxy = systemConfig.get("config.http.allow_user_proxy", boolean.class, true);
+        Optional<ProxyConfiguration.Proxy> systemProxy = systemProxy(systemConfig, "config.http", Optional.absent());
+        int maxRedirects = systemConfig.get("config.http.max_redirects", int.class, 8);
+        int maxStoredResponseContentSize = systemConfig.get("config.http.max_stored_response_content_size", int.class, 64 * 1024);
+        String userAgent = systemConfig.get("config.http.user_agent", String.class, "Digdag/" + DigdagVersion.buildVersion());
+
+        if (altOperatorName != null) {
+            String altKeyPrefix = "config." + altOperatorName;
+            this.allowUserProxy = systemConfig.get(altKeyPrefix + ".allow_user_proxy", boolean.class, allowUserProxy);
+            this.systemProxy = systemProxy(systemConfig, altKeyPrefix, systemProxy);
+            this.maxRedirects = systemConfig.get(altKeyPrefix + ".max_redirects", int.class, maxRedirects);
+            this.maxStoredResponseContentSize = systemConfig.get(altKeyPrefix + ".max_stored_response_content_size", int.class, maxStoredResponseContentSize);
+            this.userAgent = systemConfig.get(altKeyPrefix + ".user_agent", String.class, userAgent);
         }
-        String host = systemConfig.get("config.http.proxy.host", String.class);
-        int port = systemConfig.get("config.http.proxy.port", int.class);
-        boolean tls = systemConfig.get("config.http.proxy.tls", boolean.class, false);
+        else {
+            this.allowUserProxy = allowUserProxy;
+            this.systemProxy = systemProxy;
+            this.maxRedirects = maxRedirects;
+            this.maxStoredResponseContentSize = maxStoredResponseContentSize;
+            this.userAgent = userAgent;
+        }
+    }
+
+    private static Optional<ProxyConfiguration.Proxy> systemProxy(Config systemConfig, String keyPrefix, Optional<ProxyConfiguration.Proxy> defaultProxy)
+    {
+        boolean enabled = systemConfig.get(keyPrefix + ".proxy.enabled", boolean.class, false);
+        if (!enabled) {
+            return defaultProxy;
+        }
+        String host = systemConfig.get(keyPrefix + ".proxy.host", String.class);
+        int port = systemConfig.get(keyPrefix + ".proxy.port", int.class);
+        boolean tls = systemConfig.get(keyPrefix + ".proxy.tls", boolean.class, false);
         HttpProxy proxy = new HttpProxy(new Origin.Address(host, port), tls);
         return Optional.of(proxy);
     }
