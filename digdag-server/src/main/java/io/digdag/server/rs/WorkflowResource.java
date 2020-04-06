@@ -194,7 +194,7 @@ public class WorkflowResource
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
-    private Instant truncateSessionTime(
+    static Instant truncateSessionTime(
             Instant sessionTime,
             ZoneId timeZone,
             Supplier<Optional<Scheduler>> schedulerSupplier,

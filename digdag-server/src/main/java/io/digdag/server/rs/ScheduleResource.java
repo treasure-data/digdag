@@ -3,22 +3,26 @@ package io.digdag.server.rs;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleAttemptCollection;
-import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleCollection;
+import io.digdag.client.api.RestScheduleEnableByModeRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.client.api.RestSessionAttemptCollection;
+import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.schedule.ScheduleControl;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.metrics.DigdagTimed;
@@ -40,8 +44,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+
+import static io.digdag.server.rs.WorkflowResource.truncateSessionTime;
 
 @Api("Schedule")
 @Path("/")
@@ -55,9 +62,11 @@ public class ScheduleResource
     // POST /api/schedules/{id}/backfill                     # run or re-run past schedules
     // POST /api/schedules/{id}/disable                      # disable a schedule
     // POST /api/schedules/{id}/enable                       # enable a schedule
+    // POST /api/schedules/{id}/enable_by_mode               # enable a schedule by mode
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
+    private final SchedulerManager srm;
     private final TransactionManager tm;
     private final AccessController ac;
     private final ScheduleExecutor exec;
@@ -67,6 +76,7 @@ public class ScheduleResource
     public ScheduleResource(
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
+            SchedulerManager srm,
             TransactionManager tm,
             AccessController ac,
             ScheduleExecutor exec,
@@ -74,6 +84,7 @@ public class ScheduleResource
     {
         this.rm = rm;
         this.sm = sm;
+        this.srm = srm;
         this.tm = tm;
         this.ac = ac;
         this.exec = exec;
@@ -268,6 +279,69 @@ public class ScheduleResource
             ac.checkEnableSchedule( // AccessControl
                     ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
                     getAuthenticatedUser());
+
+            StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
+                ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+                lockedSched.enableSchedule();
+                return lockedSched.get();
+            });
+
+            return RestModels.scheduleSummary(updated, proj, timeZone);
+        }, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
+    }
+
+    @DigdagTimed(category = "api", appendMethodName = true)
+    @POST
+    @Path("/api/schedules/{id}/enable_by_mode")
+    @ApiOperation("Re-enable disabled scheduling with skipping past sessions by mode")
+    public RestScheduleSummary enableScheduleByMode(
+            @ApiParam(value="schedule id", required=true)
+            @PathParam("id") int id,
+            RestScheduleEnableByModeRequest request)
+            throws ResourceNotFoundException, ResourceConflictException, AccessControlException
+    {
+        return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
+            // TODO: this is racy
+            StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                    .getScheduleById(id); // check NotFound first
+            ZoneId timeZone = getTimeZoneOfSchedule(sched);
+            final StoredProject proj = rm.getProjectStore(getSiteId())
+                    .getProjectById(sched.getProjectId()); // check NotFound first
+
+            // AccessControl
+            ac.checkSkipSchedule(
+                    ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
+                    getAuthenticatedUser());
+            ac.checkEnableSchedule(
+                    ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
+                    getAuthenticatedUser());
+
+            StoredWorkflowDefinitionWithProject def =
+                    rm.getProjectStore(getSiteId())
+                            .getWorkflowDefinitionById(sched.getWorkflowDefinitionId()); // check NotFound first
+
+            Instant instant;
+            if (request.getLocalTime().isPresent()) {
+                instant = LocalTimeOrInstant.fromString(request.getLocalTime().get()).toInstant(timeZone);
+            } else {
+                instant = Instant.now();
+            }
+
+            // if the mode is not specified, it behaves the same as /enable
+            if (request.getMode().isPresent()) {
+                SessionTimeTruncate mode = SessionTimeTruncate.fromString(request.getMode().get());
+                // Truncated the time at which the next session starts, based on mode and current time/localTime.
+                // Currently, if the mode is specified as "next_schedule" and the schedule is updated before the session is started,
+                // it will start at one more next session, not the most recent session.
+                // e.g. schedule is 09:00 every hour, current time is 00:01:00, enable by next_schedule
+                // => the next run time is 01:09:00 (it's not 00:09:00)
+                // As described above, specifying the next_schedule might be different from the actual next schedule.
+                // If you want to run the most recent session, please specify a mode "schedule"
+                Instant truncated = truncateSessionTime(
+                        instant,
+                        timeZone, () -> srm.tryGetScheduler(def), mode);
+                exec.skipScheduleToTime(getSiteId(), id, truncated, Optional.absent(), false);
+            }
 
             StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
