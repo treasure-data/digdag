@@ -77,7 +77,7 @@ workflows:
               only:
                 - master
                 - v0_10
-                - fix-tests
+                - decouple
       - docs_deployment: # master branch only
           filters:
             branches:
