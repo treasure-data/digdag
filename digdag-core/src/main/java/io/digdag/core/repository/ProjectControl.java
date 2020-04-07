@@ -101,7 +101,7 @@ public class ProjectControl
     {
         ImmutableList.Builder<ScheduleWithScheduler> schedules = ImmutableList.builder();
         for (StoredWorkflowDefinition def : defs) {
-            Optional<Scheduler> sr = srm.tryGetScheduler(revision, def);
+            Optional<Scheduler> sr = srm.tryGetScheduler(revision, def, true);
             if (sr.isPresent()) {
                 ScheduleTime firstTime = sr.get().getFirstScheduleTime(currentTime);
                 Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getTime());

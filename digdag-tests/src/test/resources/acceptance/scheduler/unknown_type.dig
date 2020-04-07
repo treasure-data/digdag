@@ -1,0 +1,7 @@
+timezone: "Asia/Tokyo"
+
+schedule:
+  no_such_scheduler>: abc
+
++touch_foo_out:
+  sh>: "touch foo.out"
