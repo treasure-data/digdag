@@ -12,6 +12,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.fail;
+import static utils.TestUtils.copyResource;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
@@ -98,6 +101,42 @@ public class SlaIT
     {
         if (mockWebServer != null) {
             mockWebServer.shutdown();
+        }
+    }
+
+    @Test
+    public void testValidateConfig()
+            throws Exception
+    {
+        try {
+            pushAndStart("invalid_config.dig", Duration.ofSeconds(5));
+        }
+        catch (Throwable ie) {
+            assertThat(ie.toString(), Matchers.containsString("SLA must be specified using either the 'time' or 'duration' option"));
+        }
+    }
+
+    @Test
+    public void testValidAndInvalidConfig()
+            throws Exception
+    {
+        try {
+            pushAndStart("invalid_and_valid_config.dig", Duration.ofSeconds(5));
+        }
+        catch (Throwable ie) {
+            assertThat(ie.toString(), Matchers.containsString("Parameter 'duration2' is not used at sla. > Did you mean '[duration]'?"));
+        }
+    }
+
+    @Test
+    public void testValidateConfigOp()
+            throws Exception
+    {
+        try {
+            pushAndStart("invalid_op.dig", Duration.ofSeconds(5));
+        }
+        catch (Throwable ie) {
+            assertThat(ie.toString(), Matchers.containsString("Parameter 'wrong>' is not used at sla."));
         }
     }
 
