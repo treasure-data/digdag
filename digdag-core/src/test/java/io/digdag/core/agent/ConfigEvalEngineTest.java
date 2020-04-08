@@ -4,11 +4,13 @@ package io.digdag.core.agent;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TemplateException;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -22,7 +24,24 @@ public class ConfigEvalEngineTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private ConfigEvalEngine engine = new ConfigEvalEngine(ConfigEvalEngine.defaultJsEngineType(), false);
+    private List<ConfigEvalEngine> engines;
+
+    @Before
+    public void setUp()
+            throws Exception
+    {
+        if (ConfigEvalEngine.getJavaVersionMajor() >= 11) { // Nashorn is deprecated from Java11
+            engines = Arrays.asList(
+                new ConfigEvalEngine(ConfigEvalEngine.JsEngineType.GRAAL, false)
+            );
+        }
+        else {
+            engines = Arrays.asList(
+                new ConfigEvalEngine(ConfigEvalEngine.JsEngineType.NASHORN, false),
+                new ConfigEvalEngine(ConfigEvalEngine.JsEngineType.GRAAL, false)
+            );
+        }
+    }
 
     private Config params()
     {
@@ -34,101 +53,123 @@ public class ConfigEvalEngineTest
     public void testBasic()
             throws Exception
     {
-        assertThat(
-                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/basic.dig"), params()),
-                is(loadYamlResource("/io/digdag/core/agent/eval/basic_expected.dig")));
+        for (ConfigEvalEngine engine: engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/basic.dig"), params()),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/basic_expected.dig")));
+        }
     }
 
     @Test
     public void testLiteral()
             throws Exception
     {
-        assertThat(
-                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/literal.dig"), params()),
-                is(loadYamlResource("/io/digdag/core/agent/eval/literal_expected.dig")));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/literal.dig"), params()),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/literal_expected.dig")));
+        }
     }
 
     @Test
     public void testTemplate()
             throws Exception
     {
-        assertThat(
-                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/template.dig"), params()),
-                is(loadYamlResource("/io/digdag/core/agent/eval/template_expected.dig")));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/template.dig"), params()),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/template_expected.dig")));
+        }
     }
 
     @Test
     public void undefinedVariable()
             throws Exception
     {
-        exception.expect(TemplateException.class);
-        exception.expectMessage(containsString("ReferenceError"));
-        exception.expectMessage(containsString("no_such_var"));
-        engine.eval(newConfig().set("key", "${no_such_var}"), params());
+        for (ConfigEvalEngine engine : engines) {
+            exception.expect(TemplateException.class);
+            exception.expectMessage(containsString("ReferenceError"));
+            exception.expectMessage(containsString("no_such_var"));
+            engine.eval(newConfig().set("key", "${no_such_var}"), params());
+        }
     }
 
     @Test
     public void undefinedField()
             throws Exception
     {
-        assertThat(
-            engine.eval(newConfig().set("key", "${timezone.no_such_field}"), params())
-            .get("key", String.class),
-            is(""));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(newConfig().set("key", "${timezone.no_such_field}"), params())
+                            .get("key", String.class),
+                    is(""));
+        }
     }
 
     @Test
     public void undefinedFieldAccess()
             throws Exception
     {
-        exception.expect(TemplateException.class);
-        exception.expectMessage(containsString("TypeError"));
-        exception.expectMessage(containsString("invalid_access"));
-        engine.eval(newConfig().set("key", "${timezone.no_such_field.invalid_access}"), params());
+        for (ConfigEvalEngine engine : engines) {
+            exception.expect(TemplateException.class);
+            exception.expectMessage(containsString("TypeError"));
+            exception.expectMessage(containsString("invalid_access"));
+            engine.eval(newConfig().set("key", "${timezone.no_such_field.invalid_access}"), params());
+        }
     }
 
     @Test
     public void testMoment()
             throws Exception
     {
-        assertThat(
-                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/moment.dig"), params()),
-                is(loadYamlResource("/io/digdag/core/agent/eval/moment_expected.dig")));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/moment.dig"), params()),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/moment_expected.dig")));
+        }
     }
 
     @Test
     public void testMomentTimeZone()
             throws Exception
     {
-        assertThat(
-                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/moment.dig"), params().set("timezone", "Asia/Tokyo")),
-                is(loadYamlResource("/io/digdag/core/agent/eval/moment_expected_jst.dig")));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/moment.dig"), params().set("timezone", "Asia/Tokyo")),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/moment_expected_jst.dig")));
+        }
     }
 
     @Test
     public void testMomentDstTimeZone()
             throws Exception
     {
-        assertThat(
-                engine.eval(loadYamlResource("/io/digdag/core/agent/eval/moment.dig"), params().set("timezone", "America/Los_Angeles")),
-                is(loadYamlResource("/io/digdag/core/agent/eval/moment_expected_pst_pdt.dig")));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/moment.dig"), params().set("timezone", "America/Los_Angeles")),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/moment_expected_pst_pdt.dig")));
+        }
     }
 
     @Test
     public void momentNowIsAvailable()
             throws Exception
     {
-        assertThat(
-                engine.eval(newConfig().set("key", "${moment().format()}"), params()).get("key", String.class),
-                not(is("")));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(newConfig().set("key", "${moment().format()}"), params()).get("key", String.class),
+                    not(is("")));
+        }
     }
 
     @Test
     public void testIsInvokeTemplateRequired()
     {
-        assertThat(engine.isInvokeTemplateRequired(""), is(false));
-        assertThat(engine.isInvokeTemplateRequired("\n"), is(false));
-        assertThat(engine.isInvokeTemplateRequired("Digdag Notification\naa${hoge}bb"), is(true));
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(engine.isInvokeTemplateRequired(""), is(false));
+            assertThat(engine.isInvokeTemplateRequired("\n"), is(false));
+            assertThat(engine.isInvokeTemplateRequired("Digdag Notification\naa${hoge}bb"), is(true));
+        }
     }
 
     @Test
@@ -136,7 +177,7 @@ public class ConfigEvalEngineTest
             throws Exception
     {
         ConfigEvalEngine graal = new ConfigEvalEngine(ConfigEvalEngine.JsEngineType.GRAAL, false);
-        for (ConfigEvalEngine e: Arrays.asList(engine, graal)) {
+        for (ConfigEvalEngine engine: engines) {
             assertThat(
                     graal.eval(
                             newConfig().set("key", "${\"aaa\".replaceAll(\"a\", \"A\")}"),

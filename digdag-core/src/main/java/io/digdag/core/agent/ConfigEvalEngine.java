@@ -91,14 +91,19 @@ public class ConfigEvalEngine
     }
 
     @VisibleForTesting
+    static int getJavaVersionMajor()
+    {
+        String javaSpecVer = System.getProperty("java.specification.version");
+        return Integer.parseInt(javaSpecVer.split("[^0-9]")[0]);
+    }
+
+    @VisibleForTesting
     static JsEngineType defaultJsEngineType()
     {
         // Return NASHORN if runtime Java VM is older than 11. Otherwise,
         // by default, return GRAAL. This is because org.graalvm.js:js depends
         // on JVMCI (JEP 243) which is available only from Java 11.
-        String javaSpecVer = System.getProperty("java.specification.version");
-        int major = Integer.parseInt(javaSpecVer.split("[^0-9]")[0]);
-        if (major < 11) {
+        if (getJavaVersionMajor() < 11) {
             return JsEngineType.NASHORN;
         }
         return JsEngineType.GRAAL;
