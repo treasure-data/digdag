@@ -79,7 +79,7 @@
     "@babel/preset-env": "^7.2.3",
     "@babel/preset-flow": "^7.0.0",
     "@babel/preset-react": "^7.0.0",
-    "acorn": "^6.1.1",
+    "acorn": "^6.4.1",
     "babel-eslint": "^10.0.1",
     "babel-loader": "8.0.5",
     "bootstrap-loader": "3.0.2",
