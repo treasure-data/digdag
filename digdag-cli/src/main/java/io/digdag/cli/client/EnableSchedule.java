@@ -1,13 +1,16 @@
 package io.digdag.cli.client;
 
+import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.SessionTimeTruncate;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -15,10 +18,15 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class EnableSchedule
         extends ClientCommand
 {
+    @Parameter(names = {"-m", "--mode"})
+    String modeString = null;
+
     @Override
     public SystemExitException usage(String error)
     {
         err.println("Usage: " + programName + " enable <schedule-id> | <project-name> [name]");
+        err.println("  Options:");
+        err.println("    -m, --mode MODE                  update schedules with this mode for skipping sessions (default: none)");
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
@@ -69,8 +77,7 @@ public class EnableSchedule
         DigdagClient client = buildClient();
         RestProject project = client.getProject(projectName);
         RestSchedule schedule = client.getSchedule(project.getId(), workflowName);
-        client.enableSchedule(schedule.getId());
-        ln("Enabled schedule id: %s", schedule.getId());
+        enableSchedule(schedule.getId());
     }
 
     private void enableProjectSchedules(String projectName)
@@ -86,8 +93,7 @@ public class EnableSchedule
                 return;
             }
             for (RestSchedule schedule : schedules) {
-                client.enableSchedule(schedule.getId());
-                ln("Enabled schedule id: %s", schedule.getId());
+                enableSchedule(schedule.getId());
             }
             lastId = Optional.of(schedules.get(schedules.size() - 1).getId());
         }
@@ -97,7 +103,11 @@ public class EnableSchedule
             throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
-        client.enableSchedule(scheduleId);
+        if (modeString == null) {
+            client.enableSchedule(scheduleId);
+        } else {
+            client.enableScheduleByMode(scheduleId, Optional.of(modeString), Optional.absent());
+        }
         ln("Enabled schedule id: %s", scheduleId);
     }
 }
