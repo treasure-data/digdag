@@ -13,6 +13,8 @@ import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.session.SessionMonitor;
+import io.digdag.core.workflow.SlaCalculator;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import java.util.stream.Collectors;
@@ -67,6 +69,7 @@ public class ProjectControl
             SchedulerManager srm, Instant currentTime)
         throws ResourceConflictException
     {
+        validateSla(defs);
         List<StoredWorkflowDefinition> list = insertWorkflowDefinitionsWithoutSchedules(revision, defs);
         updateSchedules(revision, list, srm, currentTime);
         return list;
@@ -91,6 +94,17 @@ public class ProjectControl
         catch (IllegalStateException ex) {
             Throwables.propagateIfInstanceOf(ex.getCause(), ResourceConflictException.class);
             throw ex;
+        }
+    }
+
+    private void validateSla(List<WorkflowDefinition> defs)
+    {
+        for (WorkflowDefinition def : defs) {
+            if (def.getConfig().has("sla")) {
+                Config slaConfig = def.getConfig().getNestedOrGetEmpty("sla");
+                SlaCalculator slaCalculator = new SlaCalculator();
+                slaCalculator.validateCalculator(slaConfig);
+            }
         }
     }
 
