@@ -28,7 +28,7 @@ public class KubernetesClientConfig
         Config extractedSystemConfig = null;
         if (systemConfig != null && systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
             if (clusterName == null) {
-                clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
+                clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class); // ConfigException
             }
             final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
             extractedSystemConfig = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
@@ -37,7 +37,7 @@ public class KubernetesClientConfig
         Config extractedRequestConfig = null;
         if (requestConfig != null && requestConfig.has("kubernetes")) {
             if (clusterName == null) {
-                clusterName = requestConfig.get("name", String.class);
+                clusterName = requestConfig.get("name", String.class); // ConfigException
             }
             extractedRequestConfig = requestConfig.getNested("kubernetes");
         }
