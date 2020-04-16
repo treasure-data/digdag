@@ -1,5 +1,7 @@
 package io.digdag.core.agent;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -396,6 +398,18 @@ public class ConfigEvalEngine
         }
         else {
             return resultText;
+        }
+    }
+
+    @VisibleForTesting
+    static String stackTraceAsString(Throwable e)
+    {
+        try (StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw)) {
+            e.printStackTrace(pw);
+            return sw.toString();
+        }
+        catch (IOException ioe) {
+            return "";
         }
     }
 }

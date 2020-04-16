@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.digdag.core.agent.ConfigEvalEngine.LIBRARY_JS_CONTENTS;
+import static io.digdag.core.agent.ConfigEvalEngine.stackTraceAsString;
 
 public class GraalJsEngine
     implements JsEngine
@@ -124,7 +125,8 @@ public class GraalJsEngine
                 throws TemplateException
         {
             try {
-                return new GraalEvaluator(createContextSupplier(Optional.of(sharedEngine), params, libraryJsSources)
+                // Disable shared engine to avoid possibility of NPE
+                return new GraalEvaluator(createContextSupplier(Optional.empty(), params, libraryJsSources)
                         , extendedSyntax).evaluate(code, scopedParams, jsonMapper);
             }
             catch (IllegalStateException e) {
@@ -149,6 +151,7 @@ public class GraalJsEngine
     {
         private final Supplier<Context> contextSupplier;
         private final boolean extendedSyntax;
+        private static Logger logger = LoggerFactory.getLogger(GraalEvaluator.class);
 
         GraalEvaluator(Supplier<Context> contextSupplier, boolean extendedSyntax)
         {
@@ -173,6 +176,7 @@ public class GraalJsEngine
                     return result.asString();
                 }
                 catch (PolyglotException ex) {
+                    logger.debug("GraalJS threw an exception: {} {}", ex.toString(), stackTraceAsString(ex));
                     String message;
                     if (ex.getCause() != null) {
                         message = ex.getCause().getMessage();

@@ -15,6 +15,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static io.digdag.client.config.ConfigUtils.newConfig;
@@ -198,5 +199,19 @@ public class ConfigEvalEngineTest
                     params().set("v1", Arrays.asList(1,2,3,4,5))).get("key", String.class),
                 is("[5,10,15,20,25]")
         );
+    }
+
+    @Test
+    public void testStackTraceAsString()
+    {
+        String stackTrace = null;
+        try {
+            String str = null;
+            str.length();
+        }
+        catch (RuntimeException ex) {
+            stackTrace = ConfigEvalEngine.stackTraceAsString(ex);
+        }
+        assertThat(stackTrace, notNullValue());
     }
 }
