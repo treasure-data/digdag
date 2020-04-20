@@ -247,6 +247,27 @@ public class ServerScheduleIT
                     assertThat(enableStatus.errUtf8(), enableStatus.code(), is(0));
                     assertThat(enableStatus.outUtf8(), Matchers.containsString("Enabled schedule id: " + scheduleId));
                 });
+
+        testDisableEnable(
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus disableStatus = main("disable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            PROJECT_NAME);
+                    assertThat(disableStatus.errUtf8(), disableStatus.code(), is(0));
+                    assertThat(disableStatus.outUtf8(), Matchers.containsString("Disabled schedule id: " + scheduleId));
+                },
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus enableStatus = main("enable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            "-m", "next_schedule",
+                            PROJECT_NAME);
+                    assertThat(enableStatus.errUtf8(), enableStatus.code(), is(0));
+                    assertThat(enableStatus.outUtf8(), Matchers.containsString("Enabled schedule id: " + scheduleId));
+                });
     }
 
     private void testDisableEnable(ScheduleModifier disable, ScheduleModifier enable)
@@ -433,5 +454,75 @@ public class ServerScheduleIT
         assertThat(Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(attempt2.getParams()
                         .get("last_executed_session_time", String.class))),
                 is(Instant.ofEpochSecond(lastProcessedUnixTime2Epoch)));
+    }
+
+    @Test
+    public void testEnableByMode()
+            throws Exception
+    {
+        Files.createDirectories(projectDir);
+        addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "daily10.dig");
+        addWorkflow(projectDir, "acceptance/schedule/hourly9.dig", "hourly9.dig");
+        pushProject(server.endpoint(), projectDir);
+
+        List<RestSchedule> schedules = client.getSchedules().getSchedules();
+
+        RestSchedule daily = schedules.get(0);
+        RestSchedule hourly = schedules.get(1);
+        // current time is 00:09:00
+        Optional<String> localTime = Optional.of("2291-02-09T00:01:00Z");
+
+        // daily
+        // schedule is 10:00:00 every day
+        {
+            // disable
+            client.disableSchedule(daily.getId());
+            // enable
+            client.enableScheduleByMode(daily.getId(), Optional.of("schedule"), localTime);
+            // get schedule
+            RestSchedule enabled = client.getSchedule(daily.getId());
+            assertThat(enabled.getDisabledAt(), is(Optional.absent()));
+            assertThat(enabled.getNextRunTime(), is(Instant.parse("2291-02-09T10:00:00Z")));
+            assertThat(enabled.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T00:00Z")));
+        }
+
+        {
+            // disable
+            client.disableSchedule(daily.getId());
+            // enable (mode is next_schedule)
+            client.enableScheduleByMode(daily.getId(), Optional.of("next_schedule"), localTime);
+
+            // get schedule
+            RestSchedule enabled = client.getSchedule(daily.getId());
+            assertThat(enabled.getDisabledAt(), is(Optional.absent()));
+            assertThat(enabled.getNextRunTime(), is(Instant.parse("2291-02-10T10:00:00Z")));
+            assertThat(enabled.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-10T00:00Z")));
+        }
+
+        // hourly
+        // schedule is 09:00 every hour
+        {
+            // disable
+            client.disableSchedule(hourly.getId());
+            // enable (mode is schedule)
+            client.enableScheduleByMode(hourly.getId(), Optional.of("schedule"), localTime);
+            // get schedule
+            RestSchedule enabled = client.getSchedule(hourly.getId());
+            assertThat(enabled.getDisabledAt(), is(Optional.absent()));
+            assertThat(enabled.getNextRunTime(), is(Instant.parse("2291-02-09T00:09:00Z")));
+            assertThat(enabled.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T00:00Z")));
+        }
+
+        {
+            // disable
+            client.disableSchedule(hourly.getId());
+            // enable (mode is next_schedule)
+            client.enableScheduleByMode(hourly.getId(), Optional.of("next_schedule"), localTime);
+            // get schedule
+            RestSchedule enabled = client.getSchedule(hourly.getId());
+            assertThat(enabled.getDisabledAt(), is(Optional.absent()));
+            assertThat(enabled.getNextRunTime(), is(Instant.parse("2291-02-09T01:09:00Z")));
+            assertThat(enabled.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T01:00Z")));
+        }
     }
 }
