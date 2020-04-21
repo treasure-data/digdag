@@ -48,6 +48,19 @@ public interface RestSessionAttempt
 
     Optional<Instant> getFinishedAt();
 
+    default String getStatus() {
+        if (this.getCancelRequested()) {
+            return "KILLED";
+        }
+        if (this.getSuccess()) {
+            return "SUCCESS";
+        }
+        if (!this.getSuccess() && this.getDone()) {
+            return "ERROR";
+        }
+        return "RUNNING";
+    }
+
     static ImmutableRestSessionAttempt.Builder builder()
     {
         return ImmutableRestSessionAttempt.builder();

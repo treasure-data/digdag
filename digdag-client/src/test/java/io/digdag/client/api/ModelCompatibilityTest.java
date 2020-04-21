@@ -67,4 +67,96 @@ public class ModelCompatibilityTest
         assertThat(node.remove(field) == null, is(false));
         return mapper.writeValueAsString(node);
     }
+
+    @Test
+    public void testSessionAttemptStatusSuccess()
+            throws Exception
+    {
+        RestSessionAttempt attempt = RestSessionAttempt.builder()
+            .id(Id.of("1"))
+            .index(3)
+            .project(IdAndName.of(Id.of("1"), "p"))
+            .workflow(NameOptionalId.of("w", Optional.of(Id.of("1"))))
+            .sessionId(Id.of("1"))
+            .sessionUuid(UUID.randomUUID())
+            .sessionTime(OffsetDateTime.now(ZoneId.of("UTC")))
+            .retryAttemptName(Optional.absent())
+            .done(false)
+            .success(true)
+            .cancelRequested(false)
+            .params(newConfig())
+            .createdAt(Instant.now())
+            .finishedAt(Optional.absent())
+            .build();
+        assertThat(attempt.getStatus(), is("SUCCESS"));
+    }
+
+    @Test
+    public void testSessionAttemptStatusError()
+            throws Exception
+    {
+        RestSessionAttempt attempt = RestSessionAttempt.builder()
+            .id(Id.of("1"))
+            .index(3)
+            .project(IdAndName.of(Id.of("1"), "p"))
+            .workflow(NameOptionalId.of("w", Optional.of(Id.of("1"))))
+            .sessionId(Id.of("1"))
+            .sessionUuid(UUID.randomUUID())
+            .sessionTime(OffsetDateTime.now(ZoneId.of("UTC")))
+            .retryAttemptName(Optional.absent())
+            .done(true)
+            .success(false)
+            .cancelRequested(false)
+            .params(newConfig())
+            .createdAt(Instant.now())
+            .finishedAt(Optional.absent())
+            .build();
+        assertThat(attempt.getStatus(), is("ERROR"));
+    }
+
+    @Test
+    public void testSessionAttemptStatusKilled()
+            throws Exception
+    {
+        RestSessionAttempt attempt = RestSessionAttempt.builder()
+            .id(Id.of("1"))
+            .index(3)
+            .project(IdAndName.of(Id.of("1"), "p"))
+            .workflow(NameOptionalId.of("w", Optional.of(Id.of("1"))))
+            .sessionId(Id.of("1"))
+            .sessionUuid(UUID.randomUUID())
+            .sessionTime(OffsetDateTime.now(ZoneId.of("UTC")))
+            .retryAttemptName(Optional.absent())
+            .done(false)
+            .success(false)
+            .cancelRequested(true)
+            .params(newConfig())
+            .createdAt(Instant.now())
+            .finishedAt(Optional.absent())
+            .build();
+        assertThat(attempt.getStatus(), is("KILLED"));
+    }
+
+    @Test
+    public void testSessionAttemptStatusRunning()
+            throws Exception
+    {
+        RestSessionAttempt attempt = RestSessionAttempt.builder()
+            .id(Id.of("1"))
+            .index(3)
+            .project(IdAndName.of(Id.of("1"), "p"))
+            .workflow(NameOptionalId.of("w", Optional.of(Id.of("1"))))
+            .sessionId(Id.of("1"))
+            .sessionUuid(UUID.randomUUID())
+            .sessionTime(OffsetDateTime.now(ZoneId.of("UTC")))
+            .retryAttemptName(Optional.absent())
+            .done(false)
+            .success(false)
+            .cancelRequested(false)
+            .params(newConfig())
+            .createdAt(Instant.now())
+            .finishedAt(Optional.absent())
+            .build();
+        assertThat(attempt.getStatus(), is("RUNNING"));
+    }
 }
