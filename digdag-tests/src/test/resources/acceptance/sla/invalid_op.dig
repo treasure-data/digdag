@@ -1,8 +1,0 @@
-timezone: UTC
-
-sla:
-  duration: 00:00:05
-  wrong>: test
-
-+sleep:
-  sh>: "sleep 10"
