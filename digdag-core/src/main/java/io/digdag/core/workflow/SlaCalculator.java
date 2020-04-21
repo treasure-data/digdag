@@ -63,6 +63,10 @@ public class SlaCalculator
         for(String param : BUILT_IN_SLA_PARAMS){
             usedKeys.add(param);
         }
+        for (String key: shouldBeUsedKeys) {
+            if (key.startsWith("+"))
+                usedKeys.add(key);
+        }
 
         Optional<String> time = slaConfig.getOptional("time", String.class);
         Optional<String> duration = slaConfig.getOptional("duration", String.class);
@@ -101,10 +105,6 @@ public class SlaCalculator
 
         if (!usedKeys.isAllUsed()) {
             shouldBeUsedKeys.removeAll(usedKeys);
-            for (String key: shouldBeUsedKeys) {
-                if (key.startsWith("+"))
-                    shouldBeUsedKeys.remove(key);
-            }
             if (!shouldBeUsedKeys.isEmpty()) {
                 StringBuilder buf = new StringBuilder();
                 for (String key: shouldBeUsedKeys) {

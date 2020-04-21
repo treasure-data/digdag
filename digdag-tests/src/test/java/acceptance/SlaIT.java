@@ -140,6 +140,18 @@ public class SlaIT
         }
     }
 
+    @Test
+    public void testValidateConfigWithSubtasks()
+            throws Exception
+    {
+        try {
+            pushAndStart("valid_config_with_subtasks.dig", Duration.ofSeconds(5));
+        }
+        catch (Throwable ie) {
+            fail();
+        }
+    }
+
     public static class TimeIT
             extends SlaIT
     {
