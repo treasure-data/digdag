@@ -1,8 +1,12 @@
 package io.digdag.core.workflow;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Date;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.Calendar;
 import java.time.ZoneId;
@@ -13,22 +17,57 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.agent.CheckedConfig;
+import io.digdag.core.agent.EditDistance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static java.util.Locale.ENGLISH;
+
+class UnusedConfigException extends ConfigException
+{
+    UnusedConfigException(String message)
+    {
+        super(message);
+    }
+}
 
 public class SlaCalculator
 {
+    private static final Logger logger = LoggerFactory.getLogger(SlaCalculator.class);
+    private static final List<String> BUILT_IN_SLA_PARAMS = Arrays.asList("fail", "alert");
+
     @Inject
     public SlaCalculator()
     { }
 
     public Instant getTriggerTime(Config slaConfig, Instant currentTime, ZoneId timeZone)
     {
-        TriggerCalculator calc = getCalculator(slaConfig);
+        TriggerCalculator calc = getCalculator(slaConfig, false);
         return calc.calculateTime(currentTime, timeZone);
     }
 
-    private TriggerCalculator getCalculator(Config slaConfig)
+    public void validateCalculator(Config slaConfig)
     {
+        getCalculator(slaConfig, true);
+    }
+
+    private TriggerCalculator getCalculator(Config config, boolean throwUnusedKeys)
+    {
+        Set<String> shouldBeUsedKeys = new HashSet<>(config.getKeys());
+        // Track accessed keys using UsedKeysSet class
+        CheckedConfig.UsedKeysSet usedKeys = new CheckedConfig.UsedKeysSet();
+
+        Config slaConfig = new CheckedConfig(config, usedKeys);
+
+        for(String param : BUILT_IN_SLA_PARAMS){
+            usedKeys.add(param);
+        }
+        for (String key: shouldBeUsedKeys) {
+            if (key.startsWith("+"))
+                usedKeys.add(key);
+        }
+
         Optional<String> time = slaConfig.getOptional("time", String.class);
         Optional<String> duration = slaConfig.getOptional("duration", String.class);
 
@@ -62,6 +101,21 @@ public class SlaCalculator
         }
         catch (NumberFormatException ex) {
             throw new ConfigException("SLA " + option + " option needs to be HH:MM or HH:MM:SS format: " + time);
+        }
+
+        if (!usedKeys.isAllUsed()) {
+            shouldBeUsedKeys.removeAll(usedKeys);
+            if (!shouldBeUsedKeys.isEmpty()) {
+                StringBuilder buf = new StringBuilder();
+                for (String key: shouldBeUsedKeys) {
+                    buf.append(getWarnUnusedKey(key, usedKeys));
+                    buf.append("\n");
+                }
+                if (throwUnusedKeys)
+                    throw new UnusedConfigException(buf.toString());
+                else
+                    logger.error(buf.toString());
+            }
         }
 
         if (time.isPresent()) {
@@ -136,5 +190,22 @@ public class SlaCalculator
             Instant deadline = time.plus(duration);
             return deadline;
         }
+    }
+
+    private String getWarnUnusedKey(String shouldBeUsedButNotUsedKey, Collection<String> candidateKeys)
+    {
+        StringBuilder buf = new StringBuilder();
+        buf.append("Parameter '");
+        buf.append(shouldBeUsedButNotUsedKey);
+        buf.append("' is not used at sla. ");
+
+        List<String> suggestions = EditDistance.suggest(shouldBeUsedButNotUsedKey, candidateKeys, 0.50);
+        if (!suggestions.isEmpty()) {
+            buf.append("> Did you mean '");
+            buf.append(suggestions);
+            buf.append("'?");
+        }
+
+        return buf.toString();
     }
 }
