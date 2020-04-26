@@ -21,7 +21,7 @@ This operator exports `${range.from}`, `${range.to}`, and `${range.index}` varia
         #  +range-from=40&to=50:
         #    echo>: processing from 40 to 50.
 
-* **for_each>**: object of from, to, and slices or step
+* **for_range>**: object of from, to, and slices or step
 
   This nested object is used to declare a range from **from** to **to**.
 
