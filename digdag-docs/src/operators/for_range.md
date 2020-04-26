@@ -12,13 +12,13 @@ This operator exports `${range.from}`, `${range.to}`, and `${range.index}` varia
       _do:
         echo>: processing from ${range.from} to ${range.to}.
         # this will generate 4 tasks:
-        #  +range-from=10&verb=20:
+        #  +range-from=10&to=20:
         #    echo>: processing from 10 to 20.
-        #  +range-from=20&verb=30:
+        #  +range-from=20&to=30:
         #    echo>: processing from 20 to 30.
-        #  +range-from=30&verb=40:
+        #  +range-from=30&to=40:
         #    echo>: processing from 30 to 40.
-        #  +range-from=40&verb=50:
+        #  +range-from=40&to=50:
         #    echo>: processing from 40 to 50.
 
 * **for_each>**: object of from, to, and slices or step
