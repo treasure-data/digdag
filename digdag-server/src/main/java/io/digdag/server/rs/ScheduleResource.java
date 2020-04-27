@@ -3,13 +3,14 @@ package io.digdag.server.rs;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleAttemptCollection;
-import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleCollection;
+import io.digdag.client.api.RestScheduleEnableRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -40,6 +41,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -254,7 +256,8 @@ public class ScheduleResource
     @ApiOperation("Re-enable disabled scheduling")
     public RestScheduleSummary enableSchedule(
             @ApiParam(value="session id", required=true)
-            @PathParam("id") int id)
+            @PathParam("id") int id,
+            RestScheduleEnableRequest request)
             throws ResourceNotFoundException, ResourceConflictException, AccessControlException
     {
         return tm.<RestScheduleSummary, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
@@ -268,6 +271,20 @@ public class ScheduleResource
             ac.checkEnableSchedule( // AccessControl
                     ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
                     getAuthenticatedUser());
+
+            // skip schedule if skipSchedule is true
+            if (request != null && request.getSkipSchedule().or(false)) {
+                ac.checkSkipSchedule( // AccessControl
+                        ScheduleTarget.of(getSiteId(), proj.getName(), sched.getWorkflowName(), sched.getId()),
+                        getAuthenticatedUser());
+                Instant instant;
+                if (request.getNextTime().isPresent()) {
+                    instant = LocalTimeOrInstant.fromString(request.getNextTime().get()).toInstant(timeZone);
+                } else {
+                    instant = Instant.now();
+                }
+                exec.skipScheduleToTime(getSiteId(), id, instant, Optional.absent(), false);
+            }
 
             StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> { // should never throw NotFound
                 ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
