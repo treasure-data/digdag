@@ -1,0 +1,52 @@
+
+dependencies {
+    compile project(':digdag-spi')
+    compile project(':digdag-client')
+    compile project(':digdag-plugin-utils')
+    compile project(':digdag-guice-rs-server')
+
+    // this dependency is here only to override dependency conflict of
+    // jackson-module-guice -> guice 3.0.
+    // https://github.com/FasterXML/jackson-modules-base/pull/22
+    compile 'org.embulk:guice-bootstrap:0.2.1'
+
+    compile("com.fasterxml.jackson.module:jackson-module-guice:${project.ext.jacksonVersion}") {
+        // Avoid upgrading com.google.guava:guava:19.0 -> 23.6-android
+        exclude group: 'com.google.inject', module: 'guice'
+    }
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${project.ext.jacksonVersion}"
+    compile 'org.jdbi:jdbi:2.75'
+    runtime 'org.antlr:stringtemplate:3.2.1' // Used by jdbi2's string template v3 at runtime
+    compile 'com.zaxxer:HikariCP:2.4.7'
+    compile 'com.h2database:h2:1.4.192'
+    compile 'org.postgresql:postgresql:9.4.1211'
+    compile 'org.yaml:snakeyaml:1.23'
+    compile 'com.google.code.findbugs:annotations:3.0.1'
+    compile 'org.weakref:jmxutils:1.19'
+
+    // JavaScript engine
+    compile 'org.graalvm.js:js:19.3.1'
+
+    // mail
+    compile 'javax.mail:javax.mail-api:1.5.6'
+    compile 'com.sun.mail:javax.mail:1.5.6'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
+
+    // plugins
+    compile 'org.eclipse.aether:aether-api:1.1.0'
+    compile 'org.eclipse.aether:aether-spi:1.1.0'
+    compile 'org.eclipse.aether:aether-util:1.1.0'
+    compile 'org.eclipse.aether:aether-impl:1.1.0'
+    compile 'org.eclipse.aether:aether-connector-basic:1.1.0'
+    compile 'org.eclipse.aether:aether-transport-file:1.1.0'
+    compile 'org.eclipse.aether:aether-transport-http:1.1.0'
+    compile('org.apache.maven:maven-aether-provider:3.1.0') {
+        // sisu dependency injector is not used
+        exclude group: 'org.eclipse.sisu'
+    }
+
+    // Dependency conflict resolution
+    compile 'javax.activation:activation:1.1.1'
+    compile 'org.apache.httpcomponents:httpclient:4.5.5' // depends on aws-java-sdk 1.11.545
+
+    testCompile project(path: ':digdag-client', configuration: 'testArtifacts')
+}
