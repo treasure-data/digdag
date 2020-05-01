@@ -88,7 +88,7 @@ public class ModelCompatibilityTest
             .createdAt(Instant.now())
             .finishedAt(Optional.absent())
             .build();
-        assertThat(attempt.getStatus(), is("SUCCESS"));
+        assertThat(attempt.getStatus(), is("success"));
     }
 
     @Test
@@ -111,7 +111,7 @@ public class ModelCompatibilityTest
             .createdAt(Instant.now())
             .finishedAt(Optional.absent())
             .build();
-        assertThat(attempt.getStatus(), is("ERROR"));
+        assertThat(attempt.getStatus(), is("error"));
     }
 
     @Test
@@ -134,7 +134,7 @@ public class ModelCompatibilityTest
             .createdAt(Instant.now())
             .finishedAt(Optional.absent())
             .build();
-        assertThat(attempt.getStatus(), is("KILLED"));
+        assertThat(attempt.getStatus(), is("killed"));
     }
 
     @Test
@@ -157,6 +157,6 @@ public class ModelCompatibilityTest
             .createdAt(Instant.now())
             .finishedAt(Optional.absent())
             .build();
-        assertThat(attempt.getStatus(), is("RUNNING"));
+        assertThat(attempt.getStatus(), is("running"));
     }
 }
