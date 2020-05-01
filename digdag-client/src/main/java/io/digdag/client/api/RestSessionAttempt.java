@@ -50,15 +50,15 @@ public interface RestSessionAttempt
 
     default String getStatus() {
         if (this.getCancelRequested()) {
-            return "KILLED";
+            return "killed";
         }
         if (this.getSuccess()) {
-            return "SUCCESS";
+            return "success";
         }
-        if (!this.getSuccess() && this.getDone()) {
-            return "ERROR";
+        if (this.getDone()) {
+            return "error";
         }
-        return "RUNNING";
+        return "running";
     }
 
     static ImmutableRestSessionAttempt.Builder builder()
