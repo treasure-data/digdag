@@ -52,7 +52,7 @@ $ CI_ACCEPTANCE_TEST=true ./gradlew digdag-tests:test --info --tests acceptance.
 ```
 
 To execute tests in digdag-tests subproject locally, `tests` option that is provided by Gradle is useful.
-Environment variable `CI_ACCEPTANCE_TEST=true` is needed to execute digdag-tests only.
+Environment variable `CI_ACCEPTANCE_TEST=true` is needed to execute digdag-tests.
 
 ### Testing with PostgreSQL
 
