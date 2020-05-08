@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        ci_node_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        ci_node_index: [0, 1, 2, 3, 4, 5, 6, 7]
 
     steps:
     - uses: actions/checkout@v2
@@ -22,11 +22,9 @@ jobs:
         java-version: 1.8
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    # - name: Run unit test
-    #   run: ./gradlew testClasses
     - name: Run tests in Docker
       run: ci/run_test.sh
       env:
         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
-        CI_NODE_TOTAL: 12
+        CI_NODE_TOTAL: 8
         BUILD_IMAGE: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
