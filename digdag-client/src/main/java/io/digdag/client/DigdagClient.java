@@ -26,6 +26,7 @@ import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleEnableRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSecret;
@@ -800,6 +801,17 @@ public class DigdagClient implements AutoCloseable
     {
         return doPost(RestScheduleSummary.class,
                 ImmutableMap.of(),
+                target("/api/schedules/{id}/enable")
+                        .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary enableSchedule(Id scheduleId, boolean skipSchedule, Optional<String> nextTime)
+    {
+        return doPost(RestScheduleSummary.class,
+                RestScheduleEnableRequest.builder()
+                    .skipSchedule(skipSchedule)
+                    .nextTime(nextTime)
+                    .build(),
                 target("/api/schedules/{id}/enable")
                         .resolveTemplate("id", scheduleId));
     }
