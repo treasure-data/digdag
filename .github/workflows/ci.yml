@@ -25,9 +25,15 @@ jobs:
         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
         CI_NODE_TOTAL: 8
         BUILD_IMAGE: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        flag-name: run-${{ matrix.test_number }}
+        parallel: true
 
   finish:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
