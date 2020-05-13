@@ -17,5 +17,5 @@ else
 fi
 
 "${BASEDIR}/run_test_h2.sh"
-"${BASEDIR}/run_test_pg.sh ${UI_BUILD_OPT}"
+"${BASEDIR}/run_test_pg.sh" ${UI_BUILD_OPT}
 
