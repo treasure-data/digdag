@@ -14,7 +14,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
@@ -185,6 +189,55 @@ public class RequireIT
         assertThat(success, is(true)); // --param project_id=-1 is ignored.
     }
 
+
+    /**
+     * Test for project_id and project_name parameter
+     * @throws Exception
+     */
+    @Test
+    public void testRequireToAnotherProject()
+            throws Exception
+    {
+        final String childProjectName = "child_another";
+
+        // Push child project
+        Path childProjectDir = folder.getRoot().toPath().resolve("another_foobar");
+        Files.createDirectories(childProjectDir);
+        copyResource("acceptance/require/child_another_project.dig", childProjectDir);
+        CommandStatus pushChildStatus = main("push",
+                "--project", childProjectDir.toString(),
+                childProjectName,
+                "-c", config.toString(),
+                "-e", server.endpoint());
+        assertThat(pushChildStatus.errUtf8(), pushChildStatus.code(), is(0));
+
+        // extract child project id
+        Matcher m = Pattern.compile(".*\\s+id:\\s+(\\d+).*").matcher(pushChildStatus.outUtf8());
+        assertThat(m.find(), is(true));
+        String childProjectId = m.group(1);
+
+        // Push parent project
+        Files.write(projectDir.resolve("parent_another_project.dig"), asList(Resources.toString(
+                Resources.getResource("acceptance/require/parent_another_project.dig"), UTF_8)
+                .replace("${child_project_id}", childProjectId)
+                .replace("${child_project_name}", childProjectName)));
+        CommandStatus pushParentStatus = main("push",
+                "--project", projectDir.toString(),
+                "parent_another",
+                "-c", config.toString(),
+                "-e", server.endpoint());
+        assertThat(pushParentStatus.errUtf8(), pushParentStatus.code(), is(0));
+
+        CommandStatus startStatus = main("start",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "parent_another", "parent_another_project",
+                "--session", "now"
+        );
+        assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+    }
+
+
     /***
      * Replaice __FILE__ to real path then save to project dir
      * @param childOutFile
@@ -199,5 +252,4 @@ public class RequireIT
             Files.write(projectDir.resolve("child.dig"), child.getBytes("UTF-8"));
         }
     }
-
 }

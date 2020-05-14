@@ -165,7 +165,7 @@ public class InProcessTaskCallbackApi
     public StoredSessionAttempt startSession(
             OperatorContext context,
             int siteId,
-            int projectId,
+            ProjectIdentifier projectIdentifier,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
@@ -177,7 +177,10 @@ public class InProcessTaskCallbackApi
 
                             //TODO check permission by AccessController for 'require' operator over another project.
 
-                            StoredProject proj = projectStore.getProjectById(projectId);
+                            StoredProject proj = projectIdentifier.byId() ?
+                                projectStore.getProjectById(projectIdentifier.getId()) :
+                                projectStore.getProjectByName(projectIdentifier.getName());
+
                             StoredWorkflowDefinitionWithProject def =
                                     projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
 

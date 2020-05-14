@@ -60,6 +60,17 @@
   project_id: 12345
   ```
 
+* **project_name**: project_name
+
+  Name of another project. You can kick another project's workflow by setting this parameter.
+
+  Examples:
+
+  ```
+  require>: another_project_wf
+  project_name: another_project
+  ```
+
 * **ignore_failure**: BOOLEAN
 
   This operator fails when the dependent workflow finished with errors by default.

@@ -6,6 +6,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.agent.TaskCallbackApi.ProjectIdentifier;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.StoredSessionAttempt;
@@ -13,13 +14,11 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
 import java.time.Instant;
 
 import static java.util.Locale.ENGLISH;
@@ -66,16 +65,17 @@ public class RequireOperatorFactory
         {
             Config config = request.getConfig();
             String workflowName = config.get("_command", String.class);
-            int projectId = config.get("project_id", int.class);
             Instant instant = config.get("session_time", Instant.class);
             boolean ignoreFailure = config.get("ignore_failure", boolean.class, false);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
             Config overrideParams = config.getNestedOrGetEmpty("params");
             try {
+                ProjectIdentifier projectIdentifier = makeProjectIdentifier();
+
                 StoredSessionAttempt attempt = callback.startSession(
                         context,
                         request.getSiteId(),
-                        projectId,
+                        projectIdentifier,
                         workflowName,
                         instant,
                         retryAttemptName,
@@ -102,6 +102,35 @@ public class RequireOperatorFactory
             catch (ResourceLimitExceededException ex) {
                 throw new TaskExecutionException(ex);
             }
+        }
+
+
+        /**
+         * Make ProjectIdentifier from parameters.
+         * @return
+         */
+        private ProjectIdentifier makeProjectIdentifier()
+        {
+            Config config = request.getConfig();
+            Config localConfig = request.getLocalConfig();
+            int projectId = config.get("project_id", int.class);
+            Optional<Integer> projectIdParam = localConfig.getOptional("project_id", Integer.class);
+            Optional<String> projectNameParam = localConfig.getOptional("project_name", String.class);
+
+            if (projectIdParam.isPresent() && projectNameParam.isPresent()) {
+                throw new ConfigException("Both project_id and project_name can't be set");
+            }
+            ProjectIdentifier projectIdentifier;
+            if (projectNameParam.isPresent()) {
+                projectIdentifier = ProjectIdentifier.ofName(projectNameParam.get());
+            }
+            else if (projectIdParam.isPresent()) {
+                projectIdentifier = ProjectIdentifier.ofId(projectIdParam.get());
+            }
+            else {
+                projectIdentifier = ProjectIdentifier.ofId(projectId);
+            }
+            return projectIdentifier;
         }
     }
 }

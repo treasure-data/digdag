@@ -34,10 +34,30 @@ public interface TaskCallbackApi
     StoredSessionAttempt startSession(
             OperatorContext context,
             int siteId,
-            int projectId,
+            ProjectIdentifier projectIdentifier,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
             Config overrideParams)
-        throws ResourceNotFoundException, ResourceLimitExceededException;
+            throws ResourceNotFoundException, ResourceLimitExceededException;
+
+    // Identifier of Project: id or name
+    class ProjectIdentifier
+    {
+        private Optional<Integer> projectId = Optional.absent();
+        private Optional<String>  projectName = Optional.absent();
+
+        private ProjectIdentifier(){}
+        private ProjectIdentifier(int projectId) { this.projectId = Optional.of(projectId); }
+        private ProjectIdentifier(String projectName) { this.projectName = Optional.of(projectName); }
+
+        public static ProjectIdentifier ofId(int projectId) { return new ProjectIdentifier(projectId); }
+        public static ProjectIdentifier ofName(String projectName) { return new ProjectIdentifier(projectName); }
+
+        public boolean byId() { return projectId.isPresent(); }
+        public boolean byName() { return projectName.isPresent(); }
+
+        public Integer getId() { return projectId.get(); }
+        public String getName() { return projectName.get(); }
+    }
 }
