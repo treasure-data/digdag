@@ -3,14 +3,14 @@
 
 name: CI
 
-on: [ push ]
+on: [ push, pull_request ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ci_node_index: [0, 1, 2, 3, 4, 5, 6, 7]
+        ci_node_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
@@ -23,6 +23,6 @@ jobs:
       run: ci/run_test.sh
       env:
         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
-        CI_NODE_TOTAL: 8
+        CI_NODE_TOTAL: 10
         BUILD_IMAGE: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
 
