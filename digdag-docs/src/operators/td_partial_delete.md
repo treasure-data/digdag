@@ -2,7 +2,7 @@
 
 **td_partial_delete>** operator deletes records from a Treasure Data table.
 
-Please be aware that records imported using streaming import can't be deleted for several hours using td_partial_delete. Records imported by INSERT INTO, Data Connector ([MapReduce Executor](https://docs.treasuredata.com/articles/data-connector-hadoop-executor)), and bulk imports can be deleted immediately.
+Please be aware that records imported using streaming import can't be deleted for several hours using td_partial_delete. Records imported by INSERT INTO, Data Connector, and bulk imports can be deleted immediately.
 
 Time range needs to be hourly. Setting non-zero values to minutes or seconds will be rejected.
 
