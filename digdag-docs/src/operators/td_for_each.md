@@ -4,7 +4,7 @@
 
 Subtasks set at `_do` section can reference results using ${td.each.COLUMN_NAME} syntax where COLUMN_NAME is a name of column.
 
-For example, if you run a query `select email, name from users` and the query returns 3 rows, this operator runs subtasks 3 times with `${td.each.email}` and `${td.each.name}}` parameters.
+For example, if you run a query `select email, name from users` and the query returns 3 rows, this operator runs subtasks 3 times with `${td.each.email}` and `${td.each.name}` parameters.
 
     _export:
       td:
@@ -34,6 +34,37 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
   ```
   td>: queries/step1.sql
+  ```
+
+* **_parallel**: BOOLEAN
+
+  Runs the repeating tasks in parallel.
+
+  Examples:
+
+  ```
+  _parallel: true
+  ```
+
+* **_do**: TASKS
+
+  Tasks to run.
+
+  Examples:
+
+  ```
+  # Runs a single task
+  _do:
+    echo>: ${td.each}
+  ```
+
+  ```
+  # Runs multiple tasks
+  _do:
+    +show_email:
+      echo>: ${td.each.email}
+    +show_name:
+      echo>: ${td.each.name}
   ```
 
 * **database**: NAME
