@@ -16,6 +16,6 @@ else
   UI_BUILD_OPT="-PwithoutUi"
 fi
 
-"${BASEDIR}/run_test_h2.sh"
+"${BASEDIR}/run_test_h2.sh" -PwithoutUi
 "${BASEDIR}/run_test_pg.sh" ${UI_BUILD_OPT}
 
