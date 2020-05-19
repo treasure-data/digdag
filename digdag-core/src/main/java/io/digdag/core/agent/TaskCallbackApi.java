@@ -41,7 +41,11 @@ public interface TaskCallbackApi
             Config overrideParams)
             throws ResourceNotFoundException, ResourceLimitExceededException;
 
-    // Identifier of Project: id or name
+    /**
+     *  Identifier of Project: id or name
+     *
+     *  If this class is used from other than RequireOperator, move to ProjectStore is better.
+     */
     class ProjectIdentifier
     {
         private Optional<Integer> projectId = Optional.absent();

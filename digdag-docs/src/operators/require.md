@@ -50,21 +50,20 @@
   ```
 
 * **project_id**: project_id
+* **project_name**: project_name
 
-  Id of another project. You can kick another project's workflow by setting this parameter.
+  You can kick another project's workflow by setting project_id or project_name.
+  If the project does not exist, the task will fail.
+  If you set both project_id and project_name, the task will fail.
 
-  Examples:
+  Examples 1:
 
   ```
   require>: another_project_wf
   project_id: 12345
   ```
 
-* **project_name**: project_name
-
-  Name of another project. You can kick another project's workflow by setting this parameter.
-
-  Examples:
+  Examples 2:
 
   ```
   require>: another_project_wf

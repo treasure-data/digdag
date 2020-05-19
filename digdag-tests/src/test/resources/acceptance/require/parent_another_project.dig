@@ -1,7 +1,7 @@
 +require_by_project_id:
   require>: child_another_project
-  project_id: ${child_project_id}
+  project_id: __CHILD_PROJECT_ID__
 
 +require_by_project_name:
   require>: child_another_project
-  project_name: ${child_project_name}
+  project_name: __CHILD_PROJECT_NAME__

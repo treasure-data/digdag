@@ -219,8 +219,8 @@ public class RequireIT
         // Push parent project
         Files.write(projectDir.resolve("parent_another_project.dig"), asList(Resources.toString(
                 Resources.getResource("acceptance/require/parent_another_project.dig"), UTF_8)
-                .replace("${child_project_id}", childProjectId)
-                .replace("${child_project_name}", childProjectName)));
+                .replace("__CHILD_PROJECT_ID__", childProjectId)
+                .replace("__CHILD_PROJECT_NAME__", childProjectName)));
         CommandStatus pushParentStatus = main("push",
                 "--project", projectDir.toString(),
                 "parent_another",
