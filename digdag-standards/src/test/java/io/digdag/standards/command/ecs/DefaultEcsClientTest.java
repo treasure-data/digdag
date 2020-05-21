@@ -94,7 +94,7 @@ public class DefaultEcsClientTest
             }
         };
         assertEquals(true, ecsClient.retryOnRateLimit(func));
-        Mockito.verify(ecsClient, times(4)).waitWithRandomJitter(anyLong(), anyLong());
+        Mockito.verify(ecsClient, times(3)).waitWithRandomJitter(anyLong(), anyLong());
     }
 
     @Test

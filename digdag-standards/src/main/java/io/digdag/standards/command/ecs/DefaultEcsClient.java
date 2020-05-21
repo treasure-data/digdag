@@ -277,14 +277,14 @@ public class DefaultEcsClient
         final int baseIncrementalSecs = 10;
         for (int i = 0; i < rateLimitMaxRetry; i++) {
             try {
-                // Max of baseWaitSecs is rateLimitMaxBaseWaitSecs
-                final long baseWaitSecs = baseIncrementalSecs * i > rateLimitMaxBaseWaitSecs ? rateLimitMaxBaseWaitSecs: baseIncrementalSecs * i;
-                waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
                 return func.get();
             }
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
                     logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
+                    // Max of baseWaitSecs is rateLimitMaxBaseWaitSecs
+                    final long baseWaitSecs = baseIncrementalSecs * i > rateLimitMaxBaseWaitSecs ? rateLimitMaxBaseWaitSecs: baseIncrementalSecs * i;
+                    waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
                 }
                 else {
                     throw ex;
