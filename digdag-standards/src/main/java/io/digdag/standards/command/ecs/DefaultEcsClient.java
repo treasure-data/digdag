@@ -1,5 +1,7 @@
 package io.digdag.standards.command.ecs;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.retry.RetryUtils;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.AccessDeniedException;
 import com.amazonaws.services.ecs.model.BlockedException;
@@ -19,8 +21,6 @@ import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.Tag;
-import com.amazonaws.services.ecs.model.TagResourceRequest;
-import com.amazonaws.services.ecs.model.TagResourceResult;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
@@ -28,8 +28,8 @@ import com.amazonaws.services.ecs.model.UnsupportedFeatureException;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class DefaultEcsClient
@@ -49,6 +50,10 @@ public class DefaultEcsClient
     private final AmazonECSClient client;
     private final AWSLogs logs;
 
+    private final int rateLimitMaxRetry;
+    private final long rateLimitMaxJitterSecs;   // 0.0 <= jitterSecs < rateLimitBaseJitterSecs
+    private final long rateLimitMaxBaseWaitSecs; // Max baseWaitSecs.
+
     protected DefaultEcsClient(
             final EcsClientConfig config,
             final AmazonECSClient client,
@@ -57,6 +62,26 @@ public class DefaultEcsClient
         this.config = config;
         this.client = client;
         this.logs = logs;
+        this.rateLimitMaxRetry = 60;
+        this.rateLimitMaxJitterSecs = 10;
+        this.rateLimitMaxBaseWaitSecs = 50;
+
+    }
+
+    protected DefaultEcsClient(
+            final EcsClientConfig config,
+            final AmazonECSClient client,
+            final AWSLogs logs,
+            final int rateLimitMaxRetry,
+            final long rateLimitMaxJitterSecs,
+            final long rateLimitMaxBaseWaitSecs)
+    {
+        this.config = config;
+        this.client = client;
+        this.logs = logs;
+        this.rateLimitMaxRetry = rateLimitMaxRetry;
+        this.rateLimitMaxJitterSecs = rateLimitMaxJitterSecs;
+        this.rateLimitMaxBaseWaitSecs = rateLimitMaxBaseWaitSecs;
     }
 
     @Override
@@ -77,7 +102,7 @@ public class DefaultEcsClient
             throws ConfigException
     {
         try {
-            return client.runTask(request);
+            return retryOnRateLimit(() -> client.runTask(request));
         }
         catch (InvalidParameterException |
                 ClusterNotFoundException |
@@ -100,7 +125,7 @@ public class DefaultEcsClient
                 .withTaskDefinition(taskDefinitionArn);
         final DescribeTaskDefinitionResult result;
         try {
-            result = client.describeTaskDefinition(request);
+            result = retryOnRateLimit(() -> client.describeTaskDefinition(request));
         }
         catch (InvalidParameterException e) {
             throw new ConfigException("Task definition arn not found: " + taskDefinitionArn, e);
@@ -113,7 +138,7 @@ public class DefaultEcsClient
     {
         final ListTagsForResourceRequest tagsRequest = new ListTagsForResourceRequest()
                 .withResourceArn(taskDefinitionArn);
-        final ListTagsForResourceResult tagsResult = client.listTagsForResource(tagsRequest); // several runtime exception
+        final ListTagsForResourceResult tagsResult = retryOnRateLimit(() -> client.listTagsForResource(tagsRequest)); // several runtime exception
         return tagsResult.getTags();
     }
 
@@ -127,7 +152,7 @@ public class DefaultEcsClient
                 listRequest.withNextToken(nextToken);
             }
 
-            final ListTaskDefinitionsResult listResult = client.listTaskDefinitions(listRequest);
+            final ListTaskDefinitionsResult listResult = retryOnRateLimit(() -> client.listTaskDefinitions(listRequest));
             final List<String> taskDefinitionArns = listResult.getTaskDefinitionArns();
             for (final String taskDefinitionArn : taskDefinitionArns) {
                 final List<Tag> tags = getTaskDefinitionTags(taskDefinitionArn);
@@ -175,7 +200,7 @@ public class DefaultEcsClient
 
         final DescribeTasksResult result;
         try {
-            result = client.describeTasks(request); // several exceptions
+            result = retryOnRateLimit(() -> client.describeTasks(request)); // several exceptions
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -200,7 +225,7 @@ public class DefaultEcsClient
         final StopTaskRequest request = new StopTaskRequest()
                 .withCluster(cluster)
                 .withTask(taskArn);
-        client.stopTask(request);
+        retryOnRateLimit(() -> client.stopTask(request));
     }
 
     /**
@@ -224,13 +249,61 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
-        return logs.getLogEvents(request);
+        return retryOnRateLimit(() -> logs.getLogEvents(request));
     }
 
     @Override
     public void close()
             throws IOException
     {
-        client.shutdown();
+        retryOnRateLimit(() -> {
+            client.shutdown();
+            return true; //avoid restrict on generics with void
+        });
+    }
+
+    /**
+     * Retry func if ThrottlingException happen.
+     * Retry interval gradually increases with random jitter.
+     * @param func
+     * @param <T>
+     * @return
+     * @throws AmazonServiceException
+     */
+    @VisibleForTesting
+    public <T> T retryOnRateLimit(Supplier<T> func) throws AmazonServiceException
+    {
+        //ToDo  AmazonECSClient has its own retry policy mechanism. Evaluate it and consider it as replacement of this method.
+        final int baseIncrementalSecs = 10;
+        for (int i = 0; i < rateLimitMaxRetry; i++) {
+            try {
+                // Max of baseWaitSecs is rateLimitMaxBaseWaitSecs
+                final long baseWaitSecs = baseIncrementalSecs * i > rateLimitMaxBaseWaitSecs ? rateLimitMaxBaseWaitSecs: baseIncrementalSecs * i;
+                waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
+                return func.get();
+            }
+            catch (AmazonServiceException ex) {
+                if (RetryUtils.isThrottlingException(ex)) {
+                    logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
+                }
+                else {
+                    throw ex;
+                }
+            }
+        }
+        logger.error("Failed to call EcsClient method after Retried {} times", rateLimitMaxRetry);
+        throw new RuntimeException("Failed to call EcsClient method");
+    }
+
+    @VisibleForTesting
+    public void waitWithRandomJitter(long baseWaitSecs, long baseJitterSecs)
+    {
+        try {
+            long jitterSecs = (long) (baseJitterSecs * Math.random());
+            Thread.sleep((baseWaitSecs + jitterSecs) * 1000);
+        }
+        catch (InterruptedException ex) {
+            // Nothing to do
+        }
     }
 }
