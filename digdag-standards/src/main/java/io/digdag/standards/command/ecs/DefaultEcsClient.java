@@ -53,19 +53,14 @@ public class DefaultEcsClient
     private final int rateLimitMaxRetry;
     private final long rateLimitMaxJitterSecs;   // 0.0 <= jitterSecs < rateLimitBaseJitterSecs
     private final long rateLimitMaxBaseWaitSecs; // Max baseWaitSecs.
+    private final long rateLimitBaseIncrementalSecs;
 
     protected DefaultEcsClient(
             final EcsClientConfig config,
             final AmazonECSClient client,
             final AWSLogs logs)
     {
-        this.config = config;
-        this.client = client;
-        this.logs = logs;
-        this.rateLimitMaxRetry = 60;
-        this.rateLimitMaxJitterSecs = 10;
-        this.rateLimitMaxBaseWaitSecs = 50;
-
+        this(config, client, logs, 60, 10, 50, 10);
     }
 
     protected DefaultEcsClient(
@@ -74,7 +69,9 @@ public class DefaultEcsClient
             final AWSLogs logs,
             final int rateLimitMaxRetry,
             final long rateLimitMaxJitterSecs,
-            final long rateLimitMaxBaseWaitSecs)
+            final long rateLimitMaxBaseWaitSecs,
+            final long rateLimitBaseIncrementalSecs
+            )
     {
         this.config = config;
         this.client = client;
@@ -82,6 +79,7 @@ public class DefaultEcsClient
         this.rateLimitMaxRetry = rateLimitMaxRetry;
         this.rateLimitMaxJitterSecs = rateLimitMaxJitterSecs;
         this.rateLimitMaxBaseWaitSecs = rateLimitMaxBaseWaitSecs;
+        this.rateLimitBaseIncrementalSecs = rateLimitBaseIncrementalSecs;
     }
 
     @Override
@@ -258,7 +256,7 @@ public class DefaultEcsClient
     {
         retryOnRateLimit(() -> {
             client.shutdown();
-            return true; //avoid restrict on generics with void
+            return null; //avoid restrict on generics with void
         });
     }
 
@@ -274,7 +272,6 @@ public class DefaultEcsClient
     public <T> T retryOnRateLimit(Supplier<T> func) throws AmazonServiceException
     {
         //ToDo  AmazonECSClient has its own retry policy mechanism. Evaluate it and consider it as replacement of this method.
-        final int baseIncrementalSecs = 10;
         for (int i = 0; i < rateLimitMaxRetry; i++) {
             try {
                 return func.get();
@@ -283,7 +280,7 @@ public class DefaultEcsClient
                 if (RetryUtils.isThrottlingException(ex)) {
                     logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
                     // Max of baseWaitSecs is rateLimitMaxBaseWaitSecs
-                    final long baseWaitSecs = baseIncrementalSecs * i > rateLimitMaxBaseWaitSecs ? rateLimitMaxBaseWaitSecs: baseIncrementalSecs * i;
+                    final long baseWaitSecs = Math.min(rateLimitBaseIncrementalSecs * i, rateLimitMaxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
                 }
                 else {
@@ -303,7 +300,7 @@ public class DefaultEcsClient
             Thread.sleep((baseWaitSecs + jitterSecs) * 1000);
         }
         catch (InterruptedException ex) {
-            // Nothing to do
+            Thread.currentThread().interrupt();
         }
     }
 }
