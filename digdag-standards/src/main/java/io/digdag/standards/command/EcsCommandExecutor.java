@@ -383,36 +383,6 @@ public class EcsCommandExecutor
         }
     }
 
-    /**
-     * Catch ThrottlingException of AWSLogs.getLogEvents() and retry with random jitter.
-     * @param client
-     * @param previousStatus
-     * @param previousToken
-     * @return
-     */
-    GetLogEventsResult getLogWithRetry(final EcsClient client, final ObjectNode previousStatus, final Optional<String> previousToken)
-    {
-        final int maxRetry = 60;
-        final long baseJitterSecs = 10; // 0.0 <= jitterSecs < 10.0
-        final int maxBaseWaitSecs = 50; // maxBaseWaitSecs + jitter < 60
-        for (int i = 0; i < maxRetry; i++) {
-            try {
-                waitWithRandomJitter(10*i > maxBaseWaitSecs? maxBaseWaitSecs: 10*i, baseJitterSecs);
-                return client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
-            }
-            catch (AWSLogsException ex) {
-                if ("ThrottlingException".equals(ex.getErrorCode())) {
-                    logger.debug("Rate exceed in AWSLogs.getLogEvents: {}. Will be retried.", ex.toString());
-                }
-                else {
-                    throw new RuntimeException("Unknown AWSLogsException happened.", ex);
-                }
-            }
-        }
-        logger.error("Failed to call EcsClient.getLog() after Retried {} times", maxRetry);
-        throw new RuntimeException("Failed to call EcsClient.getLog()");
-    }
-
     ObjectNode fetchLogEvents(final EcsClient client,
             final ObjectNode previousStatus,
             final ObjectNode previousExecutorStatus)
@@ -420,7 +390,7 @@ public class EcsCommandExecutor
     {
         final Optional<String> previousToken = !previousExecutorStatus.has("next_token") ?
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
-        final GetLogEventsResult result = getLogWithRetry(client, previousStatus, previousToken);
+        final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
