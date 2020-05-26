@@ -6,6 +6,7 @@ import java.io.IOException;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.core.log.TaskLogger;
+import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
@@ -39,7 +40,7 @@ public interface TaskCallbackApi
             Instant instant,
             Optional<String> retryAttemptName,
             Config overrideParams)
-            throws ResourceNotFoundException, ResourceLimitExceededException;
+            throws ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException;
 
     /**
      *  Identifier of Project: id or name
@@ -63,5 +64,15 @@ public interface TaskCallbackApi
 
         public Integer getId() { return projectId.get(); }
         public String getName() { return projectName.get(); }
+
+        @Override
+        public String toString() {
+            if (projectId.isPresent()) {
+                return "projectId: " + projectId.get();
+            }
+            else {
+                return "projectName: " + projectName.get();
+            }
+        }
     }
 }
