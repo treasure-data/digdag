@@ -90,7 +90,7 @@ public class RequireOperatorFactory
              *  First of all, try to start attempt by startSession()
              *  If no attempt exists (no conflict), it return new StoredSessionAttempt.
              *    - set state param "require_kicked" to true.
-             *    - wait for done by nextPolling.
+             *    - task is retried to wait for done by nextPolling.
              *  If something errors happen, it will throw following exceptions.
              *    - ResourceNotFoundException ... workflow ,project name(or id) are wrong. -> process as deterministic error
              *    - ResourceLimitExceededException ... this exception should be deterministic error

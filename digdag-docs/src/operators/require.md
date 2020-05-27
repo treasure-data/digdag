@@ -70,6 +70,13 @@
   project_name: another_project
   ```
 
+* **rerun_on**: none, failed, all (default: none)
+
+  *rerun_on* control require> really kicks or not if the attempt for the dependent workflow already exists. 
+  * *none* ... Not kick the workflow if the attempt already exists.
+  * *failed* ... Kick the workflow if the attempt exists and its result is not success.
+  * *all* ... require> kick the workflow regardless of the result of the attempt.
+
 * **ignore_failure**: BOOLEAN
 
   This operator fails when the dependent workflow finished with errors by default.
@@ -81,3 +88,8 @@
   ignore_failure: true
   ```
 
+  require> evaluates *ignore_failure* at last of its process. If rerun_on is set and require> run new attempt, the result of new attempt is checked.
+
+## Notes
+- require> has been changed to ignore inherited *retry_attempt_name* parameter. 
+  `digdag retry ` command generates unique retry_attempt_name to run, but it is not passed to require>.
