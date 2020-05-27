@@ -1242,10 +1242,10 @@ definitions:
       status:
         type: "string"
         enum:
-        - "SUCCESS"
-        - "ERROR"
-        - "KILLED"
-        - "RUNNING"
+        - "success"
+        - "error"
+        - "killed"
+        - "running"
   RestLogFilePutResult:
     type: "object"
     properties:
