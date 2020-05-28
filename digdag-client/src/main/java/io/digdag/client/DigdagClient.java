@@ -621,6 +621,13 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", attemptId));
     }
 
+    public RestSessionAttemptCollection getSessionAttemptRetries(Id attemptId)
+    {
+        return doGet(RestSessionAttemptCollection.class,
+                target("/api/attempts/{id}/retries")
+                .resolveTemplate("id", attemptId));
+    }
+
     public RestTaskCollection getTasks(Id attemptId)
     {
         return doGet(RestTaskCollection.class,

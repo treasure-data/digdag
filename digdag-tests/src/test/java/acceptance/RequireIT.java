@@ -1,12 +1,18 @@
 package acceptance;
 
+import com.google.common.base.Optional;
+import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
+import io.digdag.client.api.RestSessionAttemptCollection;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
@@ -17,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,13 +33,17 @@ import static org.junit.Assert.fail;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 public class RequireIT
 {
+    private static Logger logger = LoggerFactory.getLogger(RequireIT.class);
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -41,6 +52,7 @@ public class RequireIT
 
     private Path config;
     private Path projectDir;
+    private DigdagClient client;
 
     @Before
     public void setUp()
@@ -49,6 +61,10 @@ public class RequireIT
         projectDir = folder.getRoot().toPath().resolve("foobar");
         Files.createDirectories(projectDir);
         config = folder.newFile().toPath();
+        client = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
     }
 
     @Test
@@ -258,7 +274,8 @@ public class RequireIT
         checkStatus(Arrays.asList(childProjectName, "child_another_project"));
     }
 
-    private void checkStatus(List<String> commands) throws InterruptedException {
+    private void checkStatus(List<String> commands) throws InterruptedException
+    {
         for (int i = 0; i < 120; i++) {
             List<String> args = new ArrayList<String>();
             args.addAll(Arrays.asList("sessions", "-c", config.toString(), "-e", server.endpoint()));
@@ -274,6 +291,112 @@ public class RequireIT
             Thread.sleep(1000);
         }
         fail("attempt not finished");
+    }
+
+    @Test
+    public void testRerunOnParam()
+            throws Exception
+    {
+        // Create new project
+        CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
+
+        Path childOutFile = projectDir.resolve("child.out").toAbsolutePath().normalize();
+        prepareForChildWF(childOutFile);
+        copyResource("acceptance/require/parent_rerun_on.dig", projectDir.resolve("parent.dig"));
+        copyResource("acceptance/require/child_rerun_on.dig", projectDir.resolve("child.dig"));
+
+        // Push the project
+        CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "require",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+        // test for rerun_on: none
+        {
+            String sessionTime = "2020-05-28 12:34:01";
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "none", false);
+            assertThat("Number of child's attempt must be one. (== require> skip the call)", childAttempts.getAttempts().size(), is(1));
+        }
+
+        // test for rerun_on: all. require> kick child always.
+        {
+            String sessionTime = "2020-05-28 12:34:11";
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "all", false);
+            assertThat("Number of child's attempt must be two. (== require> kick child)", childAttempts.getAttempts().size(), is(2));
+        }
+
+        // test for rerun_on: failed. previous child attempt failed
+        {
+            String sessionTime = "2020-05-28 12:34:21";
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "failed", true);
+            assertThat("Number of child's attempt must be two. (== require> kick child)", childAttempts.getAttempts().size(), is(2));
+        }
+
+        // test for rerun_on: failed. previous child attempt succeeded
+        {
+            String sessionTime = "2020-05-28 12:34:31";
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "failed", false);
+            assertThat("Number of child's attempt must be one. (== require> kick)", childAttempts.getAttempts().size(), is(1));
+        }
+    }
+
+    private RestSessionAttemptCollection testRerunOnParam(String sessionTime, String rerunOn, boolean previousChildRunFail) throws InterruptedException
+    {
+        //Start a child
+        String childFailParam = previousChildRunFail ? "yes" : "no";
+        CommandStatus childStatus = startAndWait(true,"require", "child", "--session", sessionTime,
+                "-p", "child_fail=" + childFailParam);
+        assertThat(isAttemptSuccess(childStatus), not(previousChildRunFail));
+
+        // Start a parent with same session time.
+        CommandStatus rerunOnNoneStatus = startAndWait(false,"require", "parent", "--session", sessionTime,
+                "-p", "param_rerun_on=" + rerunOn,
+                "-p", "child_fail=no");
+
+        assertThat(isAttemptSuccess(rerunOnNoneStatus), is(true));
+        RestSessionAttemptCollection attempts = client.getSessionAttemptRetries(getAttemptId(childStatus));
+        return attempts;
+    }
+
+    private static boolean isAttemptSuccess(CommandStatus status) { return status.outUtf8().contains("status: success"); }
+
+    private CommandStatus startAndWait(boolean ignoreAttemptFailure, String... args) throws InterruptedException
+    {
+        List<String> newArgs = new ArrayList<>(Arrays.asList("start",
+                "-c", config.toString(),
+                "-e", server.endpoint()
+                ));
+        newArgs.addAll(Arrays.asList(args));
+        CommandStatus startStatus = main(newArgs);
+        Id startAttemptId = getAttemptId(startStatus);
+        CommandStatus attemptsStatus = null;
+        // Wait for the attempt to complete
+        boolean success = false;
+        for (int i = 0; i < 30; i++) {
+            attemptsStatus = main("attempt",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    String.valueOf(startAttemptId));
+            if (attemptsStatus.outUtf8().contains("status: success")) {
+                success = true;
+                break;
+            }
+            else if (attemptsStatus.outUtf8().contains("status: error")) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        if (!ignoreAttemptFailure) {
+            assertThat(success, is(true));
+        }
+        assertThat(attemptsStatus, notNullValue());
+        return attemptsStatus;
     }
 
     /***
