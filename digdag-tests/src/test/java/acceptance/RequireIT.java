@@ -1,18 +1,16 @@
 package acceptance;
 
-import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.RestSessionAttemptCollection;
+
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
-import io.digdag.client.api.RestSessionAttemptCollection;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
@@ -42,8 +40,6 @@ import static org.junit.Assert.assertThat;
 
 public class RequireIT
 {
-    private static Logger logger = LoggerFactory.getLogger(RequireIT.class);
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
