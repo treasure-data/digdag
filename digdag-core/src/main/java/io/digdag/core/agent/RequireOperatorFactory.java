@@ -28,6 +28,8 @@ import static java.util.Locale.ENGLISH;
 public class RequireOperatorFactory
         implements OperatorFactory
 {
+    private static final int MAX_TASK_RETRY_INTERVAL = 10;
+
     private static Logger logger = LoggerFactory.getLogger(RequireOperatorFactory.class);
 
     private final TaskCallbackApi callback;
@@ -74,8 +76,9 @@ public class RequireOperatorFactory
             boolean ignoreFailure = config.get("ignore_failure", boolean.class, false);
             OptionRerunOn rerunOn = OptionRerunOn.of(config.get("rerun_on", String.class, "none"));
 
+            //retry_attempt_name is set from local config only.
             Optional<String> retryAttemptName = localConfig.getOptional("retry_attempt_name", String.class);
-            if (lastStateParams.has("rerun_on_retry_attempt_name")) { // This parameter is set for rerun_on parameter.
+            if (lastStateParams.has("rerun_on_retry_attempt_name")) { // set for rerun_on parameter.
                 retryAttemptName = lastStateParams.getOptional("rerun_on_retry_attempt_name", String.class);
             }
 
@@ -94,11 +97,11 @@ public class RequireOperatorFactory
              *    - ResourceLimitExceededException ... this exception should be deterministic error
              *    - SessionAttemptConflictException ... this is not error.
              *      - If the conflict attempt is still running, wait for until done by nextPolling.
-             *      - If done, check the attempt is kicked by this require> or not by state param "require_kicked".
+             *      - If done, check the state param "require_kicked" and whether the attempt is kicked by this require> or not.
              *        - If not kicked by this require>, check result and rerun_on option and determine rerun or not.
              *          - if need to rerun, generate unique retry_attempt_name and set to "rerun_on_retry_attempt_name"
              *          - throw nextPolling and in next call of runTask(), "rerun_on_retry_attempt_name" is used as retry_attempt_name and must succeed to create new attempt because it is unique.
-             *        - Both kicked or not kicked, check the result and ignore_failure option
+             *        - For both kicked and not kicked, check the result and ignore_failure option
              *          - If ignore_failure is true or attempt finished successfully, require> op finished successfully
              *          - else finished with exception.
              */
@@ -135,9 +138,7 @@ public class RequireOperatorFactory
                             rerunOn == OptionRerunOn.FAILED && !conflictedAttempt.getStateFlags().isSuccess())) {
 
                         //To force run, set flag gen_retry_attempt_name and do polling
-                        ConfigElement nextState = ConfigElement.copyOf(lastStateParams.deepCopy().set("rerun_on_retry_attempt_name", UUID.randomUUID().toString()));
-                        // TODO use exponential-backoff to calculate retry interval
-                        throw TaskExecutionException.ofNextPolling(1, nextState);
+                        throw nextPolling(lastStateParams.deepCopy().set("rerun_on_retry_attempt_name", UUID.randomUUID().toString()));
                     }
                     if (!ignoreFailure && !conflictedAttempt.getStateFlags().isSuccess()) {
                         // ignore_failure is false and the attempt is in error state. Make this operator failed.
@@ -149,20 +150,26 @@ public class RequireOperatorFactory
                 }
                 else {
                     // Wait for finish running attempt
-                    // TODO use exponential-backoff to calculate retry interval
-                    throw TaskExecutionException.ofNextPolling(1, ConfigElement.copyOf(request.getLastStateParams()));
+                    throw nextPolling(request.getLastStateParams().deepCopy());
                 }
             }
             else if (attempt.isPresent()) { // startSession succeeded and created new attempt
-                ConfigElement nextState = ConfigElement.copyOf(request.getLastStateParams().deepCopy().set("require_kicked", true));
-                // TODO use exponential-backoff to calculate retry interval
-                throw TaskExecutionException.ofNextPolling(1, nextState);
+                throw nextPolling(request.getLastStateParams().deepCopy().set("require_kicked", true));
             }
             else {
                 throw new RuntimeException(String.format(ENGLISH,
                         "Unexpected condition happened in require> operator.  %s, workflowName:%s",
                         projectIdentifier.transform((p)->p.toString()).or(""), workflowName));
             }
+        }
+
+        private TaskExecutionException nextPolling(Config stateParams)
+        {
+            int iteration = stateParams.get("retry", int.class, 0);
+            stateParams.set("retry", iteration+1);
+            int interval = (int) Math.min(1 * Math.pow(2, iteration), MAX_TASK_RETRY_INTERVAL);
+
+            return TaskExecutionException.ofNextPolling( interval, ConfigElement.copyOf(stateParams));
         }
 
         /**
