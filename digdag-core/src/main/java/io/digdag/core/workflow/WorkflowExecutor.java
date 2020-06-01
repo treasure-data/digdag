@@ -174,8 +174,6 @@ public class WorkflowExecutor
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
     private volatile boolean propagatorNotice = false;
-    private final boolean enqueueRandomFetch;
-    private final Integer enqueueFetchSize;
 
     @Inject
     public WorkflowExecutor(
@@ -198,8 +196,13 @@ public class WorkflowExecutor
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
         this.metrics = metrics;
-        this.enqueueRandomFetch = systemConfig.get("executor.enqueue_random_fetch", Boolean.class, false);
-        this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
+    }
+
+    public Lock getPropagatorLock() { return propagatorLock; }
+    public Condition getPropagatorCondition() { return propagatorCondition; }
+    public boolean isPropagatorNotice() { return propagatorNotice; }
+    public void setPropagatorNotice(boolean propagatorNotice) {
+        this.propagatorNotice = propagatorNotice;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -452,109 +455,6 @@ public class WorkflowExecutor
         }
     }
 
-    public void run()
-            throws InterruptedException
-    {
-        runWhile(() -> true);
-    }
-
-    public StoredSessionAttemptWithSession runUntilDone(long attemptId)
-            throws ResourceNotFoundException, InterruptedException
-    {
-        try {
-            runWhile(() -> {
-                try {
-                    return !sm.getAttemptStateFlags(attemptId).isDone();
-                }
-                catch (ResourceNotFoundException ex) {
-                    throw Throwables.propagate(ex);
-                }
-            });
-        }
-        catch (RuntimeException ex) {
-            Throwables.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
-            throw ex;
-        }
-
-        return tm.begin(() -> sm.getAttemptWithSessionById(attemptId), ResourceNotFoundException.class);
-    }
-
-    public void runUntilAllDone()
-            throws InterruptedException
-    {
-        runWhile(() -> sm.isAnyNotDoneAttempts());
-    }
-
-    private static final int INITIAL_INTERVAL = 100;
-    private static final int MAX_INTERVAL = 5000;
-
-    public void runWhile(BooleanSupplier cond)
-            throws InterruptedException
-    {
-        try (TaskQueuer queuer = new TaskQueuer()) {
-            propagateBlockedChildrenToReady();
-            retryRetryWaitingTasks();
-            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
-            propagateAllPlannedToDone();
-            propagateSessionArchive();
-
-            final AtomicInteger waitMsec = new AtomicInteger(INITIAL_INTERVAL);
-            while (true) {
-                if (tm.<Boolean>begin(() -> !cond.getAsBoolean())) {
-                    break;
-                }
-                metrics.increment(Category.EXECUTOR, "loopCount");
-                //boolean inced = prop.run();
-                //boolean retried = retryRetryWaitingTasks();
-                //if (inced || retried) {
-                //    enqueueReadyTasks(queuer);
-                //    propagatorNotice = true;
-                //}
-
-                propagateBlockedChildrenToReady();
-                retryRetryWaitingTasks();
-                enqueueReadyTasks(queuer);
-
-                /**
-                 *  propagateSessionArchive() should be always called.
-                 *  If propagateSessionArchive() for a session fail,
-                 *  next propagateSessionArchive() never call
-                 *  until propagateAllPlannedToDone() become true.
-                 *  If there is only the session, never archived.
-                 *  Checked by WorkflowExecutorCatchingTest.testPropagateSessionArchive()
-                 */
-                boolean hasModification = propagateAllPlannedToDone();
-                propagateSessionArchive();
-                if (hasModification) {
-                    //propagateSessionArchive();
-                }
-                else {
-                    propagatorLock.lock();
-                    try {
-                        if (propagatorNotice) {
-                            propagatorNotice = false;
-                            waitMsec.set(INITIAL_INTERVAL);
-                        }
-                        else {
-                            metrics.summary(Category.EXECUTOR, "loopWaitMsec", waitMsec.get());
-                            boolean noticed = propagatorCondition.await(waitMsec.get(), TimeUnit.MILLISECONDS);
-                            if (noticed && propagatorNotice) {
-                                propagatorNotice = false;
-                                waitMsec.set(INITIAL_INTERVAL);
-                            }
-                            else {
-                                waitMsec.set(Math.min(waitMsec.get() * 2, MAX_INTERVAL));
-                            }
-                        }
-                    }
-                    finally {
-                        propagatorLock.unlock();
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * If catch exception then return defaultValue
      * @param func
@@ -563,7 +463,7 @@ public class WorkflowExecutor
      * @param <R>
      * @return
      */
-    protected <R> R catching(Supplier<R> func, R defaultValue, String errorMessage)
+    public <R> R catching(Supplier<R> func, R defaultValue, String errorMessage)
     {
         try {
             return func.get();
@@ -584,299 +484,7 @@ public class WorkflowExecutor
      */
     public void catchingNotify(Exception e) {}
 
-
-    @VisibleForTesting
-    protected Function<Long, Optional<Boolean>> funcPropagateBlockedChildrenToReady()
-    {
-        return (pId) ->
-                tm.begin(()-> sm.lockTaskIfNotLocked(
-                        pId,
-                        (store) -> store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(pId) > 0)
-                );
-    }
-
-    @DigdagTimed(category = "executor", appendMethodName = true)
-    protected boolean propagateBlockedChildrenToReady()
-    {
-        boolean anyChanged = false;
-        long lastParentId = 0;
-        while (true) {
-            long finalLastParentId = lastParentId;
-            List<Long> parentIds = tm.begin(() -> sm.findDirectParentsOfBlockedTasks(finalLastParentId));
-
-            if (parentIds.isEmpty()) {
-                break;
-            }
-
-            anyChanged = parentIds
-                    .stream()
-                    .map(parentId ->
-                            catching(
-                                    ()->funcPropagateBlockedChildrenToReady().apply(parentId),
-                                    Optional.<Boolean>absent(),
-                                    "Failed to set children to ready. paretId:" + parentId
-                            )
-                            .or(false)
-                    )
-                    .reduce(anyChanged, (a, b) -> a || b);
-            lastParentId = parentIds.get(parentIds.size() - 1);
-        }
-        return anyChanged;
-    }
-
-    protected Function<Long, Optional<Boolean>> funcSetDoneFromDoneChildren()
-    {
-        return (tId) ->
-                tm.begin(() ->
-                        sm.lockTaskIfNotLocked(tId, (store, storedTask) ->
-                                setDoneFromDoneChildren(new TaskControl(store, storedTask))));
-    }
-
-    @DigdagTimed(category = "executor", appendMethodName = true)
-    protected boolean propagateAllPlannedToDone()
-    {
-        boolean anyChanged = false;
-        long lastTaskId = 0;
-        while (true) {
-            long finalLastTaskId = lastTaskId;
-            List<Long> taskIds = tm.begin(() -> sm.findTasksByState(TaskStateCode.PLANNED, finalLastTaskId));
-            if (taskIds.isEmpty()) {
-                break;
-            }
-            anyChanged = taskIds
-                    .stream()
-                    .map(taskId ->
-                            catching(
-                                    ()->funcSetDoneFromDoneChildren().apply(taskId),
-                                    Optional.<Boolean>absent(),
-                                    "Failed to call setDoneFromDoneChildren. taskId:" + taskId
-                            )
-                            .or(false)
-                    )
-                    .reduce(anyChanged, (a, b) -> a || b);
-            lastTaskId = taskIds.get(taskIds.size() - 1);
-        }
-        return anyChanged;
-    }
-
-    private boolean setDoneFromDoneChildren(TaskControl lockedTask)
-    {
-        if (lockedTask.getState() != TaskStateCode.PLANNED) {
-            return false;
-        }
-        if (lockedTask.isAnyProgressibleChild()) {
-            return false;
-        }
-
-        logger.trace("setDoneFromDoneChildren {}", lockedTask.get());
-
-        StoredTask task = lockedTask.get();
-        // this parent task must not be "SUCCESS" when a child is canceled.
-        // here assumes that CANCEL_REQUESTED flag is set to all tasks of a session
-        // transactionally. If CANCEL_REQUESTED flag is set to a child,
-        // CANCEL_REQUESTED flag should also be set to this parent task.
-        if (task.getStateFlags().isCancelRequested()) {
-            return lockedTask.setToCanceled();
-        }
-
-        if (task.getStateFlags().isDelayedError()) {
-            // DELAYED_ERROR
-            // this error was formerly delayed by taskFailed
-            boolean updated = lockedTask.setPlannedToError();
-            if (!updated) {
-                // return value of setPlannedToError must be true because this task is locked
-                // (won't be updated by other machines concurrently) and confirmed that
-                // current state is PLANNED.
-                logger.warn("Unexpected state change failure from PLANNED to ERROR: {}", task);
-            }
-            return updated;
-        }
-        else if (task.getStateFlags().isDelayedGroupError()) {
-            // DELAYED_GROUP_ERROR
-            // this error was formerly delayed by last setDoneFromDoneChildren call
-            boolean updated = lockedTask.setPlannedToGroupError();
-            if (!updated) {
-                // return value of setPlannedToGroupError must be true because this task is locked
-                // (won't be updated by other machines concurrently) and confirmed that
-                // current state is PLANNED.
-                logger.warn("Unexpected state change failure from PLANNED to GROUP_ERROR: {}", task);
-            }
-            return updated;
-        }
-        else if (lockedTask.isAnyErrorChild()) {
-            // group error
-            boolean updated;
-
-            Optional<RetryControl> retryControlOpt = checkRetry(task);
-            if (retryControlOpt.isPresent()) {
-                RetryControl retryControl = retryControlOpt.get();
-                updated = lockedTask.setPlannedToGroupRetryWaiting(
-                        retryControl.getNextRetryStateParams(),
-                        retryControl.getNextRetryInterval());
-            }
-            else {
-                List<Long> errorTaskIds = new ArrayList<>();
-
-                // root task is always group-only task
-                boolean isRootTask = !lockedTask.get().getParentId().isPresent();
-                if (isRootTask) {
-                    errorTaskIds.add(addAttemptFailureAlertTask(lockedTask));
-                }
-
-                try {
-                    Optional<Long> errorTask = addErrorTasksIfAny(lockedTask,
-                            true,
-                            (export) -> {
-                                collectErrorParams(export, lockedTask.get());
-                                return export;
-                            });
-                    if (errorTask.isPresent()) {
-                        errorTaskIds.add(errorTask.get());
-                    }
-                }
-                catch (TaskLimitExceededException ex) {
-                    tm.reset();
-                    logger.warn("Failed to add error tasks because of task limit");
-                    // addErrorTasksIfAny threw TaskLimitExceededException. Giveup adding them.
-                    // TODO this is a fundamental design problem. Probably _error tasks should be removed.
-                    //      use notification tasks instead.
-                }
-                catch (ConfigException ex) {
-                    // Workflow config has a problem (e.g. more than one operator). Nothing we can do here.
-                    // WorkflowCompiler should be validation so that this error doesn't happen.
-                    // TODO this is a fundamental design problem. Probably _error tasks should be removed.
-                    //      use notification tasks instead.
-                    logger.warn("Found a broken _error task in attempt {} task {}. Skipping this task.",
-                            task.getAttemptId(), task.getId(), ex);
-                }
-
-                if (errorTaskIds.isEmpty()) {
-                    // set GROUP_ERROR state
-                    updated = lockedTask.setPlannedToGroupError();
-                }
-                else {
-                    // set DELAYED_GROUP_ERROR flag and keep state. actual change of state is delay
-                    // until next setDoneFromDoneChildren call.
-                    updated = lockedTask.setPlannedToPlannedWithDelayedGroupError();
-                }
-            }
-
-            return updated;
-        }
-        else {
-            boolean updated = lockedTask.setPlannedToSuccess();
-            if (!updated) {
-                // return value of setPlannedToSuccess must be true because this task is locked
-                // (won't be updated by other machines concurrently) and confirmed that
-                // current state is PLANNED.
-                logger.warn("Unexpected state change failure from PLANNED to SUCCESS: {}", task);
-            }
-            return updated;
-        }
-    }
-
-
-    /**
-     * Check retriable of task
-     * @param task
-     * @return if present(), should retry, if absent() should not retry.
-     */
-    Optional<RetryControl> checkRetry(StoredTask task)
-    {
-        try {
-            RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
-            if (retryControl.evaluate()) {
-                return Optional.of(retryControl);
-            }
-            else {
-                return Optional.absent();
-            }
-        }
-        catch (ConfigException ce) {
-            logger.warn("Ignore retry parameter because of invalid retry configuration. attempt_id:{} config:{}", task.getAttemptId(), task.getConfig());
-            return Optional.absent();
-        }
-    }
-
-    private void collectErrorParams(Config params, StoredTask task)
-    {
-        List<Long> childrenFromThis;
-        {
-            TaskTree tree = new TaskTree(sm.getTaskRelations(task.getAttemptId()));
-            childrenFromThis = tree.getRecursiveChildrenIdList(task.getId());
-        }
-
-        // merge store params to export params
-        List<ParameterUpdate> childrenStoreParams = sm.getStoreParams(childrenFromThis);
-        for (ParameterUpdate childStoreParams : childrenStoreParams) {
-            childStoreParams.applyTo(params);
-        }
-
-        // merge all error params
-        Config error = cf.create();
-        {
-            List<Config> childrenErrors = sm.getErrors(childrenFromThis);
-            for (Config childError : childrenErrors) {
-                error.merge(childError);
-            }
-        }
-        params.set("error", error);
-    }
-
-    @VisibleForTesting
-    protected Function<TaskAttemptSummary, Optional<Boolean>> funcArchiveTasks()
-    {
-        return (t) ->
-                tm.begin(() ->
-                        sm.lockAttemptIfExists(t.getAttemptId(), (store, summary) -> {
-                            if (summary.getStateFlags().isDone()) {
-                                // already archived. This means that another thread archived
-                                // this attempt after findRootTasksByStates call.
-                                return false;
-                            }
-                            else {
-                                SessionAttemptControl control = new SessionAttemptControl(store, t.getAttemptId());
-                                control.archiveTasks(archiveMapper, t.getState() == TaskStateCode.SUCCESS);
-                                return true;
-                            }
-                        }));
-    }
-
-    @DigdagTimed(category = "executor", appendMethodName = true)
-    protected boolean propagateSessionArchive()
-    {
-        boolean anyChanged = false;
-        long lastTaskId = 0;
-        while (true) {
-            long finalLastTaskId = lastTaskId;
-            List<TaskAttemptSummary> tasks =
-                    tm.begin(() -> sm.findRootTasksByStates(TaskStateCode.doneStates(), finalLastTaskId));
-            if (tasks.isEmpty()) {
-                break;
-            }
-            anyChanged = tasks
-                    .stream()
-                    .map(task ->
-                            catching(
-                                ()->funcArchiveTasks().apply(task),
-                                Optional.<Boolean>absent(),
-                                    "Failed to call archiveTasks. taskId:" + task.getId()
-                            )
-                            .or(false)
-                    )
-                    .reduce(anyChanged, (a, b) -> a || b);
-            lastTaskId = tasks.get(tasks.size() - 1).getId();
-        }
-        return anyChanged;
-    }
-
-    @DigdagTimed(category = "executor", appendMethodName = true)
-    protected boolean retryRetryWaitingTasks()
-    {
-        return tm.begin(() -> sm.trySetRetryWaitingToReady() > 0);
-    }
-
-    private class TaskQueuer
+    public static class TaskQueuer
             implements AutoCloseable
     {
         private final Map<Long, Future<Void>> waiting = new ConcurrentHashMap<>();
@@ -922,112 +530,6 @@ public class WorkflowExecutor
         //}
     }
 
-    @VisibleForTesting
-    protected Function<Long, Boolean> funcEnqueueTask()
-    {
-        return (tId) ->
-                tm.begin(() -> {
-                    enqueueTask(dispatcher, tId);
-                    return true;
-                });
-    }
-
-    @DigdagTimed(category = "executor", appendMethodName = true)
-    protected void enqueueReadyTasks(TaskQueuer queuer)
-    {
-        List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(enqueueFetchSize, enqueueRandomFetch));
-        logger.trace("readyTaskIds:{}", readyTaskIds);
-        for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
-            catching(()->funcEnqueueTask().apply(taskId), true, "Failed to call enqueueTask. taskId:" + taskId);
-            //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
-        }
-    }
-
-    @DigdagTimed(category="executor", appendMethodName = true)
-    protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
-    {
-        sm.lockTaskIfNotLocked(taskId, (store, task) -> {
-            TaskControl lockedTask = new TaskControl(store, task);
-            if (lockedTask.getState() != TaskStateCode.READY) {
-                return false;
-            }
-
-            if (task.getTaskType().isGroupingOnly()) {
-                return retryGroupingTask(lockedTask);
-            }
-
-            if (task.getStateFlags().isCancelRequested()) {
-                return lockedTask.setToCanceled();
-            }
-
-            int siteId;
-            try {
-                siteId = sm.getSiteIdOfTask(taskId);
-            }
-            catch (ResourceNotFoundException ex) {
-                tm.reset();
-                Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
-                logger.error("Database state error enqueuing task.", error);
-                return false;
-            }
-
-            try {
-                // TODO make queue name configurable. note that it also needs a new REST API and/or
-                //      CLI ccommands to create/delete/manage queues.
-                Optional<String> queueName = Optional.absent();
-
-                String encodedUnique = encodeUniqueQueuedTaskName(lockedTask.get());
-
-                TaskQueueRequest request = TaskQueueRequest.builder()
-                    .priority(0)  // TODO make this configurable
-                    .uniqueName(encodedUnique)
-                    .data(Optional.absent())
-                    .build();
-
-                logger.debug("Queuing task of attempt_id={}: id={} {}", task.getAttemptId(), task.getId(), task.getFullName());
-                try {
-                    dispatcher.dispatch(siteId, queueName, request);
-                }
-                catch (TaskConflictException ex) {
-                    tm.reset();
-                    logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
-                            encodedUnique, queueName.or("<shared>"), siteId);
-                }
-
-                ////
-                // don't throw exceptions after here. task is already dispatched to a queue
-                //
-
-                boolean updated = lockedTask.setReadyToRunning();
-                if (!updated) {
-                    // return value of setReadyToRunning must be true because this task is locked
-                    // (won't be updated by other machines concurrently) and confirmed that
-                    // current state is READY.
-                    logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
-                }
-
-                return updated;
-            }
-            catch (Exception ex) {
-                tm.reset();
-                logger.error("Enqueue error, making this task failed: {}", task, ex);
-                // TODO retry here?
-                return taskFailed(lockedTask,
-                        buildExceptionErrorConfig(ex).toConfig(cf));
-            }
-        }).or(false);
-    }
-
-    private static String encodeUniqueQueuedTaskName(StoredTask task)
-    {
-        int retryCount = task.getRetryCount();
-        if (retryCount == 0) {
-            return Long.toString(task.getId());
-        }
-        else {
-            return Long.toString(task.getId()) + ".r" + Integer.toString(retryCount);
-        }
-    }
 
     private static long parseTaskIdFromEncodedQueuedTaskName(String encodedUniqueQueuedTaskName)
     {
@@ -1159,20 +661,6 @@ public class WorkflowExecutor
         });
     }
 
-    private boolean retryGroupingTask(TaskControl lockedTask)
-    {
-        // rest task state of subtasks
-        StoredTask task = lockedTask.get();
-
-        TaskTree tree = new TaskTree(sm.getTaskRelations(task.getAttemptId()));
-        List<Long> childrenIdList = tree.getRecursiveChildrenIdList(task.getId());
-        lockedTask.copyInitialTasksForRetry(task.getFullName(), childrenIdList);
-
-        lockedTask.setGroupRetryReadyToPlanned();
-
-        return true;
-    }
-
     public boolean taskFailed(int siteId, long taskId, String lockId, AgentId agentId,
             Config error)
     {
@@ -1243,7 +731,7 @@ public class WorkflowExecutor
         return changed;
     }
 
-    private boolean taskFailed(TaskControl lockedTask, Config error)
+    public boolean taskFailed(TaskControl lockedTask, Config error)
     {
         logger.trace("Task failed with error {} with no retry: {}",
                 error, lockedTask.get());
@@ -1422,7 +910,7 @@ public class WorkflowExecutor
         return Optional.of(rootTaskId);
     }
 
-    private Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
+    public Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
         throws TaskLimitExceededException
     {
         Config subtaskConfig = lockedTask.get().getConfig().getErrorConfig();
@@ -1443,15 +931,6 @@ public class WorkflowExecutor
         logger.trace("Adding error tasks: {}", tasks);
         long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
         return Optional.of(rootTaskId);
-    }
-
-    private long addAttemptFailureAlertTask(TaskControl rootTask)
-    {
-        Config config = cf.create();
-        config.set("_type", "notify");
-        config.set("_command", "Workflow session attempt failed");
-        WorkflowTaskList tasks = compiler.compileTasks(rootTask.get().getFullName(), "^failure-alert", config);
-        return rootTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
     }
 
     private Optional<Long> addCheckTasksIfAny(TaskControl lockedTask, Optional<Long> upstreamTaskId)
