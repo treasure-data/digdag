@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class WorkflowExecutorCatchingTest
 {
     DigdagEmbed digdag = null;
-    WorkflowExecutorWithArbitraryErrors executor;
+    WorkflowExecutorMainWithArbitraryErrors executorMain;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -42,7 +42,7 @@ public class WorkflowExecutorCatchingTest
     {
         MockitoAnnotations.initMocks(this);
         digdag = setupEmbed();
-        executor = (WorkflowExecutorWithArbitraryErrors)digdag.getInjector().getInstance(WorkflowExecutorMain.class);
+        executorMain = (WorkflowExecutorMainWithArbitraryErrors)digdag.getInjector().getInstance(WorkflowExecutorMain.class);
     }
 
     @After
@@ -57,8 +57,10 @@ public class WorkflowExecutorCatchingTest
     private DigdagEmbed setupEmbed()
     {
         return WorkflowTestingUtils.setupEmbed((e) ->
-            e.overrideModulesWith((binder) ->
-                binder.bind(WorkflowExecutorMain.class).to(WorkflowExecutorWithArbitraryErrors.class).in(Scopes.SINGLETON)
+            e.overrideModulesWith((binder) -> {
+                        binder.bind(WorkflowExecutor.class).to(WorkflowExecutorWithCatchingCounter.class).in(Scopes.SINGLETON);
+                        binder.bind(WorkflowExecutorMain.class).to(WorkflowExecutorMainWithArbitraryErrors.class).in(Scopes.SINGLETON);
+                    }
             )
         );
     }
@@ -66,45 +68,73 @@ public class WorkflowExecutorCatchingTest
     @Test
     public void testEnqueueTask() throws Exception
     {
-        executor.setFuncEnqueueTaskFailNumber(2); // No 2 task will fail.
+        executorMain.setFuncEnqueueTaskFailNumber(2); // No 2 task will fail.
         runWorkflow(digdag, folder.getRoot().toPath(), "basic", loadYamlResource("/io/digdag/core/workflow/catching.dig"));
         // catching.dig has 3 tasks. But 2nd task failed and retried, the total enqueue tasks will be 4.
-        assertEquals(4, executor.getFuncEnqueueTaskCounter());
-        assertEquals(1, executor.getCatchingCounter());
+        assertEquals(4, executorMain.getFuncEnqueueTaskCounter());
+        assertEquals(1, executorMain.getCatchingCounter());
     }
 
     @Test
     public void testPropagateBlockedChildrenToReady() throws Exception
     {
-        executor.setFuncPropagateBlockedChildrenToReadyFailNumber(1);
+        executorMain.setFuncPropagateBlockedChildrenToReadyFailNumber(1);
         runWorkflow(digdag, folder.getRoot().toPath(), "basic", loadYamlResource("/io/digdag/core/workflow/catching.dig"));
-        assertEquals(1, executor.getCatchingCounter());
+        assertEquals(1, executorMain.getCatchingCounter());
     }
 
     @Test
     public void testPropagateAllPlannedToDone() throws Exception
     {
-        executor.setFuncSetDoneFromDoneChildrenFailNumber(1);
+        executorMain.setFuncSetDoneFromDoneChildrenFailNumber(1);
         runWorkflow(digdag, folder.getRoot().toPath(), "basic", loadYamlResource("/io/digdag/core/workflow/catching.dig"));
-        assertEquals(1, executor.getCatchingCounter());
+        assertEquals(1, executorMain.getCatchingCounter());
     }
 
     @Test
     public void testPropagateSessionArchive() throws Exception
     {
-        executor.setFuncArchiveTasksFailNumber(1);
+        executorMain.setFuncArchiveTasksFailNumber(1);
         runWorkflow(digdag, folder.getRoot().toPath(), "basic", loadYamlResource("/io/digdag/core/workflow/catching.dig"));
-        assertEquals(1, executor.getCatchingCounter());
+        assertEquals(1, executorMain.getCatchingCounter());
     }
 
 
+    public static class WorkflowExecutorWithCatchingCounter extends WorkflowExecutor
+    {
+        private int catchingCounter = 0;
+
+        @Inject
+        public WorkflowExecutorWithCatchingCounter(ProjectStoreManager rm,
+                                                       SessionStoreManager sm,
+                                                       TransactionManager tm,
+                                                       TaskQueueDispatcher dispatcher,
+                                                       WorkflowCompiler compiler,
+                                                       ConfigFactory cf,
+                                                       ObjectMapper archiveMapper,
+                                                       Config systemConfig,
+                                                       DigdagMetrics metrics)
+        {
+            super(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, metrics);
+        }
+
+        @Override
+        public void catchingNotify(Exception e)
+        {
+            catchingCounter++;
+        }
+
+        public int getCatchingCounter() { return catchingCounter; }
+
+    }
     /**
      *  This executor will fail in some method with exception dependsOn funcXXXXFailNumber members.
      *  Even though unexpected exceptions happen, catching() catch it safely and the executor process will proceed
      */
-    public static class WorkflowExecutorWithArbitraryErrors extends WorkflowExecutorMain
+    public static class WorkflowExecutorMainWithArbitraryErrors extends WorkflowExecutorMain
     {
-        private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutorWithArbitraryErrors.class);
+        private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutorMainWithArbitraryErrors.class);
+        private WorkflowExecutorWithCatchingCounter executor;
 
         private int funcEnqueueTaskFailNumber = 0; //The nth enqueued task will be failed intentionally.
         private int funcEnqueueTaskCounter = 0;
@@ -118,27 +148,20 @@ public class WorkflowExecutorCatchingTest
         private int funcArchiveTasksFailNumber = 0;
         private int funcArchiveTasksCounter = 0;
 
-        private int catchingCounter = 0;
-
-        @Override
-        public void catchingNotify(Exception e)
-        {
-            catchingCounter++;
-        }
-
         @Inject
-        public WorkflowExecutorWithArbitraryErrors(ProjectStoreManager rm,
-                                                   SessionStoreManager sm,
-                                                   TransactionManager tm,
-                                                   TaskQueueDispatcher dispatcher,
-                                                   WorkflowCompiler compiler,
-                                                   WorkflowExecutor executor,
-                                                   ConfigFactory cf,
-                                                   ObjectMapper archiveMapper,
-                                                   Config systemConfig,
-                                                   DigdagMetrics metrics)
+        public WorkflowExecutorMainWithArbitraryErrors(ProjectStoreManager rm,
+                                                       SessionStoreManager sm,
+                                                       TransactionManager tm,
+                                                       TaskQueueDispatcher dispatcher,
+                                                       WorkflowCompiler compiler,
+                                                       WorkflowExecutor executor,
+                                                       ConfigFactory cf,
+                                                       ObjectMapper archiveMapper,
+                                                       Config systemConfig,
+                                                       DigdagMetrics metrics)
         {
             super(rm, sm, tm, dispatcher, compiler, executor, cf, archiveMapper, systemConfig, metrics);
+            this.executor = (WorkflowExecutorWithCatchingCounter)executor;
         }
 
         @Override
@@ -207,7 +230,7 @@ public class WorkflowExecutorCatchingTest
 
         public int getFuncPropagateBlockedChildrenToReadyCounter() { return funcPropagateBlockedChildrenToReadyCounter; }
 
-        public int getCatchingCounter() { return catchingCounter; }
+        public int getCatchingCounter() { return executor.getCatchingCounter(); }
 
     }
 
