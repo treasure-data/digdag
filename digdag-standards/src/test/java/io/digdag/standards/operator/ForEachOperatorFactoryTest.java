@@ -1,6 +1,5 @@
 package io.digdag.standards.operator;
 
-import io.digdag.core.database.TransactionManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -8,11 +7,9 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import io.digdag.client.config.Config;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.spi.Operator;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.ForEachOperatorFactory.ForEachOperator;
 
@@ -20,7 +17,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.core.workflow.OperatorTestingUtils.newContext;

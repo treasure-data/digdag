@@ -7,6 +7,7 @@ import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.workflow.WorkflowExecutor;
 
+import io.digdag.executor.WorkflowExecutorMain;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public class WorkflowExecutorLoop
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutorLoop.class);
 
     private final Supplier<Thread> threadFactory;
-    private final WorkflowExecutor workflowExecutor;
+    private final WorkflowExecutorMain workflowExecutor;
 
     private volatile Thread thread = null;
     private volatile boolean stop = false;
@@ -37,7 +38,7 @@ public class WorkflowExecutorLoop
     @Inject
     public WorkflowExecutorLoop(
             ServerConfig serverConfig,
-            WorkflowExecutor workflowExecutor)
+            WorkflowExecutorMain workflowExecutor)
     {
         if (serverConfig.getExecutorEnabled()) {
             this.threadFactory = () -> new ThreadFactoryBuilder()

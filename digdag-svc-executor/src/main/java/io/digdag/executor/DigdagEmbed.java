@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.executor;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -11,21 +11,20 @@ import java.util.Map;
 
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import com.google.inject.Guice;
 import com.google.inject.Provider;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
-import com.google.inject.multibindings.Multibinder;
+import io.digdag.core.EnvironmentModule;
+import io.digdag.core.ExtensionServiceLoaderModule;
+import io.digdag.core.TempFileManager;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.workflow.WorkflowModule;
-import io.digdag.core.workflow.WorkflowExecutorModule;
 import io.digdag.core.schedule.ScheduleModule;
 import io.digdag.core.schedule.ScheduleExecutorModule;
 import io.digdag.core.config.ConfigModule;

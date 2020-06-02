@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.core.agent.GrantedPrivilegedVariables;
 import io.digdag.core.workflow.WorkflowTestingUtils;
 import io.digdag.spi.OperatorContext;
@@ -15,7 +15,6 @@ import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.MockNonBlockingCommandExecutor;
-import io.digdag.standards.operator.state.TaskState;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -23,7 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 

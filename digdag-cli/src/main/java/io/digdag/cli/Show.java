@@ -3,7 +3,7 @@ package io.digdag.cli;
 import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;

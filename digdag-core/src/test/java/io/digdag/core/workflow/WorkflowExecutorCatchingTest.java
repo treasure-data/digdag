@@ -6,12 +6,12 @@ import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.TaskAttemptSummary;
-import io.digdag.spi.CommandExecutor;
+import io.digdag.executor.WorkflowExecutorMain;
 import io.digdag.spi.metrics.DigdagMetrics;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +42,7 @@ public class WorkflowExecutorCatchingTest
     {
         MockitoAnnotations.initMocks(this);
         digdag = setupEmbed();
-        executor = (WorkflowExecutorWithArbitraryErrors)digdag.getInjector().getInstance(WorkflowExecutor.class);
+        executor = (WorkflowExecutorWithArbitraryErrors)digdag.getInjector().getInstance(WorkflowExecutorMain.class);
     }
 
     @After
@@ -58,7 +58,7 @@ public class WorkflowExecutorCatchingTest
     {
         return WorkflowTestingUtils.setupEmbed((e) ->
             e.overrideModulesWith((binder) ->
-                binder.bind(WorkflowExecutor.class).to(WorkflowExecutorWithArbitraryErrors.class).in(Scopes.SINGLETON)
+                binder.bind(WorkflowExecutorMain.class).to(WorkflowExecutorWithArbitraryErrors.class).in(Scopes.SINGLETON)
             )
         );
     }
@@ -102,7 +102,7 @@ public class WorkflowExecutorCatchingTest
      *  This executor will fail in some method with exception dependsOn funcXXXXFailNumber members.
      *  Even though unexpected exceptions happen, catching() catch it safely and the executor process will proceed
      */
-    public static class WorkflowExecutorWithArbitraryErrors extends WorkflowExecutor
+    public static class WorkflowExecutorWithArbitraryErrors extends WorkflowExecutorMain
     {
         private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutorWithArbitraryErrors.class);
 
@@ -132,12 +132,13 @@ public class WorkflowExecutorCatchingTest
                                                    TransactionManager tm,
                                                    TaskQueueDispatcher dispatcher,
                                                    WorkflowCompiler compiler,
+                                                   WorkflowExecutor executor,
                                                    ConfigFactory cf,
                                                    ObjectMapper archiveMapper,
                                                    Config systemConfig,
                                                    DigdagMetrics metrics)
         {
-            super(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, metrics);
+            super(rm, sm, tm, dispatcher, compiler, executor, cf, archiveMapper, systemConfig, metrics);
         }
 
         @Override

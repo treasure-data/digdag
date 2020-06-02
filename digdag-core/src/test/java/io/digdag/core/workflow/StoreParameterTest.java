@@ -1,14 +1,14 @@
 package io.digdag.core.workflow;
 
 import io.digdag.client.config.Config;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.LocalSite;
+import io.digdag.executor.DigdagEmbed;
+import io.digdag.executor.LocalSite;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.After;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

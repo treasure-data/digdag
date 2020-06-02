@@ -106,6 +106,25 @@ public class WorkflowExecutorMain
         this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
     }
 
+    public StoredSessionAttemptWithSession submitWorkflow(int siteId,
+                                                          AttemptRequest ar,
+                                                          WorkflowDefinition def)
+            throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
+    {
+        return executor.submitWorkflow(siteId, ar, def);
+    }
+
+    public boolean killAttemptById(int siteId, long attemptId)
+            throws ResourceNotFoundException
+    {
+        return executor.killAttemptById(siteId, attemptId);
+    }
+
+    public void noticeRunWhileConditionChange() { executor.noticeRunWhileConditionChange(); }
+
+    public void catchingNotify(Exception e) { executor.catchingNotify(e);}
+
+
     public void run()
             throws InterruptedException
     {
@@ -592,7 +611,8 @@ public class WorkflowExecutorMain
      * @param task
      * @return if present(), should retry, if absent() should not retry.
      */
-    Optional<RetryControl> checkRetry(StoredTask task)
+    @VisibleForTesting
+    public Optional<RetryControl> checkRetry(StoredTask task)
     {
         try {
             RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
@@ -629,6 +649,4 @@ public class WorkflowExecutorMain
             return Long.toString(task.getId()) + ".r" + Integer.toString(retryCount);
         }
     }
-
-
 }

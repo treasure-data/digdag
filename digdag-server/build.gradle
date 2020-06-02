@@ -1,6 +1,7 @@
 
 dependencies {
     compile project(':digdag-core')
+    compile project(':digdag-svc-executor')
     compile project(':digdag-client')
     compile project(':digdag-guice-rs-server-undertow')
 

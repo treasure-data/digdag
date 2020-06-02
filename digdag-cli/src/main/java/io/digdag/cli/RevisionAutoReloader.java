@@ -1,16 +1,12 @@
 package io.digdag.cli;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
@@ -18,19 +14,17 @@ import javax.annotation.PreDestroy;
 import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.WorkflowResourceMatcher;
-import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.LocalSite;
+import io.digdag.executor.LocalSite;
 
 class RevisionAutoReloader
 {

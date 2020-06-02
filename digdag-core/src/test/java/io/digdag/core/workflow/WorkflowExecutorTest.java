@@ -15,14 +15,15 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.LocalSite;
+import io.digdag.executor.LocalSite;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigUtils;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredTask;
+import io.digdag.executor.WorkflowExecutorMain;
 import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.digdag.util.RetryControl;
@@ -330,6 +331,7 @@ public class WorkflowExecutorTest
         Config systemConfig = configFactory.create();
 
         WorkflowExecutor executor = new WorkflowExecutor(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, metrics);
+        WorkflowExecutorMain executorMain = new WorkflowExecutorMain(rm, sm, tm, dispatcher, compiler, executor, cf, archiveMapper, systemConfig, metrics);
         Config stateParam = cf.create().set("retry_count", "2");
         StoredTask task = mock(StoredTask.class);
 
@@ -337,21 +339,21 @@ public class WorkflowExecutorTest
             Config config = cf.fromJsonString("{\"_retry\":\"${retry_limit}\"}");
             when(task.getConfig()).thenReturn(TaskConfig.validate(config));
             when(task.getStateParams()).thenReturn(stateParam);
-            Optional<RetryControl> retryControlOpt = executor.checkRetry(task);
+            Optional<RetryControl> retryControlOpt = executorMain.checkRetry(task);
             assertFalse(retryControlOpt.isPresent());
         }
         {  // Valid _retry format and still have a chance to retry.
             Config config = cf.fromJsonString("{\"_retry\":\"3\"}");
             when(task.getConfig()).thenReturn(TaskConfig.validate(config));
             when(task.getStateParams()).thenReturn(stateParam);
-            Optional<RetryControl> retryControlOpt = executor.checkRetry(task);
+            Optional<RetryControl> retryControlOpt = executorMain.checkRetry(task);
             assertTrue(retryControlOpt.isPresent());
         }
         {  // Valid _retry format but no space to retry.
             Config config = cf.fromJsonString("{\"_retry\":\"2\"}");
             when(task.getConfig()).thenReturn(TaskConfig.validate(config));
             when(task.getStateParams()).thenReturn(stateParam);
-            Optional<RetryControl> retryControlOpt = executor.checkRetry(task);
+            Optional<RetryControl> retryControlOpt = executorMain.checkRetry(task);
             assertFalse(retryControlOpt.isPresent());
         }
     }

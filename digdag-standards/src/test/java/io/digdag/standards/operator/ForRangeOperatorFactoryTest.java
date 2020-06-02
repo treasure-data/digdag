@@ -1,19 +1,17 @@
 package io.digdag.standards.operator;
 
 import io.digdag.client.config.Config;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.database.TransactionManager;
-import io.digdag.spi.Operator;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.ForRangeOperatorFactory.ForRangeOperator;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import static io.digdag.client.config.ConfigUtils.newConfig;
+
 import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;

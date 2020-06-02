@@ -5,7 +5,7 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.executor.DigdagEmbed;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.database.DatabaseSecretStoreManager;

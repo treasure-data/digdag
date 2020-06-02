@@ -1,12 +1,10 @@
-package io.digdag.core;
+package io.digdag.executor;
 
 import java.util.List;
 import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.*;
-import com.google.common.collect.*;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.archive.ArchiveMetadata;
@@ -23,7 +21,7 @@ public class LocalSite
     private final ProjectStore projectStore;
     private final SessionStore sessionStore;
     private final AttemptBuilder attemptBuilder;
-    private final WorkflowExecutor exec;
+    private final WorkflowExecutorMain exec;
     private final SchedulerManager srm;
     private final ConfigFactory cf;
 
@@ -33,7 +31,7 @@ public class LocalSite
             ProjectStoreManager projectStoreManager,
             SessionStoreManager sessionStoreManager,
             AttemptBuilder attemptBuilder,
-            WorkflowExecutor exec,
+            WorkflowExecutorMain exec,
             SchedulerManager srm,
             ConfigFactory cf)
     {

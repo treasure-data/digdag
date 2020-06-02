@@ -10,7 +10,7 @@ import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.executor.DigdagEmbed;
 
 import java.io.IOException;
 import java.io.PrintStream;
