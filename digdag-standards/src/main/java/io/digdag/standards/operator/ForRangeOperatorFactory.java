@@ -51,7 +51,6 @@ public class ForRangeOperatorFactory
             Config params = request.getConfig();
 
             Config doConfig = request.getConfig().getNested("_do");
-            boolean parallel = params.get("_parallel", boolean.class, false);
 
             Config rangeConfig = params.parseNested("_command");
             long from = rangeConfig.get("from", long.class);
@@ -97,8 +96,8 @@ public class ForRangeOperatorFactory
 
             enforceTaskCountLimit(index);
 
-            if (parallel) {
-                generated.set("_parallel", parallel);
+            if (params.has("_parallel")) {
+                generated.set("_parallel", params.get("_parallel", JsonNode.class));
             }
 
             return TaskResult.defaultBuilder(request)

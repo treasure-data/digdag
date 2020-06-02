@@ -74,8 +74,6 @@ public class ForEachOperatorFactory
 
             List<Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>>> combinations = buildCombinations(entries);
 
-            boolean parallel = params.get("_parallel", boolean.class, false);
-
             Config generated = doConfig.getFactory().create();
             for (Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>> combination : combinations) {
                 Config combinationConfig = params.getFactory().create();
@@ -90,9 +88,10 @@ public class ForEachOperatorFactory
                         subtask);
             }
 
-            if (parallel) {
-                generated.set("_parallel", parallel);
+            if (params.has("_parallel")) {
+                generated.set("_parallel", params.get("_parallel", JsonNode.class));
             }
+
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(generated)
