@@ -1,0 +1,18 @@
++range-from=0&to=1:
+  echo>: do
+  _export:
+    range: {from: 0, to: 1, index: 0}
++range-from=1&to=2:
+  echo>: do
+  _export:
+    range: {from: 1, to: 2, index: 1}
++range-from=2&to=3:
+  echo>: do
+  _export:
+    range: {from: 2, to: 3, index: 2}
++range-from=3&to=4:
+  echo>: do
+  _export:
+    range: {from: 3, to: 4, index: 3}
+_parallel:
+  limit: 2
