@@ -102,7 +102,7 @@ public class Main
         jc.addCommand("download", injector.getInstance(Download.class));
 
         jc.addCommand("project", injector.getInstance(ShowProjects.class), "projects");
-        jc.addCommand("revisions", injector.getInstance(ShowRevision.class), "revisions");
+        jc.addCommand("revisions", injector.getInstance(ShowRevisions.class), "revisions");
         jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
         jc.addCommand("start", injector.getInstance(Start.class));
         jc.addCommand("retry", injector.getInstance(Retry.class));
