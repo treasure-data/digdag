@@ -31,6 +31,7 @@ import io.digdag.cli.client.ShowSession;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowProjects;
+import io.digdag.cli.client.ShowRevisions;
 import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Upload;
 import io.digdag.cli.client.Version;
@@ -101,6 +102,7 @@ public class Main
         jc.addCommand("download", injector.getInstance(Download.class));
 
         jc.addCommand("project", injector.getInstance(ShowProjects.class), "projects");
+        jc.addCommand("revisions", injector.getInstance(ShowRevision.class), "revisions");
         jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
         jc.addCommand("start", injector.getInstance(Start.class));
         jc.addCommand("retry", injector.getInstance(Retry.class));

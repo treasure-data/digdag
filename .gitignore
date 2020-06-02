@@ -16,12 +16,16 @@ pom.xml
 .digdag
 docker/bootstrap/constraints.txt
 docker/bootstrap/requirements.txt
+bin
 
 # intellij idea
 *.iml
 *.ipr
 *.iws
 *.idea
+
+# vscode
+.project
 
 # generated self-signed cert
 littleproxy_cert
