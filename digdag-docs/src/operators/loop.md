@@ -23,13 +23,24 @@ This operator exports `${i}` variable for the subtasks. Its value begins from 0.
   loop>: 7
   ```
 
-* **\_parallel**: BOOLEAN
+* **\_parallel**: BOOLEAN | OBJECT
+
   Runs the repeating tasks in parallel.
+  If ``_parallel: {limit: N}`` (N is an integer: 1, 2, 3, …) parameter is set,
+  the number of loops running in parallel is limited to N.
+  Note that the tasks in the loop will be running in serial.
 
   Examples:
 
   ```
   _parallel: true
+  ```
+
+  Examples:
+
+  ```
+  _parallel:
+    limit: 2
   ```
 
 * **\_do**: TASKS

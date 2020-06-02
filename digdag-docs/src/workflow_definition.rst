@@ -243,6 +243,32 @@ If ``_parallel: true`` parameter is set to a group, child tasks in the group run
     +analyze:
       sh>: tasks/analyze_prepared_data_sets.sh
 
+If ``_parallel: {limit: N}`` (N is an integer: 1, 2, 3, …) parameter is set to a group,
+child tasks in the group run in parallel is limited to N  (grandchildren are not affected):
+
+.. code-block:: yaml
+
+    +prepare:
+      # +data1 and +data2 run in parallel, then +data3 and +data4 run in parallel.
+      # (+data1 and +data2 need to be successful.)
+      _parallel:
+        limit: 2
+
+      +data1:
+        sh>: tasks/prepare_data1.sh
+
+      +data2:
+        sh>: tasks/prepare_data2.sh
+
+      +data3:
+        sh>: tasks/prepare_data3.sh
+
+      +data4:
+        sh>: tasks/prepare_data4.sh
+
+    +analyze:
+      sh>: tasks/analyze_prepared_data_sets.sh
+
 If ``_background: true`` parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.
 
 .. code-block:: yaml
