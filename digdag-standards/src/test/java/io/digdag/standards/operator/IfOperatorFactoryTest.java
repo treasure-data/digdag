@@ -3,7 +3,7 @@ package io.digdag.standards.operator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.spi.Operator;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;

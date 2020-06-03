@@ -1,10 +1,11 @@
-package io.digdag.executor;
+package io.digdag.server;
 
 import java.util.List;
 import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.executor.WorkflowExecutorMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.archive.ArchiveMetadata;

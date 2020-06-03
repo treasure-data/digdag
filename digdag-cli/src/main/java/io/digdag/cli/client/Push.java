@@ -13,7 +13,7 @@ import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 
 import java.io.PrintStream;
 import java.nio.file.Files;

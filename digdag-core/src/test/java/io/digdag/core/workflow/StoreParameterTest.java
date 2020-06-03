@@ -1,8 +1,8 @@
 package io.digdag.core.workflow;
 
 import io.digdag.client.config.Config;
-import io.digdag.executor.DigdagEmbed;
-import io.digdag.executor.LocalSite;
+import io.digdag.server.DigdagEmbed;
+import io.digdag.server.LocalSite;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;

@@ -1,4 +1,4 @@
-package io.digdag.executor;
+package io.digdag.server;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ import io.digdag.core.log.LogModule;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.plugin.DynamicPluginModule;
 import io.digdag.core.plugin.SystemPluginModule;
+import io.digdag.executor.WorkflowExecutorModule;
 import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.spi.metrics.DigdagMetrics;
 import org.embulk.guice.LifeCycleInjector;

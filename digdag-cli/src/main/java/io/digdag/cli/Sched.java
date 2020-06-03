@@ -7,7 +7,7 @@ import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.client.Version;
 import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;

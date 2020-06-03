@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.agent.GrantedPrivilegedVariables;
 import io.digdag.core.workflow.WorkflowTestingUtils;
 import io.digdag.spi.OperatorContext;

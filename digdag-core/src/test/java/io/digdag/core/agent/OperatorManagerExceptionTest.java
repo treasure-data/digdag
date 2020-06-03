@@ -6,7 +6,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigUtils;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.workflow.WorkflowTestingUtils;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;

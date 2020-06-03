@@ -15,7 +15,7 @@ import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.repository.*;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;

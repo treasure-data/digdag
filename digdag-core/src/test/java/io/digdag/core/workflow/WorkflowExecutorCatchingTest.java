@@ -6,7 +6,7 @@ import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;

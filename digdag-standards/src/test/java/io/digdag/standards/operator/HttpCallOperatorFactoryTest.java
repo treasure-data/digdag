@@ -3,7 +3,7 @@ package io.digdag.standards.operator;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigUtils;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.Operator;
 import io.digdag.spi.TaskResult;

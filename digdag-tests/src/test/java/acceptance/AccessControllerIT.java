@@ -15,7 +15,7 @@ import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.config.Config;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;

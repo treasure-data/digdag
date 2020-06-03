@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 
-import io.digdag.executor.DigdagEmbed;
 import io.digdag.core.ErrorReporter;
 import io.digdag.client.Version;
 import io.digdag.client.config.Config;

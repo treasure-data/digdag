@@ -24,7 +24,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.LocalSite;
+import io.digdag.server.LocalSite;
 
 class RevisionAutoReloader
 {

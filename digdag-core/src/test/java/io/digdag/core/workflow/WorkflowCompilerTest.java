@@ -5,7 +5,7 @@ import com.google.common.io.Resources;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.executor.DigdagEmbed;
+import io.digdag.server.DigdagEmbed;
 import io.digdag.core.config.YamlConfigLoader;
 import org.junit.AfterClass;
 import org.junit.Before;
