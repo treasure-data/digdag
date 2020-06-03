@@ -47,14 +47,16 @@ public interface RestSessionAttempt {
     Optional<Instant> getFinishedAt();
 
     default String getStatus() {
-        if (this.getCancelRequested()) {
-            return "killed";
-        }
         if (this.getSuccess()) {
             return "success";
         }
         if (this.getDone()) {
-            return "error";
+            if (this.getCancelRequested()) {
+                return "killed";
+            }
+            else {
+                return "error";
+            }
         }
         return "running";
     }
