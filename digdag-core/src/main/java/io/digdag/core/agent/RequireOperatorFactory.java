@@ -84,8 +84,6 @@ public class RequireOperatorFactory
 
             Config overrideParams = config.getNestedOrGetEmpty("params");
 
-            Optional<StoredSessionAttempt> attempt = Optional.absent();
-            Optional<SessionAttemptConflictException> sessionAttemptConflictException = Optional.absent();
             Optional<ProjectIdentifier> projectIdentifier = Optional.absent();
             /**
              *  First of all, try to start attempt by startSession()
@@ -108,58 +106,51 @@ public class RequireOperatorFactory
             try {
                 projectIdentifier = Optional.of(makeProjectIdentifier());
 
-                attempt = Optional.of(callback.startSession(
+                callback.startSession(
                         context,
                         request.getSiteId(),
                         projectIdentifier.get(),
                         workflowName,
                         instant,
                         retryAttemptName,
-                        overrideParams));
+                        overrideParams);
+                throw nextPolling(request.getLastStateParams().deepCopy().set("require_kicked", true));
             }
             catch (SessionAttemptConflictException ex) {
-                sessionAttemptConflictException = Optional.of(ex);
+                return processAttempt(ex.getConflictedSession(), lastStateParams, rerunOn, ignoreFailure);
             }
             catch (ResourceNotFoundException ex) {
                 throw new TaskExecutionException(String.format(ENGLISH, "Dependent workflow does not exist. %s, workflowName:%s",
-                        projectIdentifier.transform((p)->p.toString()).or(""), workflowName ));
+                        projectIdentifier.transform(ProjectIdentifier::toString).or(""), workflowName));
             }
             catch (ResourceLimitExceededException ex) {
                 throw new TaskExecutionException(ex);
             }
+        }
 
-            if (sessionAttemptConflictException.isPresent()) {
-                StoredSessionAttempt conflictedAttempt = sessionAttemptConflictException.get().getConflictedSession();
-                if (conflictedAttempt.getStateFlags().isDone()) {
-                    // A flag to distinguish whether the attempt is kicked by require> or previous attempt.
-                    boolean requireKicked = lastStateParams.get("require_kicked", boolean.class, false);
-                    if (!requireKicked &&  (
-                            rerunOn == OptionRerunOn.ALL ||
-                            rerunOn == OptionRerunOn.FAILED && !conflictedAttempt.getStateFlags().isSuccess())) {
+        private TaskResult processAttempt(StoredSessionAttempt attempt, Config lastStateParams, OptionRerunOn rerunOn, boolean ignoreFailure)
+        {
+            if (attempt.getStateFlags().isDone()) {
+                // A flag to distinguish whether the attempt is kicked by require> or previous attempt.
+                boolean requireKicked = lastStateParams.get("require_kicked", boolean.class, false);
+                if (!requireKicked &&  (
+                        rerunOn == OptionRerunOn.ALL ||
+                                rerunOn == OptionRerunOn.FAILED && !attempt.getStateFlags().isSuccess())) {
 
-                        //To force run, set flag gen_retry_attempt_name and do polling
-                        throw nextPolling(lastStateParams.deepCopy().set("rerun_on_retry_attempt_name", UUID.randomUUID().toString()));
-                    }
-                    if (!ignoreFailure && !conflictedAttempt.getStateFlags().isSuccess()) {
-                        // ignore_failure is false and the attempt is in error state. Make this operator failed.
-                        throw new TaskExecutionException(String.format(ENGLISH,
+                    //To force run, set flag gen_retry_attempt_name and do polling
+                    throw nextPolling(lastStateParams.deepCopy().set("rerun_on_retry_attempt_name", UUID.randomUUID().toString()));
+                }
+                if (!ignoreFailure && !attempt.getStateFlags().isSuccess()) {
+                    // ignore_failure is false and the attempt is in error state. Make this operator failed.
+                    throw new TaskExecutionException(String.format(ENGLISH,
                             "Dependent workflow failed. Session id: %d, attempt id: %d",
-                            conflictedAttempt.getSessionId(), conflictedAttempt.getId()));
-                    }
-                    return TaskResult.empty(cf);
+                            attempt.getSessionId(), attempt.getId()));
                 }
-                else {
-                    // Wait for finish running attempt
-                    throw nextPolling(request.getLastStateParams().deepCopy());
-                }
-            }
-            else if (attempt.isPresent()) { // startSession succeeded and created new attempt
-                throw nextPolling(request.getLastStateParams().deepCopy().set("require_kicked", true));
+                return TaskResult.empty(cf);
             }
             else {
-                throw new RuntimeException(String.format(ENGLISH,
-                        "Unexpected condition happened in require> operator.  %s, workflowName:%s",
-                        projectIdentifier.transform((p)->p.toString()).or(""), workflowName));
+                // Wait for finish running attempt
+                throw nextPolling(request.getLastStateParams().deepCopy());
             }
         }
 
