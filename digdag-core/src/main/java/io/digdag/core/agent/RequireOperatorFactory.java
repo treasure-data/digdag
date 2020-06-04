@@ -150,17 +150,17 @@ public class RequireOperatorFactory
             }
             else {
                 // Wait for finish running attempt
-                throw nextPolling(request.getLastStateParams().deepCopy());
+                throw nextPolling(lastStateParams.deepCopy());
             }
         }
 
         private TaskExecutionException nextPolling(Config stateParams)
         {
             int iteration = stateParams.get("retry", int.class, 0);
-            stateParams.set("retry", iteration+1);
+            stateParams.set("retry", iteration + 1);
             int interval = (int) Math.min(1 * Math.pow(2, iteration), MAX_TASK_RETRY_INTERVAL);
 
-            return TaskExecutionException.ofNextPolling( interval, ConfigElement.copyOf(stateParams));
+            return TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(stateParams));
         }
 
         /**
@@ -194,12 +194,8 @@ public class RequireOperatorFactory
 
     enum OptionRerunOn
     {
-        NONE("none"),
-        FAILED( "failed"),
-        ALL ("all");
+        NONE, FAILED, ALL;
 
-        private final String name;
-        OptionRerunOn(String name) { this.name = name; }
         static OptionRerunOn of(String name) {
             switch (name) {
                 case "none":

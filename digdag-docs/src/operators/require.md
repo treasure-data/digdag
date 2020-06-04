@@ -92,4 +92,4 @@
 
 ## Notes
 - require> has been changed to ignore inherited *retry_attempt_name* parameter. 
-  `digdag retry ` command generates unique retry_attempt_name to run, but it is not passed to require>.
+  `digdag retry` command generates unique retry_attempt_name to run, but it is not passed to require>.
