@@ -14,11 +14,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static org.junit.Assert.fail;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
@@ -189,15 +193,28 @@ public class RequireIT
         assertThat(success, is(true)); // --param project_id=-1 is ignored.
     }
 
+    @Test
+    public void testRequireToAnotherProjectById()
+            throws Exception {
+        testRequireToAnotherProject(true, "parent_by_id", "2020-06-05 00:00:01");
+    }
+
+    @Test
+    public void testRequireToAnotherProjectByName()
+            throws Exception {
+        testRequireToAnotherProject(false, "parent_by_name", "2020-06-05 00:00:02");
+    }
 
     /**
      * Test for project_id and project_name parameter
+     *
+     * @param useProjectId      if true require> use project_id, else require> use project_name
+     * @param parentProjectName parent project name
+     * @param sessionTime
      * @throws Exception
      */
-    @Test
-    public void testRequireToAnotherProject()
-            throws Exception
-    {
+    private void testRequireToAnotherProject(boolean useProjectId, String parentProjectName, String sessionTime)
+            throws Exception {
         final String childProjectName = "child_another";
 
         // Push child project
@@ -216,14 +233,16 @@ public class RequireIT
         assertThat(m.find(), is(true));
         String childProjectId = m.group(1);
 
-        // Push parent project
-        Files.write(projectDir.resolve("parent_another_project.dig"), asList(Resources.toString(
-                Resources.getResource("acceptance/require/parent_another_project.dig"), UTF_8)
-                .replace("__CHILD_PROJECT_ID__", childProjectId)
-                .replace("__CHILD_PROJECT_NAME__", childProjectName)));
+        // Push parent project with project_id: xxx
+        String template = Resources.toString(
+                Resources.getResource("acceptance/require/parent_another_project.dig"), UTF_8);
+        String content = useProjectId ?
+                template.replace("__CHILD_PROJECT__", "project_id: " + childProjectId) :
+                template.replace("__CHILD_PROJECT__", "project_name: " + childProjectName);
+        Files.write(projectDir.resolve("parent_another_project.dig"), asList(content));
         CommandStatus pushParentStatus = main("push",
                 "--project", projectDir.toString(),
-                "parent_another",
+                parentProjectName,
                 "-c", config.toString(),
                 "-e", server.endpoint());
         assertThat(pushParentStatus.errUtf8(), pushParentStatus.code(), is(0));
@@ -231,29 +250,31 @@ public class RequireIT
         CommandStatus startStatus = main("start",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                "parent_another", "parent_another_project",
-                "--session", "now"
+                parentProjectName, "parent_another_project",
+                "--session", sessionTime
         );
         assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+        checkStatus(Arrays.asList(parentProjectName, "parent_another_project"));
+        checkStatus(Arrays.asList(childProjectName, "child_another_project"));
+    }
 
-        Id parentAttemptId = getAttemptId(startStatus);
-        // Wait for the attempt to complete
-        boolean success = false;
+    private void checkStatus(List<String> commands) throws InterruptedException {
         for (int i = 0; i < 120; i++) {
-            CommandStatus attemptsStatus = main("attempts",
-                    "-c", config.toString(),
-                    "-e", server.endpoint(),
-                    String.valueOf(parentAttemptId));
-            success = attemptsStatus.outUtf8().contains("status: success");
-            if (success) {
-                break;
+            List<String> args = new ArrayList<String>();
+            args.addAll(Arrays.asList("sessions", "-c", config.toString(), "-e", server.endpoint()));
+            args.addAll(commands);
+            CommandStatus status = main(args);
+            assertThat(status.errUtf8(), status.code(), is(0));
+            if (status.outUtf8().contains("status: success")) {
+                return;
+            }
+            else if (status.outUtf8().contains("status: error")) {
+                fail("attempt failed");
             }
             Thread.sleep(1000);
         }
-        assertThat(success, is(true));
-
+        fail("attempt not finished");
     }
-
 
     /***
      * Replaice __FILE__ to real path then save to project dir
