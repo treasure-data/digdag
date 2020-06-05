@@ -235,6 +235,23 @@ public class RequireIT
                 "--session", "now"
         );
         assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+        Id parentAttemptId = getAttemptId(startStatus);
+        // Wait for the attempt to complete
+        boolean success = false;
+        for (int i = 0; i < 120; i++) {
+            CommandStatus attemptsStatus = main("attempts",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    String.valueOf(parentAttemptId));
+            success = attemptsStatus.outUtf8().contains("status: success");
+            if (success) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        assertThat(success, is(true));
+
     }
 
 
