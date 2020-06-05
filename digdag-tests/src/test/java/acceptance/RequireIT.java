@@ -299,8 +299,6 @@ public class RequireIT
                 projectDir.toString());
         assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
 
-        Path childOutFile = projectDir.resolve("child.out").toAbsolutePath().normalize();
-        prepareForChildWF(childOutFile);
         copyResource("acceptance/require/parent_rerun_on.dig", projectDir.resolve("parent.dig"));
         copyResource("acceptance/require/child_rerun_on.dig", projectDir.resolve("child.dig"));
 
@@ -342,54 +340,58 @@ public class RequireIT
         }
     }
 
+    /**
+     * Test for rerun_on
+     *
+     * @param sessionTime
+     * @param rerunOn              parameter for rerun_on:  "none" or "fail" or "all"
+     * @param previousChildRunFail if true, first child workflow failed.
+     * @return
+     * @throws InterruptedException
+     */
     private RestSessionAttemptCollection testRerunOnParam(String sessionTime, String rerunOn, boolean previousChildRunFail) throws InterruptedException
     {
         //Start a child
+        //child_fail parameter is passed to child workflow and success or failure of attempts depend on it
         String childFailParam = previousChildRunFail ? "yes" : "no";
-        CommandStatus childStatus = startAndWait(true,"require", "child", "--session", sessionTime,
+        CommandStatus childStatus = startAndWait("require", "child", "--session", sessionTime,
                 "-p", "child_fail=" + childFailParam);
         assertThat(isAttemptSuccess(childStatus), not(previousChildRunFail));
 
         // Start a parent with same session time.
-        CommandStatus rerunOnNoneStatus = startAndWait(false,"require", "parent", "--session", sessionTime,
+        // parent call child by require> with rerun_on: ${param_rerun_on}
+        CommandStatus parentStatus = startAndWait("require", "parent", "--session", sessionTime,
                 "-p", "param_rerun_on=" + rerunOn,
                 "-p", "child_fail=no");
+        // Current test cases expect that parent workflow succeed.
+        assertThat(isAttemptSuccess(parentStatus), is(true));
 
-        assertThat(isAttemptSuccess(rerunOnNoneStatus), is(true));
         RestSessionAttemptCollection attempts = client.getSessionAttemptRetries(getAttemptId(childStatus));
         return attempts;
     }
 
     private static boolean isAttemptSuccess(CommandStatus status) { return status.outUtf8().contains("status: success"); }
 
-    private CommandStatus startAndWait(boolean ignoreAttemptFailure, String... args) throws InterruptedException
+    private CommandStatus startAndWait(String... args) throws InterruptedException
     {
         List<String> newArgs = new ArrayList<>(Arrays.asList("start",
                 "-c", config.toString(),
                 "-e", server.endpoint()
-                ));
+        ));
         newArgs.addAll(Arrays.asList(args));
         CommandStatus startStatus = main(newArgs);
         Id startAttemptId = getAttemptId(startStatus);
         CommandStatus attemptsStatus = null;
         // Wait for the attempt to complete
-        boolean success = false;
         for (int i = 0; i < 30; i++) {
             attemptsStatus = main("attempt",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
                     String.valueOf(startAttemptId));
-            if (attemptsStatus.outUtf8().contains("status: success")) {
-                success = true;
-                break;
-            }
-            else if (attemptsStatus.outUtf8().contains("status: error")) {
+            if (attemptsStatus.outUtf8().contains("status: success") || attemptsStatus.outUtf8().contains("status: error")) {
                 break;
             }
             Thread.sleep(1000);
-        }
-        if (!ignoreAttemptFailure) {
-            assertThat(success, is(true));
         }
         assertThat(attemptsStatus, notNullValue());
         return attemptsStatus;
