@@ -311,31 +311,45 @@ public class RequireIT
                 "-r", "4711");
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
-        // test for rerun_on: none
+        // test for rerun_on: none and previous child succeeded. parent will succeed.
         {
             String sessionTime = "2020-05-28 12:34:01";
-            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "none", false);
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "none", false, true);
             assertThat("Number of child's attempt must be one. (== require> skip the call)", childAttempts.getAttempts().size(), is(1));
         }
 
-        // test for rerun_on: all. require> kick child always.
+        // test for rerun_on: none and previous child failed. parent will fail.
+        {
+            String sessionTime = "2020-05-28 12:34:02";
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "none", true, false);
+            assertThat("Number of child's attempt must be one. (== require> skip the call)", childAttempts.getAttempts().size(), is(1));
+        }
+
+        // test for rerun_on: all and previous child succeeded. require> kick child always.
         {
             String sessionTime = "2020-05-28 12:34:11";
-            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "all", false);
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "all", false, true);
+            assertThat("Number of child's attempt must be two. (== require> kick child)", childAttempts.getAttempts().size(), is(2));
+        }
+
+        // test for rerun_on: all and previous child failed. require> kick child always.
+        {
+            String sessionTime = "2020-05-28 12:34:12";
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "all", true, true);
             assertThat("Number of child's attempt must be two. (== require> kick child)", childAttempts.getAttempts().size(), is(2));
         }
 
         // test for rerun_on: failed. previous child attempt failed
         {
             String sessionTime = "2020-05-28 12:34:21";
-            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "failed", true);
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "failed", true, true);
             assertThat("Number of child's attempt must be two. (== require> kick child)", childAttempts.getAttempts().size(), is(2));
         }
 
         // test for rerun_on: failed. previous child attempt succeeded
         {
             String sessionTime = "2020-05-28 12:34:31";
-            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "failed", false);
+            RestSessionAttemptCollection childAttempts = testRerunOnParam(sessionTime, "failed", false, true);
             assertThat("Number of child's attempt must be one. (== require> kick)", childAttempts.getAttempts().size(), is(1));
         }
     }
@@ -349,7 +363,7 @@ public class RequireIT
      * @return
      * @throws InterruptedException
      */
-    private RestSessionAttemptCollection testRerunOnParam(String sessionTime, String rerunOn, boolean previousChildRunFail) throws InterruptedException
+    private RestSessionAttemptCollection testRerunOnParam(String sessionTime, String rerunOn, boolean previousChildRunFail, boolean expectParentSucceed) throws InterruptedException
     {
         //Start a child
         //child_fail parameter is passed to child workflow and success or failure of attempts depend on it
@@ -363,8 +377,8 @@ public class RequireIT
         CommandStatus parentStatus = startAndWait("require", "parent", "--session", sessionTime,
                 "-p", "param_rerun_on=" + rerunOn,
                 "-p", "child_fail=no");
-        // Current test cases expect that parent workflow succeed.
-        assertThat(isAttemptSuccess(parentStatus), is(true));
+
+        assertThat(isAttemptSuccess(parentStatus), is(expectParentSucceed));
 
         RestSessionAttemptCollection attempts = client.getSessionAttemptRetries(getAttemptId(childStatus));
         return attempts;
