@@ -23,6 +23,9 @@ docker/bootstrap/requirements.txt
 *.iws
 *.idea
 
+# VSCode
+.project
+
 # generated self-signed cert
 littleproxy_cert
 littleproxy_keystore.jks
