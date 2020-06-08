@@ -127,7 +127,7 @@ public class ModelCompatibilityTest
             .sessionUuid(UUID.randomUUID())
             .sessionTime(OffsetDateTime.now(ZoneId.of("UTC")))
             .retryAttemptName(Optional.absent())
-            .done(false)
+            .done(true)
             .success(false)
             .cancelRequested(true)
             .params(newConfig())
