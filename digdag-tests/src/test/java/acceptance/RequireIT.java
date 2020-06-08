@@ -233,7 +233,7 @@ public class RequireIT
         assertThat(m.find(), is(true));
         String childProjectId = m.group(1);
 
-        // Push parent project with project_id: xxx
+        // Push parent project with project_id: xxx or project_name: yyy based on useProjectId
         String template = Resources.toString(
                 Resources.getResource("acceptance/require/parent_another_project.dig"), UTF_8);
         String content = useProjectId ?
