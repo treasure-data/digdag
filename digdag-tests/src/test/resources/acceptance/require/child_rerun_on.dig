@@ -1,0 +1,6 @@
++t1:
+  if>: ${child_fail==="yes"}
+  _do:
+    fail>: child failed
+  _else_do:
+    echo>: child succeed

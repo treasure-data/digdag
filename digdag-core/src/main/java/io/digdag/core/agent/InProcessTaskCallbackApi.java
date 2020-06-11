@@ -165,19 +165,22 @@ public class InProcessTaskCallbackApi
     public StoredSessionAttempt startSession(
             OperatorContext context,
             int siteId,
-            int projectId,
+            ProjectIdentifier projectIdentifier,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
             Config overrideParams)
-        throws ResourceNotFoundException, ResourceLimitExceededException
+        throws ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
     {
-        return tm.<StoredSessionAttempt, ResourceNotFoundException, ResourceLimitExceededException>begin(() -> {
+        return tm.<StoredSessionAttempt, ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException>begin(() -> {
                             ProjectStore projectStore = pm.getProjectStore(siteId);
 
                             //TODO check permission by AccessController for 'require' operator over another project.
 
-                            StoredProject proj = projectStore.getProjectById(projectId);
+                            StoredProject proj = projectIdentifier.byId() ?
+                                projectStore.getProjectById(projectIdentifier.getId()) :
+                                projectStore.getProjectByName(projectIdentifier.getName());
+
                             StoredWorkflowDefinitionWithProject def =
                                     projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
 
@@ -193,14 +196,9 @@ public class InProcessTaskCallbackApi
 
                             // TODO FIXME SessionMonitor monitors is not set
                             StoredSessionAttemptWithSession attempt;
-                            try {
-                                attempt = exec.submitWorkflow(siteId, ar, def);
-                            }
-                            catch (SessionAttemptConflictException ex) {
-                                attempt = ex.getConflictedSession();
-                            }
+                            attempt = exec.submitWorkflow(siteId, ar, def);
                             return attempt;
                         },
-                ResourceNotFoundException.class, ResourceLimitExceededException.class);
+                ResourceNotFoundException.class, ResourceLimitExceededException.class, SessionAttemptConflictException.class);
     }
 }
