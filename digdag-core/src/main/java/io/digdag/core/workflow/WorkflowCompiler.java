@@ -234,23 +234,25 @@ public class WorkflowCompiler
 
                 ParallelControl pc = new ParallelControl(config);
                 Map<String, TaskBuilder> names = new HashMap<>();
-                if (pc.isParallel() && pc.getParallelLimit() == 0) {
-                    for (TaskBuilder subtask : subtasks) {
-                        parseSubtaskWithParallel(names, subtask);
-                    }
-                }
-                else if (pc.isParallel() && pc.getParallelLimit() > 0) {
-                    int limit = pc.getParallelLimit();
-                    List<TaskBuilder> beforeList = new ArrayList<>();
-                    for (List<TaskBuilder> chunkedSubtasks : Lists.partition(subtasks, limit)) {
-                        for (TaskBuilder subtask : chunkedSubtasks) {
-                            parseSubtaskWithParallel(names, subtask);
-                            for (TaskBuilder before : beforeList) {
-                                subtask.addUpstream(before);
+                if (pc.isParallel()) {
+                    if (pc.getParallelLimit() > 0) {
+                        int limit = pc.getParallelLimit();
+                        List<TaskBuilder> beforeList = new ArrayList<>();
+                        for (List<TaskBuilder> chunkedSubtasks : Lists.partition(subtasks, limit)) {
+                            for (TaskBuilder subtask : chunkedSubtasks) {
+                                parseSubtaskWithParallel(names, subtask);
+                                for (TaskBuilder before : beforeList) {
+                                    subtask.addUpstream(before);
+                                }
                             }
+                            beforeList.clear();
+                            beforeList.addAll(chunkedSubtasks);
                         }
-                        beforeList.clear();
-                        beforeList.addAll(chunkedSubtasks);
+                    }
+                    else {
+                        for (TaskBuilder subtask : subtasks) {
+                            parseSubtaskWithParallel(names, subtask);
+                        }
                     }
                 }
                 else {
