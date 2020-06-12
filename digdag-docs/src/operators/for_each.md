@@ -42,7 +42,7 @@
 
   Runs the repeating tasks in parallel.
   If ``_parallel: {limit: N}`` (N is an integer: 1, 2, 3, …) parameter is set,
-  the number of loops running in parallel is limited to N.
+  the number of tasks running in parallel is limited to N.
   Note that the tasks in the loop will be running in serial.
 
   Examples:
