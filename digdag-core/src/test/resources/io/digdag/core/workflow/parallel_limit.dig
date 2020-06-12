@@ -4,8 +4,8 @@
     limit: 2
   _do:
     +step1:
-      echo>: '${this.task_name}'
+      echo>: '${task_name}'
     +step2:
-      echo>: '${this.task_name}'
+      echo>: '${task_name}'
     +step3:
-      echo>: '${this.task_name}'
+      echo>: '${task_name}'

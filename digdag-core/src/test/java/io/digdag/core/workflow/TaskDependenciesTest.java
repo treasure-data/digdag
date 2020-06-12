@@ -230,11 +230,11 @@ public class TaskDependenciesTest {
             //     limit: 2
             //   _do:
             //     +step1:
-            //       echo>: '${this.task_name}'
+            //       echo>: '${task_name}'
             //     +step2:
-            //       echo>: '${this.task_name}'
+            //       echo>: '${task_name}'
             //     +step3:
-            //       echo>: '${this.task_name}'
+            //       echo>: '${task_name}'
             //
             // id | tasks index   | full_name                               | expected parent_id | expected upstream_id 　
             // 1  | tasks.get(0)  | +parallel_limit                         |                    |
