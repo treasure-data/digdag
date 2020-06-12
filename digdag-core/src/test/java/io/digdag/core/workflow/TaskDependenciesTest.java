@@ -65,18 +65,18 @@ public class TaskDependenciesTest {
                 runWorkflow(embed, projectPath, "basic", loadYamlResource("/io/digdag/core/workflow/basic.dig"));
         // # basic.dig
         // +step1:
-        //  _type: noop
+        //   _type: noop
         //
-        //+step2:
-        //  _export:
-        //    oval: o
-        //    pval: p
+        // +step2:
+        //   _export:
+        //     oval: o
+        //     pval: p
         //
-        //  +step3:
-        //    _type: n${oval}${oval}${pval}
-        //    _check:
-        //      +step4:
-        //        _type: noop
+        //   +step3:
+        //     _type: n${oval}${oval}${pval}
+        //     _check:
+        //       +step4:
+        //         _type: noop
         //
         // id | tasks index  | full_name                   | expected parent_id | expected upstream_id 　
         // 1  | tasks.get(0) | +basic                      |                    |
