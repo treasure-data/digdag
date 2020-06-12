@@ -236,7 +236,7 @@ public class TaskDependenciesTest {
             //     +step3:
             //       echo>: '${this.task_name}'
             //
-            // id | tasks index   | full_name                                 | expected parent_id | expected upstream_id 　
+            // id | tasks index   | full_name                               | expected parent_id | expected upstream_id 　
             // 1  | tasks.get(0)  | +parallel_limit                         |                    |
             // 2  | tasks.get(1)  | +parallel_limit+repeat                  | 1                  |
             // 3  | tasks.get(2)  | +parallel_limit+repeat^sub              | 2                  |
@@ -245,10 +245,10 @@ public class TaskDependenciesTest {
             // 6  | tasks.get(5)  | +parallel_limit+repeat^sub+loop-0+step2 | 4                  | 5
             // 7  | tasks.get(6)  | +parallel_limit+repeat^sub+loop-0+step3 | 4                  | 6
             // 8  | tasks.get(7)  | +parallel_limit+repeat^sub+loop-1       | 3                  |
-            // 9  | tasks.get(8)  | +parallel_limit+repeat^sub+loop-1+step1 | 8                  | 9
-            // 10 | tasks.get(9)  | +parallel_limit+repeat^sub+loop-1+step2 | 8                  | 10
-            // 11 | tasks.get(10) | +parallel_limit+repeat^sub+loop-1+step3 | 8                  | 4,8
-            // 12 | tasks.get(11) | +parallel_limit+repeat^sub+loop-2       | 3                  |
+            // 9  | tasks.get(8)  | +parallel_limit+repeat^sub+loop-1+step1 | 8                  |
+            // 10 | tasks.get(9)  | +parallel_limit+repeat^sub+loop-1+step2 | 8                  | 9
+            // 11 | tasks.get(10) | +parallel_limit+repeat^sub+loop-1+step3 | 8                  | 10
+            // 12 | tasks.get(11) | +parallel_limit+repeat^sub+loop-2       | 3                  | 4,8
             // 13 | tasks.get(12) | +parallel_limit+repeat^sub+loop-1+step1 | 12                 |
             // 14 | tasks.get(13) | +parallel_limit+repeat^sub+loop-1+step2 | 12                 | 13
             // 15 | tasks.get(14) | +parallel_limit+repeat^sub+loop-1+step3 | 12                 | 14
