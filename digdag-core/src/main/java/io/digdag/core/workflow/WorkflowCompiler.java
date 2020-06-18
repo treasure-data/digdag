@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.session.TaskType;
@@ -231,22 +232,27 @@ public class WorkflowCompiler
                     .map(pair -> collect(Optional.of(tb), fullName, pair.getKey(), pair.getValue(), validator))
                     .collect(Collectors.toList());
 
-                if (config.get("_parallel", boolean.class, false)) {
-                    // _after: is valid only when parallel: is true
-                    Map<String, TaskBuilder> names = new HashMap<>();
-                    for (TaskBuilder subtask : subtasks) {
-                        if (subtask.getConfig().get("_background", boolean.class, false)) {
-                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option");
-                        }
-                        for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
-                            TaskBuilder up = names.get(upName);
-                            if (up == null) {
-                                throw new ConfigException("Dependency task '"+upName+"' does not exist");
+                ParallelControl pc = new ParallelControl(config);
+                Map<String, TaskBuilder> names = new HashMap<>();
+                if (pc.isParallel()) {
+                    if (pc.getParallelLimit() > 0) {
+                        int limit = pc.getParallelLimit();
+                        List<TaskBuilder> beforeList = new ArrayList<>();
+                        for (List<TaskBuilder> chunkedSubtasks : Lists.partition(subtasks, limit)) {
+                            for (TaskBuilder subtask : chunkedSubtasks) {
+                                parseSubtaskWithParallel(names, subtask);
+                                for (TaskBuilder before : beforeList) {
+                                    subtask.addUpstream(before);
+                                }
                             }
-                            subtask.addUpstream(up);
+                            beforeList.clear();
+                            beforeList.addAll(chunkedSubtasks);
                         }
-                        subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
-                        names.put(subtask.getName(), subtask);
+                    }
+                    else {
+                        for (TaskBuilder subtask : subtasks) {
+                            parseSubtaskWithParallel(names, subtask);
+                        }
                     }
                 }
                 else {
@@ -303,5 +309,51 @@ public class WorkflowCompiler
                 .groupingOnly(groupingOnly)
                 .build();
         }
+
+        private void parseSubtaskWithParallel(Map<String, TaskBuilder> names, TaskBuilder subtask)
+        {
+            if (subtask.getConfig().get("_background", boolean.class, false)) {
+                throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option");
+            }
+            // _after: is valid only when parallel: is true
+            for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
+                TaskBuilder up = names.get(upName);
+                if (up == null) {
+                    throw new ConfigException("Dependency task '"+upName+"' does not exist");
+                }
+                subtask.addUpstream(up);
+            }
+            subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
+            names.put(subtask.getName(), subtask);
+        }
+    }
+
+    private static class ParallelControl
+    {
+        private final boolean isParallel;
+        private final int parallelLimit;
+
+        private ParallelControl(Config config)
+        {
+            final JsonNode parallelNode = config.getInternalObjectNode().get("_parallel");
+            if (parallelNode == null) { // not specified, default
+                this.isParallel = false;
+                this.parallelLimit = 0;
+            }
+            else if (parallelNode.isBoolean()) { // _parallel: true/false
+                this.isParallel = config.get("_parallel", boolean.class);
+                this.parallelLimit = 0; // no limit
+            }
+            else if (parallelNode.isObject()) { // _parallel: {limit: N}
+                Config parallel = config.getNested("_parallel");
+                this.isParallel = true; // always true
+                this.parallelLimit = parallel.get("limit", int.class);
+            }
+            else { // unknown format
+                throw new ConfigException(String.format("Invalid _parallel format: %s", parallelNode.toString()));
+            }
+        }
+        public boolean isParallel() { return isParallel; }
+        public int getParallelLimit() { return parallelLimit; }
     }
 }

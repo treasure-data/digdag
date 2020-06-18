@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.td;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJob;
@@ -95,8 +96,6 @@ public class TdForEachOperatorFactory
         {
             List<Config> rows = fetchRows(j);
 
-            boolean parallel = params.get("_parallel", boolean.class, false);
-
             Config subtasks = doConfig.getFactory().create();
             for (int i = 0; i < rows.size(); i++) {
                 Config row = rows.get(i);
@@ -106,8 +105,8 @@ public class TdForEachOperatorFactory
                 subtasks.set("+td-for-each-" + i, subtask);
             }
 
-            if (parallel) {
-                subtasks.set("_parallel", true);
+            if (params.has("_parallel")) {
+                subtasks.set("_parallel", params.get("_parallel", JsonNode.class));
             }
 
             return TaskResult.defaultBuilder(request)

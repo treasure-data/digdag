@@ -1,6 +1,8 @@
 package io.digdag.core.workflow;
 
 import java.nio.file.Path;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import io.digdag.core.Limits;
 import io.digdag.spi.OperatorContext;
@@ -54,8 +56,6 @@ public class LoopOperatorFactory
                 throw new ConfigException("Too many loop subtasks. Limit: " + Limits.maxWorkflowTasks());
             }
 
-            boolean parallel = params.get("_parallel", boolean.class, false);
-
             Config generated = doConfig.getFactory().create();
             for (int i = 0; i < count; i++) {
                 Config subtask = params.getFactory().create();
@@ -66,8 +66,8 @@ public class LoopOperatorFactory
                         subtask);
             }
 
-            if (parallel) {
-                generated.set("_parallel", parallel);
+            if (params.has("_parallel")) {
+                generated.set("_parallel", params.get("_parallel", JsonNode.class));
             }
 
             return TaskResult.defaultBuilder(request)

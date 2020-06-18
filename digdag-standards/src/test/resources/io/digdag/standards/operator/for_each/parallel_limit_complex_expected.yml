@@ -1,0 +1,14 @@
++for-0=a=0=1&1=b=0=3:
+  echo>: value is ${a} and ${b}
+  _export: {a: 1, b: 3}
++for-0=a=0=1&1=b=1=4:
+  echo>: value is ${a} and ${b}
+  _export: {a: 1, b: 4}
++for-0=a=1=2&1=b=0=3:
+  echo>: value is ${a} and ${b}
+  _export: {a: 2, b: 3}
++for-0=a=1=2&1=b=1=4:
+  echo>: value is ${a} and ${b}
+  _export: {a: 2, b: 4}
+_parallel:
+  limit: 2
