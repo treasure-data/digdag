@@ -302,7 +302,16 @@ public class AttemptResource
                 .getSessionStore(getSiteId())
                 .getTasksOfAttempt(attemptId);
 
+        List<Long> groupRetryErrorTaskIds = tasks.stream()
+                .filter(task -> task.getState() == TaskStateCode.GROUP_ERROR && task.getStateParams().has("retry_count"))
+                .map(task -> task.getId())
+                .collect(Collectors.toList());
+
         List<Long> successTasks = tasks.stream()
+                // If a group error has occurred,
+                // exclude the group's child tasks from successTasks
+                // even if they are in SUCCESS state
+                .filter(task -> task.getParentId().isPresent() && !groupRetryErrorTaskIds.contains(task.getParentId().get()))
                 .filter(task -> task.getState() == TaskStateCode.SUCCESS)
                 .map(task -> {
                     if (!task.getParentId().isPresent()) {
@@ -344,7 +353,11 @@ public class AttemptResource
                     tasks
                             .stream()
                             .collect(
-                                    Collectors.toMap(t -> t.getFullName(), t -> t)
+                                    // Avoid 500 error due to duplicate key ArchivedTask
+                                    // if a group retry happened, IllegalStateException will be thrown
+                                    // because there are multiple tasks of the same name.
+                                    // Take the first one to make sure it is appropriately resumed.
+                                    Collectors.toMap(t -> t.getFullName(), t -> t, (a, b) -> a)
                             ));
         }
         catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
