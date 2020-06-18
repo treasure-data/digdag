@@ -53,6 +53,7 @@ cron>: ``CRON``                 Use cron format for complex scheduling      cron
 
     | When you use ``hourly``, ``daily``, ``weekly`` or ``monthly``, a session time may not be same with actual run time.
     | The session time is actual run day's 00:00:00 (in case ``hourly``, hour's 00:00).
+    | For weekly scheduling, you can specify week number like this "2,10:32:32". 2 is Tuesday in this example.
 
     .. table:: Schedule Examples (As of system clock: 2019-02-24 14:20:10 +0900)
 
