@@ -460,6 +460,7 @@ task release() {
         println "Released ${project.version}."
     }
 }
+release.mustRunAfter cli
 check.dependsOn('releaseCheck')
 
 task setVersion {
