@@ -114,7 +114,7 @@ public class SlaCalculator
                 if (throwUnusedKeys)
                     throw new UnusedConfigException(buf.toString());
                 else
-                    logger.error(buf.toString());
+                    logger.warn(buf.toString());
             }
         }
 
