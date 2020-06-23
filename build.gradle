@@ -454,15 +454,16 @@ clean {
 }
 
 task release() {
-    // "release.mustRunAfter cli" is necessary to upload the executable jar to bintray as well.
+    // This is necessary to upload the executable jar to bintray as well.
     // It makes to run _bintrayRecordingCopy task after cli task.
+    release.mustRunAfter cli
     dependsOn subprojects.publish
     dependsOn bintrayUpload
     doLast {
         println "Released ${project.version}."
     }
 }
-release.mustRunAfter cli
+
 check.dependsOn('releaseCheck')
 
 task setVersion {
