@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -220,7 +221,7 @@ public class OperatorManager
         catch (AssertionError ex) { // Avoid infinite task retry cause of AssertionError by ConfigEvalEngine(nashorn)
             throw new RuntimeException("Unexpected error happened in ConfigEvalEngine: " + ex.getMessage(), ex);
         }
-        logger.debug("evaluated config: {}", config);
+        logger.debug("evaluated config: {}", filterConfigForLogging(config));
 
         Set<String> shouldBeUsedKeys = new HashSet<>(request.getLocalConfig().getKeys());
 
@@ -278,8 +279,6 @@ public class OperatorManager
         }
 
         callback.taskSucceeded(request, agentId, result);
-
-
     }
 
     private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, Collection<String> candidateKeys)
@@ -387,5 +386,31 @@ public class OperatorManager
         for (Throwable t : ex.getSuppressed()) {
             collectExceptionMessage(sb, t, used);
         }
+    }
+
+    private static final String[] CONFIG_KEYS_FOR_LOGGING = {
+            "project_id",
+            "session_id",
+            "session_time",
+            "attempt_id",
+            "task_name",
+            "last_session_time",
+            "last_executed_session_time",
+            "next_session_time",
+            "session_uuid",
+            "timezone"
+    };
+
+    @VisibleForTesting
+    public Config filterConfigForLogging(Config src)
+    {
+        Config dst = cf.create();
+        for (String key : CONFIG_KEYS_FOR_LOGGING) {
+            Optional<Object> v = src.getOptional(key, Object.class);
+            if (v.isPresent()) {
+                dst.set(key, v.get());
+            }
+        }
+        return dst;
     }
 }
