@@ -12,6 +12,7 @@ import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
@@ -22,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 class BqClient
         extends BaseGcpClient<Bigquery>
@@ -37,7 +40,10 @@ class BqClient
     protected Bigquery client(GoogleCredential credential, HttpTransport transport, JsonFactory jsonFactory)
     {
         if (credential.createScopedRequired()) {
-            credential = credential.createScoped(BigqueryScopes.all());
+            Set<String> scopes = new HashSet<String>();
+            scopes.addAll(BigqueryScopes.all());
+            scopes.add(SheetsScopes.DRIVE_READONLY);
+            credential = credential.createScoped(scopes);
         }
 
         return new Bigquery.Builder(transport, jsonFactory, credential)

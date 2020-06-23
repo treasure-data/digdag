@@ -52,6 +52,12 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-module-jaxb-annotations'
     }
 
+    // sheet
+    compile ('com.google.apis:google-api-services-sheets:v4-rev20200508-1.30.9') {
+        exclude group: 'com.google.guava', module: 'guava-jdk5'
+        exclude group: 'com.google.api-client', module: 'google-api-client'
+    }
+
     // dependency conflict resolution
     compile 'joda-time:joda-time:2.9.4'
 
