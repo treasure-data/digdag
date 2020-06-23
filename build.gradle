@@ -454,6 +454,8 @@ clean {
 }
 
 task release() {
+    // "release.mustRunAfter cli" is necessary to upload the executable jar to bintray as well.
+    // It makes to run _bintrayRecordingCopy task after cli task.
     dependsOn subprojects.publish
     dependsOn bintrayUpload
     doLast {
