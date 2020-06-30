@@ -51,6 +51,7 @@ public class ProjectArchiveLoader
                     errors.add(ex);
                 }
             }
+            return true;
         });
 
         try {

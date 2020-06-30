@@ -835,6 +835,10 @@ Creates a project archive and upload it to the server. This command uploads work
 
   Example: ``--schedule-from "2017-07-29 00:00:00 +0200"``
 
+:command:`--copy-outside-symlinks`
+  Transform symlinks to regular files or directories if the symlink points a file or directory outside of the target directory. Without this option, such case fails because the files or directories won't be included unless copying.
+
+  Example: ``--copy-outside-symlinks``
 
 download
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

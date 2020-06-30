@@ -30,7 +30,7 @@ public class ProjectArchive
 
     public interface PathConsumer
     {
-        public void accept(String resourceName, Path absolutePath) throws IOException;
+        public boolean accept(String resourceName, Path absolutePath) throws IOException;
     }
 
     private final Path projectPath;
@@ -97,8 +97,8 @@ public class ProjectArchive
             for (Path path : ds) {
                 String resourceName = realPathToResourceName(projectPath, path);
                 if (listed.add(resourceName)) {
-                    consumer.accept(resourceName, path);
-                    if (Files.isDirectory(path)) {
+                    boolean cont = consumer.accept(resourceName, path);
+                    if (cont && Files.isDirectory(path)) {
                         listFilesRecursively(projectPath, path, consumer, listed);
                     }
                 }
