@@ -111,10 +111,10 @@ public class SlaCalculator
                     buf.append(getWarnUnusedKey(key, usedKeys));
                     buf.append("\n");
                 }
+                String warning = buf.toString();
+                logger.warn(warning);
                 if (throwUnusedKeys)
-                    throw new UnusedConfigException(buf.toString());
-                else
-                    logger.warn(buf.toString());
+                    throw new UnusedConfigException(warning);
             }
         }
 
