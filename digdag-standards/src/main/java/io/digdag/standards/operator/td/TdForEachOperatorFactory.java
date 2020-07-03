@@ -41,14 +41,17 @@ public class TdForEachOperatorFactory
     private final ConfigFactory configFactory;
     private final Map<String, String> env;
     private final Config systemConfig;
+    private final Limits limits;
     private final BaseTDClientFactory clientFactory;
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env,
+                                    Config systemConfig, Limits limits, BaseTDClientFactory clientFactory)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
         this.env = env;
         this.systemConfig = systemConfig;
+        this.limits = limits;
         this.clientFactory = clientFactory;
     }
 
@@ -60,7 +63,7 @@ public class TdForEachOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdForEachOperator(context, clientFactory);
+        return new TdForEachOperator(context, clientFactory, limits);
     }
 
     private class TdForEachOperator
@@ -75,8 +78,9 @@ public class TdForEachOperatorFactory
         private final Optional<String> poolName;
 
         private final Config doConfig;
+        private final Limits limits;
 
-        private TdForEachOperator(OperatorContext context, BaseTDClientFactory clientFactory)
+        private TdForEachOperator(OperatorContext context, BaseTDClientFactory clientFactory, Limits limits)
         {
             super(context, env, systemConfig, clientFactory);
 
@@ -89,6 +93,7 @@ public class TdForEachOperatorFactory
             this.poolName = poolNameOfEngine(params, engine);
             this.doConfig = request.getConfig().getNested("_do");
             this.engineVersion = params.getOptional("engine_version", String.class);
+            this.limits = limits;
         }
 
         @Override
@@ -150,8 +155,8 @@ public class TdForEachOperatorFactory
                             List<Config> rows = new ArrayList<>();
                             while (ite.hasNext()) {
                                 rows.add(row(columnNames, ite.next().asArrayValue()));
-                                if (rows.size() > Limits.maxWorkflowTasks()) {
-                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                                if (rows.size() > limits.maxWorkflowTasks()) {
+                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + limits.maxWorkflowTasks());
                                     throw new TaskExecutionException(cause);
                                 }
                             }

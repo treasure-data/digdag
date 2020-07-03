@@ -17,9 +17,13 @@ import static java.util.Locale.ENGLISH;
 public class LoopOperatorFactory
         implements OperatorFactory
 {
+    private final Limits limits;
+
     @Inject
-    public LoopOperatorFactory()
-    { }
+    public LoopOperatorFactory(Limits limits)
+    {
+        this.limits = limits;
+    }
 
     public String getType()
     {
@@ -29,17 +33,19 @@ public class LoopOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new LoopOperator(context);
+        return new LoopOperator(context, limits);
     }
 
     private static class LoopOperator
             implements Operator
     {
         private final TaskRequest request;
+        private final Limits limits;
 
-        public LoopOperator(OperatorContext context)
+        public LoopOperator(OperatorContext context, Limits limits)
         {
             this.request = context.getTaskRequest();
+            this.limits = limits;
         }
 
         @Override
@@ -52,8 +58,8 @@ public class LoopOperatorFactory
             int count = params.get("count", int.class,
                     params.get("_command", int.class));
 
-            if (count > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many loop subtasks. Limit: " + Limits.maxWorkflowTasks());
+            if (count > limits.maxWorkflowTasks()) {
+                throw new ConfigException("Too many loop subtasks. Limit: " + limits.maxWorkflowTasks());
             }
 
             Config generated = doConfig.getFactory().create();

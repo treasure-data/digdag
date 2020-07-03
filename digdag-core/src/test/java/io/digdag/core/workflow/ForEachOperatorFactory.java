@@ -29,9 +29,13 @@ public class ForEachOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ForEachOperatorFactory.class);
 
+    private final Limits limits;
+
     @Inject
-    public ForEachOperatorFactory()
-    { }
+    public ForEachOperatorFactory(Limits limits)
+    {
+        this.limits = limits;
+    }
 
     public String getType()
     {
@@ -41,17 +45,19 @@ public class ForEachOperatorFactory
     @Override
     public ForEachOperator newOperator(OperatorContext context)
     {
-        return new ForEachOperator(context);
+        return new ForEachOperator(context, limits);
     }
 
     static class ForEachOperator
             implements Operator
     {
         private final TaskRequest request;
+        private final Limits limits;
 
-        public ForEachOperator(OperatorContext context)
+        public ForEachOperator(OperatorContext context, Limits limits)
         {
             this.request = context.getTaskRequest();
+            this.limits = limits;
         }
 
         @Override
@@ -127,13 +133,13 @@ public class ForEachOperatorFactory
             return current;
         }
 
-        private static void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
+        private void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
         {
             int count = 1;
             for (List<JsonNode> nodes : entries.values()) {
                 count *= nodes.size();
-                if (count > Limits.maxWorkflowTasks()) {
-                    throw new ConfigException("Too many for_each subtasks. Limit: " + Limits.maxWorkflowTasks());
+                if (count > limits.maxWorkflowTasks()) {
+                    throw new ConfigException("Too many for_each subtasks. Limit: " + limits.maxWorkflowTasks());
                 }
             }
         }

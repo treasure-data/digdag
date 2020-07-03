@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
+import com.google.inject.Inject;
 import io.digdag.core.Limits;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.StoredTask;
@@ -27,12 +28,14 @@ public class TaskControl
     private final TaskControlStore store;
     private final StoredTask task;
     private TaskStateCode state;
+    private final Limits limits;
 
-    public TaskControl(TaskControlStore store, StoredTask task)
+    public TaskControl(TaskControlStore store, StoredTask task, Limits limits)
     {
         this.store = store;
         this.task = task;
         this.state = task.getState();
+        this.limits = limits;
     }
 
     public StoredTask get()
@@ -52,10 +55,10 @@ public class TaskControl
 
     public static long addInitialTasksExceptingRootTask(
             TaskControlStore store, long attemptId, long rootTaskId,
-            WorkflowTaskList tasks, List<ResumingTask> resumingTasks)
+            WorkflowTaskList tasks, List<ResumingTask> resumingTasks, Limits limits)
         throws TaskLimitExceededException
     {
-        checkTaskLimit(store, attemptId, tasks);
+        checkTaskLimit(store, attemptId, tasks, limits);
         long taskId = addTasks(store, attemptId, rootTaskId,
                 tasks, ImmutableList.of(),
                 false, true, true,
@@ -68,7 +71,7 @@ public class TaskControl
                                      List<Long> rootUpstreamIds, boolean cancelSiblings, boolean isInitialTask)
             throws TaskLimitExceededException
     {
-        checkTaskLimit(store, task.getAttemptId(), tasks);
+        checkTaskLimit(store, task.getAttemptId(), tasks, limits);
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
                 cancelSiblings, false, isInitialTask,
@@ -92,14 +95,14 @@ public class TaskControl
     }
 
     private static void checkTaskLimit(TaskControlStore store, long attemptId,
-            WorkflowTaskList tasks)
+            WorkflowTaskList tasks, Limits limits)
         throws TaskLimitExceededException
     {
         // Limit the total number of tasks in a session.
         // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
         long taskCount = store.getTaskCountOfAttempt(attemptId);
-        if (taskCount + tasks.size() > Limits.maxWorkflowTasks()) {
-            throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
+        if (taskCount + tasks.size() > limits.maxWorkflowTasks()) {
+            throw new TaskLimitExceededException("Too many tasks. Limit: " + limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
         }
     }
 

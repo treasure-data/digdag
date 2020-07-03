@@ -19,9 +19,13 @@ public class ForRangeOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ForRangeOperatorFactory.class);
 
+    private final Limits limits;
+
     @Inject
-    public ForRangeOperatorFactory()
-    { }
+    public ForRangeOperatorFactory(Limits limits)
+    {
+        this.limits = limits;
+    }
 
     @Override
     public String getType()
@@ -32,17 +36,19 @@ public class ForRangeOperatorFactory
     @Override
     public ForRangeOperator newOperator(OperatorContext context)
     {
-        return new ForRangeOperator(context);
+        return new ForRangeOperator(context, limits);
     }
 
     static class ForRangeOperator
             implements Operator
     {
         private final TaskRequest request;
+        private final Limits limits;
 
-        public ForRangeOperator(OperatorContext context)
+        public ForRangeOperator(OperatorContext context, Limits limits)
         {
             this.request = context.getTaskRequest();
+            this.limits = limits;
         }
 
         @Override
@@ -110,10 +116,10 @@ public class ForRangeOperatorFactory
             return String.format("+range-from=%d&to=%d", rangeFrom, rangeTo);
         }
 
-        private static void enforceTaskCountLimit(int size)
+        private void enforceTaskCountLimit(int size)
         {
-            if (size > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + Limits.maxWorkflowTasks());
+            if (size > limits.maxWorkflowTasks()) {
+                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + limits.maxWorkflowTasks());
             }
         }
     }

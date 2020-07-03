@@ -169,6 +169,7 @@ public class WorkflowExecutor
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
+    private final Limits limits;
     private final DigdagMetrics metrics;
 
     private final Lock propagatorLock = new ReentrantLock();
@@ -187,6 +188,7 @@ public class WorkflowExecutor
             ConfigFactory cf,
             ObjectMapper archiveMapper,
             Config systemConfig,
+            Limits limits,
             DigdagMetrics metrics)
     {
         this.rm = rm;
@@ -197,6 +199,7 @@ public class WorkflowExecutor
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
+        this.limits = limits;
         this.metrics = metrics;
         this.enqueueRandomFetch = systemConfig.get("executor.enqueue_random_fetch", Boolean.class, false);
         this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
@@ -227,7 +230,7 @@ public class WorkflowExecutor
     {
         try {
             return sm.getSessionStore(siteId).sessionTransaction((transaction) -> {
-                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId), tm));
+                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId), tm, limits));
             });
         }
         catch (Exception ex) {
@@ -285,8 +288,8 @@ public class WorkflowExecutor
             SessionStore ss = sm.getSessionStore(siteId);
 
             long activeAttempts = ss.getActiveAttemptCount();
-            if (activeAttempts + 1 > Limits.maxAttempts()) {
-                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + Limits.maxAttempts() + ", Current: " + activeAttempts);
+            if (activeAttempts + 1 > limits.maxAttempts()) {
+                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + limits.maxAttempts() + ", Current: " + activeAttempts);
             }
 
             stored = ss
@@ -380,7 +383,7 @@ public class WorkflowExecutor
             store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
                 try {
                     TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                            storedTaskId, tasks, resumingTasks);
+                            storedTaskId, tasks, resumingTasks, limits);
                 }
                 catch (TaskLimitExceededException ex) {
                     throw new WorkflowTaskLimitExceededException(ex);
@@ -629,7 +632,7 @@ public class WorkflowExecutor
         return (tId) ->
                 tm.begin(() ->
                         sm.lockTaskIfNotLocked(tId, (store, storedTask) ->
-                                setDoneFromDoneChildren(new TaskControl(store, storedTask))));
+                                setDoneFromDoneChildren(new TaskControl(store, storedTask, limits))));
     }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
@@ -947,7 +950,7 @@ public class WorkflowExecutor
     protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
         sm.lockTaskIfNotLocked(taskId, (store, task) -> {
-            TaskControl lockedTask = new TaskControl(store, task);
+            TaskControl lockedTask = new TaskControl(store, task, limits);
             if (lockedTask.getState() != TaskStateCode.READY) {
                 return false;
             }
@@ -1177,7 +1180,7 @@ public class WorkflowExecutor
             Config error)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            taskFailed(new TaskControl(store, task), error)
+            taskFailed(new TaskControl(store, task, limits), error)
         ).or(false);
         if (changed) {
             try {
@@ -1199,7 +1202,7 @@ public class WorkflowExecutor
             TaskResult result)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            taskSucceeded(new TaskControl(store, task),
+            taskSucceeded(new TaskControl(store, task, limits),
                     result)
         ).or(false);
         if (changed) {
@@ -1223,7 +1226,7 @@ public class WorkflowExecutor
             Optional<Config> error)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            retryTask(new TaskControl(store, task),
+            retryTask(new TaskControl(store, task, limits),
                 retryInterval, retryStateParams,
                 error)
         ).or(false);

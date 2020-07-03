@@ -3,7 +3,9 @@ package io.digdag.core.database;
 import com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.inject.Provider;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -94,6 +96,7 @@ public class DatabaseFactory
     public WorkflowExecutor getWorkflowExecutor()
     {
         ConfigFactory configFactory = createConfigFactory();
+        Config systemConfig = configFactory.create();
         return new WorkflowExecutor(
                 getProjectStoreManager(),
                 getSessionStoreManager(),
@@ -102,7 +105,8 @@ public class DatabaseFactory
                 new WorkflowCompiler(),
                 configFactory,
                 objectMapper(),
-                configFactory.create(),
+                systemConfig,
+                new Limits(systemConfig),
                 StdDigdagMetrics.empty()
         );
     }
