@@ -1,0 +1,8 @@
+{ "timezone":"UTC","session_uuid":"5058cce5-f13c-4cd3-bc0c-1604f27dbb4b","session_time":"2020-06-25T08:47:27+00:00",
+  "session_id":7894,"session_date":"2020-06-25","session_date_compact":"20200625",
+  "session_local_time":"2020-06-25 08:47:27","session_tz_offset":"+0000","session_unixtime":1593074847,
+  "last_executed_session_time":"","last_executed_session_date":"","last_executed_session_date_compact":"",
+  "last_executed_session_local_time":"","last_executed_session_tz_offset":"+0000","last_executed_session_unixtime":"",
+  "next_session_time":"2020-06-26T00:00:00+00:00","project_id":180,"attempt_id":8667,"task_name":"+test2+t1",
+  "td":{"database":"sample_datasets"},"td_for_each>":null,"query":"SELECT * FROM www_access limit 3",
+  "_do":{"+show":{"echo>":"row:${td.each.agent}"}} }
