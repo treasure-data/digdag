@@ -5,7 +5,6 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -19,13 +18,9 @@ public class ForRangeOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ForRangeOperatorFactory.class);
 
-    private final Limits limits;
-
     @Inject
-    public ForRangeOperatorFactory(Limits limits)
-    {
-        this.limits = limits;
-    }
+    public ForRangeOperatorFactory()
+    { }
 
     @Override
     public String getType()
@@ -36,19 +31,19 @@ public class ForRangeOperatorFactory
     @Override
     public ForRangeOperator newOperator(OperatorContext context)
     {
-        return new ForRangeOperator(context, limits);
+        return new ForRangeOperator(context);
     }
 
     static class ForRangeOperator
             implements Operator
     {
         private final TaskRequest request;
-        private final Limits limits;
+        private final OperatorContext context;
 
-        public ForRangeOperator(OperatorContext context, Limits limits)
+        public ForRangeOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
-            this.limits = limits;
+            this.context = context;
         }
 
         @Override
@@ -118,8 +113,8 @@ public class ForRangeOperatorFactory
 
         private void enforceTaskCountLimit(int size)
         {
-            if (size > limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + limits.maxWorkflowTasks());
+            if (size > context.getMaxWorkflowTasks()) {
+                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + context.getMaxWorkflowTasks());
             }
         }
     }

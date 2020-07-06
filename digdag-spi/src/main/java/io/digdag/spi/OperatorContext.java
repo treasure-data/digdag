@@ -11,4 +11,6 @@ public interface OperatorContext
     SecretProvider getSecrets();
 
     PrivilegedVariables getPrivilegedVariables();
+
+    long getMaxWorkflowTasks();
 }

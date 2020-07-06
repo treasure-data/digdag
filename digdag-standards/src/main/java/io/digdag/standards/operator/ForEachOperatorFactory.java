@@ -8,7 +8,6 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
@@ -31,13 +30,9 @@ public class ForEachOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ForEachOperatorFactory.class);
 
-    private final Limits limits;
-
     @Inject
-    public ForEachOperatorFactory(Limits limits)
-    {
-        this.limits = limits;
-    }
+    public ForEachOperatorFactory()
+    { }
 
     public String getType()
     {
@@ -47,19 +42,19 @@ public class ForEachOperatorFactory
     @Override
     public ForEachOperator newOperator(OperatorContext context)
     {
-        return new ForEachOperator(context, limits);
+        return new ForEachOperator(context);
     }
 
     static class ForEachOperator
             implements Operator
     {
         private final TaskRequest request;
-        private final Limits limits;
+        private final OperatorContext context;
 
-        public ForEachOperator(OperatorContext context, Limits limits)
+        public ForEachOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
-            this.limits = limits;
+            this.context = context;
         }
 
         @Override
@@ -141,8 +136,8 @@ public class ForEachOperatorFactory
             int count = 1;
             for (List<JsonNode> nodes : entries.values()) {
                 count *= nodes.size();
-                if (count > limits.maxWorkflowTasks()) {
-                    throw new ConfigException("Too many for_each subtasks. Limit: " + limits.maxWorkflowTasks());
+                if (count > context.getMaxWorkflowTasks()) {
+                    throw new ConfigException("Too many for_each subtasks. Limit: " + context.getMaxWorkflowTasks());
                 }
             }
         }

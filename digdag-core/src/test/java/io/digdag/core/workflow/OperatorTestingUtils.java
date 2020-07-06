@@ -143,6 +143,12 @@ public class OperatorTestingUtils
         {
             return privilegedVariables;
         }
+
+        @Override
+        public long getMaxWorkflowTasks()
+        {
+            return 1000;
+        }
     }
 
     private static class TestingSecretProvider

@@ -4,6 +4,7 @@ import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.spi.SecretStoreManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,13 +26,14 @@ public class OperatorManagerTest
     @Mock ConfigEvalEngine evalEngine;
     @Mock OperatorRegistry registry;
     @Mock SecretStoreManager secretStoreManager;
+    Limits limits = new Limits(cf.create());
 
     private OperatorManager operatorManager;
 
     @Before
     public void setUp()
     {
-        operatorManager = new OperatorManager(agentConfig, agentId, callback, workspaceManager, cf, evalEngine, registry, secretStoreManager);
+        operatorManager = new OperatorManager(agentConfig, agentId, callback, workspaceManager, cf, evalEngine, registry, secretStoreManager, limits);
     }
 
     @Test

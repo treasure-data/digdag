@@ -10,7 +10,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Environment;
-import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -41,17 +40,15 @@ public class TdForEachOperatorFactory
     private final ConfigFactory configFactory;
     private final Map<String, String> env;
     private final Config systemConfig;
-    private final Limits limits;
     private final BaseTDClientFactory clientFactory;
     @Inject
     public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env,
-                                    Config systemConfig, Limits limits, BaseTDClientFactory clientFactory)
+                                    Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
         this.env = env;
         this.systemConfig = systemConfig;
-        this.limits = limits;
         this.clientFactory = clientFactory;
     }
 
@@ -63,7 +60,7 @@ public class TdForEachOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new TdForEachOperator(context, clientFactory, limits);
+        return new TdForEachOperator(context, clientFactory);
     }
 
     private class TdForEachOperator
@@ -78,9 +75,8 @@ public class TdForEachOperatorFactory
         private final Optional<String> poolName;
 
         private final Config doConfig;
-        private final Limits limits;
 
-        private TdForEachOperator(OperatorContext context, BaseTDClientFactory clientFactory, Limits limits)
+        private TdForEachOperator(OperatorContext context, BaseTDClientFactory clientFactory)
         {
             super(context, env, systemConfig, clientFactory);
 
@@ -93,7 +89,6 @@ public class TdForEachOperatorFactory
             this.poolName = poolNameOfEngine(params, engine);
             this.doConfig = request.getConfig().getNested("_do");
             this.engineVersion = params.getOptional("engine_version", String.class);
-            this.limits = limits;
         }
 
         @Override
@@ -155,8 +150,8 @@ public class TdForEachOperatorFactory
                             List<Config> rows = new ArrayList<>();
                             while (ite.hasNext()) {
                                 rows.add(row(columnNames, ite.next().asArrayValue()));
-                                if (rows.size() > limits.maxWorkflowTasks()) {
-                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + limits.maxWorkflowTasks());
+                                if (rows.size() > context.getMaxWorkflowTasks()) {
+                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + context.getMaxWorkflowTasks());
                                     throw new TaskExecutionException(cause);
                                 }
                             }
