@@ -12,21 +12,23 @@ public class Limits
     private static final long MAX_ATTEMPTS = Long.valueOf(
             System.getProperty("io.digdag.limits.maxAttempts", "100"));
 
-    private final Config systemConfig;
+    private final long numOfMaxWorkflowTasks;
+    private final long numOfMaxAttempts;
 
     @Inject
     public Limits(Config systemConfig)
     {
-        this.systemConfig = systemConfig;
+        this.numOfMaxWorkflowTasks =  systemConfig.get("executor.task_max_run", long.class, MAX_WORKFLOW_TASKS);
+        this.numOfMaxAttempts = systemConfig.get("executor.attempt_max_run", long.class, MAX_ATTEMPTS);
     }
 
     public long maxWorkflowTasks()
     {
-        return systemConfig.get("executor.task_max_run", long.class, MAX_WORKFLOW_TASKS);
+        return numOfMaxWorkflowTasks;
     }
 
     public long maxAttempts()
     {
-        return systemConfig.get("executor.attempt_max_run", long.class, MAX_ATTEMPTS);
+        return numOfMaxAttempts;
     }
 }

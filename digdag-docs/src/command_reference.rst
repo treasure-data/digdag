@@ -388,7 +388,7 @@ In the config file, following parameters are available
 * executor.task_ttl (string. default: 1d. A task is killed if it is running longer than this period.)
 * executor.task_max_run (integer. default: 1000. Max number of tasks in workflow.)
 * executor.attempt_ttl (string. default: 7d. An attempt is killed if it is running longer than this period.)
-* executor.attempt_max_run (integer. default: 100. Max number of running attempts per each site_id.)
+* executor.attempt_max_run (integer. default: 100. Max number of running attempts at once per each site_id.)
 * executor.enqueue_random_fetch (enqueue ready tasks randomly. default: false)
 * executor.enqueue_fetch_size ( Number of tasks to be enqueued. default: 100)
 * api.max_attempts_page_size (integer. The max number of rows of attempts in api response)
