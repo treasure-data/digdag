@@ -12,5 +12,8 @@ public interface OperatorContext
 
     PrivilegedVariables getPrivilegedVariables();
 
-    long getMaxWorkflowTasks();
+    default long getMaxWorkflowTasks()
+    {
+        return 1000L;
+    }
 }
