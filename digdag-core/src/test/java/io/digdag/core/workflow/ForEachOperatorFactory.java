@@ -8,7 +8,6 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -48,10 +47,12 @@ public class ForEachOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final OperatorContext context;
 
         public ForEachOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
+            this.context = context;
         }
 
         @Override
@@ -127,13 +128,13 @@ public class ForEachOperatorFactory
             return current;
         }
 
-        private static void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
+        private void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
         {
             int count = 1;
             for (List<JsonNode> nodes : entries.values()) {
                 count *= nodes.size();
-                if (count > Limits.maxWorkflowTasks()) {
-                    throw new ConfigException("Too many for_each subtasks. Limit: " + Limits.maxWorkflowTasks());
+                if (count > context.getMaxWorkflowTasks()) {
+                    throw new ConfigException("Too many for_each subtasks. Limit: " + context.getMaxWorkflowTasks());
                 }
             }
         }

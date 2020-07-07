@@ -5,7 +5,6 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -39,10 +38,12 @@ public class ForRangeOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final OperatorContext context;
 
         public ForRangeOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
+            this.context = context;
         }
 
         @Override
@@ -110,10 +111,10 @@ public class ForRangeOperatorFactory
             return String.format("+range-from=%d&to=%d", rangeFrom, rangeTo);
         }
 
-        private static void enforceTaskCountLimit(int size)
+        private void enforceTaskCountLimit(int size)
         {
-            if (size > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + Limits.maxWorkflowTasks());
+            if (size > context.getMaxWorkflowTasks()) {
+                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + context.getMaxWorkflowTasks());
             }
         }
     }

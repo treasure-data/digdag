@@ -195,6 +195,7 @@ public class DigdagEmbed
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
                         binder.bind(TempFileManager.class).toProvider(TempFileManagerProvider.class).in(Scopes.SINGLETON);
                         binder.bind(DigdagMetrics.class).toInstance(StdDigdagMetrics.empty());
+                        binder.bind(Limits.class).asEagerSingleton();
                     }
                 ));
             if (withWorkflowExecutor) {

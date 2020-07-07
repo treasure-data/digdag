@@ -10,7 +10,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Environment;
-import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -43,7 +42,8 @@ public class TdForEachOperatorFactory
     private final Config systemConfig;
     private final BaseTDClientFactory clientFactory;
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env,
+                                    Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
@@ -150,8 +150,8 @@ public class TdForEachOperatorFactory
                             List<Config> rows = new ArrayList<>();
                             while (ite.hasNext()) {
                                 rows.add(row(columnNames, ite.next().asArrayValue()));
-                                if (rows.size() > Limits.maxWorkflowTasks()) {
-                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                                if (rows.size() > context.getMaxWorkflowTasks()) {
+                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + context.getMaxWorkflowTasks());
                                     throw new TaskExecutionException(cause);
                                 }
                             }

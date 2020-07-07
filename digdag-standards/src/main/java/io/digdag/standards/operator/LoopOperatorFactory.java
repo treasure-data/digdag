@@ -1,10 +1,8 @@
 package io.digdag.standards.operator;
 
-import java.nio.file.Path;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
-import io.digdag.core.Limits;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -40,10 +38,12 @@ public class LoopOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final OperatorContext context;
 
         public LoopOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
+            this.context = context;
         }
 
         @Override
@@ -56,8 +56,8 @@ public class LoopOperatorFactory
             int count = params.get("count", int.class,
                     params.get("_command", int.class));
 
-            if (count > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many loop subtasks. Limit: " + Limits.maxWorkflowTasks());
+            if (count > context.getMaxWorkflowTasks()) {
+                throw new ConfigException("Too many loop subtasks. Limit: " + context.getMaxWorkflowTasks());
             }
 
             Config generated = doConfig.getFactory().create();

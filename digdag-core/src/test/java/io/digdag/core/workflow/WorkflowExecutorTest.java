@@ -13,6 +13,7 @@ import com.google.common.base.Optional;
 import com.google.common.io.Resources;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.LocalSite;
@@ -328,8 +329,9 @@ public class WorkflowExecutorTest
         ConfigFactory cf = configFactory;
         ObjectMapper archiveMapper = mock(ObjectMapper.class);
         Config systemConfig = configFactory.create();
+        Limits limits = new Limits(systemConfig);
 
-        WorkflowExecutor executor = new WorkflowExecutor(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, metrics);
+        WorkflowExecutor executor = new WorkflowExecutor(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, limits, metrics);
         Config stateParam = cf.create().set("retry_count", "2");
         StoredTask task = mock(StoredTask.class);
 

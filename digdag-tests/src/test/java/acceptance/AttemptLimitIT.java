@@ -30,10 +30,7 @@ public class AttemptLimitIT
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .inProcess(false)  // setting system property doesn't work with in-process mode
-            .systemProperty("io.digdag.limits.maxAttempts", "3")
-            .build();
+    public TemporaryDigdagServer server;
 
     private Path config;
     private Path projectDir;
@@ -45,7 +42,33 @@ public class AttemptLimitIT
     {
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
+    }
 
+    private void setUpServerWithSystemProps()
+            throws Exception
+    {
+        server = TemporaryDigdagServer.builder()
+                .inProcess(false)  // setting system property doesn't work with in-process mode
+                .systemProperty("io.digdag.limits.maxAttempts", "3")
+                .build();
+        server.start();
+        setupClient();
+    }
+
+    private void setUpServerWithConfig()
+            throws Exception
+    {
+        server = TemporaryDigdagServer.builder()
+                .inProcess(false)  // setting system property doesn't work with in-process mode
+                .systemProperty("io.digdag.limits.maxAttempts", "10") //system property must be overridden by config
+                .configuration("executor.attempt_max_run = 3")
+                .build();
+        server.start();
+        setupClient();
+    }
+
+    private void setupClient()
+    {
         client = DigdagClient.builder()
                 .host(server.host())
                 .port(server.port())
@@ -56,6 +79,22 @@ public class AttemptLimitIT
     public void startFailsWithTooManyAttempts()
             throws Exception
     {
+        setUpServerWithSystemProps();
+        startFailsWithTooManyAttempts0();
+    }
+
+    @Test
+    public void startFailsWithTooManyAttemptsWithConfig()
+            throws Exception
+    {
+        setUpServerWithConfig();
+        startFailsWithTooManyAttempts0();
+    }
+
+    private void startFailsWithTooManyAttempts0()
+            throws Exception
+    {
+
         // Create new project
         CommandStatus initStatus = main("init",
                 "-c", config.toString(),
@@ -100,6 +139,22 @@ public class AttemptLimitIT
     public void scheduleWithAttemptLimit()
             throws Exception
     {
+        setUpServerWithSystemProps();
+        scheduleWithAttemptLimit0();
+    }
+
+    @Test
+    public void scheduleWithAttemptLimitWithConfig()
+            throws Exception
+    {
+        setUpServerWithConfig();
+        scheduleWithAttemptLimit0();
+    }
+
+    private void scheduleWithAttemptLimit0()
+            throws Exception
+    {
+
         // Create a new project
         CommandStatus initStatus = main("init",
                 "-c", config.toString(),

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
@@ -71,12 +72,14 @@ public class OperatorManager
     @Inject
     private DigdagMetrics metrics;
 
+    private final Limits limits;
+
     @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
-            SecretStoreManager secretStoreManager)
+            SecretStoreManager secretStoreManager, Limits limits)
     {
         this.agentConfig = agentConfig;
         this.agentId = agentId;
@@ -86,6 +89,7 @@ public class OperatorManager
         this.evalEngine = evalEngine;
         this.registry = registry;
         this.secretStoreManager = secretStoreManager;
+        this.limits = limits;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -322,7 +326,7 @@ public class OperatorManager
                 GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretStore));
 
         OperatorContext context = new DefaultOperatorContext(
-                projectPath, mergedRequest, secretProvider, privilegedVariables);
+                projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
         Operator operator = factory.newOperator(context);
 
