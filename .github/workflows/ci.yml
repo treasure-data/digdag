@@ -3,7 +3,15 @@
 
 name: CI
 
-on: [ push, pull_request ]
+on:
+  push:
+    branches:
+    - master
+    - v0_10
+  pull_request:
+    branches:
+    - master
+    - v0_10
 
 jobs:
   build:
