@@ -661,7 +661,7 @@ public class EcsCommandExecutor
             bashArguments.add(s("popd"));
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
-        // retry by exponential backoff 1+2+4+8+16+32+64+128=127 seconds
+        // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds
         // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
         bashArguments.add(s("curl --retry 7 --retry-connrefused -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
