@@ -645,7 +645,9 @@ public class EcsCommandExecutor
         // by the executor and will include pre-signed URLs in the commands.
         //bashArguments.add("set -eux");
         bashArguments.add(s("mkdir -p %s", ioDirectoryPath.toString()));
-        bashArguments.add(s("curl -s \"%s\" --output %s", projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
+        // retry by exponential backoff 1+2+4+8+16+32+64+128=255 seconds to avoid temporary network outage and/or S3 errors
+        // exit 22 on non-transient http errors so that task can be retried
+        bashArguments.add(s("curl --retry 8 --retry-connrefused --fail -s \"%s\" --output %s", projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
         bashArguments.add(s("tar -zxf %s", relativeProjectArchivePath.toString()));
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
@@ -659,7 +661,9 @@ public class EcsCommandExecutor
             bashArguments.add(s("popd"));
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
-        bashArguments.add(s("curl -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        // retry by exponential backoff 1+2+4+8+16+32+64+128=127 seconds
+        // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
+        bashArguments.add(s("curl --retry 7 --retry-connrefused -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
