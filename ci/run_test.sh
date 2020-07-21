@@ -19,6 +19,7 @@ else
   BUILD_UI_OPT=${WITHOUT_BUILD_UI}
 fi
 
+# It's enough to build UI either with H2 or PostgreSQL not with the both
 "${BASEDIR}/run_test_h2.sh" ${WITHOUT_BUILD_UI}
 "${BASEDIR}/run_test_pg.sh" ${BUILD_UI_OPT}
 
