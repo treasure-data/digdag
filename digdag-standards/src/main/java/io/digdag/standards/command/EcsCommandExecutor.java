@@ -75,7 +75,7 @@ public class EcsCommandExecutor
     private static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
     private static final int DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS = 8;
     private static final int DEFAULT_RETRY_TASK_OUTPUT_UPLOADS = 7;
-    private static final String CONFIG_DISABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "disable_curl_fail_opt_on_uploads";
+    private static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -107,7 +107,7 @@ public class EcsCommandExecutor
                 .or(Optional.absent());
         this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
-        this.curlFailOptOnUploads = systemConfig.get(CONFIG_DISABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
+        this.curlFailOptOnUploads = systemConfig.get(CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
     }
 
     @Override
