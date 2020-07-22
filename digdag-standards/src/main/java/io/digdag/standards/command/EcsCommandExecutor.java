@@ -107,7 +107,7 @@ public class EcsCommandExecutor
                 .or(Optional.absent());
         this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
-        this.curlFailOpt = systemConfig.has(CONFIG_DISABLE_CURL_FAIL_OPT) == false;
+        this.curlFailOpt = systemConfig.get(CONFIG_DISABLE_CURL_FAIL_OPT, boolean.class, false);
     }
 
     @Override
