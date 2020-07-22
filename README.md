@@ -2,7 +2,8 @@
 
 [![Circle CI](https://circleci.com/gh/treasure-data/digdag.svg?style=svg&circle-token=8ccc5c665022ce4d1ee05cf7b829c84877387a6c)](https://circleci.com/gh/treasure-data/digdag)
 
-[![Travis CI](https://travis-ci.org/treasure-data/digdag.svg?branch=master)](https://travis-ci.org/treasure-data/digdag)
+[![CI](https://github.com/treasure-data/digdag/workflows/CI/badge.svg)](https://github.com/treasure-data/digdag/actions)
+
 
 ## [Documentation](https://docs.digdag.io)
 
@@ -52,7 +53,7 @@ $ CI_ACCEPTANCE_TEST=true ./gradlew digdag-tests:test --info --tests acceptance.
 ```
 
 To execute tests in digdag-tests subproject locally, `tests` option that is provided by Gradle is useful.
-Environment variable `CI_ACCEPTANCE_TEST=true` is needed to execute digdag-tests only.
+Environment variable `CI_ACCEPTANCE_TEST=true` is needed to execute digdag-tests.
 
 ### Testing with PostgreSQL
 

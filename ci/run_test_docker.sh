@@ -27,4 +27,4 @@ docker run \
 -e TEST_S3_SECRET_ACCESS_KEY=$TEST_S3_SECRET_ACCESS_KEY \
 -e TERM=dumb \
 $BUILD_IMAGE \
-./gradlew clean cleanTest test --info --no-daemon "$@"
+./gradlew clean cleanTest test --info --stacktrace --no-daemon "$@"
