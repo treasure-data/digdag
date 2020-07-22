@@ -75,7 +75,7 @@ public class EcsCommandExecutor
     private static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
     private static final int DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS = 8;
     private static final int DEFAULT_RETRY_TASK_OUTPUT_UPLOADS = 7;
-    private static final String CONFIG_DISABLE_CURL_FAIL_OPT = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "disable_curl_fail_opt";
+    private static final String CONFIG_DISABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "disable_curl_fail_opt_on_uploads";
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -85,7 +85,7 @@ public class EcsCommandExecutor
     private final CommandLogger clog;
     private final Optional<Duration> defaultCommandTaskTTL;
     private final int retryDownloads, retryUploads;
-    private final boolean curlFailOpt;
+    private final boolean curlFailOptOnUploads; // false by the default
 
     @Inject
     public EcsCommandExecutor(
@@ -107,7 +107,7 @@ public class EcsCommandExecutor
                 .or(Optional.absent());
         this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
-        this.curlFailOpt = systemConfig.get(CONFIG_DISABLE_CURL_FAIL_OPT, boolean.class, false);
+        this.curlFailOptOnUploads = systemConfig.get(CONFIG_DISABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
     }
 
     @Override
@@ -658,7 +658,7 @@ public class EcsCommandExecutor
         bashArguments.add(s("mkdir -p %s", ioDirectoryPath.toString()));
         // retry by exponential backoff 1+2+4+8+16+32+64+128=255 seconds by the default to avoid temporary network outage and/or S3 errors
         // exit 22 on non-transient http errors so that task can be retried
-        bashArguments.add(s("curl --retry %d --retry-connrefused%s -s \"%s\" --output %s", retryDownloads, curlFailOpt ? " --fail": "", projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
+        bashArguments.add(s("curl --retry %d --retry-connrefused --fail -s \"%s\" --output %s", retryDownloads, projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
         bashArguments.add(s("tar -zxf %s", relativeProjectArchivePath.toString()));
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
@@ -674,7 +674,7 @@ public class EcsCommandExecutor
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds by the default
         // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
-        bashArguments.add(s("curl --retry %d --retry-connrefused -s -X PUT -T %s -L \"%s\"", retryUploads, outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        bashArguments.add(s("curl --retry %d --retry-connrefused%s -s -X PUT -T %s -L \"%s\"", retryUploads, curlFailOptOnUploads ? " --fail": "", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
