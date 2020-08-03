@@ -54,7 +54,7 @@ public class GroupRetryIT
                 .build();
 
         // Push the project
-        pushRevision("acceptance/group_retry/retry-1.dig", "retry");
+        pushRevision("acceptance/group_retry/retry-1.dig", "test");
 
         // Start the workflow
         Id originalAttemptId;
@@ -62,7 +62,7 @@ public class GroupRetryIT
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "retry", "retry",
+                    "group_retry", "test",
                     "--session", "now");
             assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
             originalAttemptId = getAttemptId(startStatus);
@@ -77,7 +77,7 @@ public class GroupRetryIT
         assertOutputExists(originalAttemptId + "1-2c", false);
 
         // Push a new revision
-        pushRevision("acceptance/group_retry/retry-2.dig", "retry");
+        pushRevision("acceptance/group_retry/retry-2.dig", "test");
 
         // Retry without updating the revision: --keep-revision
         Id retry1;
@@ -143,7 +143,7 @@ public class GroupRetryIT
         assertOutputExists(retry3 + "2-2c", true);
 
         // Push another new revision
-        pushRevision("acceptance/group_retry/retry-3.dig", "retry");
+        pushRevision("acceptance/group_retry/retry-3.dig", "test");
 
         // Retry with the latest fixed revision & resume from
         Id retry4;
@@ -175,7 +175,7 @@ public class GroupRetryIT
                 .replace("${outdir}", root().toString())));
 
         CommandStatus pushStatus = main("push",
-                "retry",
+                "group_retry",
                 "-c", config.toString(),
                 "--project", projectDir.toString(),
                 "-e", server.endpoint());
