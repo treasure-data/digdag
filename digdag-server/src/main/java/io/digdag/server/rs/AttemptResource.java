@@ -302,6 +302,8 @@ public class AttemptResource
                 .getSessionStore(getSiteId())
                 .getTasksOfAttempt(attemptId);
 
+        // Collect tasksIds in which a group retry occurred.
+        // Need to filter the status of the task with "group_error" and "retry_count" in stateParams.
         List<Long> groupRetryErrorTaskIds = tasks.stream()
                 .filter(task -> task.getState() == TaskStateCode.GROUP_ERROR && task.getStateParams().has("retry_count"))
                 .map(task -> task.getId())
@@ -357,7 +359,7 @@ public class AttemptResource
                                     // if a group retry happened, IllegalStateException will be thrown
                                     // because there are multiple tasks of the same name.
                                     // Take the first one to make sure it is appropriately resumed.
-                                    Collectors.toMap(t -> t.getFullName(), t -> t, (a, b) -> a)
+                                    Collectors.toMap(t -> t.getFullName(), t -> t, (a, b) -> b)
                             ));
         }
         catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
