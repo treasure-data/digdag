@@ -311,9 +311,10 @@ public class AttemptResource
 
         List<Long> successTasks = tasks.stream()
                 // If a group error has occurred,
-                // exclude the group's child tasks from successTasks
+                // exclude the group's child/dynamically generated tasks from successTasks
                 // even if they are in SUCCESS state
                 .filter(task -> task.getParentId().isPresent() && !groupRetryErrorTaskIds.contains(task.getParentId().get()))
+                .filter(task -> !task.getFullName().contains("^sub"))
                 .filter(task -> task.getState() == TaskStateCode.SUCCESS)
                 .map(task -> {
                     if (!task.getParentId().isPresent()) {
