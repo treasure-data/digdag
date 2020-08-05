@@ -1,0 +1,12 @@
++group1:
+  _retry: 2
+  +step1:
+    sh>: touch ${outdir}/${attempt_id}2-1.out
+  +step2:
+    _retry: 2
+    +a:
+      sh>: touch ${outdir}/${attempt_id}2-2a.out
+    +b:
+      sh>: touch ${outdir}/${attempt_id}2-2b.out
+    +c:
+      sh>: touch ${outdir}/${attempt_id}2-2c.out
