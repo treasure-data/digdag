@@ -512,6 +512,8 @@ Examples:
 
 :command:`--resume`
   Retry only failed tasks. Successfully finished tasks are skipped.
+  Note that if a retry is set up at the group level (not task level), it will resume from the beginning of the group, not only failed tasks.
+  The same applies to the nested group.
 
 :command:`--resume-from +NAME`
   Retry from this task. This task and all following tasks will be executed. All tasks before this task must have been successfully finished.
