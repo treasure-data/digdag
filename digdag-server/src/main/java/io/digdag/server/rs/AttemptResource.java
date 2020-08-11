@@ -304,6 +304,7 @@ public class AttemptResource
 
         // Collect tasksIds in which a group retry occurred.
         // Need to filter the status of the task with "group_error" and "retry_count" in stateParams.
+        // group_error task has no retry_count means that group error has occurred, but no group retry has occurred.
         List<Long> groupRetryErrorTaskIds = tasks.stream()
                 .filter(task -> task.getState() == TaskStateCode.GROUP_ERROR && task.getStateParams().has("retry_count"))
                 .map(task -> task.getId())
