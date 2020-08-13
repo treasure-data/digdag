@@ -305,6 +305,7 @@ public class AttemptResource
         // Collect tasksIds in which a group retry occurred.
         // Need to filter the status of the task with "group_error" and "retry_count" in stateParams.
         // group_error task has no retry_count means that group error has occurred, but no group retry has occurred.
+        // TODO:　Consider consistent behavior on resuming regardless of a group retry has occurred
         List<Long> groupRetryErrorTaskIds = tasks.stream()
                 .filter(task -> task.getState() == TaskStateCode.GROUP_ERROR && task.getStateParams().has("retry_count"))
                 .map(task -> task.getId())
@@ -357,7 +358,7 @@ public class AttemptResource
                     tasks
                             .stream()
                             .collect(
-                                    // Avoid 500 error due to duplicate key ArchivedTask
+                                    // Avoid 500 errors due to duplicated keys of ArchivedTask
                                     // if a group retry happened, IllegalStateException will be thrown
                                     // because there are multiple tasks of the same name.
                                     // Take the first one to make sure it is appropriately resumed.
