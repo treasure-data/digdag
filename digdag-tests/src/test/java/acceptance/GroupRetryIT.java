@@ -46,6 +46,129 @@ public class GroupRetryIT
     }
 
     @Test
+    public void testNoGroupRetry()
+            throws Exception
+    {
+        DigdagClient client = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
+
+        // Push the project
+        pushRevision("acceptance/group_retry/no-retry-1.dig", "test");
+
+        // Start the workflow
+        Id originalAttemptId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "group_retry", "test",
+                    "--session", "now");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+            originalAttemptId = getAttemptId(startStatus);
+        }
+
+        // Wait for the attempt to fail
+        assertThat(joinAttempt(client, originalAttemptId).getSuccess(), is(false));
+        assertOutputExists(originalAttemptId + "1-1", true);
+        assertOutputExists(originalAttemptId + "1-2a", true);
+        assertOutputExists(originalAttemptId + "1-2b", true);
+        assertOutputExists(originalAttemptId + "1-2c", false);
+
+        // Push a new revision
+        pushRevision("acceptance/group_retry/no-retry-2.dig", "test");
+
+        // Retry without updating the revision: --keep-revision
+        Id retry1;
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--keep-revision",
+                    "--all",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry1 = getAttemptId(retryStatus);
+        }
+
+        // Wait for the attempt to fail again
+        assertThat(joinAttempt(client, retry1).getSuccess(), is(false));
+
+        assertOutputExists(retry1 + "1-1", true);
+        assertOutputExists(retry1 + "1-2a", true);
+        assertOutputExists(retry1 + "1-2b", true);
+        assertOutputExists(retry1 + "1-2c", false);
+
+        // Retry with the latest fixed revision & resume failed tasks
+        Id retry2;
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--resume",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry2 = getAttemptId(retryStatus);
+        }
+
+        // Wait for the attempt to success
+        assertThat(joinAttempt(client, retry2).getSuccess(), is(true));
+
+        assertOutputExists(retry2 + "2-1", false);  // skipped
+        assertOutputExists(retry2 + "2-2a", false);  // skipped
+        assertOutputExists(retry2 + "2-2b", false);  // skipped
+        assertOutputExists(retry2 + "2-2c", true);
+
+
+        // Retry with the latest fixed revision & resume all
+        Id retry3;
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--all",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.code(), is(0));
+            retry3 = getAttemptId(retryStatus);
+        }
+
+        // Wait for the attempt to success
+        assertThat(joinAttempt(client, retry3).getSuccess(), is(true));
+
+        assertOutputExists(retry3 + "2-1", true);
+        assertOutputExists(retry3 + "2-2a", true);
+        assertOutputExists(retry3 + "2-2b", true);
+        assertOutputExists(retry3 + "2-2c", true);
+
+        // Push a new revision
+        pushRevision("acceptance/group_retry/no-retry-3.dig", "test");
+
+        // Retry with the latest fixed revision & resume from
+        Id retry4;
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--resume-from", "+step2+a",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry4 = getAttemptId(retryStatus);
+        }
+
+        // Wait for the attempt to success
+        assertThat(joinAttempt(client, retry4).getSuccess(), is(true));
+
+        assertOutputExists(retry4 + "3-1", false); // skipped
+        assertOutputExists(retry4 + "3-2a", true);
+        assertOutputExists(retry4 + "3-2b", true);
+        assertOutputExists(retry4 + "3-2c", true);
+    }
+
+    @Test
     public void testGroupRetry()
             throws Exception
     {
