@@ -101,7 +101,7 @@ public class GroupRetryIT
         assertOutputExists(retry1 + "1-2b", true);
         assertOutputExists(retry1 + "1-2c", false);
 
-        // Retry with the latest fixed revision & resume failed
+        // Retry with the latest fixed revision & resume failed tasks
         Id retry2;
         {
             CommandStatus retryStatus = main("retry",
@@ -224,7 +224,7 @@ public class GroupRetryIT
         assertOutputExists(retry1 + "0-1-2b", true);
         assertOutputExists(retry1 + "0-1-2c", false);
 
-        // Retry with the latest fixed revision & resume failed
+        // Retry with the latest fixed revision & resume failed tasks
         Id retry2;
         {
             CommandStatus retryStatus = main("retry",
@@ -350,7 +350,7 @@ public class GroupRetryIT
         assertOutputExists(retry1 + "1-2b", true);
         assertOutputExists(retry1 + "1-2c", false);
 
-        // Retry with the latest fixed revision & resume failed
+        // Retry with the latest fixed revision & resume failed tasks
         Id retry2;
         {
             CommandStatus retryStatus = main("retry",
@@ -475,7 +475,7 @@ public class GroupRetryIT
         assertOutputExists(retry1 + "1-2c", false);
 
 
-        // Retry with the latest fixed revision & resume failed
+        // Retry with the latest fixed revision & resume failed tasks
         Id retry2;
         {
             CommandStatus retryStatus = main("retry",
