@@ -89,7 +89,7 @@ public class Retry
         err.println("        --keep-revision              keep the same revision");
         err.println("        --revision <name>            use a specific revision");
         err.println("        --all                        retry all tasks");
-        err.println("        --resume                     retry only non-successful tasks");
+        err.println("        --resume                     retry only non-successful groups and tasks");
         err.println("        --resume-from <+name>        retry from a specific task");
         err.println("");
         return systemExit(error);

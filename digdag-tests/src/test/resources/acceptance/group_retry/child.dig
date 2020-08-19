@@ -1,0 +1,11 @@
++show_message:
+  echo>: hello!
+
++child_task:
+  _retry: 2
+  +test:
+    if>: ${val === '1-2c'}
+    _do:
+      fail>: task failed
+    _else_do:
+      sh>: touch ${outdir}/${attempt_id}${val}.out
