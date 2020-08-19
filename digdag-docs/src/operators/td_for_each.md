@@ -103,7 +103,7 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
 * **engine_version**: NAME
 
-  Specify engine version for Hive and Presto.
+  Specify engine version for Hive.
 
   Examples:
 

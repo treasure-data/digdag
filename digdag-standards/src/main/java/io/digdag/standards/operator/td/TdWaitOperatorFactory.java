@@ -134,6 +134,13 @@ public class TdWaitOperatorFactory
         @VisibleForTesting
         String startJob(TDOperator op, String domainKey)
         {
+            Optional<String> ev = Optional.absent();
+
+            // engine version is effective only for hive.
+            if (engine.equals("hive")) {
+                ev = engineVersion;
+            }
+
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
                     .setDatabase(op.getDatabase())
@@ -143,7 +150,7 @@ public class TdWaitOperatorFactory
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainKey)
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);

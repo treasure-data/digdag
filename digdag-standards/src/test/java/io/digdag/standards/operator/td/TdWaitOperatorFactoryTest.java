@@ -81,6 +81,29 @@ public class TdWaitOperatorFactoryTest
 
     }
 
+    @Test
+    public void testTDJobRequestParamsWithEngineVersionForPrestoIsIgnored()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+                .set("database", "testdb")
+                .set("query", "select 1")
+                .set("engine", "presto")
+                .set("engine_version", "stable");
+
+        when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
+        when(op.getDatabase()).thenReturn("testdb");
+
+        TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+
+        assertEquals("testdb", jobRequest.getDatabase());
+        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals("presto", jobRequest.getType().toString());
+        assertFalse(jobRequest.getEngineVersion().isPresent());
+    }
+
     private TDJobRequest testTDJobRequestParams(Path projectPath, Config config)
     {
         ArgumentCaptor<TDJobRequest> captor = ArgumentCaptor.forClass(TDJobRequest.class);

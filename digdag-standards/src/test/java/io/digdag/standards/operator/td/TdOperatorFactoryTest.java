@@ -26,6 +26,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -99,6 +100,29 @@ public class TdOperatorFactoryTest
         assertEquals("hive", jobRequest.getType().toString() );
         assertTrue(jobRequest.getEngineVersion().isPresent());
         assertEquals("stable", jobRequest.getEngineVersion().get().toString());
+    }
+
+    @Test
+    public void testTDJobRequestParamsWithEngineVersionForPrestoIsIgnored()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+                .set("database", "testdb")
+                .set("query", "select 1")
+                .set("engine", "presto")
+                .set("engine_version", "stable");
+
+        when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
+        when(op.getDatabase()).thenReturn("testdb");
+
+        TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+
+        assertEquals("testdb", jobRequest.getDatabase());
+        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals("presto", jobRequest.getType().toString() );
+        assertFalse(jobRequest.getEngineVersion().isPresent());
     }
 
     private TDJobRequest testTDJobRequestParams(Path projectPath, Config config)

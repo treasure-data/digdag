@@ -121,6 +121,13 @@ public class TdForEachOperatorFactory
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
 
+            Optional<String> ev = Optional.absent();
+
+            // engine version is effective only for hive.
+            if (engine.equals("hive")) {
+                ev = engineVersion;
+            }
+
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
                     .setDatabase(op.getDatabase())
@@ -130,7 +137,7 @@ public class TdForEachOperatorFactory
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainkey)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);

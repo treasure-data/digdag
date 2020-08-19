@@ -183,6 +183,8 @@ public class TdOperatorFactory
         protected String startJob(TDOperator op, String domainKey)
         {
             String stmt;
+            Optional<String> ev = Optional.absent();
+
             switch(engine) {
                 case "presto":
                     if (insertInto.isPresent()) {
@@ -213,6 +215,9 @@ public class TdOperatorFactory
                     else {
                         stmt = query;
                     }
+
+                    // engine version is effective only for hive.
+                    ev = engineVersion;
                     break;
 
                 default:
@@ -231,7 +236,7 @@ public class TdOperatorFactory
                     .setResultConnectionId(resultConnection.transform(name -> getResultConnectionId(name, op)))
                     .setResultConnectionSettings(resultSettings.transform(t -> t.format(context.getSecrets())))
                     .setDomainKey(domainKey)
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);

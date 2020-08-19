@@ -19,6 +19,7 @@ import static io.digdag.standards.operator.td.TdOperatorTestingUtils.newOperator
 import static io.digdag.client.config.ConfigUtils.newConfig;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
@@ -58,6 +59,29 @@ public class TdWaitTableOperatorFactoryTest
      * Check config parameters are set to TDJobRequest
      */
     @Test
+    public void testTDJobRequestParamsWithEngineVersionForPrestoIsIgnored()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+                .set("_command", "target_table_00")
+                .set("database", "testdb")
+                .set("engine", "presto")
+                .set("engine_version", "stable");
+
+        when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
+        when(op.getDatabase()).thenReturn("testdb");
+
+        TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+
+        assertEquals("testdb", jobRequest.getDatabase());
+        assertTrue(jobRequest.getQuery().length() > 0);
+        assertEquals("presto", jobRequest.getType().toString());
+        assertFalse(jobRequest.getEngineVersion().isPresent());
+    }
+
+    @Test
     public void testTDJobRequestParamsWithEngineVersion()
             throws Exception
     {
@@ -79,7 +103,6 @@ public class TdWaitTableOperatorFactoryTest
         assertEquals("hive", jobRequest.getType().toString());
         assertTrue(jobRequest.getEngineVersion().isPresent());
         assertEquals("stable", jobRequest.getEngineVersion().get().toString());
-
     }
 
     private TDJobRequest testTDJobRequestParams(Path projectPath, Config config)
