@@ -166,6 +166,18 @@ public class GroupRetryIT
         assertOutputExists(retry4 + "3-2a", true);
         assertOutputExists(retry4 + "3-2b", true);
         assertOutputExists(retry4 + "3-2c", true);
+
+        // Retry the previous attempt with the latest fixed revision & resume failed tasks
+        // But the previous attempt was successful, it fails to resume
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--resume",
+                    String.valueOf(retry4));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(1));
+        }
     }
 
     @Test
@@ -289,6 +301,18 @@ public class GroupRetryIT
         assertOutputExists(retry4 + "3-2a", true);
         assertOutputExists(retry4 + "3-2b", true);
         assertOutputExists(retry4 + "3-2c", true);
+
+        // Retry the previous attempt with the latest fixed revision & resume failed tasks
+        // But the previous attempt was successful, it fails to resume
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--resume",
+                    String.valueOf(retry4));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(1));
+        }
     }
 
     @Test
