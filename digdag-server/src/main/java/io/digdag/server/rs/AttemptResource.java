@@ -23,6 +23,7 @@ import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskRelation;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.*;
@@ -315,15 +316,15 @@ public class AttemptResource
                 // If a group error has occurred,
                 // exclude the group's child/dynamically generated tasks from successTasks
                 // even if they are in SUCCESS state
-                .filter(task -> task.getParentId().isPresent() && !groupRetryErrorTaskIds.contains(task.getParentId().get()))
                 .filter(task -> !task.getFullName().contains("^sub"))
                 .filter(task -> task.getState() == TaskStateCode.SUCCESS)
-                .map(task -> {
+                .filter(task -> {
                     if (!task.getParentId().isPresent()) {
                         throw new IllegalArgumentException("Resuming successfully completed attempts is not supported");
                     }
-                    return task.getId();
+                    return !groupRetryErrorTaskIds.contains(task.getParentId().get());
                 })
+                .map(StoredTask::getId)
                 .collect(Collectors.toList());
 
         return ImmutableList.copyOf(successTasks);
