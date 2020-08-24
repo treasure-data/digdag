@@ -5,6 +5,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.treasuredata.client.model.TDJobRequest;
 import io.digdag.core.EnvironmentModule;
+import io.digdag.spi.TaskRequest;
 import io.digdag.standards.td.TdConfigurationModule;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static io.digdag.standards.operator.td.TdOperatorFactory.createStmtComment;
 import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -34,6 +36,7 @@ import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.standards.operator.td.TdOperatorTestingUtils.newOperatorFactory;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -41,6 +44,9 @@ public class TdOperatorFactoryTest
 {
     @Mock
     TDOperator op;
+
+    @Mock
+    TaskRequest taskRequest;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -94,8 +100,16 @@ public class TdOperatorFactoryTest
 
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
 
+        when(taskRequest.getProjectId()).thenReturn(2);
+        when(taskRequest.getProjectName()).thenReturn(Optional.absent());
+        when(taskRequest.getSessionId()).thenReturn((long) 5);
+        when(taskRequest.getAttemptId()).thenReturn((long) 4);
+        when(taskRequest.getTaskName()).thenReturn("t");
+
+        String sql = createStmtComment(taskRequest) + "select 1";
+
         assertEquals("testdb", jobRequest.getDatabase());
-        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals(sql, jobRequest.getQuery());
         assertEquals("hive", jobRequest.getType().toString() );
         assertTrue(jobRequest.getEngineVersion().isPresent());
         assertEquals("stable", jobRequest.getEngineVersion().get().toString());

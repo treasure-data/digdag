@@ -1,6 +1,5 @@
 package io.digdag.standards.operator.td;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -19,6 +18,7 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
@@ -219,11 +219,13 @@ public class TdOperatorFactory
                     throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): "+engine);
             }
 
+            final String sql = createStmtComment(request) + stmt;
+
             TDJobRequest req = new TDJobRequestBuilder()
                     .setResultOutput(resultUrl.transform(t -> t.format(context.getSecrets())).orNull())
                     .setType(engine)
                     .setDatabase(op.getDatabase())
-                    .setQuery(stmt)
+                    .setQuery(sql)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setPoolName(poolName.orNull())
@@ -235,7 +237,7 @@ public class TdOperatorFactory
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);
-            logger.info("Started {} job id={}:\n{}", engine, jobId, stmt);
+            logger.info("Started {} job id={}:\n{}", engine, jobId, sql);
 
             return jobId;
         }
@@ -532,5 +534,17 @@ public class TdOperatorFactory
         else {
             return escapedValue.toString();
         }
+    }
+
+    @VisibleForTesting
+    static String createStmtComment(TaskRequest request)
+    {
+        return new StringBuilder()
+                .append("-- project_id: ").append(request.getProjectId()).append("\n")
+                .append("-- project_name: ").append(request.getProjectName().or("")).append("\n")
+                .append("-- session_id: ").append(request.getSessionId()).append("\n")
+                .append("-- attempt_id: ").append(request.getAttemptId()).append("\n")
+                .append("-- task_name: ").append(request.getTaskName()).append("\n")
+                .toString();
     }
 }
