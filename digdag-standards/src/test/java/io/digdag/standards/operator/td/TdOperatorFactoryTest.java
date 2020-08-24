@@ -51,6 +51,16 @@ public class TdOperatorFactoryTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @Before
+    public void setUp()
+    {
+        when(taskRequest.getProjectId()).thenReturn(2);
+        when(taskRequest.getProjectName()).thenReturn(Optional.absent());
+        when(taskRequest.getSessionId()).thenReturn((long) 5);
+        when(taskRequest.getAttemptId()).thenReturn((long) 4);
+        when(taskRequest.getTaskName()).thenReturn("t");
+    }
+
     /**
      *
      * Check config parameters are set to TDJobRequest
@@ -72,9 +82,10 @@ public class TdOperatorFactoryTest
         ArgumentCaptor<TDJobRequest> captor = ArgumentCaptor.forClass(TDJobRequest.class);
 
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+        String sql = createStmtComment(taskRequest).append("select 1").toString();
 
         assertEquals("testdb", jobRequest.getDatabase());
-        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals(sql, jobRequest.getQuery());
         assertEquals("presto", jobRequest.getType().toString() );
         assertEquals(Optional.absent(), jobRequest.getEngineVersion());
     }
@@ -99,14 +110,7 @@ public class TdOperatorFactoryTest
         when(op.getDatabase()).thenReturn("testdb");
 
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
-
-        when(taskRequest.getProjectId()).thenReturn(2);
-        when(taskRequest.getProjectName()).thenReturn(Optional.absent());
-        when(taskRequest.getSessionId()).thenReturn((long) 5);
-        when(taskRequest.getAttemptId()).thenReturn((long) 4);
-        when(taskRequest.getTaskName()).thenReturn("t");
-
-        String sql = createStmtComment(taskRequest) + "select 1";
+        String sql = createStmtComment(taskRequest).append("select 1").toString();
 
         assertEquals("testdb", jobRequest.getDatabase());
         assertEquals(sql, jobRequest.getQuery());
