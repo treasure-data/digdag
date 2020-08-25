@@ -251,4 +251,57 @@ public class TdOperatorFactoryTest
         newOperatorFactory(TdOperatorFactory.class)
             .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
     }
+
+    @Test
+    public void testWrapStmtWithComment()
+    {
+
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: \n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: t\n" +
+                        "select 1",
+                wrapStmtWithComment(taskRequest, "select 1"));
+
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: \n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: t\n" +
+                        "-- comment\n" +
+                        "select 1 from test",
+                wrapStmtWithComment(taskRequest, "-- comment\nselect 1 from test"));
+
+        String insertCmdStmt = insertCommandStatement("INSERT",
+                "with a as (select 1)\n" +
+                        "--DIGDAG_INSERT_LINE\n" +
+                        "-- comment\n" +
+                        "select 1");
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: \n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: t\n" +
+                        "with a as (select 1)\n" +
+                        "INSERT\n" +
+                        "-- comment\n" +
+                        "select 1",
+                wrapStmtWithComment(taskRequest, insertCmdStmt));
+
+        when(taskRequest.getProjectName()).thenReturn(Optional.of("test_project"));
+        when(taskRequest.getTaskName()).thenReturn("+test_wf+test");
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: test_project\n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: +test_wf+test\n" +
+                        "select 1",
+                wrapStmtWithComment(taskRequest, "select 1"));
+    }
+
 }
