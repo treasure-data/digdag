@@ -24,8 +24,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static io.digdag.standards.operator.td.TdOperatorFactory.createStmtComment;
 import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
+import static io.digdag.standards.operator.td.TdOperatorFactory.wrapStmtWithComment;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -36,7 +36,6 @@ import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.standards.operator.td.TdOperatorTestingUtils.newOperatorFactory;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -70,10 +69,11 @@ public class TdOperatorFactoryTest
             throws Exception
     {
         Path projectPath = Paths.get("").normalize().toAbsolutePath();
+        String stmt = "select 1";
 
         Config config = newConfig()
                 .set("database", "testdb")
-                .set("query", "select 1")
+                .set("query", stmt)
                 .set("engine", "presto");
 
         when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
@@ -82,10 +82,9 @@ public class TdOperatorFactoryTest
         ArgumentCaptor<TDJobRequest> captor = ArgumentCaptor.forClass(TDJobRequest.class);
 
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
-        String sql = createStmtComment(taskRequest).append("select 1").toString();
 
         assertEquals("testdb", jobRequest.getDatabase());
-        assertEquals(sql, jobRequest.getQuery());
+        assertEquals(wrapStmtWithComment(taskRequest, stmt), jobRequest.getQuery());
         assertEquals("presto", jobRequest.getType().toString() );
         assertEquals(Optional.absent(), jobRequest.getEngineVersion());
     }
@@ -99,10 +98,11 @@ public class TdOperatorFactoryTest
             throws Exception
     {
         Path projectPath = Paths.get("").normalize().toAbsolutePath();
+        String stmt = "select 1";
 
         Config config = newConfig()
                 .set("database", "testdb")
-                .set("query", "select 1")
+                .set("query", stmt)
                 .set("engine", "hive")
                 .set("engine_version", "stable");
 
@@ -110,10 +110,9 @@ public class TdOperatorFactoryTest
         when(op.getDatabase()).thenReturn("testdb");
 
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
-        String sql = createStmtComment(taskRequest).append("select 1").toString();
 
         assertEquals("testdb", jobRequest.getDatabase());
-        assertEquals(sql, jobRequest.getQuery());
+        assertEquals(wrapStmtWithComment(taskRequest, stmt), jobRequest.getQuery());
         assertEquals("hive", jobRequest.getType().toString() );
         assertTrue(jobRequest.getEngineVersion().isPresent());
         assertEquals("stable", jobRequest.getEngineVersion().get().toString());
