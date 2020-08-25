@@ -219,7 +219,7 @@ public class TdOperatorFactory
                     throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): "+engine);
             }
 
-            final String sql = createStmtComment(request).append(stmt).toString();
+            final String sql = wrapStmtWithComment(request, stmt);
 
             TDJobRequest req = new TDJobRequestBuilder()
                     .setResultOutput(resultUrl.transform(t -> t.format(context.getSecrets())).orNull())
@@ -537,13 +537,15 @@ public class TdOperatorFactory
     }
 
     @VisibleForTesting
-    static StringBuilder createStmtComment(TaskRequest request)
+    static String wrapStmtWithComment(TaskRequest request, String stmt)
     {
         return new StringBuilder()
                 .append("-- project_id: ").append(request.getProjectId()).append("\n")
                 .append("-- project_name: ").append(request.getProjectName().or("")).append("\n")
                 .append("-- session_id: ").append(request.getSessionId()).append("\n")
                 .append("-- attempt_id: ").append(request.getAttemptId()).append("\n")
-                .append("-- task_name: ").append(request.getTaskName()).append("\n");
+                .append("-- task_name: ").append(request.getTaskName()).append("\n")
+                .append(stmt)
+                .toString();
     }
 }
