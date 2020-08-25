@@ -57,6 +57,7 @@ public class TdOperatorFactoryTest
         when(taskRequest.getProjectName()).thenReturn(Optional.absent());
         when(taskRequest.getSessionId()).thenReturn((long) 5);
         when(taskRequest.getAttemptId()).thenReturn((long) 4);
+        when(taskRequest.getWorkflowName()).thenReturn("test_wf");
         when(taskRequest.getTaskName()).thenReturn("t");
     }
 
@@ -258,6 +259,7 @@ public class TdOperatorFactoryTest
         assertEquals(
                 "-- project_id: 2\n" +
                         "-- project_name: \n" +
+                        "-- workflow_name: test_wf\n" +
                         "-- session_id: 5\n" +
                         "-- attempt_id: 4\n" +
                         "-- task_name: t\n" +
@@ -267,6 +269,7 @@ public class TdOperatorFactoryTest
         assertEquals(
                 "-- project_id: 2\n" +
                         "-- project_name: \n" +
+                        "-- workflow_name: test_wf\n" +
                         "-- session_id: 5\n" +
                         "-- attempt_id: 4\n" +
                         "-- task_name: t\n" +
@@ -282,6 +285,7 @@ public class TdOperatorFactoryTest
         assertEquals(
                 "-- project_id: 2\n" +
                         "-- project_name: \n" +
+                        "-- workflow_name: test_wf\n" +
                         "-- session_id: 5\n" +
                         "-- attempt_id: 4\n" +
                         "-- task_name: t\n" +
@@ -296,6 +300,7 @@ public class TdOperatorFactoryTest
         assertEquals(
                 "-- project_id: 2\n" +
                         "-- project_name: test_project\n" +
+                        "-- workflow_name: test_wf\n" +
                         "-- session_id: 5\n" +
                         "-- attempt_id: 4\n" +
                         "-- task_name: +test_wf+test\n" +

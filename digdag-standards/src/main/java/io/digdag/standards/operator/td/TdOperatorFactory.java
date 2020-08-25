@@ -542,6 +542,7 @@ public class TdOperatorFactory
         return new StringBuilder()
                 .append("-- project_id: ").append(request.getProjectId()).append("\n")
                 .append("-- project_name: ").append(request.getProjectName().or("")).append("\n")
+                .append("-- workflow_name: ").append(request.getWorkflowName()).append("\n")
                 .append("-- session_id: ").append(request.getSessionId()).append("\n")
                 .append("-- attempt_id: ").append(request.getAttemptId()).append("\n")
                 .append("-- task_name: ").append(request.getTaskName()).append("\n")
