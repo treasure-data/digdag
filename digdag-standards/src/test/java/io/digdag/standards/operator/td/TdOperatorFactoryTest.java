@@ -5,6 +5,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.treasuredata.client.model.TDJobRequest;
 import io.digdag.core.EnvironmentModule;
+import io.digdag.spi.TaskRequest;
 import io.digdag.standards.td.TdConfigurationModule;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +25,7 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
+import static io.digdag.standards.operator.td.TdOperatorFactory.wrapStmtWithComment;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -42,8 +44,22 @@ public class TdOperatorFactoryTest
     @Mock
     TDOperator op;
 
+    @Mock
+    TaskRequest taskRequest;
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    @Before
+    public void setUp()
+    {
+        when(taskRequest.getProjectId()).thenReturn(2);
+        when(taskRequest.getProjectName()).thenReturn(Optional.absent());
+        when(taskRequest.getSessionId()).thenReturn((long) 5);
+        when(taskRequest.getAttemptId()).thenReturn((long) 4);
+        when(taskRequest.getWorkflowName()).thenReturn("wf");
+        when(taskRequest.getTaskName()).thenReturn("t");
+    }
 
     /**
      *
@@ -54,10 +70,11 @@ public class TdOperatorFactoryTest
             throws Exception
     {
         Path projectPath = Paths.get("").normalize().toAbsolutePath();
+        String stmt = "select 1";
 
         Config config = newConfig()
                 .set("database", "testdb")
-                .set("query", "select 1")
+                .set("query", stmt)
                 .set("engine", "presto");
 
         when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
@@ -68,7 +85,7 @@ public class TdOperatorFactoryTest
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
 
         assertEquals("testdb", jobRequest.getDatabase());
-        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals(wrapStmtWithComment(taskRequest, stmt), jobRequest.getQuery());
         assertEquals("presto", jobRequest.getType().toString() );
         assertEquals(Optional.absent(), jobRequest.getEngineVersion());
     }
@@ -82,10 +99,11 @@ public class TdOperatorFactoryTest
             throws Exception
     {
         Path projectPath = Paths.get("").normalize().toAbsolutePath();
+        String stmt = "select 1";
 
         Config config = newConfig()
                 .set("database", "testdb")
-                .set("query", "select 1")
+                .set("query", stmt)
                 .set("engine", "hive")
                 .set("engine_version", "stable");
 
@@ -95,7 +113,7 @@ public class TdOperatorFactoryTest
         TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
 
         assertEquals("testdb", jobRequest.getDatabase());
-        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals(wrapStmtWithComment(taskRequest, stmt), jobRequest.getQuery());
         assertEquals("hive", jobRequest.getType().toString() );
         assertTrue(jobRequest.getEngineVersion().isPresent());
         assertEquals("stable", jobRequest.getEngineVersion().get().toString());
@@ -233,4 +251,62 @@ public class TdOperatorFactoryTest
         newOperatorFactory(TdOperatorFactory.class)
             .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
     }
+
+    @Test
+    public void testWrapStmtWithComment()
+    {
+
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: \n" +
+                        "-- workflow_name: wf\n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: t\n" +
+                        "select 1",
+                wrapStmtWithComment(taskRequest, "select 1"));
+
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: \n" +
+                        "-- workflow_name: wf\n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: t\n" +
+                        "-- comment\n" +
+                        "select 1 from test",
+                wrapStmtWithComment(taskRequest, "-- comment\nselect 1 from test"));
+
+        String insertCmdStmt = insertCommandStatement("INSERT",
+                "with a as (select 1)\n" +
+                        "--DIGDAG_INSERT_LINE\n" +
+                        "-- comment\n" +
+                        "select 1");
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: \n" +
+                        "-- workflow_name: wf\n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: t\n" +
+                        "with a as (select 1)\n" +
+                        "INSERT\n" +
+                        "-- comment\n" +
+                        "select 1",
+                wrapStmtWithComment(taskRequest, insertCmdStmt));
+
+        when(taskRequest.getProjectName()).thenReturn(Optional.of("test_project"));
+        when(taskRequest.getWorkflowName()).thenReturn("test_wf");
+        when(taskRequest.getTaskName()).thenReturn("+test_wf+test");
+        assertEquals(
+                "-- project_id: 2\n" +
+                        "-- project_name: test_project\n" +
+                        "-- workflow_name: test_wf\n" +
+                        "-- session_id: 5\n" +
+                        "-- attempt_id: 4\n" +
+                        "-- task_name: +test_wf+test\n" +
+                        "select 1",
+                wrapStmtWithComment(taskRequest, "select 1"));
+    }
+
 }
