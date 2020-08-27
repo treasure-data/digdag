@@ -1330,7 +1330,11 @@ public class WorkflowExecutor
         }
         catch (ConfigException ex) {
             // Subtask config or _check task config has a problem (e.g. more than one operator).
-            return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
+            Config errorConfig = buildExceptionErrorConfig(ex).toConfig(cf);
+            logger.error("Configuration error at task {}: {}",
+                    lockedTask.get().getFullName(),
+                    errorConfig.get("message", String.class, ""));
+            return taskFailed(lockedTask, errorConfig);
         }
 
         boolean updated;
