@@ -87,6 +87,7 @@ public class TdWaitTableOperatorFactory
         private final int rows;
         private final String engine;
         private final Optional<String> engineVersion;
+        private final Optional<String> hiveEngineVersion;
         private final int priority;
         private final Optional<String> poolName;
         private final int jobRetry;
@@ -111,6 +112,7 @@ public class TdWaitTableOperatorFactory
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
             this.engineVersion = params.getOptional("engine_version", String.class);
+            this.hiveEngineVersion = params.getOptional("hive_engine_version", String.class);
         }
 
         @Override
@@ -200,6 +202,11 @@ public class TdWaitTableOperatorFactory
         String startJob(TDOperator op, String domainKey)
         {
             String query = createQuery();
+            Optional<String> ev = engineVersion;
+
+            if (engine.equals("hive") && hiveEngineVersion.isPresent()) {
+                ev = hiveEngineVersion;
+            }
 
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
@@ -209,7 +216,7 @@ public class TdWaitTableOperatorFactory
                     .setPriority(priority)
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainKey)
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);
