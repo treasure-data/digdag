@@ -1,5 +1,5 @@
 _export:
-  parallel: true
+  parallel: tru
 
 +loop:
   loop>: 2
