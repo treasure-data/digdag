@@ -11,6 +11,8 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.util.ParallelControl;
+
 import static java.util.Locale.ENGLISH;
 
 public class LoopOperatorFactory
@@ -67,7 +69,7 @@ public class LoopOperatorFactory
                         subtask);
             }
 
-            if (params.has("_parallel")) {
+            if (ParallelControl.of(params).isParallel()) {
                 generated.set("_parallel", params.get("_parallel", JsonNode.class));
             }
 

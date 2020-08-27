@@ -18,6 +18,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
+import io.digdag.util.ParallelControl;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -107,7 +108,7 @@ public class TdForEachOperatorFactory
                 subtasks.set("+td-for-each-" + i, subtask);
             }
 
-            if (params.has("_parallel")) {
+            if (ParallelControl.of(params).isParallel()) {
                 subtasks.set("_parallel", params.get("_parallel", JsonNode.class));
             }
 
