@@ -21,7 +21,9 @@ public class ParallelControl
             this.isParallel = false;
             this.parallelLimit = 0;
         }
-        else if (parallelNode.isBoolean()) { // _parallel: true/false
+        else if (parallelNode.isBoolean() || parallelNode.isTextual()) { // _parallel: true/false
+            // If _parallel is specified in subtasks (e.g. loop operators with parallel),
+            // a variable ${..} is available, if set as variable ${..}, the value become text so that needs to accept here
             this.isParallel = config.get("_parallel", boolean.class, false);
             this.parallelLimit = 0; // no limit
         }
