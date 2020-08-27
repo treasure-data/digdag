@@ -1,0 +1,11 @@
+_export:
+  parallel: true
+
++group1:
+  _parallel: ${parallel}
+  +task1:
+    echo>: task1
+  +task2:
+    echo>: task2
+  +task3:
+    echo>: task3
