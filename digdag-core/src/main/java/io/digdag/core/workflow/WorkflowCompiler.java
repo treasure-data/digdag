@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.session.TaskType;
@@ -16,6 +15,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.agent.EditDistance;
+import io.digdag.util.ParallelControl;
+
 import static java.util.Locale.ENGLISH;
 import static com.google.common.collect.Maps.immutableEntry;
 
@@ -232,7 +233,7 @@ public class WorkflowCompiler
                     .map(pair -> collect(Optional.of(tb), fullName, pair.getKey(), pair.getValue(), validator))
                     .collect(Collectors.toList());
 
-                ParallelControl pc = new ParallelControl(config);
+                ParallelControl pc = ParallelControl.of(config);
                 Map<String, TaskBuilder> names = new HashMap<>();
                 if (pc.isParallel()) {
                     if (pc.getParallelLimit() > 0) {
@@ -326,34 +327,5 @@ public class WorkflowCompiler
             subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
             names.put(subtask.getName(), subtask);
         }
-    }
-
-    private static class ParallelControl
-    {
-        private final boolean isParallel;
-        private final int parallelLimit;
-
-        private ParallelControl(Config config)
-        {
-            final JsonNode parallelNode = config.getInternalObjectNode().get("_parallel");
-            if (parallelNode == null) { // not specified, default
-                this.isParallel = false;
-                this.parallelLimit = 0;
-            }
-            else if (parallelNode.isBoolean()) { // _parallel: true/false
-                this.isParallel = config.get("_parallel", boolean.class);
-                this.parallelLimit = 0; // no limit
-            }
-            else if (parallelNode.isObject()) { // _parallel: {limit: N}
-                Config parallel = config.getNested("_parallel");
-                this.isParallel = true; // always true
-                this.parallelLimit = parallel.get("limit", int.class);
-            }
-            else { // unknown format
-                throw new ConfigException(String.format("Invalid _parallel format: %s", parallelNode.toString()));
-            }
-        }
-        public boolean isParallel() { return isParallel; }
-        public int getParallelLimit() { return parallelLimit; }
     }
 }
