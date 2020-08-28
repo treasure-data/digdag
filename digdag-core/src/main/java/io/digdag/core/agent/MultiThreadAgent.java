@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.spi.TaskRequest;
 import java.time.Duration;
 import java.util.List;
@@ -131,7 +132,9 @@ public class MultiThreadAgent
                                         runner.run(req);
                                     }
                                     catch (Throwable t) {
-                                        logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
+                                        logger.error(
+                                                LogMarkers.UNEXPECTED_SERVER_ERROR,
+                                                "Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
                                         errorReporter.reportUncaughtError(t);
                                         metrics.increment(Category.AGENT, "uncaughtErrors");
                                     }
@@ -152,7 +155,9 @@ public class MultiThreadAgent
                 }
             }
             catch (Throwable t) {
-                logger.error("Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
                 errorReporter.reportUncaughtError(t);
                 metrics.increment(Category.AGENT, "uncaughtErrors");
                 try {

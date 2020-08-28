@@ -13,6 +13,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -1013,7 +1014,9 @@ public class WorkflowExecutor
             }
             catch (Exception ex) {
                 tm.reset();
-                logger.error("Enqueue error, making this task failed: {}", task, ex);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Enqueue error, making this task failed: {}", task, ex);
                 // TODO retry here?
                 return taskFailed(lockedTask,
                         buildExceptionErrorConfig(ex).toConfig(cf));
@@ -1060,7 +1063,9 @@ public class WorkflowExecutor
             }
             catch (RuntimeException ex) {
                 tm.reset();
-                logger.error("Invalid association of task queue lock id: {}", lock, ex);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Invalid association of task queue lock id: {}", lock, ex);
             }
         }
         return builder.build();

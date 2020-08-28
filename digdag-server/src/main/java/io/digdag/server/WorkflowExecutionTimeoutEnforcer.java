@@ -1,18 +1,15 @@
 package io.digdag.server;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.core.database.Transaction;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
-import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
-import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttempt;
@@ -110,14 +107,18 @@ public class WorkflowExecutionTimeoutEnforcer
             enforceAttemptTTLs();
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
         }
 
         try {
             enforceTaskTTLs();
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
         }
     }
 
@@ -154,7 +155,9 @@ public class WorkflowExecutionTimeoutEnforcer
                 }
             }
             catch (Throwable t) {
-                logger.error("Uncaught exception when enforcing attempt TTLs of attempt {}. Ignoring. Loop continues.", attempt.getId(), t);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Uncaught exception when enforcing attempt TTLs of attempt {}. Ignoring. Loop continues.", attempt.getId(), t);
             }
         }
     }
@@ -183,7 +186,9 @@ public class WorkflowExecutionTimeoutEnforcer
                 }
             }
             catch (Throwable t) {
-                logger.error("Uncaught exception when enforcing task TTLs of attempt {}. Ignoring. Loop continues.", entry.getKey(), t);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Uncaught exception when enforcing task TTLs of attempt {}. Ignoring. Loop continues.", entry.getKey(), t);
             }
         }
     }

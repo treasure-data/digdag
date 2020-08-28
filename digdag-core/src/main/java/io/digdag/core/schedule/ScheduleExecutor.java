@@ -2,7 +2,6 @@ package io.digdag.core.schedule;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -10,6 +9,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
@@ -17,21 +17,16 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.workflow.AttemptBuilder;
-import io.digdag.core.workflow.AttemptLimitExceededException;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.SessionAttemptConflictException;
-import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.session.DelayedAttemptControlStore;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.AttemptStateFlags;
-import io.digdag.core.session.ImmutableStoredSessionAttempt;
-import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredDelayedSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
@@ -159,7 +154,9 @@ public class ScheduleExecutor
                 ;  // repeat while some schedules ready
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. Scheduling will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "An uncaught exception is ignored. Scheduling will be retried.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }
@@ -195,7 +192,9 @@ public class ScheduleExecutor
             });
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. Submitting delayed attempts will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "An uncaught exception is ignored. Submitting delayed attempts will be retried.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }
@@ -258,7 +257,9 @@ public class ScheduleExecutor
                     sched.getNextRunTime().plusSeconds(3600));
         }
         catch (RuntimeException ex) {
-            logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
             nextSchedule = ScheduleTime.of(
                     sched.getNextScheduleTime(),
                     ScheduleTime.alignedNow().plusSeconds(3600));

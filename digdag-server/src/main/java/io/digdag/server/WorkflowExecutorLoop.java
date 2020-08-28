@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 import io.digdag.spi.metrics.DigdagMetrics;
@@ -13,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -59,7 +59,9 @@ public class WorkflowExecutorLoop
                 workflowExecutor.runWhile(() -> !stop);
             }
             catch (Throwable t) {
-                logger.error("Uncaught error during executing workflow state machine. Ignoring. Loop will be retried.", t);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Uncaught error during executing workflow state machine. Ignoring. Loop will be retried.", t);
                 errorReporter.reportUncaughtError(t);
                 metrics.increment(Category.EXECUTOR, "uncaughtErrors");
                 try {
