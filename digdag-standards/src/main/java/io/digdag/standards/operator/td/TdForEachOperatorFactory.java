@@ -72,6 +72,7 @@ public class TdForEachOperatorFactory
         private final int jobRetry;
         private final String engine;
         private final Optional<String> engineVersion;
+        private final Optional<String> hiveEngineVersion;
         private final Optional<String> poolName;
 
         private final Config doConfig;
@@ -89,6 +90,7 @@ public class TdForEachOperatorFactory
             this.poolName = poolNameOfEngine(params, engine);
             this.doConfig = request.getConfig().getNested("_do");
             this.engineVersion = params.getOptional("engine_version", String.class);
+            this.hiveEngineVersion = params.getOptional("hive_engine_version", String.class);
         }
 
         @Override
@@ -121,6 +123,12 @@ public class TdForEachOperatorFactory
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
 
+            Optional<String> ev = engineVersion;
+
+            if (engine.equals("hive") && hiveEngineVersion.isPresent()) {
+                ev = hiveEngineVersion;
+            }
+
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
                     .setDatabase(op.getDatabase())
@@ -130,7 +138,7 @@ public class TdForEachOperatorFactory
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainkey)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);

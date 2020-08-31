@@ -99,6 +99,7 @@ public class TdOperatorFactory
         private final int jobRetry;
         private final String engine;
         private final Optional<String> engineVersion;
+        private final Optional<String> hiveEngineVersion;
         private final Optional<String> poolName;
         private final Optional<String> downloadFile;
         private final Optional<String> resultConnection;
@@ -152,6 +153,7 @@ public class TdOperatorFactory
             this.preview = params.get("preview", boolean.class, false);
 
             this.engineVersion = params.getOptional("engine_version", String.class);
+            this.hiveEngineVersion = params.getOptional("hive_engine_version", String.class);
         }
 
         @Override
@@ -183,6 +185,8 @@ public class TdOperatorFactory
         protected String startJob(TDOperator op, String domainKey)
         {
             String stmt;
+            Optional<String> ev = engineVersion;
+
             switch(engine) {
                 case "presto":
                     if (insertInto.isPresent()) {
@@ -213,6 +217,10 @@ public class TdOperatorFactory
                     else {
                         stmt = query;
                     }
+
+                    if (hiveEngineVersion.isPresent()) {
+                        ev = hiveEngineVersion;
+                    }
                     break;
 
                 default:
@@ -233,7 +241,7 @@ public class TdOperatorFactory
                     .setResultConnectionId(resultConnection.transform(name -> getResultConnectionId(name, op)))
                     .setResultConnectionSettings(resultSettings.transform(t -> t.format(context.getSecrets())))
                     .setDomainKey(domainKey)
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);
