@@ -29,7 +29,7 @@ public class ParallelControlTest
     }
 
     @Test
-    public void testParallel()
+    public void testParallelControl()
     {
         {
             ParallelControl pc = ParallelControl.of(newConfig());
@@ -61,6 +61,28 @@ public class ParallelControlTest
             assertThat(pc.isParallel(), is(true));
             assertThat(pc.getParallelLimit(), is(3));
         }
+
+        {
+            Config src = newConfig().set("_parallel", false);
+            Config dst = newConfig();
+            ParallelControl.of(src).copyIfNeeded(dst);
+            assertThat(dst.has("_parallel"), is(false));
+        }
+
+        {
+            Config src = newConfig().set("_parallel", true);
+            Config dst = newConfig();
+            ParallelControl.of(src).copyIfNeeded(dst);
+            assertThat(dst.get("_parallel", boolean.class), is(true));
+        }
+
+        {
+            Config src = newConfig().set("_parallel", newConfig().set("limit", 3));
+            Config dst = newConfig();
+            ParallelControl.of(src).copyIfNeeded(dst);
+            assertThat(dst.getNested("_parallel").get("limit", int.class), is(3));
+        }
+
     }
 
     @Test
