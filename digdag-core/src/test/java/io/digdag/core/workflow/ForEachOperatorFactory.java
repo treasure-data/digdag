@@ -88,9 +88,7 @@ public class ForEachOperatorFactory
                         subtask);
             }
 
-            if (ParallelControl.of(params).isParallel()) {
-                generated.set("_parallel", params.get("_parallel", JsonNode.class));
-            }
+            ParallelControl.of(params).copyIfNeeded(generated);
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(generated)
