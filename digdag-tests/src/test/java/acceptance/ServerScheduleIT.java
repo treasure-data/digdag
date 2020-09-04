@@ -442,12 +442,10 @@ public class ServerScheduleIT
         Files.createDirectories(projectDir);
         addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "daily10.dig");
         addWorkflow(projectDir, "acceptance/schedule/hourly9.dig", "hourly9.dig");
-        pushProject(server.endpoint(), projectDir);
+        Id projectId = pushProject(server.endpoint(), projectDir);
 
-        List<RestSchedule> schedules = client.getSchedules().getSchedules();
-
-        RestSchedule daily = schedules.get(0);
-        RestSchedule hourly = schedules.get(1);
+        RestSchedule daily = client.getSchedule(projectId, "daily10");
+        RestSchedule hourly = client.getSchedule(projectId, "hourly9");
         Optional<String> skipToTime = Optional.of("2291-02-09T00:01:00Z");
 
         // daily
