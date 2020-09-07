@@ -302,21 +302,7 @@ public class AttemptResource
                 .getSessionStore(getSiteId())
                 .getTasksOfAttempt(attemptId);
 
-        // Collect tasksIds in which a group retry occurred.
-        // Need to filter the status of the task with "group_error" and "retry_count" in stateParams.
-        // group_error task has no retry_count means that group error has occurred, but no group retry has occurred.
-        // TODO:　Consider consistent behavior on resuming regardless of a group retry has occurred
-        List<Long> groupRetryErrorTaskIds = tasks.stream()
-                .filter(task -> task.getState() == TaskStateCode.GROUP_ERROR && task.getStateParams().has("retry_count"))
-                .map(task -> task.getId())
-                .collect(Collectors.toList());
-
         List<Long> successTasks = tasks.stream()
-                // If a group error has occurred,
-                // exclude the group's child/dynamically generated tasks from successTasks
-                // even if they are in SUCCESS state
-                .filter(task -> task.getParentId().isPresent() && !groupRetryErrorTaskIds.contains(task.getParentId().get()))
-                .filter(task -> !task.getFullName().contains("^sub"))
                 .filter(task -> task.getState() == TaskStateCode.SUCCESS)
                 .map(task -> {
                     if (!task.getParentId().isPresent()) {
@@ -358,11 +344,7 @@ public class AttemptResource
                     tasks
                             .stream()
                             .collect(
-                                    // Avoid 500 errors due to duplicated keys of ArchivedTask
-                                    // if a group retry happened, IllegalStateException will be thrown
-                                    // because there are multiple tasks of the same name.
-                                    // Take the first one to make sure it is appropriately resumed.
-                                    Collectors.toMap(t -> t.getFullName(), t -> t, (a, b) -> b)
+                                    Collectors.toMap(t -> t.getFullName(), t -> t)
                             ));
         }
         catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
