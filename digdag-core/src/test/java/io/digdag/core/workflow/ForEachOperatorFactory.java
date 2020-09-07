@@ -13,6 +13,7 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.util.ParallelControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,9 +88,7 @@ public class ForEachOperatorFactory
                         subtask);
             }
 
-            if (params.has("_parallel")) {
-                generated.set("_parallel", params.get("_parallel", JsonNode.class));
-            }
+            ParallelControl.of(params).copyIfNeeded(generated);
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(generated)

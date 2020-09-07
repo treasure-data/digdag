@@ -1,13 +1,12 @@
 package io.digdag.standards.operator;
 
-
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.util.ParallelControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -70,9 +69,7 @@ public class LoopOperatorFactory
                         subtask);
             }
 
-            if (params.has("_parallel")) {
-                generated.set("_parallel", params.get("_parallel", JsonNode.class));
-            }
+            ParallelControl.of(params).copyIfNeeded(generated);
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(generated)

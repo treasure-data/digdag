@@ -1,6 +1,5 @@
 package io.digdag.standards.operator.td;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJob;
@@ -18,6 +17,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
+import io.digdag.util.ParallelControl;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -107,9 +107,7 @@ public class TdForEachOperatorFactory
                 subtasks.set("+td-for-each-" + i, subtask);
             }
 
-            if (params.has("_parallel")) {
-                subtasks.set("_parallel", params.get("_parallel", JsonNode.class));
-            }
+            ParallelControl.of(params).copyIfNeeded(subtasks);
 
             return TaskResult.defaultBuilder(request)
                     .subtaskConfig(subtasks)
