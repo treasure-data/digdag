@@ -8,10 +8,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
-import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
@@ -101,7 +101,9 @@ public class SessionMonitorExecutor
             });
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. This session monitor scheduling will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "An uncaught exception is ignored. This session monitor scheduling will be retried.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }

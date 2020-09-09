@@ -10,6 +10,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.core.log.LogLevel;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.ErrorReporter;
@@ -170,7 +171,9 @@ public class OperatorManager
                         logger.error("Configuration error at task {}: {}", request.getTaskName(), formatExceptionMessage(ex));
                     }
                     else {
-                        logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
+                        logger.error(
+                                LogMarkers.UNEXPECTED_SERVER_ERROR,
+                                "Task failed with unexpected error: {}", ex.getMessage(), ex);
                     }
                     callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));  // no retry
                 }
@@ -179,10 +182,10 @@ public class OperatorManager
         }
         catch (RuntimeException | IOException ex) {
             // exception happened in workspaceManager
-            logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Task failed with unexpected error: {}", ex.getMessage(), ex);
             callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));
-
-
         }
     }
 
@@ -348,7 +351,9 @@ public class OperatorManager
             }
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.AGENT, "uncaughtErrors");
         }

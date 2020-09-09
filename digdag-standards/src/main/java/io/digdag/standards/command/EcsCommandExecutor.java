@@ -15,10 +15,8 @@ import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
 import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
-import com.amazonaws.services.logs.model.AWSLogsException;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
@@ -29,6 +27,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.ProjectArchives;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandExecutor;
@@ -43,7 +42,6 @@ import io.digdag.standards.command.ecs.EcsClientFactory;
 import io.digdag.standards.command.ecs.EcsTaskStatus;
 import io.digdag.standards.command.ecs.TemporalProjectArchiveStorage;
 import io.digdag.util.DurationParam;
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -615,7 +613,7 @@ public class EcsCommandExecutor
         }
         catch (IOException e) {
             final String message = s("Cannot archive the project archive. It will be retried.");
-            logger.error(message, e);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
 
@@ -630,7 +628,7 @@ public class EcsCommandExecutor
         }
         catch (IOException e) {
             final String message = s("Cannot upload a temporal project archive '%s'with storage key '%s'. It will be retried.", projectArchivePath.toString(), projectArchiveStorageKey);
-            logger.error(message, e);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
         finally {
