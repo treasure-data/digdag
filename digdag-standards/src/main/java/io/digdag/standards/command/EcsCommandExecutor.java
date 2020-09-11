@@ -676,10 +676,16 @@ public class EcsCommandExecutor
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
+        final String formattedBashArguments = bashArguments.build().stream().map(Object::toString).collect(Collectors.joining("; "));
         final List<String> bashCommand = ImmutableList.<String>builder()
+                .add("if [ -x /usr/bin/time ]; then")
+                .add("/usr/bin/time -f \"Elapsed time: %E, Memory (Max RSS): %M kb, CPU used: %P\" /bin/bash -c")
+                .add(formattedBashArguments)
+                .add("else")
                 .add("/bin/bash")
                 .add("-c")
-                .add(bashArguments.build().stream().map(Object::toString).collect(Collectors.joining("; ")))
+                .add(formattedBashArguments)
+                .add("fi")
                 .build();
         logger.debug("Submit command line arguments: " + bashCommand);
 
