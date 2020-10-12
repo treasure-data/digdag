@@ -30,6 +30,7 @@ import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import io.digdag.client.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,6 +180,33 @@ public class DefaultEcsClient
                 return Optional.absent();
             }
         }
+    }
+
+    @Override
+    public Optional<TaskDefinition> getTaskDefinitionByTags(final Predicate<List<Tag>> condition)
+    {
+        String nextToken = null;
+        while (true) {
+            final ListTaskDefinitionsRequest listRequest = new ListTaskDefinitionsRequest();
+            if (nextToken != null) {
+                listRequest.withNextToken(nextToken);
+            }
+
+            final ListTaskDefinitionsResult listResult = retryOnRateLimit(() -> client.listTaskDefinitions(listRequest));
+            final List<String> taskDefinitionArns = listResult.getTaskDefinitionArns();
+            for (final String taskDefinitionArn : taskDefinitionArns) {
+                final List<Tag> tags = getTaskDefinitionTags(taskDefinitionArn);
+                if (condition.apply(tags)) {
+                    return Optional.of(getTaskDefinition(taskDefinitionArn));
+                }
+            }
+            nextToken = listResult.getNextToken();
+            if (nextToken == null) {
+                break;
+            }
+        }
+
+        return Optional.absent();
     }
 
     /**

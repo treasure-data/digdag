@@ -7,6 +7,7 @@ import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import io.digdag.client.config.ConfigException;
 
 import java.io.IOException;
@@ -31,6 +32,8 @@ public interface EcsClient
     List<Tag> getTaskDefinitionTags(final String taskDefinitionArn);
 
     Optional<TaskDefinition> getTaskDefinitionByTags(List<Tag> tags);
+
+    Optional<TaskDefinition> getTaskDefinitionByTags(Predicate<List<Tag>> tags);
 
     Task getTask(String cluster, String taskArn);
 
