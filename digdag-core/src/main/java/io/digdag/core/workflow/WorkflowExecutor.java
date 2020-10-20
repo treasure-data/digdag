@@ -1146,6 +1146,7 @@ public class WorkflowExecutor
                 .attemptId(attempt.getId())
                 .sessionId(attempt.getSessionId())
                 .retryAttemptName(attempt.getRetryAttemptName())
+                .isCancelRequested(task.getStateFlags().isCancelRequested())
                 .taskName(task.getFullName())
                 .lockId(lockId)
                 .timeZone(attempt.getTimeZone())

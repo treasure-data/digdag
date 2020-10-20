@@ -46,6 +46,8 @@ public interface TaskRequest
 
     Instant getCreatedAt();
 
+    boolean isCancelRequested();
+
     Config getLocalConfig();
 
     Config getConfig();
