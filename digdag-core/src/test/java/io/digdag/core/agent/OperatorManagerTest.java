@@ -106,4 +106,45 @@ public class OperatorManagerTest
         verify(callback, times(0)).taskFailed(any(), any(), any());
         verify(callback, times(1)).retryTask(eq(taskRequest), any(), eq(42), any(), any());
     }
+
+    @Test
+    public void testRunWithHeartbeatWithFailedTaskWithRuntimeException()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
+
+        OperatorManager om = spy(operatorManager);
+        doThrow(new RuntimeException("Zzz")).when(om).callExecutor(any(), any(), any());
+        om.runWithHeartbeat(taskRequest);
+        verify(callback, times(0)).taskSucceeded(any(), any(), any());
+        verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
+        verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
+
+    @Test
+    public void testRunWithHeartbeatWithFailedTaskWithUnexpectedError()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
+
+        OperatorManager om = spy(operatorManager);
+        doThrow(new OutOfMemoryError("Zzz")).when(om).callExecutor(any(), any(), any());
+        om.runWithHeartbeat(taskRequest);
+        // In current implementation, OperatorManager does nothing and the task eventually will retried
+        verify(callback, times(0)).taskSucceeded(any(), any(), any());
+        verify(callback, times(0)).taskFailed(any(), any(), any());
+        verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
+
+    @Test
+    public void testRunWithHeartbeatWithFailedTaskWithUnexpectedErrorButTheTaskShouldBeCanceled()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig)
+                .withIsCancelRequested(true);
+
+        OperatorManager om = spy(operatorManager);
+        doThrow(new OutOfMemoryError("Zzz")).when(om).callExecutor(any(), any(), any());
+        om.runWithHeartbeat(taskRequest);
+        verify(callback, times(0)).taskSucceeded(any(), any(), any());
+        verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
+        verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
 }
