@@ -3,14 +3,12 @@ package io.digdag.core.agent;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.OperatorTestingUtils;
-import io.digdag.spi.SecretStoreManager;
-import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
+import io.digdag.spi.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,6 +76,7 @@ public class OperatorManagerTest
         om.runWithHeartbeat(taskRequest);
         verify(callback, times(1)).taskSucceeded(eq(taskRequest), any(), eq(result));
         verify(callback, times(0)).taskFailed(any(), any(), any());
+        verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
     }
 
     @Test
@@ -90,5 +89,21 @@ public class OperatorManagerTest
         om.runWithHeartbeat(taskRequest);
         verify(callback, times(0)).taskSucceeded(any(), any(), any());
         verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
+        verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
+
+    @Test
+    public void testRunWithHeartbeatWithFailedTaskWithRetryableFailure()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
+
+        OperatorManager om = spy(operatorManager);
+        doThrow(TaskExecutionException.ofNextPolling(42, ConfigElement.empty()))
+                .when(om)
+                .callExecutor(any(), any(), any());
+        om.runWithHeartbeat(taskRequest);
+        verify(callback, times(0)).taskSucceeded(any(), any(), any());
+        verify(callback, times(0)).taskFailed(any(), any(), any());
+        verify(callback, times(1)).retryTask(eq(taskRequest), any(), eq(42), any(), any());
     }
 }
