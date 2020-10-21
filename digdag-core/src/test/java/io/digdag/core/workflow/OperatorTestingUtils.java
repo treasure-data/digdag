@@ -76,6 +76,7 @@ public class OperatorTestingUtils
             .sessionUuid(UUID.randomUUID())
             .sessionTime(Instant.now())
             .createdAt(Instant.now())
+            .isCancelRequested(false)
             .config(newConfig())
             .localConfig(newConfig())
             .lastStateParams(newConfig())
