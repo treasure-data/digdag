@@ -62,6 +62,11 @@ public class OperatorTestingUtils
 
     public static ImmutableTaskRequest newTaskRequest()
     {
+        return newTaskRequest(newConfig());
+    }
+
+    public static ImmutableTaskRequest newTaskRequest(Config config)
+    {
         return ImmutableTaskRequest.builder()
             .siteId(1)
             .projectId(2)
@@ -78,7 +83,7 @@ public class OperatorTestingUtils
             .createdAt(Instant.now())
             .isCancelRequested(false)
             .config(newConfig())
-            .localConfig(newConfig())
+            .localConfig(config)
             .lastStateParams(newConfig())
             .build();
     }

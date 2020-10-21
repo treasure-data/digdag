@@ -1,21 +1,30 @@
 package io.digdag.core.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Limits;
+import io.digdag.core.workflow.OperatorTestingUtils;
 import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskRequest;
 import org.junit.Before;
 import org.junit.Test;
-
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class OperatorManagerTest
 {
     private AgentConfig agentConfig = AgentConfig.defaultBuilder().build();
@@ -51,5 +60,21 @@ public class OperatorManagerTest
         for (String k : expectedConfig.getKeys()) {
             assertEquals(expectedConfig.get(k, Object.class), filteredConfig.get(k, Object.class));
         }
+    }
+
+    @Test
+    public void testRunWithHeartbeat() throws IOException {
+        Config config = cf.fromJsonString("{\"echo>\":\"hello\"}");
+
+        ConfigEvalEngine evalEngine = new ConfigEvalEngine(ConfigUtils.newConfig());
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(config);
+        WorkspaceManager workspaceManager = new LocalWorkspaceManager();
+        when(callback.openArchive(any())).thenReturn(Optional.absent());
+        OperatorManager operatorManager = new OperatorManager(
+                agentConfig, agentId, callback, workspaceManager, cf,
+                evalEngine, registry, secretStoreManager, limits);
+
+        OperatorManager om = spy(operatorManager);
+        om.runWithHeartbeat(taskRequest);
     }
 }
