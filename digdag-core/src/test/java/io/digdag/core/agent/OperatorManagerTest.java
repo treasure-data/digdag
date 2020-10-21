@@ -8,7 +8,10 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.OperatorTestingUtils;
-import io.digdag.spi.*;
+import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,8 +23,14 @@ import java.io.IOException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OperatorManagerTest
