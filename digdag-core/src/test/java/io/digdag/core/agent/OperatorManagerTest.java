@@ -1,6 +1,5 @@
 package io.digdag.core.agent;
 
-import com.google.common.base.Optional;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
@@ -9,7 +8,9 @@ import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.OperatorTestingUtils;
 import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,8 +22,8 @@ import java.io.IOException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OperatorManagerTest
@@ -30,19 +31,23 @@ public class OperatorManagerTest
     private AgentConfig agentConfig = AgentConfig.defaultBuilder().build();
     private AgentId agentId = AgentId.of("dummy");
     @Mock TaskCallbackApi callback;
-    @Mock WorkspaceManager workspaceManager;
     private ConfigFactory cf = new ConfigFactory(DigdagClient.objectMapper());
-    @Mock ConfigEvalEngine evalEngine;
     @Mock OperatorRegistry registry;
     @Mock SecretStoreManager secretStoreManager;
-    Limits limits = new Limits(cf.create());
+    private Limits limits = new Limits(cf.create());
+    private Config simpleConfig = cf.fromJsonString("{\"echo>\":\"hello\"}");
 
     private OperatorManager operatorManager;
 
     @Before
     public void setUp()
     {
-        operatorManager = new OperatorManager(agentConfig, agentId, callback, workspaceManager, cf, evalEngine, registry, secretStoreManager, limits);
+        ConfigEvalEngine evalEngine = new ConfigEvalEngine(ConfigUtils.newConfig());
+        WorkspaceManager workspaceManager = new LocalWorkspaceManager();
+
+        operatorManager = new OperatorManager(
+                agentConfig, agentId, callback, workspaceManager, cf,
+                evalEngine, registry, secretStoreManager, limits);
     }
 
     @Test
@@ -63,18 +68,27 @@ public class OperatorManagerTest
     }
 
     @Test
-    public void testRunWithHeartbeat() throws IOException {
-        Config config = cf.fromJsonString("{\"echo>\":\"hello\"}");
+    public void testRunWithHeartbeatWithSuccessTask()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
 
-        ConfigEvalEngine evalEngine = new ConfigEvalEngine(ConfigUtils.newConfig());
-        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(config);
-        WorkspaceManager workspaceManager = new LocalWorkspaceManager();
-        when(callback.openArchive(any())).thenReturn(Optional.absent());
-        OperatorManager operatorManager = new OperatorManager(
-                agentConfig, agentId, callback, workspaceManager, cf,
-                evalEngine, registry, secretStoreManager, limits);
+        TaskResult result = mock(TaskResult.class);
+        OperatorManager om = spy(operatorManager);
+        doReturn(result).when(om).callExecutor(any(), any(), any());
+        om.runWithHeartbeat(taskRequest);
+        verify(callback, times(1)).taskSucceeded(eq(taskRequest), any(), eq(result));
+        verify(callback, times(0)).taskFailed(any(), any(), any());
+    }
+
+    @Test
+    public void testRunWithHeartbeatWithFailedTask()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
 
         OperatorManager om = spy(operatorManager);
+        doThrow(new TaskExecutionException("Zzz")).when(om).callExecutor(any(), any(), any());
         om.runWithHeartbeat(taskRequest);
+        verify(callback, times(0)).taskSucceeded(any(), any(), any());
+        verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
     }
 }
