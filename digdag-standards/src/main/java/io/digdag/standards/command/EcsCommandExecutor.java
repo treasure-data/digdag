@@ -436,7 +436,7 @@ public class EcsCommandExecutor
 
     private boolean isRunningLongerThanTTL(final ObjectNode previousStatus)
     {
-        long creationTimestamp = previousStatus.get("pod_creation_timestamp").asLong();
+        long creationTimestamp = previousStatus.get("task_creation_timestamp").asLong();
         long currentTimestamp = Instant.now().getEpochSecond();
         return currentTimestamp > creationTimestamp + defaultCommandTaskTTL.get().getSeconds();
     }
