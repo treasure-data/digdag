@@ -11,27 +11,68 @@ import java.util.List;
 public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
+    public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
 
     public static EcsClientConfig of(final Optional<String> clusterName, final Config systemConfig, final Config taskConfig)
     {
-        return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
-        /**
-        if (config.has("ecs")) {
+        if (taskConfig.has(TASK_CONFIG_ECS_KEY)) {
             // from task config
-            return createFromTaskConfig(clusterName, config); // TODO
+            return createFromTaskConfig(clusterName, taskConfig);
         }
         else {
             // from system config
-            return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
+            return createFromSystemConfig(clusterName, systemConfig);
         }
-         */
+    }
+
+    public static EcsClientConfigBuilder builder()
+    {
+        return new EcsClientConfigBuilder();
+    }
+
+    public EcsClientConfig(EcsClientConfigBuilder builder)
+    {
+        this.clusterName = builder.getClusterName();
+        this.launchType = builder.getLaunchType();
+        this.accessKeyId = builder.getAccessKeyId();
+        this.secretAccessKey = builder.getSecretAccessKey();
+        this.region = builder.getRegion();
+        this.subnets = Arrays.asList(builder.getSubnets().split(","));
+        this.maxRetries = builder.getMaxRetries();
+        this.capacityProviderName = builder.getCapacityProviderName();
     }
 
     private static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
     {
-        // TODO
-        // We'd better to customize cluster config by task config
-        throw new ConfigException("Not supported yet");
+        final String name;
+        // `config` is assumed to have a nested config with following values
+        // at the key of `TASK_CONFIG_ECS_KEY` from `config`.
+        // - launch_type
+        // - access_key_id
+        // - secret_access_key
+        // - region
+        // - subnets (optional)
+        // - max_retries (optional)
+        // - capacity_provider_name (optional)
+        final Config ecsConfig = config.getNested(TASK_CONFIG_ECS_KEY);
+        if (!clusterName.isPresent()) {
+            // Throw ConfigException if 'name' doesn't exist in system config.
+            name = ecsConfig.get("cluster_name", String.class);
+        }
+        else {
+            name = clusterName.get();
+        }
+
+        return EcsClientConfig.builder()
+                .withClusterName(name)
+                .withLaunchType(ecsConfig.get("launch_type", String.class))
+                .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
+                .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
+                .withRegion(ecsConfig.get("region", String.class))
+                .withSubnets(ecsConfig.get("subnets", String.class, ""))
+                .withMaxRetries(ecsConfig.get("max_retries", int.class, 3))
+                .withCapacityProviderName(ecsConfig.get("capacity_provider_name", String.class, ""))
+                .build();
     }
 
     private static EcsClientConfig createFromSystemConfig(final Optional<String> clusterName, final Config systemConfig)
@@ -64,6 +105,7 @@ public class EcsClientConfig
     private final String region;
     private final List<String> subnets;
     private final int maxRetries;
+    private final String capacityProviderName;
 
     private EcsClientConfig(final String clusterName,
             final String launchType,
@@ -80,6 +122,7 @@ public class EcsClientConfig
         this.region = region;
         this.subnets = Arrays.asList(subnets.split(",")); // TODO more robust
         this.maxRetries = maxRetries;
+        this.capacityProviderName = "";
     }
 
     public String getClusterName()
@@ -115,5 +158,10 @@ public class EcsClientConfig
     public int getMaxRetries()
     {
         return maxRetries;
+    }
+
+    public String getCapacityProviderName()
+    {
+        return capacityProviderName;
     }
 }
