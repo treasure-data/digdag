@@ -12,18 +12,6 @@ public class EcsClientConfig
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
     private static final int DEFAULT_MAX_RETRIES = 3;
 
-    public static EcsClientConfig of(final Optional<String> clusterName, final Config systemConfig, final Config taskConfig)
-    {
-        if (taskConfig.has(TASK_CONFIG_ECS_KEY)) {
-            // from task config
-            return createFromTaskConfig(clusterName, taskConfig);
-        }
-        else {
-            // from system config
-            return createFromSystemConfig(clusterName, systemConfig);
-        }
-    }
-
     public static EcsClientConfigBuilder builder()
     {
         return new EcsClientConfigBuilder();
@@ -43,7 +31,7 @@ public class EcsClientConfig
         this.memory = builder.getMemory();
     }
 
-    private static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
+    public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
     {
         final String name;
         // `config` is assumed to have a nested config with following values
@@ -69,7 +57,7 @@ public class EcsClientConfig
         return buildEcsClientConfig(name, ecsConfig);
     }
 
-    private static EcsClientConfig createFromSystemConfig(final Optional<String> clusterName, final Config systemConfig)
+    public static EcsClientConfig createFromSystemConfig(final Optional<String> clusterName, final Config systemConfig)
     {
         final String name;
         if (!clusterName.isPresent()) {

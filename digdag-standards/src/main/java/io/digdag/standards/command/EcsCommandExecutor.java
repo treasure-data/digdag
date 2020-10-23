@@ -498,12 +498,17 @@ public class EcsCommandExecutor
         throw new RuntimeException("Submitted task could not be found"); // TODO the message should be improved more understandably.
     }
 
-    EcsClientConfig createEcsClientConfig(
+    protected EcsClientConfig createEcsClientConfig (
             final Optional<String> clusterName,
             final Config systemConfig,
-            final Config config)
+            final Config taskConfig)
     {
-        return EcsClientConfig.of(clusterName, systemConfig, config);
+        if (taskConfig.has(EcsClientConfig.TASK_CONFIG_ECS_KEY)) {
+            return EcsClientConfig.createFromTaskConfig(clusterName, taskConfig);
+        }
+        else {
+            return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        }
     }
 
     RunTaskRequest buildRunTaskRequest(
