@@ -63,16 +63,7 @@ public class EcsClientConfig
             name = clusterName.get();
         }
 
-        return EcsClientConfig.builder()
-                .withClusterName(name)
-                .withLaunchType(ecsConfig.get("launch_type", String.class))
-                .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
-                .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
-                .withRegion(ecsConfig.get("region", String.class))
-                .withSubnets(ecsConfig.get("subnets", String.class, ""))
-                .withMaxRetries(ecsConfig.get("max_retries", int.class, 3))
-                .withCapacityProviderName(ecsConfig.get("capacity_provider_name", String.class, ""))
-                .build();
+        return buildEcsClientConfig(name, ecsConfig);
     }
 
     private static EcsClientConfig createFromSystemConfig(final Optional<String> clusterName, final Config systemConfig)
@@ -88,14 +79,22 @@ public class EcsClientConfig
 
         final String extractedPrefix = SYSTEM_CONFIG_PREFIX + name + ".";
         final Config extracted = StorageManager.extractKeyPrefix(systemConfig, extractedPrefix);
-        return new EcsClientConfig(name,
-                extracted.get("launch_type", String.class),
-                extracted.get("access_key_id", String.class),
-                extracted.get("secret_access_key", String.class),
-                extracted.get("region", String.class),
-                extracted.get("subnets", String.class),
-                extracted.get("max_retries", int.class, 3)
-        );
+
+        return buildEcsClientConfig(name, extracted);
+    }
+
+    private static EcsClientConfig buildEcsClientConfig(String clusterName, Config ecsConfig)
+    {
+        return EcsClientConfig.builder()
+                .withClusterName(clusterName)
+                .withLaunchType(ecsConfig.get("launch_type", String.class))
+                .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
+                .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
+                .withRegion(ecsConfig.get("region", String.class))
+                .withSubnets(ecsConfig.get("subnets", String.class, ""))
+                .withMaxRetries(ecsConfig.get("max_retries", int.class, 3))
+                .withCapacityProviderName(ecsConfig.get("capacity_provider_name", String.class, ""))
+                .build();
     }
 
     private final String clusterName;
@@ -106,24 +105,6 @@ public class EcsClientConfig
     private final List<String> subnets;
     private final int maxRetries;
     private final String capacityProviderName;
-
-    private EcsClientConfig(final String clusterName,
-            final String launchType,
-            final String accessKeyId,
-            final String secretAccessKey,
-            final String region,
-            final String subnets,
-            final int maxRetries)
-    {
-        this.clusterName = clusterName;
-        this.launchType = launchType;
-        this.accessKeyId = accessKeyId;
-        this.secretAccessKey = secretAccessKey;
-        this.region = region;
-        this.subnets = Arrays.asList(subnets.split(",")); // TODO more robust
-        this.maxRetries = maxRetries;
-        this.capacityProviderName = "";
-    }
 
     public String getClusterName()
     {
