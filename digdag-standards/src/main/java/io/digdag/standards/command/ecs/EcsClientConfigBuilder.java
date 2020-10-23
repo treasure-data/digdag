@@ -10,6 +10,8 @@ public class EcsClientConfigBuilder
     private String subnets;
     private int maxRetries;
     private String capacityProviderName;
+    private int cpu;
+    private int memory;
 
     public EcsClientConfig build()
     {
@@ -64,6 +66,18 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withCpu(int cpu)
+    {
+        this.cpu = cpu;
+        return this;
+    }
+
+    public EcsClientConfigBuilder withMemory(int memory)
+    {
+        this.memory = memory;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -102,5 +116,15 @@ public class EcsClientConfigBuilder
     public String getCapacityProviderName()
     {
         return capacityProviderName;
+    }
+
+    public int getCpu()
+    {
+        return cpu;
+    }
+
+    public int getMemory()
+    {
+        return memory;
     }
 }

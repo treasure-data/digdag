@@ -2,7 +2,6 @@ package io.digdag.standards.command.ecs;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.core.storage.StorageManager;
 
 import java.util.Arrays;
@@ -12,6 +11,8 @@ public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
+    private static final int CPU_NOT_SPECIFIED = -1;
+    private static final int MEMORY_NOT_SPECIFIED = -1;
 
     public static EcsClientConfig of(final Optional<String> clusterName, final Config systemConfig, final Config taskConfig)
     {
@@ -30,6 +31,16 @@ public class EcsClientConfig
         return new EcsClientConfigBuilder();
     }
 
+    public boolean isCpuSpecified()
+    {
+        return this.cpu != CPU_NOT_SPECIFIED;
+    }
+
+    public boolean isMemorySpecified()
+    {
+        return this.memory != MEMORY_NOT_SPECIFIED;
+    }
+
     public EcsClientConfig(EcsClientConfigBuilder builder)
     {
         this.clusterName = builder.getClusterName();
@@ -40,6 +51,8 @@ public class EcsClientConfig
         this.subnets = Arrays.asList(builder.getSubnets().split(","));
         this.maxRetries = builder.getMaxRetries();
         this.capacityProviderName = builder.getCapacityProviderName();
+        this.cpu = builder.getCpu();
+        this.memory = builder.getMemory();
     }
 
     private static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
@@ -94,6 +107,8 @@ public class EcsClientConfig
                 .withSubnets(ecsConfig.get("subnets", String.class, ""))
                 .withMaxRetries(ecsConfig.get("max_retries", int.class, 3))
                 .withCapacityProviderName(ecsConfig.get("capacity_provider_name", String.class, ""))
+                .withCpu(ecsConfig.get("cpu", int.class, CPU_NOT_SPECIFIED))
+                .withCpu(ecsConfig.get("memory", int.class, MEMORY_NOT_SPECIFIED))
                 .build();
     }
 
@@ -105,6 +120,8 @@ public class EcsClientConfig
     private final List<String> subnets;
     private final int maxRetries;
     private final String capacityProviderName;
+    private final int cpu;
+    private final int memory;
 
     public String getClusterName()
     {
@@ -145,4 +162,8 @@ public class EcsClientConfig
     {
         return capacityProviderName;
     }
+
+    public int getCpu() { return cpu; }
+
+    public int getMemory() { return memory; }
 }

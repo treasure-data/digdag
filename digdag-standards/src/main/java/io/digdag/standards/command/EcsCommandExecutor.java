@@ -518,7 +518,7 @@ public class EcsCommandExecutor
         setEcsGroup(runTaskRequest);
         setEcsTaskDefinition(commandContext, commandRequest, td, runTaskRequest);
         setEcsTaskCount(runTaskRequest);
-        setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest); // RuntimeException,ConfigException
+        setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest, clientConfig); // RuntimeException,ConfigException
         setEcsTaskLaunchType(clientConfig, runTaskRequest);
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
         setCapacityProviderStrategy(clientConfig, runTaskRequest);
@@ -552,7 +552,8 @@ public class EcsCommandExecutor
             final CommandContext commandContext,
             final CommandRequest commandRequest,
             final TaskDefinition td,
-            final RunTaskRequest request)
+            final RunTaskRequest request,
+            final EcsClientConfig clientConfig)
             throws ConfigException
     {
         final ContainerOverride containerOverride = new ContainerOverride();
@@ -561,7 +562,7 @@ public class EcsCommandExecutor
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
         setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
-        setEcsContainerOverrideResource(commandContext, commandRequest, containerOverride);
+        setEcsContainerOverrideResource(clientConfig, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
         taskOverride.withContainerOverrides(containerOverride);
@@ -715,10 +716,16 @@ public class EcsCommandExecutor
     }
 
     protected void setEcsContainerOverrideResource(
-            final CommandContext commandContext,
-            final CommandRequest commandRequest,
+            final EcsClientConfig clientConfig,
             final ContainerOverride containerOverride)
-    { }
+    {
+        if (clientConfig.isCpuSpecified()) {
+            containerOverride.setCpu(clientConfig.getCpu());
+        }
+        if (clientConfig.isMemorySpecified()) {
+            containerOverride.setMemory(clientConfig.getMemory());
+        }
+    }
 
     private static void log(final String message, final CommandLogger to)
             throws IOException
