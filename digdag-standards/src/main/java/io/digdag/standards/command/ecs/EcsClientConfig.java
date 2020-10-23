@@ -10,7 +10,7 @@ public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
-    private static final int DEFAULT_MAX_TRIES = 3;
+    private static final int DEFAULT_MAX_RETRIES = 3;
 
     public static EcsClientConfig of(final Optional<String> clusterName, final Config systemConfig, final Config taskConfig)
     {
@@ -95,10 +95,10 @@ public class EcsClientConfig
                 .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
                 .withRegion(ecsConfig.get("region", String.class))
                 .withSubnets(ecsConfig.getOptional("subnets", String.class))
-                .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_TRIES))
+                .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
                 .withCpu(ecsConfig.getOptional("cpu", Integer.class))
-                .withCpu(ecsConfig.getOptional("memory", Integer.class))
+                .withMemory(ecsConfig.getOptional("memory", Integer.class))
                 .build();
     }
 
