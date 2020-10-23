@@ -719,11 +719,11 @@ public class EcsCommandExecutor
             final EcsClientConfig clientConfig,
             final ContainerOverride containerOverride)
     {
-        if (clientConfig.isCpuSpecified()) {
-            containerOverride.setCpu(clientConfig.getCpu());
+        if (clientConfig.getCpu().isPresent()) {
+            containerOverride.setCpu(clientConfig.getCpu().get());
         }
-        if (clientConfig.isMemorySpecified()) {
-            containerOverride.setMemory(clientConfig.getMemory());
+        if (clientConfig.getMemory().isPresent()) {
+            containerOverride.setMemory(clientConfig.getMemory().get());
         }
     }
 
@@ -758,10 +758,10 @@ public class EcsCommandExecutor
 
     protected void setEcsNetworkConfiguration(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        if (!clientConfig.getSubnets().isEmpty()) {
+        if (clientConfig.getSubnets().isPresent()) {
             request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
                     new AwsVpcConfiguration()
-                            .withSubnets(clientConfig.getSubnets())
+                            .withSubnets(clientConfig.getSubnets().get())
                             .withAssignPublicIp(AssignPublicIp.ENABLED) // TODO should be extracted
             ));
         }
@@ -778,9 +778,9 @@ public class EcsCommandExecutor
 
     protected void setCapacityProviderStrategy(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        if (!clientConfig.getCapacityProviderName().isEmpty()) {
+        if (clientConfig.getCapacityProviderName().isPresent()) {
             CapacityProviderStrategyItem capacityProviderStrategyItem = new CapacityProviderStrategyItem()
-                    .withCapacityProvider(clientConfig.getCapacityProviderName());
+                    .withCapacityProvider(clientConfig.getCapacityProviderName().get());
             request.setCapacityProviderStrategy(Arrays.asList(capacityProviderStrategyItem));
         }
     }

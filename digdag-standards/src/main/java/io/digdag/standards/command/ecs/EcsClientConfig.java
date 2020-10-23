@@ -4,15 +4,13 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.core.storage.StorageManager;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
-    private static final int CPU_NOT_SPECIFIED = -1;
-    private static final int MEMORY_NOT_SPECIFIED = -1;
+    private static final int DEFAULT_MAX_TRIES = 3;
 
     public static EcsClientConfig of(final Optional<String> clusterName, final Config systemConfig, final Config taskConfig)
     {
@@ -31,16 +29,6 @@ public class EcsClientConfig
         return new EcsClientConfigBuilder();
     }
 
-    public boolean isCpuSpecified()
-    {
-        return this.cpu != CPU_NOT_SPECIFIED;
-    }
-
-    public boolean isMemorySpecified()
-    {
-        return this.memory != MEMORY_NOT_SPECIFIED;
-    }
-
     public EcsClientConfig(EcsClientConfigBuilder builder)
     {
         this.clusterName = builder.getClusterName();
@@ -48,7 +36,7 @@ public class EcsClientConfig
         this.accessKeyId = builder.getAccessKeyId();
         this.secretAccessKey = builder.getSecretAccessKey();
         this.region = builder.getRegion();
-        this.subnets = Arrays.asList(builder.getSubnets().split(","));
+        this.subnets = builder.getSubnets();
         this.maxRetries = builder.getMaxRetries();
         this.capacityProviderName = builder.getCapacityProviderName();
         this.cpu = builder.getCpu();
@@ -67,6 +55,8 @@ public class EcsClientConfig
         // - subnets (optional)
         // - max_retries (optional)
         // - capacity_provider_name (optional)
+        // - memory (optional)
+        // - cpu (optional)
         final Config ecsConfig = config.getNested(TASK_CONFIG_ECS_KEY);
         if (!clusterName.isPresent()) {
             // Throw ConfigException if 'name' doesn't exist in system config.
@@ -104,11 +94,11 @@ public class EcsClientConfig
                 .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
                 .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
                 .withRegion(ecsConfig.get("region", String.class))
-                .withSubnets(ecsConfig.get("subnets", String.class, ""))
-                .withMaxRetries(ecsConfig.get("max_retries", int.class, 3))
-                .withCapacityProviderName(ecsConfig.get("capacity_provider_name", String.class, ""))
-                .withCpu(ecsConfig.get("cpu", int.class, CPU_NOT_SPECIFIED))
-                .withCpu(ecsConfig.get("memory", int.class, MEMORY_NOT_SPECIFIED))
+                .withSubnets(ecsConfig.getOptional("subnets", String.class))
+                .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_TRIES))
+                .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
+                .withCpu(ecsConfig.getOptional("cpu", Integer.class))
+                .withCpu(ecsConfig.getOptional("memory", Integer.class))
                 .build();
     }
 
@@ -117,11 +107,11 @@ public class EcsClientConfig
     private final String accessKeyId;
     private final String secretAccessKey;
     private final String region;
-    private final List<String> subnets;
+    private final Optional<List<String>> subnets;
     private final int maxRetries;
-    private final String capacityProviderName;
-    private final int cpu;
-    private final int memory;
+    private final Optional<String> capacityProviderName;
+    private final Optional<Integer> cpu;
+    private final Optional<Integer> memory;
 
     public String getClusterName()
     {
@@ -148,7 +138,7 @@ public class EcsClientConfig
         return region;
     }
 
-    public List<String> getSubnets()
+    public Optional<List<String>> getSubnets()
     {
         return subnets;
     }
@@ -158,12 +148,12 @@ public class EcsClientConfig
         return maxRetries;
     }
 
-    public String getCapacityProviderName()
+    public Optional<String> getCapacityProviderName()
     {
         return capacityProviderName;
     }
 
-    public int getCpu() { return cpu; }
+    public Optional<Integer> getCpu() { return cpu; }
 
-    public int getMemory() { return memory; }
+    public Optional<Integer> getMemory() { return memory; }
 }

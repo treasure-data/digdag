@@ -1,5 +1,10 @@
 package io.digdag.standards.command.ecs;
 
+import com.google.common.base.Optional;
+
+import java.util.Arrays;
+import java.util.List;
+
 public class EcsClientConfigBuilder
 {
     private String clusterName;
@@ -7,11 +12,11 @@ public class EcsClientConfigBuilder
     private String accessKeyId;
     private String secretAccessKey;
     private String region;
-    private String subnets;
+    private Optional<List<String>> subnets;
     private int maxRetries;
-    private String capacityProviderName;
-    private int cpu;
-    private int memory;
+    private Optional<String> capacityProviderName;
+    private Optional<Integer> cpu;
+    private Optional<Integer> memory;
 
     public EcsClientConfig build()
     {
@@ -48,9 +53,14 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withSubnets(String subnets)
+    public EcsClientConfigBuilder withSubnets(Optional<String> subnets)
     {
-        this.subnets = subnets;
+        if (subnets.isPresent()) {
+            this.subnets = Optional.of(Arrays.asList(subnets.get().split(",")));
+        }
+        else {
+            this.subnets = Optional.absent();
+        }
         return this;
     }
 
@@ -60,19 +70,19 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withCapacityProviderName(String capacityProviderName)
+    public EcsClientConfigBuilder withCapacityProviderName(Optional<String> capacityProviderName)
     {
         this.capacityProviderName = capacityProviderName;
         return this;
     }
 
-    public EcsClientConfigBuilder withCpu(int cpu)
+    public EcsClientConfigBuilder withCpu(Optional<Integer> cpu)
     {
         this.cpu = cpu;
         return this;
     }
 
-    public EcsClientConfigBuilder withMemory(int memory)
+    public EcsClientConfigBuilder withMemory(Optional<Integer> memory)
     {
         this.memory = memory;
         return this;
@@ -103,7 +113,7 @@ public class EcsClientConfigBuilder
         return region;
     }
 
-    public String getSubnets()
+    public Optional<List<String>> getSubnets()
     {
         return subnets;
     }
@@ -113,17 +123,17 @@ public class EcsClientConfigBuilder
         return maxRetries;
     }
 
-    public String getCapacityProviderName()
+    public Optional<String> getCapacityProviderName()
     {
         return capacityProviderName;
     }
 
-    public int getCpu()
+    public Optional<Integer> getCpu()
     {
         return cpu;
     }
 
-    public int getMemory()
+    public Optional<Integer> getMemory()
     {
         return memory;
     }
