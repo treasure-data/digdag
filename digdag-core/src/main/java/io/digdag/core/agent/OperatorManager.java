@@ -177,6 +177,19 @@ public class OperatorManager
                     }
                     callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));  // no retry
                 }
+                catch (Throwable ex) {
+                    logger.error(
+                            LogMarkers.UNEXPECTED_SERVER_ERROR,
+                            "Task failed with unexpected error: {}", ex.getMessage(), ex);
+
+                    // This block catches OutOfMemoryError and its cause can be either deterministic or non-deterministic.
+                    // So, OperatorManager can't always cancel the failed task.
+                    if (request.isCancelRequested()) {
+                        logger.warn("This task will be canceled since it's already requested to be canceled");
+                        // This call cancels a task if it's requested to be canceled
+                        callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));
+                    }
+                }
                 return true;
             });
         }
