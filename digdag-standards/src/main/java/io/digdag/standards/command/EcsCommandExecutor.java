@@ -294,6 +294,9 @@ public class EcsCommandExecutor
             final ObjectNode previousStatus)
             throws IOException
     {
+        final String cluster = previousStatus.get("cluster_name").asText();
+        final String taskArn = previousStatus.get("task_arn").asText();
+
         ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
         ObjectNode nextExecutorStatus;
 
@@ -322,11 +325,10 @@ public class EcsCommandExecutor
             final ObjectNode nextStatus = previousStatus.deepCopy();
             nextStatus.set("executor_state", previousExecutorStatus);
 
-            return EcsCommandStatus.of(true, nextStatus);
+            Optional<String> errorMessage = getErrorMessageFromTask(cluster, taskArn, client);
+            return EcsCommandStatus.of(true, nextStatus, errorMessage);
         }
 
-        final String cluster = previousStatus.get("cluster_name").asText();
-        final String taskArn = previousStatus.get("task_arn").asText();
         final Task task;
         try {
             task = client.getTask(cluster, taskArn);
@@ -386,6 +388,29 @@ public class EcsCommandExecutor
         }
         // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
         return EcsCommandStatus.of(false, nextStatus);
+    }
+
+    @VisibleForTesting
+    private static Optional<String> getErrorMessageFromTask(String cluster, String taskArn, EcsClient client)
+    {
+        Optional<String> errorMessage = Optional.absent();
+        try {
+            final Task task = client.getTask(cluster, taskArn);
+            if (task.getContainers().size() > 0) {
+                task.getContainers().get(0).getReason();
+            }
+            else {
+                errorMessage = Optional.of("No container information");
+            }
+        }
+        catch (TaskSetNotFoundException e) {
+            errorMessage = Optional.of(e.getErrorMessage());
+
+        }
+        catch (RuntimeException re) {
+            errorMessage = Optional.of(re.getMessage());
+        }
+        return errorMessage;
     }
 
     @VisibleForTesting
@@ -454,17 +479,23 @@ public class EcsCommandExecutor
     {
         static EcsCommandStatus of(final boolean isFinished, final ObjectNode json)
         {
-            return new EcsCommandStatus(isFinished, json);
+            return of(isFinished, json, Optional.absent());
+        }
+
+        static EcsCommandStatus of(final boolean isFinished, final ObjectNode json, Optional<String> errorMessage)
+        {
+            return new EcsCommandStatus(isFinished, json, errorMessage);
         }
 
         private final boolean isFinished;
         private final ObjectNode json;
+        private final Optional<String> errorMessage;
 
-        private EcsCommandStatus(final boolean isFinished,
-                final ObjectNode json)
+        private EcsCommandStatus(final boolean isFinished, final ObjectNode json, final Optional<String> errorMessage)
         {
             this.isFinished = isFinished;
             this.json = json;
+            this.errorMessage = errorMessage;
         }
 
         @Override
@@ -477,6 +508,12 @@ public class EcsCommandExecutor
         public int getStatusCode()
         {
             return json.get("status_code").intValue();
+        }
+
+        @Override
+        public Optional<String> getErrorMessage()
+        {
+            return errorMessage;
         }
 
         @Override

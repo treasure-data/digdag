@@ -2,6 +2,8 @@ package io.digdag.spi;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Optional;
+
 
 public interface CommandStatus
 {
@@ -13,10 +15,19 @@ public interface CommandStatus
     boolean isFinished();
 
     /**
-     * Return exit code of command finished. It7s valid only when isFiished returns true.
+     * Return exit code of command finished. It is valid only when isFinished returns true.
      * @return
      */
     int getStatusCode();
+
+    /**
+     * Return error message.
+     * @return
+     */
+    default Optional<String> getErrorMessage()
+    {
+        return Optional.absent();
+    }
 
     /**
      * Return the same String with CommandRequest.getIoDirectory.
