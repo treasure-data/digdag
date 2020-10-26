@@ -30,6 +30,7 @@ public class EcsClientConfig
         this.cpu = builder.getCpu();
         this.memory = builder.getMemory();
         this.startedBy = builder.getStartedBy();
+        this.assignPublicIp = builder.isAssignPublicIp();
     }
 
     public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
@@ -89,6 +90,10 @@ public class EcsClientConfig
                 .withCpu(ecsConfig.getOptional("cpu", Integer.class))
                 .withMemory(ecsConfig.getOptional("memory", Integer.class))
                 .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
+                // TODO removing default value.
+                // This value was previously hard coded.
+                // To keep consistency I once set the default value. But it should be removed after migration.
+                .withAssignPublicIp(ecsConfig.get("assign_public_ip", boolean.class, true))
                 .build();
     }
 
@@ -99,6 +104,7 @@ public class EcsClientConfig
     private final String region;
     private final Optional<List<String>> subnets;
     private final int maxRetries;
+    private boolean assignPublicIp;
     private final Optional<String> capacityProviderName;
     private final Optional<Integer> cpu;
     private final Optional<Integer> memory;
@@ -151,5 +157,10 @@ public class EcsClientConfig
     public Optional<String> getStartedBy()
     {
         return startedBy;
+    }
+
+    public boolean isAssignPublicIp()
+    {
+        return assignPublicIp;
     }
 }

@@ -775,7 +775,7 @@ public class EcsCommandExecutor
             request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
                     new AwsVpcConfiguration()
                             .withSubnets(clientConfig.getSubnets().get())
-                            .withAssignPublicIp(AssignPublicIp.ENABLED) // TODO should be extracted
+                            .withAssignPublicIp(clientConfig.isAssignPublicIp() ? AssignPublicIp.ENABLED : AssignPublicIp.DISABLED)
             ));
         }
 

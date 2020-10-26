@@ -14,6 +14,7 @@ public class EcsClientConfigBuilder
     private String region;
     private Optional<List<String>> subnets;
     private int maxRetries;
+    private boolean assignPublicIp;
     private Optional<String> capacityProviderName;
     private Optional<Integer> cpu;
     private Optional<Integer> memory;
@@ -95,6 +96,12 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withAssignPublicIp(boolean assignPublicIp)
+    {
+        this.assignPublicIp = assignPublicIp;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -148,5 +155,10 @@ public class EcsClientConfigBuilder
     public Optional<String> getStartedBy()
     {
         return startedBy;
+    }
+
+    public boolean isAssignPublicIp()
+    {
+        return assignPublicIp;
     }
 }
