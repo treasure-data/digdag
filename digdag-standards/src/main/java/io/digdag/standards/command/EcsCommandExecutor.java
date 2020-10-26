@@ -2,6 +2,7 @@ package io.digdag.standards.command;
 
 import com.amazonaws.services.ecs.model.AssignPublicIp;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
+import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.KeyValuePair;
@@ -55,6 +56,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -302,7 +304,8 @@ public class EcsCommandExecutor
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
                 }
-            } while (Instant.now().getEpochSecond() < timeout);
+            }
+            while (Instant.now().getEpochSecond() < timeout);
 
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
@@ -323,7 +326,8 @@ public class EcsCommandExecutor
         final Task task;
         try {
             task = client.getTask(cluster, taskArn);
-        } catch (TaskSetNotFoundException e) {
+        }
+        catch (TaskSetNotFoundException e) {
             // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
             logger.info("Cannot get the Ecs task status. Will be retried.");
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
@@ -484,7 +488,8 @@ public class EcsCommandExecutor
         }
     }
 
-    protected Task findTask(final String taskDefinitionArn, final RunTaskResult result) {
+    protected Task findTask(final String taskDefinitionArn, final RunTaskResult result)
+    {
         for (final Task t : result.getTasks()) {
             if (t.getTaskDefinitionArn().equals(taskDefinitionArn)) {
                 return t;
@@ -493,12 +498,17 @@ public class EcsCommandExecutor
         throw new RuntimeException("Submitted task could not be found"); // TODO the message should be improved more understandably.
     }
 
-    EcsClientConfig createEcsClientConfig(
+    protected EcsClientConfig createEcsClientConfig(
             final Optional<String> clusterName,
             final Config systemConfig,
-            final Config config)
+            final Config taskConfig)
     {
-        return EcsClientConfig.of(clusterName, systemConfig, config);
+        if (taskConfig.has(EcsClientConfig.TASK_CONFIG_ECS_KEY)) {
+            return EcsClientConfig.createFromTaskConfig(clusterName, taskConfig);
+        }
+        else {
+            return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        }
     }
 
     RunTaskRequest buildRunTaskRequest(
@@ -513,9 +523,11 @@ public class EcsCommandExecutor
         setEcsGroup(runTaskRequest);
         setEcsTaskDefinition(commandContext, commandRequest, td, runTaskRequest);
         setEcsTaskCount(runTaskRequest);
-        setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest); // RuntimeException,ConfigException
+        setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest, clientConfig); // RuntimeException,ConfigException
         setEcsTaskLaunchType(clientConfig, runTaskRequest);
+        setEcsTaskStartedBy(clientConfig, runTaskRequest);
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
+        setCapacityProviderStrategy(clientConfig, runTaskRequest);
         return runTaskRequest;
     }
 
@@ -546,7 +558,8 @@ public class EcsCommandExecutor
             final CommandContext commandContext,
             final CommandRequest commandRequest,
             final TaskDefinition td,
-            final RunTaskRequest request)
+            final RunTaskRequest request,
+            final EcsClientConfig clientConfig)
             throws ConfigException
     {
         final ContainerOverride containerOverride = new ContainerOverride();
@@ -555,7 +568,7 @@ public class EcsCommandExecutor
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
         setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
-        setEcsContainerOverrideResource(commandContext, commandRequest, containerOverride);
+        setEcsContainerOverrideResource(clientConfig, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
         taskOverride.withContainerOverrides(containerOverride);
@@ -672,7 +685,7 @@ public class EcsCommandExecutor
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds by the default
         // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
-        bashArguments.add(s("curl --retry %d --retry-connrefused%s -s -X PUT -T %s -L \"%s\"", retryUploads, curlFailOptOnUploads ? " --fail": "", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        bashArguments.add(s("curl --retry %d --retry-connrefused%s -s -X PUT -T %s -L \"%s\"", retryUploads, curlFailOptOnUploads ? " --fail" : "", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
@@ -690,7 +703,6 @@ public class EcsCommandExecutor
     {
         return ImmutableList.of();
     }
-
 
     protected List<String> setEcsContainerOverrideArgumentsAfterCommand()
     {
@@ -710,10 +722,23 @@ public class EcsCommandExecutor
     }
 
     protected void setEcsContainerOverrideResource(
-            final CommandContext commandContext,
-            final CommandRequest commandRequest,
+            final EcsClientConfig clientConfig,
             final ContainerOverride containerOverride)
-    { }
+    {
+        if (clientConfig.getCpu().isPresent()) {
+            containerOverride.setCpu(clientConfig.getCpu().get());
+        }
+        if (clientConfig.getMemory().isPresent()) {
+            containerOverride.setMemory(clientConfig.getMemory().get());
+        }
+    }
+
+    protected void setEcsTaskStartedBy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+    {
+        if (clientConfig.getStartedBy().isPresent()) {
+            runTaskRequest.setStartedBy(clientConfig.getStartedBy().get());
+        }
+    }
 
     private static void log(final String message, final CommandLogger to)
             throws IOException
@@ -746,11 +771,13 @@ public class EcsCommandExecutor
 
     protected void setEcsNetworkConfiguration(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
-                new AwsVpcConfiguration()
-                        .withSubnets(clientConfig.getSubnets())
-                        .withAssignPublicIp(AssignPublicIp.ENABLED) // TODO should be extracted
-                ));
+        if (clientConfig.getSubnets().isPresent()) {
+            request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
+                    new AwsVpcConfiguration()
+                            .withSubnets(clientConfig.getSubnets().get())
+                            .withAssignPublicIp(clientConfig.isAssignPublicIp() ? AssignPublicIp.ENABLED : AssignPublicIp.DISABLED)
+            ));
+        }
 
         //final AwsVpcConfiguration awsVpcConfig = new AwsVpcConfiguration();
         //awsVpcConfig.withAssignPublicIp();
@@ -760,5 +787,14 @@ public class EcsCommandExecutor
         //final NetworkConfiguration config = new NetworkConfiguration();
         //config.withAwsvpcConfiguration(vpcConfig);
         //request.withNetworkConfiguration(config);
+    }
+
+    protected void setCapacityProviderStrategy(final EcsClientConfig clientConfig, final RunTaskRequest request)
+    {
+        if (clientConfig.getCapacityProviderName().isPresent()) {
+            CapacityProviderStrategyItem capacityProviderStrategyItem = new CapacityProviderStrategyItem()
+                    .withCapacityProvider(clientConfig.getCapacityProviderName().get());
+            request.setCapacityProviderStrategy(Arrays.asList(capacityProviderStrategyItem));
+        }
     }
 }

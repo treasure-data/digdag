@@ -2,39 +2,64 @@ package io.digdag.standards.command.ecs;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.core.storage.StorageManager;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
+    public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
+    private static final int DEFAULT_MAX_RETRIES = 3;
 
-    public static EcsClientConfig of(final Optional<String> clusterName, final Config systemConfig, final Config taskConfig)
+    public static EcsClientConfigBuilder builder()
     {
-        return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
-        /**
-        if (config.has("ecs")) {
-            // from task config
-            return createFromTaskConfig(clusterName, config); // TODO
+        return new EcsClientConfigBuilder();
+    }
+
+    public EcsClientConfig(EcsClientConfigBuilder builder)
+    {
+        this.clusterName = builder.getClusterName();
+        this.launchType = builder.getLaunchType();
+        this.accessKeyId = builder.getAccessKeyId();
+        this.secretAccessKey = builder.getSecretAccessKey();
+        this.region = builder.getRegion();
+        this.subnets = builder.getSubnets();
+        this.maxRetries = builder.getMaxRetries();
+        this.capacityProviderName = builder.getCapacityProviderName();
+        this.cpu = builder.getCpu();
+        this.memory = builder.getMemory();
+        this.startedBy = builder.getStartedBy();
+        this.assignPublicIp = builder.isAssignPublicIp();
+    }
+
+    public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
+    {
+        final String name;
+        // `config` is assumed to have a nested config with following values
+        // at the key of `TASK_CONFIG_ECS_KEY` from `config`.
+        // - launch_type
+        // - access_key_id
+        // - secret_access_key
+        // - region
+        // - subnets (optional)
+        // - max_retries (optional)
+        // - capacity_provider_name (optional)
+        // - memory (optional)
+        // - cpu (optional)
+        final Config ecsConfig = config.getNested(TASK_CONFIG_ECS_KEY);
+        if (!clusterName.isPresent()) {
+            // Throw ConfigException if 'name' doesn't exist in system config.
+            name = ecsConfig.get("cluster_name", String.class);
         }
         else {
-            // from system config
-            return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
+            name = clusterName.get();
         }
-         */
+
+        return buildEcsClientConfig(name, ecsConfig);
     }
 
-    private static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
-    {
-        // TODO
-        // We'd better to customize cluster config by task config
-        throw new ConfigException("Not supported yet");
-    }
-
-    private static EcsClientConfig createFromSystemConfig(final Optional<String> clusterName, final Config systemConfig)
+    public static EcsClientConfig createFromSystemConfig(final Optional<String> clusterName, final Config systemConfig)
     {
         final String name;
         if (!clusterName.isPresent()) {
@@ -47,14 +72,29 @@ public class EcsClientConfig
 
         final String extractedPrefix = SYSTEM_CONFIG_PREFIX + name + ".";
         final Config extracted = StorageManager.extractKeyPrefix(systemConfig, extractedPrefix);
-        return new EcsClientConfig(name,
-                extracted.get("launch_type", String.class),
-                extracted.get("access_key_id", String.class),
-                extracted.get("secret_access_key", String.class),
-                extracted.get("region", String.class),
-                extracted.get("subnets", String.class),
-                extracted.get("max_retries", int.class, 3)
-        );
+
+        return buildEcsClientConfig(name, extracted);
+    }
+
+    private static EcsClientConfig buildEcsClientConfig(String clusterName, Config ecsConfig)
+    {
+        return EcsClientConfig.builder()
+                .withClusterName(clusterName)
+                .withLaunchType(ecsConfig.get("launch_type", String.class))
+                .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
+                .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
+                .withRegion(ecsConfig.get("region", String.class))
+                .withSubnets(ecsConfig.getOptional("subnets", String.class))
+                .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
+                .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
+                .withCpu(ecsConfig.getOptional("cpu", Integer.class))
+                .withMemory(ecsConfig.getOptional("memory", Integer.class))
+                .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
+                // TODO removing default value.
+                // This value was previously hard coded.
+                // To keep consistency I once set the default value. But it should be removed after migration.
+                .withAssignPublicIp(ecsConfig.get("assign_public_ip", boolean.class, true))
+                .build();
     }
 
     private final String clusterName;
@@ -62,25 +102,13 @@ public class EcsClientConfig
     private final String accessKeyId;
     private final String secretAccessKey;
     private final String region;
-    private final List<String> subnets;
+    private final Optional<List<String>> subnets;
     private final int maxRetries;
-
-    private EcsClientConfig(final String clusterName,
-            final String launchType,
-            final String accessKeyId,
-            final String secretAccessKey,
-            final String region,
-            final String subnets,
-            final int maxRetries)
-    {
-        this.clusterName = clusterName;
-        this.launchType = launchType;
-        this.accessKeyId = accessKeyId;
-        this.secretAccessKey = secretAccessKey;
-        this.region = region;
-        this.subnets = Arrays.asList(subnets.split(",")); // TODO more robust
-        this.maxRetries = maxRetries;
-    }
+    private boolean assignPublicIp;
+    private final Optional<String> capacityProviderName;
+    private final Optional<Integer> cpu;
+    private final Optional<Integer> memory;
+    private final Optional<String> startedBy;
 
     public String getClusterName()
     {
@@ -107,7 +135,7 @@ public class EcsClientConfig
         return region;
     }
 
-    public List<String> getSubnets()
+    public Optional<List<String>> getSubnets()
     {
         return subnets;
     }
@@ -115,5 +143,24 @@ public class EcsClientConfig
     public int getMaxRetries()
     {
         return maxRetries;
+    }
+
+    public Optional<String> getCapacityProviderName()
+    {
+        return capacityProviderName;
+    }
+
+    public Optional<Integer> getCpu() { return cpu; }
+
+    public Optional<Integer> getMemory() { return memory; }
+
+    public Optional<String> getStartedBy()
+    {
+        return startedBy;
+    }
+
+    public boolean isAssignPublicIp()
+    {
+        return assignPublicIp;
     }
 }
