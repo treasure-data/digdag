@@ -498,7 +498,7 @@ public class EcsCommandExecutor
         throw new RuntimeException("Submitted task could not be found"); // TODO the message should be improved more understandably.
     }
 
-    protected EcsClientConfig createEcsClientConfig (
+    protected EcsClientConfig createEcsClientConfig(
             final Optional<String> clusterName,
             final Config systemConfig,
             final Config taskConfig)
@@ -525,6 +525,7 @@ public class EcsCommandExecutor
         setEcsTaskCount(runTaskRequest);
         setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest, clientConfig); // RuntimeException,ConfigException
         setEcsTaskLaunchType(clientConfig, runTaskRequest);
+        setEcsTaskStartedBy(clientConfig, runTaskRequest);
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
         setCapacityProviderStrategy(clientConfig, runTaskRequest);
         return runTaskRequest;
@@ -729,6 +730,13 @@ public class EcsCommandExecutor
         }
         if (clientConfig.getMemory().isPresent()) {
             containerOverride.setMemory(clientConfig.getMemory().get());
+        }
+    }
+
+    protected void setEcsTaskStartedBy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+    {
+        if (clientConfig.getStartedBy().isPresent()) {
+            runTaskRequest.setStartedBy(clientConfig.getStartedBy().get());
         }
     }
 

@@ -17,6 +17,7 @@ public class EcsClientConfigBuilder
     private Optional<String> capacityProviderName;
     private Optional<Integer> cpu;
     private Optional<Integer> memory;
+    private Optional<String> startedBy;
 
     public EcsClientConfig build()
     {
@@ -88,6 +89,12 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withStartedBy(Optional<String> startedBy)
+    {
+        this.startedBy = startedBy;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -136,5 +143,10 @@ public class EcsClientConfigBuilder
     public Optional<Integer> getMemory()
     {
         return memory;
+    }
+
+    public Optional<String> getStartedBy()
+    {
+        return startedBy;
     }
 }

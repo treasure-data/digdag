@@ -29,6 +29,7 @@ public class EcsClientConfig
         this.capacityProviderName = builder.getCapacityProviderName();
         this.cpu = builder.getCpu();
         this.memory = builder.getMemory();
+        this.startedBy = builder.getStartedBy();
     }
 
     public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
@@ -87,6 +88,7 @@ public class EcsClientConfig
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
                 .withCpu(ecsConfig.getOptional("cpu", Integer.class))
                 .withMemory(ecsConfig.getOptional("memory", Integer.class))
+                .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
                 .build();
     }
 
@@ -100,6 +102,7 @@ public class EcsClientConfig
     private final Optional<String> capacityProviderName;
     private final Optional<Integer> cpu;
     private final Optional<Integer> memory;
+    private final Optional<String> startedBy;
 
     public String getClusterName()
     {
@@ -144,4 +147,9 @@ public class EcsClientConfig
     public Optional<Integer> getCpu() { return cpu; }
 
     public Optional<Integer> getMemory() { return memory; }
+
+    public Optional<String> getStartedBy()
+    {
+        return startedBy;
+    }
 }
