@@ -393,11 +393,11 @@ public class EcsCommandExecutor
     @VisibleForTesting
     private static Optional<String> getErrorMessageFromTask(String cluster, String taskArn, EcsClient client)
     {
-        Optional<String> errorMessage = Optional.absent();
+        Optional<String> errorMessage;
         try {
             final Task task = client.getTask(cluster, taskArn);
             if (task.getContainers().size() > 0) {
-                task.getContainers().get(0).getReason();
+                errorMessage = Optional.of(task.getContainers().get(0).getReason());
             }
             else {
                 errorMessage = Optional.of("No container information");
