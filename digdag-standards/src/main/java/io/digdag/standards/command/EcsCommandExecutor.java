@@ -391,7 +391,7 @@ public class EcsCommandExecutor
     }
 
     @VisibleForTesting
-    private static Optional<String> getErrorMessageFromTask(String cluster, String taskArn, EcsClient client)
+    static Optional<String> getErrorMessageFromTask(String cluster, String taskArn, EcsClient client)
     {
         Optional<String> errorMessage;
         try {

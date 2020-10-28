@@ -160,7 +160,7 @@ public class PyOperatorFactory
                         }
                     }
                     else { // No existence of output.json is unexpected. Should be failure.
-                        throw new RuntimeException("output.json does not exist. Something unexpected error happened. Please check logs");
+                        throw new RuntimeException("output.json does not exist. Something unexpected error happened. Please check logs.");
                     }
                 }
             }
