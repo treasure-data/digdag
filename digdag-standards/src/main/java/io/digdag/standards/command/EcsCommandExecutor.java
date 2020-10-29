@@ -132,7 +132,7 @@ public class EcsCommandExecutor
             }
         }
         catch (ConfigException e) {
-            logger.debug("Fall back to DockerCommandExecutor: {}", e.toString());
+            logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
             return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
         }
     }
@@ -146,7 +146,9 @@ public class EcsCommandExecutor
     {
         final EcsClientConfig clientConfig = client.getConfig();
         final RunTaskRequest runTaskRequest = buildRunTaskRequest(commandContext, commandRequest, clientConfig, td); // RuntimeException,ConfigException
+        logger.debug("Submit task request:" + dumpTaskRequest(runTaskRequest));
         final RunTaskResult runTaskResult = client.submitTask(runTaskRequest); // RuntimeException, ConfigException
+        logger.debug("Submit task response:" + dumpTaskResult(runTaskResult));
         return findTask(td.getTaskDefinitionArn(), runTaskResult); // RuntimeException
     }
 
@@ -796,5 +798,51 @@ public class EcsCommandExecutor
                     .withCapacityProvider(clientConfig.getCapacityProviderName().get());
             request.setCapacityProviderStrategy(Arrays.asList(capacityProviderStrategyItem));
         }
+    }
+
+    private static String dumpTaskRequest(final RunTaskRequest request)
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        if (request.getCluster() != null) { sb.append("Cluster: ").append(request.getCluster()).append(","); }
+        if (request.getTaskDefinition() != null) { sb.append("TaskDefinition: ").append(request.getTaskDefinition()).append(","); }
+        if (request.getLaunchType() != null) { sb.append("LaunchType: ").append(request.getLaunchType()).append(","); }
+        if (request.getCapacityProviderStrategy() != null) { sb.append("CapacityProviderStrategy: ").append(request.getCapacityProviderStrategy()).append(","); }
+        if (request.getPlacementConstraints() != null) { sb.append("PlacementConstraints: ").append(request.getPlacementConstraints()).append(","); }
+        if (request.getPlacementStrategy() != null) { sb.append("PlacementStrategy: ").append(request.getPlacementStrategy()).append(","); }
+        if (request.getPlatformVersion() != null) { sb.append("PlatformVersion: ").append(request.getPlatformVersion()).append(","); }
+        TaskOverride overrides = request.getOverrides();
+        if (overrides != null) {
+            if (overrides.getCpu() != null) {
+                sb.append("CPU: ").append(overrides.getCpu()).append(",");
+            }
+
+            if (overrides.getCpu() != null) {
+                sb.append("Memory: ").append(overrides.getMemory());
+            }
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    private static String dumpTaskResult(final RunTaskResult result)
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (Task task : result.getTasks()) {
+            sb.append("{");
+            if (task.getTaskArn() != null) { sb.append("TaskArn: ").append(task.getTaskArn()).append(","); }
+            if (task.getClusterArn() != null) { sb.append("ClusterArn: ").append(task.getClusterArn()).append(","); }
+            if (task.getContainerInstanceArn() != null) { sb.append("ContainerInstanceArn: ").append(task.getContainerInstanceArn()).append(","); }
+            if (task.getTaskDefinitionArn() != null) { sb.append("TaskDefinitionArn: ").append(task.getTaskDefinitionArn()).append(","); }
+            if (task.getHealthStatus() != null) { sb.append("HealthStatus: ").append(task.getHealthStatus()).append(","); }
+            if (task.getPlatformVersion() != null) { sb.append("PlatformVersion: ").append(task.getPlatformVersion()).append(","); }
+            if (task.getCreatedAt() != null) { sb.append("CreatedAt: ").append(task.getCreatedAt()).append(","); }
+            if (task.getStartedAt() != null) { sb.append("StartedAt: ").append(task.getStartedAt()); }
+            sb.append("}");
+            sb.append(",");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }
