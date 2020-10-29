@@ -800,7 +800,7 @@ public class EcsCommandExecutor
         }
     }
 
-    private String dumpTaskRequest(final RunTaskRequest request)
+    private static String dumpTaskRequest(final RunTaskRequest request)
     {
         final StringBuilder sb = new StringBuilder();
         sb.append("{");
@@ -825,7 +825,7 @@ public class EcsCommandExecutor
         return sb.toString();
     }
 
-    private String dumpTaskResult(final RunTaskResult result)
+    private static String dumpTaskResult(final RunTaskResult result)
     {
         final StringBuilder sb = new StringBuilder();
         sb.append("[");
