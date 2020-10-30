@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -71,9 +72,9 @@ public class PyOperatorFactoryTest
 		doReturn("iodir").when(commandStatus).getIoDirectory();
 		String reason = py.getErrorReason(commandStatus, commandContext);
 		System.out.println(reason);
-		assertThat(reason.contains("Error messages from CommandExecutor: Test error message"), is(true));
-		assertThat(reason.contains("Error messages from python: name 'printaa' is not defined (NameError)"), is(true));
-		assertThat(reason.contains("from NameError: name 'printaa' is not defined"), is(true));
+		assertThat(reason, containsString("Error messages from CommandExecutor: Test error message"));
+		assertThat(reason, containsString("Error messages from python: name 'printaa' is not defined (NameError)"));
+		assertThat(reason, containsString("from NameError: name 'printaa' is not defined"));
 	}
 
 }

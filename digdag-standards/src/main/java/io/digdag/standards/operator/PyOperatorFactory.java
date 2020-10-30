@@ -175,7 +175,7 @@ public class PyOperatorFactory
                 throws IOException
         {
             final int statusCode = status.getStatusCode();
-            StringBuilder reason = new StringBuilder();
+            final StringBuilder reason = new StringBuilder();
             reason.append("Python command failed with code ").append(statusCode);
             if (status.getErrorMessage().isPresent()) {
                 reason.append("\nError messages from CommandExecutor: ");
