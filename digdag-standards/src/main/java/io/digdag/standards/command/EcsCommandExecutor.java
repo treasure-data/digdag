@@ -766,9 +766,10 @@ public class EcsCommandExecutor
 
     protected void setEcsTaskLaunchType(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        final String type = clientConfig.getLaunchType();
-        final LaunchType launchType = LaunchType.fromValue(type);
-        request.withLaunchType(launchType);
+        if (clientConfig.getLaunchType().isPresent()) {
+            final LaunchType launchType = LaunchType.fromValue(clientConfig.getLaunchType().get());
+            request.withLaunchType(launchType);
+        }
     }
 
     protected void setEcsNetworkConfiguration(final EcsClientConfig clientConfig, final RunTaskRequest request)
