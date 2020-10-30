@@ -506,7 +506,7 @@ public class EcsCommandExecutor
             final Config taskConfig)
     {
         if (taskConfig.has(EcsClientConfig.TASK_CONFIG_ECS_KEY)) {
-            return EcsClientConfig.createFromTaskConfig(clusterName, taskConfig);
+            return EcsClientConfig.createFromTaskConfig(clusterName, taskConfig, systemConfig);
         }
         else {
             return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);

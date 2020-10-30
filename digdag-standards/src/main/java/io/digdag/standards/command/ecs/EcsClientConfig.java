@@ -33,28 +33,30 @@ public class EcsClientConfig
         this.assignPublicIp = builder.isAssignPublicIp();
     }
 
-    public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config config)
+    public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config taskConfig, final Config systemConfig)
     {
         final String name;
-        // `config` is assumed to have a nested config with following values
-        // at the key of `TASK_CONFIG_ECS_KEY` from `config`.
+        // `taskConfig` is assumed to have a nested taskConfig with following values
+        // at the key of `TASK_CONFIG_ECS_KEY` from `taskConfig`.
         // - launch_type (optional)
-        // - access_key_id
-        // - secret_access_key
         // - region
         // - subnets (optional)
         // - max_retries (optional)
         // - capacity_provider_name (optional)
         // - memory (optional)
         // - cpu (optional)
-        final Config ecsConfig = config.getNested(TASK_CONFIG_ECS_KEY);
+        final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
         if (!clusterName.isPresent()) {
-            // Throw ConfigException if 'name' doesn't exist in system config.
+            // Throw ConfigException if 'name' doesn't exist in system ecsConfig.
             name = ecsConfig.get("cluster_name", String.class);
         }
         else {
             name = clusterName.get();
         }
+
+        // This method assumes that `access_key_id` and `secret_access_key` are stored at `systemConfig`.
+        ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".access_key_id", String.class));
+        ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".secret_access_key", String.class));
 
         return buildEcsClientConfig(name, ecsConfig);
     }
