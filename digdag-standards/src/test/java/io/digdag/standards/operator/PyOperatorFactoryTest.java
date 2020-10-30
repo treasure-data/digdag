@@ -56,7 +56,8 @@ public class PyOperatorFactoryTest
 	}
 
 	@Test
-	public void testGetErrorReason() throws IOException {
+	public void testGetErrorReason() throws IOException
+	{
 		CommandStatus commandStatus = mock(CommandStatus.class);
 		CommandContext commandContext = mock(CommandContext.class);
 		PyOperator py = (PyOperator)factory.newOperator(operatorContext);
