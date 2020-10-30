@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 
-
 public interface CommandStatus
 {
     /**

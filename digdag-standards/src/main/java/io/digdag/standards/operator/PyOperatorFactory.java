@@ -170,14 +170,15 @@ public class PyOperatorFactory
             }
         }
 
-        private String getErrorReason(CommandStatus status, CommandContext commandContext)
+        @VisibleForTesting
+        String getErrorReason(CommandStatus status, CommandContext commandContext)
                 throws IOException
         {
             final int statusCode = status.getStatusCode();
             StringBuilder reason = new StringBuilder();
             reason.append("Python command failed with code ").append(statusCode);
             if (status.getErrorMessage().isPresent()) {
-                reason.append("\n\tError messages from CommandExecutor: ");
+                reason.append("\nError messages from CommandExecutor: ");
                 reason.append(status.getErrorMessage().get());
             }
             // If the error message and stacktrace are available in outFile, add them.
@@ -189,6 +190,7 @@ public class PyOperatorFactory
                     Optional<String> errClass = err.getOptional("class", String.class);
                     Optional<String> errMessage = err.getOptional("message", String.class);
                     List<String> errBacktrace = err.getListOrEmpty("backtrace", String.class);
+                    reason.append("\nError messages from python");
                     if (errMessage.isPresent()) {
                         reason.append(": ").append(errMessage.get());
                     }
