@@ -38,7 +38,7 @@ public class EcsClientConfig
         final String name;
         // `config` is assumed to have a nested config with following values
         // at the key of `TASK_CONFIG_ECS_KEY` from `config`.
-        // - launch_type
+        // - launch_type (optional)
         // - access_key_id
         // - secret_access_key
         // - region
