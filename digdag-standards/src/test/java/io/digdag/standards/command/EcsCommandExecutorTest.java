@@ -29,6 +29,7 @@ import java.util.Arrays;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -129,8 +130,16 @@ public class EcsCommandExecutorTest
         }
         {
             doThrow(new RuntimeException("Task aborted")).when(ecsClient).getTask(any(String.class), any(String.class));
-            Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
-            assertThat(msg1.or("test failed"), is("Task aborted"));
+            try {
+                Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+                fail("Test failed without RuntimeException");
+            }
+            catch (RuntimeException re) {
+                assertThat(re.getMessage(), is("Task aborted"));
+            }
+            catch (Exception e) {
+                fail("Unexpected Exception happened. " + e.toString());
+            }
         }
     }
 }

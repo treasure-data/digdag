@@ -396,8 +396,9 @@ public class EcsCommandExecutor
         Optional<String> errorMessage;
         try {
             final Task task = client.getTask(cluster, taskArn);
-            if (task.getContainers().size() > 0) {
-                errorMessage = Optional.of(task.getContainers().get(0).getReason());
+            final List<String> reasons = task.getContainers().stream().map(c -> c.getReason()).collect(Collectors.toList());
+            if (reasons.size() > 0) {
+                errorMessage = Optional.of(String.join(",", reasons));
             }
             else {
                 errorMessage = Optional.of("No container information");
@@ -406,9 +407,6 @@ public class EcsCommandExecutor
         catch (TaskSetNotFoundException e) {
             errorMessage = Optional.of(e.getErrorMessage());
 
-        }
-        catch (RuntimeException re) {
-            errorMessage = Optional.of(re.getMessage());
         }
         return errorMessage;
     }
