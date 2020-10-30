@@ -766,9 +766,13 @@ public class EcsCommandExecutor
 
     protected void setEcsTaskLaunchType(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        final String type = clientConfig.getLaunchType();
-        final LaunchType launchType = LaunchType.fromValue(type);
-        request.withLaunchType(launchType);
+        // Note: `LaunchType` CAN NOT be specified with `CapacityProviderStrategy` in the same time.
+        // So when you specify `CapacityProviderStrategy`, do not specify `LaunchType`.
+        // https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html#ECS-RunTask-request-capacityProviderStrategy
+        if (clientConfig.getLaunchType().isPresent()) {
+            final LaunchType launchType = LaunchType.fromValue(clientConfig.getLaunchType().get());
+            request.withLaunchType(launchType);
+        }
     }
 
     protected void setEcsNetworkConfiguration(final EcsClientConfig clientConfig, final RunTaskRequest request)

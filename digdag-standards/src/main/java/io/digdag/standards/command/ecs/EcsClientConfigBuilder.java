@@ -8,13 +8,13 @@ import java.util.List;
 public class EcsClientConfigBuilder
 {
     private String clusterName;
-    private String launchType;
     private String accessKeyId;
     private String secretAccessKey;
     private String region;
-    private Optional<List<String>> subnets;
     private int maxRetries;
     private boolean assignPublicIp;
+    private Optional<List<String>> subnets;
+    private Optional<String> launchType;
     private Optional<String> capacityProviderName;
     private Optional<Integer> cpu;
     private Optional<Integer> memory;
@@ -31,7 +31,7 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withLaunchType(String launchType)
+    public EcsClientConfigBuilder withLaunchType(Optional<String> launchType)
     {
         this.launchType = launchType;
         return this;
@@ -107,7 +107,7 @@ public class EcsClientConfigBuilder
         return clusterName;
     }
 
-    public String getLaunchType()
+    public Optional<String> getLaunchType()
     {
         return launchType;
     }

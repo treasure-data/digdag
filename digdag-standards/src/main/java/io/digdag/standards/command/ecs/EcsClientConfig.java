@@ -38,7 +38,7 @@ public class EcsClientConfig
         final String name;
         // `config` is assumed to have a nested config with following values
         // at the key of `TASK_CONFIG_ECS_KEY` from `config`.
-        // - launch_type
+        // - launch_type (optional)
         // - access_key_id
         // - secret_access_key
         // - region
@@ -80,7 +80,7 @@ public class EcsClientConfig
     {
         return EcsClientConfig.builder()
                 .withClusterName(clusterName)
-                .withLaunchType(ecsConfig.get("launch_type", String.class))
+                .withLaunchType(ecsConfig.getOptional("launch_type", String.class))
                 .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
                 .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
                 .withRegion(ecsConfig.get("region", String.class))
@@ -98,13 +98,13 @@ public class EcsClientConfig
     }
 
     private final String clusterName;
-    private final String launchType;
     private final String accessKeyId;
     private final String secretAccessKey;
     private final String region;
-    private final Optional<List<String>> subnets;
     private final int maxRetries;
     private boolean assignPublicIp;
+    private final Optional<List<String>> subnets;
+    private final Optional<String> launchType;
     private final Optional<String> capacityProviderName;
     private final Optional<Integer> cpu;
     private final Optional<Integer> memory;
@@ -115,7 +115,7 @@ public class EcsClientConfig
         return clusterName;
     }
 
-    public String getLaunchType()
+    public Optional<String> getLaunchType()
     {
         return launchType;
     }
