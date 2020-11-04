@@ -2,6 +2,7 @@ package io.digdag.standards.command.ecs;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.core.storage.StorageManager;
 
 import java.util.List;
@@ -33,6 +34,10 @@ public class EcsClientConfig
         this.assignPublicIp = builder.isAssignPublicIp();
         this.placementStrategyType = builder.getPlacementStrategyType();
         this.placementStrategyField = builder.getPlacementStrategyField();
+
+        if (!placementStrategyType.isPresent() && placementStrategyField.isPresent()) {
+            throw new ConfigException("PlacementStrategyField must be set with PlacementStrategyType");
+        }
     }
 
     public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config taskConfig, final Config systemConfig)
@@ -47,6 +52,8 @@ public class EcsClientConfig
         // - capacity_provider_name (optional)
         // - memory (optional)
         // - cpu (optional)
+        // - placementStrategyType (optional)
+        // - placementStrategyField (optional)
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
         if (!clusterName.isPresent()) {
             // Throw ConfigException if 'name' doesn't exist in system ecsConfig.
@@ -115,7 +122,12 @@ public class EcsClientConfig
     private final Optional<Integer> cpu;
     private final Optional<Integer> memory;
     private final Optional<String> startedBy;
+    // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
+    // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategyType.java#L23-L25
     private final Optional<String> placementStrategyType;
+    // Available values are defined for each `placementStrategyType`.
+    // E.g. For the `binpack` placement strategy, valid values are `cpu` and `memory`.
+    // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
     private final Optional<String> placementStrategyField;
 
     public String getClusterName()
