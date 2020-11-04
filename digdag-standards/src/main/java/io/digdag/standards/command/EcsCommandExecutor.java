@@ -405,7 +405,7 @@ public class EcsCommandExecutor
             }
         }
         catch (TaskSetNotFoundException e) {
-            errorMessage = Optional.of(e.getErrorMessage());
+            errorMessage = Optional.fromNullable(e.getErrorMessage());
 
         }
         return errorMessage;
