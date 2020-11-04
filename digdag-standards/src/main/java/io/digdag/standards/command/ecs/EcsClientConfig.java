@@ -32,6 +32,7 @@ public class EcsClientConfig
         this.startedBy = builder.getStartedBy();
         this.assignPublicIp = builder.isAssignPublicIp();
         this.placementStrategyType = builder.getPlacementStrategyType();
+        this.placementStrategyField = builder.getPlacementStrategyField();
     }
 
     public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config taskConfig, final Config systemConfig)
@@ -98,6 +99,7 @@ public class EcsClientConfig
                 // To keep consistency I once set the default value. But it should be removed after migration.
                 .withAssignPublicIp(ecsConfig.get("assign_public_ip", boolean.class, true))
                 .withPlacementStrategyType(ecsConfig.getOptional("placement_strategy_type", String.class))
+                .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
                 .build();
     }
 
@@ -114,6 +116,7 @@ public class EcsClientConfig
     private final Optional<Integer> memory;
     private final Optional<String> startedBy;
     private final Optional<String> placementStrategyType;
+    private final Optional<String> placementStrategyField;
 
     public String getClusterName()
     {
@@ -172,5 +175,10 @@ public class EcsClientConfig
     public Optional<String> getPlacementStrategyType()
     {
         return placementStrategyType;
+    }
+
+    public Optional<String> getPlacementStrategyField()
+    {
+        return placementStrategyField;
     }
 }
