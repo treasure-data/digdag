@@ -1697,13 +1697,13 @@ public class DatabaseSessionStoreManager
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
 
         @SqlUpdate("update tasks" +
-                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
-                " where id in (" +
+                 " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
+                 " where id in (" +
                   "select id" +
                   " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                  " and retry_at \\<= now()" +
                   " order by id for update" +
-                ")" +
-                " and retry_at \\<= now()")
+                 ")")
         int trySetRetryWaitingToReady();
 
         @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
