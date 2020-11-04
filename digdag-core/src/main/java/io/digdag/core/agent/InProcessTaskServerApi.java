@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 
 public class InProcessTaskServerApi
     implements TaskServerApi
@@ -46,9 +47,10 @@ public class InProcessTaskServerApi
             int count, AgentId agentId,
             int lockSeconds, long maxSleepMillis)
     {
-        List<TaskQueueLock> locks = directQueueClient.lockSharedAgentTasks(count, agentId.toString(), lockSeconds, maxSleepMillis);
         // Sort the list in order to avoid deadlock with other exclusive lock on multiple rows
-        locks.sort(Comparator.comparingLong(CONV_FUNC_FROM_TASK_QUEUE_LOCK_TO_INT));
+        List<TaskQueueLock> locks = directQueueClient.lockSharedAgentTasks(count, agentId.toString(), lockSeconds, maxSleepMillis).stream()
+                .sorted(Comparator.comparingLong(CONV_FUNC_FROM_TASK_QUEUE_LOCK_TO_INT))
+                .collect(Collectors.toList());
         if (locks.isEmpty()) {
             return ImmutableList.of();
         }
