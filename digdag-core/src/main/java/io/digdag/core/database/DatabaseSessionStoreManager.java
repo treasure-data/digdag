@@ -1696,14 +1696,19 @@ public class DatabaseSessionStoreManager
                 " for update")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
 
+        // This query for H2 could cause a deadlock with other transactions because of unordered UPDATE.
+        //
+        // H2 doesn't support queries like the following and we'll leave the query as-is...
+        //
+        //     update tasks set ...
+        //     where id in (
+        //       select id from tasks
+        //       order by id for update where ...
+        //     )
         @SqlUpdate("update tasks" +
-                 " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
-                 " where id in (" +
-                  "select id" +
-                  " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
-                  " and retry_at \\<= now()" +
-                  " order by id for update" +
-                 ")")
+                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
+                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                " and retry_at \\<= now()")
         int trySetRetryWaitingToReady();
 
         @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
