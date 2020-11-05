@@ -543,8 +543,9 @@ public class EcsCommandExecutor
             try {
                 placementStrategyType = PlacementStrategyType.fromValue(clientConfig.getPlacementStrategyType().get());
             }
-            catch (IllegalArgumentException invalidReason) {
-                throw new ConfigException("PlacementStrategyType is invalid", invalidReason);
+            // The message of this exception object has the validation error message.
+            catch (IllegalArgumentException validationError) {
+                throw new ConfigException("PlacementStrategyType is invalid", validationError);
             }
             final PlacementStrategy placementStrategy = new PlacementStrategy();
             placementStrategy.setType(placementStrategyType);
