@@ -9,6 +9,8 @@ import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.LogConfiguration;
 import com.amazonaws.services.ecs.model.NetworkConfiguration;
+import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.Tag;
@@ -530,7 +532,31 @@ public class EcsCommandExecutor
         setEcsTaskStartedBy(clientConfig, runTaskRequest);
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
         setCapacityProviderStrategy(clientConfig, runTaskRequest);
+        setPlacementStrategy(clientConfig, runTaskRequest);
         return runTaskRequest;
+    }
+
+    private void setPlacementStrategy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+            throws ConfigException
+    {
+        if (clientConfig.getPlacementStrategyType().isPresent()) {
+            final PlacementStrategyType placementStrategyType;
+            try {
+                placementStrategyType = PlacementStrategyType.fromValue(clientConfig.getPlacementStrategyType().get());
+            }
+            // The message of this exception object has the validation error message.
+            catch (IllegalArgumentException validationError) {
+                throw new ConfigException("PlacementStrategyType is invalid", validationError);
+            }
+            final PlacementStrategy placementStrategy = new PlacementStrategy();
+            placementStrategy.setType(placementStrategyType);
+
+            if (clientConfig.getPlacementStrategyField().isPresent()) {
+                placementStrategy.setField(clientConfig.getPlacementStrategyField().get());
+            }
+
+            runTaskRequest.setPlacementStrategy(Arrays.asList(placementStrategy));
+        }
     }
 
     protected void setEcsTaskDefinition(

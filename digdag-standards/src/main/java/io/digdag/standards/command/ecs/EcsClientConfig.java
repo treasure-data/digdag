@@ -2,6 +2,7 @@ package io.digdag.standards.command.ecs;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.core.storage.StorageManager;
 
 import java.util.List;
@@ -31,6 +32,15 @@ public class EcsClientConfig
         this.memory = builder.getMemory();
         this.startedBy = builder.getStartedBy();
         this.assignPublicIp = builder.isAssignPublicIp();
+        this.placementStrategyType = builder.getPlacementStrategyType();
+        this.placementStrategyField = builder.getPlacementStrategyField();
+
+        // All PlacementStrategyFields must be used with a PlacementStrategyType.
+        // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
+        // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
+        if (!placementStrategyType.isPresent() && placementStrategyField.isPresent()) {
+            throw new ConfigException("PlacementStrategyField must be set with PlacementStrategyType");
+        }
     }
 
     public static EcsClientConfig createFromTaskConfig(final Optional<String> clusterName, final Config taskConfig, final Config systemConfig)
@@ -45,6 +55,8 @@ public class EcsClientConfig
         // - capacity_provider_name (optional)
         // - memory (optional)
         // - cpu (optional)
+        // - placementStrategyType (optional)
+        // - placementStrategyField (optional)
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
         if (!clusterName.isPresent()) {
             // Throw ConfigException if 'name' doesn't exist in system ecsConfig.
@@ -96,6 +108,8 @@ public class EcsClientConfig
                 // This value was previously hard coded.
                 // To keep consistency I once set the default value. But it should be removed after migration.
                 .withAssignPublicIp(ecsConfig.get("assign_public_ip", boolean.class, true))
+                .withPlacementStrategyType(ecsConfig.getOptional("placement_strategy_type", String.class))
+                .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
                 .build();
     }
 
@@ -111,6 +125,13 @@ public class EcsClientConfig
     private final Optional<Integer> cpu;
     private final Optional<Integer> memory;
     private final Optional<String> startedBy;
+    // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
+    // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategyType.java#L23-L25
+    private final Optional<String> placementStrategyType;
+    // Available values are defined for each `placementStrategyType`.
+    // E.g. For the `binpack` placement strategy, valid values are `cpu` and `memory`.
+    // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
+    private final Optional<String> placementStrategyField;
 
     public String getClusterName()
     {
@@ -164,5 +185,15 @@ public class EcsClientConfig
     public boolean isAssignPublicIp()
     {
         return assignPublicIp;
+    }
+
+    public Optional<String> getPlacementStrategyType()
+    {
+        return placementStrategyType;
+    }
+
+    public Optional<String> getPlacementStrategyField()
+    {
+        return placementStrategyField;
     }
 }

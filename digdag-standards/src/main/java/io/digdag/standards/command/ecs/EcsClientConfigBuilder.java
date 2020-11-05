@@ -19,6 +19,8 @@ public class EcsClientConfigBuilder
     private Optional<Integer> cpu;
     private Optional<Integer> memory;
     private Optional<String> startedBy;
+    private Optional<String> placementStrategyType;
+    private Optional<String> placementStrategyField;
 
     public EcsClientConfig build()
     {
@@ -102,6 +104,18 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withPlacementStrategyType(Optional<String> placementStrategyType)
+    {
+        this.placementStrategyType = placementStrategyType;
+        return this;
+    }
+
+    public EcsClientConfigBuilder withPlacementStrategyField(Optional<String> placementStrategyField)
+    {
+        this.placementStrategyField = placementStrategyField;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -160,5 +174,15 @@ public class EcsClientConfigBuilder
     public boolean isAssignPublicIp()
     {
         return assignPublicIp;
+    }
+
+    public Optional<String> getPlacementStrategyType()
+    {
+        return placementStrategyType;
+    }
+
+    public Optional<String> getPlacementStrategyField()
+    {
+        return placementStrategyField;
     }
 }
