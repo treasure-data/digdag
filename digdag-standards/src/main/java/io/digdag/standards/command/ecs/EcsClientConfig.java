@@ -35,6 +35,9 @@ public class EcsClientConfig
         this.placementStrategyType = builder.getPlacementStrategyType();
         this.placementStrategyField = builder.getPlacementStrategyField();
 
+        // All PlacementStrategyFields must be used with a PlacementStrategyType.
+        // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
+        // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
         if (!placementStrategyType.isPresent() && placementStrategyField.isPresent()) {
             throw new ConfigException("PlacementStrategyField must be set with PlacementStrategyType");
         }
