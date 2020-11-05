@@ -123,6 +123,15 @@ public class EcsCommandExecutorTest
             Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
             assertThat(msg1.or("test failed"), is("test test test"));
         }
+        {  // null or "" in getReason() is ignored.
+            Container container1 = mock(Container.class);
+            Container container2 = mock(Container.class);
+            doReturn(Arrays.asList(container1, container2)).when(task).getContainers();
+            doReturn(null).when(container1).getReason();
+            doReturn("").when(container2).getReason();
+            Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+            assertThat(msg1.or("test failed"), is("No container information"));
+        }
         {
             doThrow(new TaskSetNotFoundException("No task set found")).when(ecsClient).getTask(any(String.class), any(String.class));
             Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);

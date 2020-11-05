@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -393,10 +394,10 @@ public class EcsCommandExecutor
     @VisibleForTesting
     static Optional<String> getErrorMessageFromTask(String cluster, String taskArn, EcsClient client)
     {
-        Optional<String> errorMessage;
+        Optional<String> errorMessage = Optional.absent();
         try {
             final Task task = client.getTask(cluster, taskArn);
-            final List<String> reasons = task.getContainers().stream().map(c -> c.getReason()).collect(Collectors.toList());
+            final List<String> reasons = task.getContainers().stream().map(c -> c.getReason()).filter(r -> !Strings.isNullOrEmpty(r)).collect(Collectors.toList());
             if (reasons.size() > 0) {
                 errorMessage = Optional.of(String.join(",", reasons));
             }
