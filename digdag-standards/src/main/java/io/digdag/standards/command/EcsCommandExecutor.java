@@ -536,7 +536,8 @@ public class EcsCommandExecutor
         return runTaskRequest;
     }
 
-    private void setPlacementStrategy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest) throws ConfigException
+    private void setPlacementStrategy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+            throws ConfigException
     {
         if (clientConfig.getPlacementStrategyType().isPresent()) {
             final PlacementStrategyType placementStrategyType;
