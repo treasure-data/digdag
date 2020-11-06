@@ -24,7 +24,7 @@ public class InProcessTaskServerApi
             return Long.parseLong(tql.getUniqueName());
         }
         catch (Throwable e) {
-            logger.warn("Failed to convert TaskQueueLock.uniqueName to integer", e);
+            logger.warn("Failed to convert TaskQueueLock.uniqueName to integer. The `uniqueName` will be handled as 0", e);
             return 0;
         }
     };
