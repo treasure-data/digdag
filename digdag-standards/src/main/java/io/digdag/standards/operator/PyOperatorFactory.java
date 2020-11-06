@@ -150,6 +150,7 @@ public class PyOperatorFactory
                     // without resubmitting the code.
                     state.remove("commandStatus");
                     String reason = getErrorReason(status, commandContext);
+                    //ToDo TaskExecutionException is better than RuntimeException?
                     throw new RuntimeException(reason);
                 }
                 else {
@@ -160,6 +161,7 @@ public class PyOperatorFactory
                         }
                     }
                     else { // No existence of output.json is unexpected. Should be failure.
+                        //ToDo TaskExecutionException is better than RuntimeException?
                         throw new RuntimeException("output.json does not exist. Something unexpected error happened. Please check logs.");
                     }
                 }

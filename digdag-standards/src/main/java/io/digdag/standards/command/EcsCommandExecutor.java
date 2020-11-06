@@ -397,7 +397,10 @@ public class EcsCommandExecutor
         Optional<String> errorMessage = Optional.absent();
         try {
             final Task task = client.getTask(cluster, taskArn);
-            final List<String> reasons = task.getContainers().stream().map(c -> c.getReason()).filter(r -> !Strings.isNullOrEmpty(r)).collect(Collectors.toList());
+            final List<String> reasons = task.getContainers().stream()
+                    .map(c -> c.getReason())
+                    .filter(r -> !Strings.isNullOrEmpty(r))
+                    .collect(Collectors.toList());
             if (reasons.size() > 0) {
                 errorMessage = Optional.of(String.join(",", reasons));
             }

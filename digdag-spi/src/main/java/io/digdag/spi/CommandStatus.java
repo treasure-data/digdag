@@ -6,6 +6,8 @@ import com.google.common.base.Optional;
 
 public interface CommandStatus
 {
+    // ToDo: isFinished and statusCode should be merged into an Optional<Integer>
+
     /**
      * Check command is finished or not.
      *
