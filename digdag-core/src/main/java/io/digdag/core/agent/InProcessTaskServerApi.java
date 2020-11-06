@@ -21,7 +21,10 @@ public class InProcessTaskServerApi
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
     private final ToLongFunction<TaskQueueLock> CONV_FUNC_FROM_TASK_QUEUE_LOCK_TO_INT = tql -> {
         try {
-            return Long.parseLong(tql.getUniqueName());
+            // Retried task's unique name has suffix `.r${retryCount}`.
+            // See io.digdag.core.workflow.WorkflowExecutor.encodeUniqueQueuedTaskName
+            String[] decodedPartsOfUniqueName = tql.getUniqueName().split("\\.");
+            return Long.parseLong(decodedPartsOfUniqueName[0]);
         }
         catch (Throwable e) {
             logger.warn("Failed to convert TaskQueueLock.uniqueName to integer. The `uniqueName` will be handled as 0", e);

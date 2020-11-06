@@ -61,10 +61,20 @@ public class InProcessTaskServerApiTest
         TaskQueueLock taskQueueLock4 = mock(TaskQueueLock.class);
         doReturn("5").when(taskQueueLock4).getUniqueName();
 
-        // So the expected order is: 1 or 3 -> 1 or 3 -> 2 -> 4 -> 0
+        // Retried task's unique name has suffix `.r${retryCount}`.
+        // See io.digdag.core.workflow.WorkflowExecutor.encodeUniqueQueuedTaskName
+        TaskQueueLock taskQueueLock5 = mock(TaskQueueLock.class);
+        doReturn("3.r8").when(taskQueueLock5).getUniqueName();
 
-        ImmutableList<TaskQueueLock> taskQueueLocks =
-                ImmutableList.of(taskQueueLock0, taskQueueLock1, taskQueueLock2, taskQueueLock3, taskQueueLock4);
+        // So the expected order is: 1 or 3 -> 1 or 3 -> 2 -> 5 -> 4 -> 0
+
+        ImmutableList<TaskQueueLock> taskQueueLocks = ImmutableList.of(
+                taskQueueLock0,
+                taskQueueLock1,
+                taskQueueLock2,
+                taskQueueLock3,
+                taskQueueLock4,
+                taskQueueLock5);
 
         int fetchTaskCount = 42;
         String agentIdKey = "Hello";
@@ -83,11 +93,12 @@ public class InProcessTaskServerApiTest
         verify(workflowExecutor, times(1)).getTaskRequests(taskQueueLockListCapture.capture());
 
         List<TaskQueueLock> taskQueueLockList = taskQueueLockListCapture.getValue();
-        assertEquals(5, taskQueueLockList.size());
+        assertEquals(6, taskQueueLockList.size());
         assertTrue(taskQueueLockList.get(0) == taskQueueLock1 || taskQueueLockList.get(0) == taskQueueLock3);
         assertTrue(taskQueueLockList.get(1) == taskQueueLock1 || taskQueueLockList.get(1) == taskQueueLock3);
         assertEquals(taskQueueLock2, taskQueueLockList.get(2));
-        assertEquals(taskQueueLock4, taskQueueLockList.get(3));
-        assertEquals(taskQueueLock0, taskQueueLockList.get(4));
+        assertEquals(taskQueueLock5, taskQueueLockList.get(3));
+        assertEquals(taskQueueLock4, taskQueueLockList.get(4));
+        assertEquals(taskQueueLock0, taskQueueLockList.get(5));
     }
 }
