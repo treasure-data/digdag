@@ -40,6 +40,7 @@ public class DatabaseMigrator
         new Migration_20170223220127_AddLastSessionTimeAndFlagsToSessions(),
         new Migration_20190318175338_AddIndexToSessionAttempts(),
         new Migration_20191105105927_AddIndexToSessions(),
+        new Migration_20201107103915_AddIndexToSessions(),
     })
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());
