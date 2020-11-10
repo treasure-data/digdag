@@ -289,6 +289,42 @@ public class EcsCommandExecutor
         }
     }
 
+    @Override
+    public void cleanup(
+            final CommandContext commandContext,
+            final Config state)
+            throws IOException
+    {
+        final TaskRequest request = commandContext.getTaskRequest();
+        final long attemptId = request.getAttemptId();
+        final long taskId = request.getTaskId();
+        final Config taskConfig = request.getConfig();
+
+        final ObjectNode commandStatus = state.get("commandStatus", ObjectNode.class);
+        final String clusterName = commandStatus.get("cluster_name").asText();
+        final String taskArn = commandStatus.get("task_arn").asText();
+        final EcsClientConfig clientConfig = createEcsClientConfig(Optional.of(clusterName), systemConfig, taskConfig); // ConfigException
+
+        try (final EcsClient client = ecsClientFactory.createClient(clientConfig)) { // ConfigException
+            final Task task;
+            try {
+                task = client.getTask(clusterName, taskArn);
+            }
+            catch (TaskSetNotFoundException e) {
+                final String message = s("Cannot get the ECS task status. attemptId=%d, taskId=%d", attemptId, taskId);
+                logger.warn(message);
+                // Throw exception to stop the task
+                throw new TaskExecutionException(message);
+            }
+            final String message = s("Command task execution cancel requested: attemptId=%d, taskId=%d", attemptId, taskId);
+            logger.info(message);
+            logger.debug(s("Stop command task %s", task.getTaskArn()));
+            client.stopTask(clusterName, task.getTaskArn());
+            // Throw exception to stop the task
+            throw new TaskExecutionException(message);
+        }
+    }
+
     CommandStatus createNextCommandStatus(
             final CommandContext commandContext,
             final EcsClient client,
