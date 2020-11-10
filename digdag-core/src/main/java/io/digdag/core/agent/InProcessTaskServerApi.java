@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 public class InProcessTaskServerApi
     implements TaskServerApi
 {
-    private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
-    private final ToLongFunction<TaskQueueLock> CONV_FUNC_FROM_TASK_QUEUE_LOCK_TO_INT = taskQueueLock -> {
+    private static final Logger logger = LoggerFactory.getLogger(InProcessTaskServerApi.class);
+    private static final ToLongFunction<TaskQueueLock> CONV_FUNC_FROM_TASK_QUEUE_LOCK_TO_INT = taskQueueLock -> {
         try {
             return WorkflowExecutor.parseTaskIdFromEncodedQueuedTaskName(taskQueueLock.getUniqueName());
         }
