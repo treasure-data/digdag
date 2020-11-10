@@ -28,7 +28,7 @@ public class EcsClientConfig
         this.subnets = builder.getSubnets();
         this.maxRetries = builder.getMaxRetries();
         this.capacityProviderName = builder.getCapacityProviderName();
-        this.cpu = builder.getCpu();
+        this.containerCpu = builder.getContainerCpu();
         this.memory = builder.getMemory();
         this.startedBy = builder.getStartedBy();
         this.assignPublicIp = builder.isAssignPublicIp();
@@ -54,7 +54,7 @@ public class EcsClientConfig
         // - max_retries (optional)
         // - capacity_provider_name (optional)
         // - memory (optional)
-        // - cpu (optional)
+        // - container_cpu (optional)
         // - placementStrategyType (optional)
         // - placementStrategyField (optional)
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
@@ -101,7 +101,7 @@ public class EcsClientConfig
                 .withSubnets(ecsConfig.getOptional("subnets", String.class))
                 .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
-                .withCpu(ecsConfig.getOptional("cpu", Integer.class))
+                .withContainerCpu(ecsConfig.getOptional("container_cpu", Integer.class))
                 .withMemory(ecsConfig.getOptional("memory", Integer.class))
                 .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
                 // TODO removing default value.
@@ -122,7 +122,7 @@ public class EcsClientConfig
     private final Optional<List<String>> subnets;
     private final Optional<String> launchType;
     private final Optional<String> capacityProviderName;
-    private final Optional<Integer> cpu;
+    private final Optional<Integer> containerCpu;
     private final Optional<Integer> memory;
     private final Optional<String> startedBy;
     // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
@@ -173,7 +173,7 @@ public class EcsClientConfig
         return capacityProviderName;
     }
 
-    public Optional<Integer> getCpu() { return cpu; }
+    public Optional<Integer> getContainerCpu() { return containerCpu; }
 
     public Optional<Integer> getMemory() { return memory; }
 

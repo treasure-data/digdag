@@ -16,7 +16,7 @@ public class EcsClientConfigBuilder
     private Optional<List<String>> subnets;
     private Optional<String> launchType;
     private Optional<String> capacityProviderName;
-    private Optional<Integer> cpu;
+    private Optional<Integer> containerCpu;
     private Optional<Integer> memory;
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
@@ -80,9 +80,9 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withCpu(Optional<Integer> cpu)
+    public EcsClientConfigBuilder withContainerCpu(Optional<Integer> containerCpu)
     {
-        this.cpu = cpu;
+        this.containerCpu = containerCpu;
         return this;
     }
 
@@ -156,9 +156,9 @@ public class EcsClientConfigBuilder
         return capacityProviderName;
     }
 
-    public Optional<Integer> getCpu()
+    public Optional<Integer> getContainerCpu()
     {
-        return cpu;
+        return containerCpu;
     }
 
     public Optional<Integer> getMemory()
