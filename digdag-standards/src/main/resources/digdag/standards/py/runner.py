@@ -160,8 +160,8 @@ try:
         args = digdag_inspect_arguments(callable_type, False, params)
         result = callable_type(**args)
 except SystemExit as e:
-    # SystemExit only show exit code and it is not kind to user. So create specific error message.
-    # This error will happen if called python module name and method name are equal to standard module. (e.g tokenize.main)
+    # SystemExit only shows an exit code and it is not kind to users. So this block creates a specific error message.
+    # This error will happen if called python module name and method name are equal to those of the standard library module. (e.g. tokenize.main)
     error = Exception("Failed to call python command with code:%d" % e.code, "Possible cause: Ivalid python module call, duplicae module name with standard library")
     error_type, error_value, _tb = sys.exc_info()
     error_message = "%s %s" % (error.args[0], error.args[1])
