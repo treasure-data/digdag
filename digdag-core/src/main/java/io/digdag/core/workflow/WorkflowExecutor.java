@@ -86,8 +86,6 @@ import static java.util.Locale.ENGLISH;
  * READY:
  *   enqueueReadyTasks:
  *     enqueueTask:
- *       (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
- *         : CANCELED
  *       lockedTask.setReadyToRunning:
  *         : RUNNING
  *   NOTE: because updated_at column is used as a part of identifier of
@@ -96,6 +94,8 @@ import static java.util.Locale.ENGLISH;
  *
  * RUNNING:
  *   taskFailed:
+ *     (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
+ *       : CANCELED
  *     (if retryInterval is set) lockedTask.setRunningToRetryWaiting:
  *       : RETRY_WAITING with error
  *     (if error task exists) lockedTask.setRunningToPlannedWithDelayedError:
@@ -104,6 +104,8 @@ import static java.util.Locale.ENGLISH;
  *       : ERROR with error
  *
  *   taskSucceeded:
+ *     (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
+ *       : CANCELED
  *     (if subtasks or check task exist) lockedTask.setRunningToPlannedSuccessful:
  *       : PLANNED
  *     lockedTask.setRunningToShortCircuitSuccess:
@@ -960,9 +962,8 @@ public class WorkflowExecutor
                 return retryGroupingTask(lockedTask);
             }
 
-            if (task.getStateFlags().isCancelRequested()) {
-                return lockedTask.setToCanceled();
-            }
+            // NOTE: Nothing to do here because CANCEL_REQUESTED task will be handled by　an agent.
+            // See also state transitions.
 
             int siteId;
             try {

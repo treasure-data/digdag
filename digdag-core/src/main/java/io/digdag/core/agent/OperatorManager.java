@@ -160,8 +160,13 @@ public class OperatorManager
                         callback.retryTask(request, agentId, ex.getRetryInterval().get(), ex.getStateParams(cf).get(), ex.getError(cf));
                     }
                     else {
-                        logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
-                        logger.debug("", ex);
+                        if (request.isCancelRequested()) {
+                            logger.warn("Task {} canceled.", request.getTaskName());
+                        }
+                        else {
+                            logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
+                            logger.debug("", ex);
+                        }
                         // TODO use debug to log stacktrace here
                         callback.taskFailed(request, agentId, ex.getError(cf).get());  // TODO is error set?
                     }
@@ -345,6 +350,10 @@ public class OperatorManager
                 projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
         Operator operator = factory.newOperator(context);
+
+        if (mergedRequest.isCancelRequested()) {
+            return operator.cleanup(mergedRequest);
+        }
 
         return operator.run();
     }
