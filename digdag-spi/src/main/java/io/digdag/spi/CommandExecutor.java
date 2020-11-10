@@ -1,6 +1,8 @@
 package io.digdag.spi;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.digdag.client.config.Config;
+
 import java.io.IOException;
 
 public interface CommandExecutor
@@ -28,4 +30,15 @@ public interface CommandExecutor
      */
     CommandStatus poll(CommandContext context, ObjectNode previousStatusJson)
             throws IOException;
+
+    /**
+     * Runs a cleanup script when an attempt gets CANCEL_REQUESTED.
+     * @param context
+     * @param state
+     * @throws IOException
+     */
+    default void cleanup(CommandContext context, Config state)
+        throws IOException
+    {
+    }
 }
