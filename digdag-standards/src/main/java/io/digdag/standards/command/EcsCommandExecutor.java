@@ -756,8 +756,8 @@ public class EcsCommandExecutor
         if (clientConfig.getContainerCpu().isPresent()) {
             containerOverride.setCpu(clientConfig.getContainerCpu().get());
         }
-        if (clientConfig.getMemory().isPresent()) {
-            containerOverride.setMemory(clientConfig.getMemory().get());
+        if (clientConfig.getContainerMemory().isPresent()) {
+            containerOverride.setMemory(clientConfig.getContainerMemory().get());
         }
     }
 

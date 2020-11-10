@@ -17,7 +17,7 @@ public class EcsClientConfigBuilder
     private Optional<String> launchType;
     private Optional<String> capacityProviderName;
     private Optional<Integer> containerCpu;
-    private Optional<Integer> memory;
+    private Optional<Integer> containerMemory;
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
@@ -86,9 +86,9 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withMemory(Optional<Integer> memory)
+    public EcsClientConfigBuilder withContainerMemory(Optional<Integer> containerMemory)
     {
-        this.memory = memory;
+        this.containerMemory = containerMemory;
         return this;
     }
 
@@ -161,9 +161,9 @@ public class EcsClientConfigBuilder
         return containerCpu;
     }
 
-    public Optional<Integer> getMemory()
+    public Optional<Integer> getContainerMemory()
     {
-        return memory;
+        return containerMemory;
     }
 
     public Optional<String> getStartedBy()

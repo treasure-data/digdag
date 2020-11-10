@@ -29,7 +29,7 @@ public class EcsClientConfig
         this.maxRetries = builder.getMaxRetries();
         this.capacityProviderName = builder.getCapacityProviderName();
         this.containerCpu = builder.getContainerCpu();
-        this.memory = builder.getMemory();
+        this.containerMemory = builder.getContainerMemory();
         this.startedBy = builder.getStartedBy();
         this.assignPublicIp = builder.isAssignPublicIp();
         this.placementStrategyType = builder.getPlacementStrategyType();
@@ -53,7 +53,7 @@ public class EcsClientConfig
         // - subnets (optional)
         // - max_retries (optional)
         // - capacity_provider_name (optional)
-        // - memory (optional)
+        // - container_memory (optional)
         // - container_cpu (optional)
         // - placementStrategyType (optional)
         // - placementStrategyField (optional)
@@ -102,7 +102,7 @@ public class EcsClientConfig
                 .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
                 .withContainerCpu(ecsConfig.getOptional("container_cpu", Integer.class))
-                .withMemory(ecsConfig.getOptional("memory", Integer.class))
+                .withContainerMemory(ecsConfig.getOptional("memory", Integer.class))
                 .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
                 // TODO removing default value.
                 // This value was previously hard coded.
@@ -123,7 +123,7 @@ public class EcsClientConfig
     private final Optional<String> launchType;
     private final Optional<String> capacityProviderName;
     private final Optional<Integer> containerCpu;
-    private final Optional<Integer> memory;
+    private final Optional<Integer> containerMemory;
     private final Optional<String> startedBy;
     // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategyType.java#L23-L25
@@ -175,7 +175,7 @@ public class EcsClientConfig
 
     public Optional<Integer> getContainerCpu() { return containerCpu; }
 
-    public Optional<Integer> getMemory() { return memory; }
+    public Optional<Integer> getContainerMemory() { return containerMemory; }
 
     public Optional<String> getStartedBy()
     {
