@@ -600,6 +600,8 @@ public class EcsCommandExecutor
 
         final TaskOverride taskOverride = new TaskOverride();
         taskOverride.withContainerOverrides(containerOverride);
+        setTaskOverrideResource(clientConfig, taskOverride);
+
         request.withOverrides(taskOverride);
 
         //final ContainerOverride containerOverride = new ContainerOverride();
@@ -874,5 +876,12 @@ public class EcsCommandExecutor
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    private void setTaskOverrideResource(EcsClientConfig clientConfig, TaskOverride taskOverride)
+    {
+        if (clientConfig.getTaskCpu().isPresent()) {
+            taskOverride.setCpu(clientConfig.getTaskCpu().get());
+        }
     }
 }

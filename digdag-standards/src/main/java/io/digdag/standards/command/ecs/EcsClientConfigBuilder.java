@@ -18,6 +18,7 @@ public class EcsClientConfigBuilder
     private Optional<String> capacityProviderName;
     private Optional<Integer> containerCpu;
     private Optional<Integer> containerMemory;
+    private Optional<String> taskCpu;
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
@@ -116,6 +117,12 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withTaskCpu(Optional<String> taskCpu)
+    {
+        this.taskCpu = taskCpu;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -184,5 +191,10 @@ public class EcsClientConfigBuilder
     public Optional<String> getPlacementStrategyField()
     {
         return placementStrategyField;
+    }
+
+    public Optional<String> getTaskCpu()
+    {
+        return taskCpu;
     }
 }

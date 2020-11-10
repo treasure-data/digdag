@@ -34,6 +34,7 @@ public class EcsClientConfig
         this.assignPublicIp = builder.isAssignPublicIp();
         this.placementStrategyType = builder.getPlacementStrategyType();
         this.placementStrategyField = builder.getPlacementStrategyField();
+        this.taskCpu = builder.getTaskCpu();
 
         // All PlacementStrategyFields must be used with a PlacementStrategyType.
         // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
@@ -57,6 +58,7 @@ public class EcsClientConfig
         // - container_cpu (optional)
         // - placementStrategyType (optional)
         // - placementStrategyField (optional)
+        // - task_cpu
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
         if (!clusterName.isPresent()) {
             // Throw ConfigException if 'name' doesn't exist in system ecsConfig.
@@ -110,6 +112,7 @@ public class EcsClientConfig
                 .withAssignPublicIp(ecsConfig.get("assign_public_ip", boolean.class, true))
                 .withPlacementStrategyType(ecsConfig.getOptional("placement_strategy_type", String.class))
                 .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
+                .withTaskCpu(ecsConfig.getOptional("task_cpu", String.class))
                 .build();
     }
 
@@ -132,6 +135,7 @@ public class EcsClientConfig
     // E.g. For the `binpack` placement strategy, valid values are `cpu` and `memory`.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
     private final Optional<String> placementStrategyField;
+    private final Optional<String> taskCpu;
 
     public String getClusterName()
     {
@@ -195,5 +199,10 @@ public class EcsClientConfig
     public Optional<String> getPlacementStrategyField()
     {
         return placementStrategyField;
+    }
+
+    public Optional<String> getTaskCpu()
+    {
+        return taskCpu;
     }
 }
