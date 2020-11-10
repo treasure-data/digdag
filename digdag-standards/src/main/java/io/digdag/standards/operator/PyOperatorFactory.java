@@ -34,6 +34,7 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
@@ -122,6 +123,25 @@ public class PyOperatorFactory
                 .exportParams(data.getNestedOrGetEmpty("export_params"))
                 .storeParams(data.getNestedOrGetEmpty("store_params"))
                 .build();
+        }
+
+        @Override
+        public TaskResult cleanup(TaskRequest request)
+        {
+            final Path projectPath = workspace.getProjectPath(); // absolute
+            final CommandContext commandContext = buildCommandContext(projectPath);
+            final long attemptId = request.getAttemptId();
+            final long taskId = request.getTaskId();
+            Config state = TaskState.of(request).params();
+            if (state.has("commandStatus")) {
+                logger.debug(String.format("Starting cleanup: attemptId=%d, taskId=%d",  attemptId, taskId));
+                try {
+                    exec.cleanup(commandContext, state);
+                } catch (IOException ex) {
+                    throw Throwables.propagate(ex);
+                }
+            }
+            return TaskResult.empty(request);
         }
 
         private Config runCode(final Config state)
