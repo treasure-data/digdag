@@ -184,7 +184,7 @@ public class DockerIT
         // Wait for the attempt to complete
         {
             RestSessionAttempt attempt = null;
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 60; i++) {
                 attempt = client.getSessionAttempt(attemptId);
                 if (attempt.getDone()) {
                     break;
