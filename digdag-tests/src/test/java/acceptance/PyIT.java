@@ -127,7 +127,7 @@ public class PyIT
         assertThat(attempt.getSuccess(), is(false));
 
         final String logs = getAttemptLogs(client, attempt.getId());
-        assertThat(logs, containsString("Task failed with unexpected error: Python command failed with code 1: my error message (MyError)"));
+        assertThat(logs, containsString("Task failed with unexpected error: Python command failed with code 1"));
         assertThat(logs, containsString(", in run"));
         assertThat(logs, containsString("ERROR_MESSAGE_BEGIN Python command failed with code 1"));
     }
@@ -157,8 +157,8 @@ public class PyIT
         final String logs = getAttemptLogs(client, attempt.getId());
         assertTrue(logs != null);
         assertThat(attempt.getSuccess(), is(false));
-        final String regex = "\\[ERROR\\] [^\\n]*Task failed with unexpected error: Python command failed with code 1:[^\\n]*\\(SyntaxError\\)";
-        assertTrue(Pattern.compile(regex).matcher(logs).find());
+        final String regex = "\\[ERROR\\] [^\\n]*Task failed with unexpected error: Python command failed with code 1.*Error messages from python:[^\\n]*\\(SyntaxError\\)";
+        assertTrue(Pattern.compile(regex, Pattern.DOTALL).matcher(logs).find());
     }
 
     @Test
@@ -183,8 +183,8 @@ public class PyIT
         final String logs = getAttemptLogs(client, attempt.getId());
         assertTrue(logs != null);
         assertThat(attempt.getSuccess(), is(false));
-        final String regex = "\\[ERROR\\] [^\\n]*Task failed with unexpected error: Python command failed with code 1:[^\\n]*duplicae module name with standard library";
-        assertTrue(Pattern.compile(regex).matcher(logs).find());
+        final String regex = "\\[ERROR\\] [^\\n]*Task failed with unexpected error: Python command failed with code 1.*Error messages from python:[^\\n]*duplicae module name with standard library";
+        assertTrue(Pattern.compile(regex, Pattern.DOTALL).matcher(logs).find());
     }
 
     private RestSessionAttempt pushAndStart(Path projectDir, String workflowName, String revision)
