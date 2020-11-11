@@ -1024,6 +1024,7 @@ public class WorkflowExecutor
         }).or(false);
     }
 
+    // TODO? Probably these 2 methods should be moved into TaskQueueLock in the future
     private static String encodeUniqueQueuedTaskName(StoredTask task)
     {
         int retryCount = task.getRetryCount();
@@ -1035,7 +1036,7 @@ public class WorkflowExecutor
         }
     }
 
-    private static long parseTaskIdFromEncodedQueuedTaskName(String encodedUniqueQueuedTaskName)
+    public static long parseTaskIdFromEncodedQueuedTaskName(String encodedUniqueQueuedTaskName)
     {
         int posDot = encodedUniqueQueuedTaskName.indexOf('.');
         if (posDot >= 0) {
