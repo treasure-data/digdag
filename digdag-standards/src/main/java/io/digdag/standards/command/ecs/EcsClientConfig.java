@@ -60,7 +60,7 @@ public class EcsClientConfig
         // - placementStrategyType (optional/String)
         // - placementStrategyField (optional/String)
         // - task_cpu (optional/String) e.g. `1 vcpu` or `1024` (CPU unit)
-        // - task_memory (optional/String) e.g. `1 GB` or `1024` (Mib)
+        // - task_memory (optional/String) e.g. `1 GB` or `1024` (MiB)
         // For more detail of the value format of `task_cpu` and `task_memory`, please see
         // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
