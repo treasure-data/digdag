@@ -149,44 +149,66 @@ public class PyOperatorFactory
                     // Remove the polling state after fetching the result so that the result fetch can be retried
                     // without resubmitting the code.
                     state.remove("commandStatus");
-
-                    StringBuilder reason = new StringBuilder();
-                    reason.append("Python command failed with code ").append(statusCode);
-                    // If the error message and stacktrace are available in outFile,
-                    // throw RuntimeException with them.
-                    final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
-                    try (final InputStream in = Files.newInputStream(outputPath)) {
-                        Config out = mapper.readValue(in, Config.class);
-                        Config err = out.getNestedOrGetEmpty("error");
-                        Optional<String> errClass = err.getOptional("class", String.class);
-                        Optional<String> errMessage = err.getOptional("message", String.class);
-                        List<String> errBacktrace = err.getListOrEmpty("backtrace", String.class);
-                        if (errMessage.isPresent()) {
-                            reason.append(": ").append(errMessage.get());
-                        }
-                        if (errClass.isPresent()) {
-                            reason.append(" (").append(errClass.get()).append(")");
-                        }
-                        if (!errBacktrace.isEmpty()) {
-                            reason.append("\n\tfrom ");
-                            reason.append(String.join("\n\tfrom ", errBacktrace));
-                        }
-                    }
-                    catch (JsonMappingException ex) {
-                        // comes here if runner.rb fails before writing outFile.
-                    }
-                    throw new RuntimeException(reason.toString());
+                    String reason = getErrorReason(status, commandContext);
+                    //ToDo TaskExecutionException is better than RuntimeException?
+                    throw new RuntimeException(reason);
                 }
-
-                final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
-                try (final InputStream in = Files.newInputStream(outputPath)) {
-                    return mapper.readValue(in, Config.class);
+                else {
+                    final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
+                    if (Files.exists(outputPath)) {
+                        try (final InputStream in = Files.newInputStream(outputPath)) {
+                            return mapper.readValue(in, Config.class);
+                        }
+                    }
+                    else { // No existence of output.json is unexpected. Should be failure.
+                        //ToDo TaskExecutionException is better than RuntimeException?
+                        throw new RuntimeException("output.json does not exist. Something unexpected error happened. Please check logs.");
+                    }
                 }
             }
             else {
                 state.set("commandStatus", status);
                 throw TaskExecutionException.ofNextPolling(scriptPollInterval, ConfigElement.copyOf(state));
             }
+        }
+
+        @VisibleForTesting
+        String getErrorReason(CommandStatus status, CommandContext commandContext)
+                throws IOException
+        {
+            final int statusCode = status.getStatusCode();
+            final StringBuilder reason = new StringBuilder();
+            reason.append("Python command failed with code ").append(statusCode);
+            if (status.getErrorMessage().isPresent()) {
+                reason.append("\nError messages from CommandExecutor: ");
+                reason.append(status.getErrorMessage().get());
+            }
+            // If the error message and stacktrace are available in outFile, add them.
+            final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
+            if (Files.exists(outputPath)) {
+                try (final InputStream in = Files.newInputStream(outputPath)) {
+                    Config out = mapper.readValue(in, Config.class);
+                    Config err = out.getNestedOrGetEmpty("error");
+                    Optional<String> errClass = err.getOptional("class", String.class);
+                    Optional<String> errMessage = err.getOptional("message", String.class);
+                    List<String> errBacktrace = err.getListOrEmpty("backtrace", String.class);
+                    reason.append("\nError messages from python");
+                    if (errMessage.isPresent()) {
+                        reason.append(": ").append(errMessage.get());
+                    }
+                    if (errClass.isPresent()) {
+                        reason.append(" (").append(errClass.get()).append(")");
+                    }
+                    if (!errBacktrace.isEmpty()) {
+                        reason.append("\n\tfrom ");
+                        reason.append(String.join("\n\tfrom ", errBacktrace));
+                    }
+                }
+                catch (JsonMappingException ex) {
+                    reason.append("\n\tCan't parse output.json. The command failed unexpectedly. Please check logs.");
+                }
+            }
+            return reason.toString();
         }
 
         private CommandStatus runCommand(final Config params, final CommandContext commandContext)
