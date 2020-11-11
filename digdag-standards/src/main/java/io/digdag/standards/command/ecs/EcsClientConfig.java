@@ -50,8 +50,9 @@ public class EcsClientConfig
         final String name;
         // `taskConfig` is assumed to have a nested taskConfig with following values
         // at the key of `TASK_CONFIG_ECS_KEY` from `taskConfig`.
-        // - launch_type (optional/String)
         // - region (String)
+        // - system_config_prefix (optional/String)
+        // - launch_type (optional/String)
         // - subnets (optional/String)
         // - max_retries (optional/int)
         // - capacity_provider_name (optional/String)
@@ -72,9 +73,17 @@ public class EcsClientConfig
             name = clusterName.get();
         }
 
+        String systemConfigPrefix;
+        if (ecsConfig.has("system_config_prefix")) {
+            systemConfigPrefix = ecsConfig.get("system_config_prefix", String.class);
+        }
+        else {
+            systemConfigPrefix = SYSTEM_CONFIG_PREFIX + name + ".";
+        }
+
         // This method assumes that `access_key_id` and `secret_access_key` are stored at `systemConfig`.
-        ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".access_key_id", String.class));
-        ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".secret_access_key", String.class));
+        ecsConfig.set("access_key_id", systemConfig.get(systemConfigPrefix + "access_key_id", String.class));
+        ecsConfig.set("secret_access_key", systemConfig.get(systemConfigPrefix + "secret_access_key", String.class));
 
         return buildEcsClientConfig(name, ecsConfig);
     }
