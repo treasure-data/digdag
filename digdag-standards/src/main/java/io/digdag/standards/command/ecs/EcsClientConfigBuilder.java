@@ -16,8 +16,10 @@ public class EcsClientConfigBuilder
     private Optional<List<String>> subnets;
     private Optional<String> launchType;
     private Optional<String> capacityProviderName;
-    private Optional<Integer> cpu;
-    private Optional<Integer> memory;
+    private Optional<Integer> containerCpu;
+    private Optional<Integer> containerMemory;
+    private Optional<String> taskCpu;
+    private Optional<String> taskMemory;
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
@@ -80,15 +82,15 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withCpu(Optional<Integer> cpu)
+    public EcsClientConfigBuilder withContainerCpu(Optional<Integer> containerCpu)
     {
-        this.cpu = cpu;
+        this.containerCpu = containerCpu;
         return this;
     }
 
-    public EcsClientConfigBuilder withMemory(Optional<Integer> memory)
+    public EcsClientConfigBuilder withContainerMemory(Optional<Integer> containerMemory)
     {
-        this.memory = memory;
+        this.containerMemory = containerMemory;
         return this;
     }
 
@@ -113,6 +115,18 @@ public class EcsClientConfigBuilder
     public EcsClientConfigBuilder withPlacementStrategyField(Optional<String> placementStrategyField)
     {
         this.placementStrategyField = placementStrategyField;
+        return this;
+    }
+
+    public EcsClientConfigBuilder withTaskCpu(Optional<String> taskCpu)
+    {
+        this.taskCpu = taskCpu;
+        return this;
+    }
+
+    public EcsClientConfigBuilder withTaskMemory(Optional<String> taskMemory)
+    {
+        this.taskMemory = taskMemory;
         return this;
     }
 
@@ -156,14 +170,14 @@ public class EcsClientConfigBuilder
         return capacityProviderName;
     }
 
-    public Optional<Integer> getCpu()
+    public Optional<Integer> getContainerCpu()
     {
-        return cpu;
+        return containerCpu;
     }
 
-    public Optional<Integer> getMemory()
+    public Optional<Integer> getContainerMemory()
     {
-        return memory;
+        return containerMemory;
     }
 
     public Optional<String> getStartedBy()
@@ -184,5 +198,15 @@ public class EcsClientConfigBuilder
     public Optional<String> getPlacementStrategyField()
     {
         return placementStrategyField;
+    }
+
+    public Optional<String> getTaskCpu()
+    {
+        return taskCpu;
+    }
+
+    public Optional<String> getTaskMemory()
+    {
+        return taskMemory;
     }
 }

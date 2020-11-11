@@ -600,21 +600,9 @@ public class EcsCommandExecutor
 
         final TaskOverride taskOverride = new TaskOverride();
         taskOverride.withContainerOverrides(containerOverride);
+        setTaskOverrideResource(clientConfig, taskOverride);
+
         request.withOverrides(taskOverride);
-
-        //final ContainerOverride containerOverride = new ContainerOverride();
-        //containerOverride.withName()
-        //containerOverride.withCommand()
-        //containerOverride.withCpu();
-        //containerOverride.withMemory();
-        //containerOverride.withMemoryReservation();
-        //containerOverride.withResourceRequirements();
-
-        //final TaskOverride taskOverride = new TaskOverride();
-        //taskOverride.withContainerOverrides();
-        //taskOverride.withExecutionRoleArn();
-        //taskOverride.withTaskRoleArn();
-        //request.withOverrides(taskOverride);
     }
 
     protected void setEcsContainerOverrideName(
@@ -753,11 +741,11 @@ public class EcsCommandExecutor
             final EcsClientConfig clientConfig,
             final ContainerOverride containerOverride)
     {
-        if (clientConfig.getCpu().isPresent()) {
-            containerOverride.setCpu(clientConfig.getCpu().get());
+        if (clientConfig.getContainerCpu().isPresent()) {
+            containerOverride.setCpu(clientConfig.getContainerCpu().get());
         }
-        if (clientConfig.getMemory().isPresent()) {
-            containerOverride.setMemory(clientConfig.getMemory().get());
+        if (clientConfig.getContainerMemory().isPresent()) {
+            containerOverride.setMemory(clientConfig.getContainerMemory().get());
         }
     }
 
@@ -810,15 +798,6 @@ public class EcsCommandExecutor
                             .withAssignPublicIp(clientConfig.isAssignPublicIp() ? AssignPublicIp.ENABLED : AssignPublicIp.DISABLED)
             ));
         }
-
-        //final AwsVpcConfiguration awsVpcConfig = new AwsVpcConfiguration();
-        //awsVpcConfig.withAssignPublicIp();
-        //awsVpcConfig.withAssignPublicIp();
-        //awsVpcConfig.withSecurityGroups();
-        //awsVpcConfig.withSubnets();
-        //final NetworkConfiguration config = new NetworkConfiguration();
-        //config.withAwsvpcConfiguration(vpcConfig);
-        //request.withNetworkConfiguration(config);
     }
 
     protected void setCapacityProviderStrategy(final EcsClientConfig clientConfig, final RunTaskRequest request)
@@ -874,5 +853,16 @@ public class EcsCommandExecutor
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    protected void setTaskOverrideResource(EcsClientConfig clientConfig, TaskOverride taskOverride)
+    {
+        if (clientConfig.getTaskCpu().isPresent()) {
+            taskOverride.setCpu(clientConfig.getTaskCpu().get());
+        }
+
+        if (clientConfig.getTaskMemory().isPresent()) {
+            taskOverride.setMemory(clientConfig.getTaskMemory().get());
+        }
     }
 }

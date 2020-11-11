@@ -28,12 +28,14 @@ public class EcsClientConfig
         this.subnets = builder.getSubnets();
         this.maxRetries = builder.getMaxRetries();
         this.capacityProviderName = builder.getCapacityProviderName();
-        this.cpu = builder.getCpu();
-        this.memory = builder.getMemory();
+        this.containerCpu = builder.getContainerCpu();
+        this.containerMemory = builder.getContainerMemory();
         this.startedBy = builder.getStartedBy();
         this.assignPublicIp = builder.isAssignPublicIp();
         this.placementStrategyType = builder.getPlacementStrategyType();
         this.placementStrategyField = builder.getPlacementStrategyField();
+        this.taskCpu = builder.getTaskCpu();
+        this.taskMemory = builder.getTaskMemory();
 
         // All PlacementStrategyFields must be used with a PlacementStrategyType.
         // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
@@ -48,15 +50,19 @@ public class EcsClientConfig
         final String name;
         // `taskConfig` is assumed to have a nested taskConfig with following values
         // at the key of `TASK_CONFIG_ECS_KEY` from `taskConfig`.
-        // - launch_type (optional)
-        // - region
-        // - subnets (optional)
-        // - max_retries (optional)
-        // - capacity_provider_name (optional)
-        // - memory (optional)
-        // - cpu (optional)
-        // - placementStrategyType (optional)
-        // - placementStrategyField (optional)
+        // - launch_type (optional/String)
+        // - region (String)
+        // - subnets (optional/String)
+        // - max_retries (optional/int)
+        // - capacity_provider_name (optional/String)
+        // - container_memory (optional/Integer)
+        // - container_cpu (optional/Integer)
+        // - placementStrategyType (optional/String)
+        // - placementStrategyField (optional/String)
+        // - task_cpu (optional/String) e.g. `1 vcpu` or `1024` (CPU unit)
+        // - task_memory (optional/String) e.g. `1 GB` or `1024` (MiB)
+        // For more detail of the value format of `task_cpu` and `task_memory`, please see
+        // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
         if (!clusterName.isPresent()) {
             // Throw ConfigException if 'name' doesn't exist in system ecsConfig.
@@ -101,8 +107,8 @@ public class EcsClientConfig
                 .withSubnets(ecsConfig.getOptional("subnets", String.class))
                 .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
-                .withCpu(ecsConfig.getOptional("cpu", Integer.class))
-                .withMemory(ecsConfig.getOptional("memory", Integer.class))
+                .withContainerCpu(ecsConfig.getOptional("container_cpu", Integer.class))
+                .withContainerMemory(ecsConfig.getOptional("container_memory", Integer.class))
                 .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
                 // TODO removing default value.
                 // This value was previously hard coded.
@@ -110,6 +116,8 @@ public class EcsClientConfig
                 .withAssignPublicIp(ecsConfig.get("assign_public_ip", boolean.class, true))
                 .withPlacementStrategyType(ecsConfig.getOptional("placement_strategy_type", String.class))
                 .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
+                .withTaskCpu(ecsConfig.getOptional("task_cpu", String.class))
+                .withTaskMemory(ecsConfig.getOptional("task_memory", String.class))
                 .build();
     }
 
@@ -122,8 +130,10 @@ public class EcsClientConfig
     private final Optional<List<String>> subnets;
     private final Optional<String> launchType;
     private final Optional<String> capacityProviderName;
-    private final Optional<Integer> cpu;
-    private final Optional<Integer> memory;
+    private final Optional<Integer> containerCpu;
+    private final Optional<Integer> containerMemory;
+    private final Optional<String> taskCpu;
+    private final Optional<String> taskMemory;
     private final Optional<String> startedBy;
     // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategyType.java#L23-L25
@@ -173,9 +183,9 @@ public class EcsClientConfig
         return capacityProviderName;
     }
 
-    public Optional<Integer> getCpu() { return cpu; }
+    public Optional<Integer> getContainerCpu() { return containerCpu; }
 
-    public Optional<Integer> getMemory() { return memory; }
+    public Optional<Integer> getContainerMemory() { return containerMemory; }
 
     public Optional<String> getStartedBy()
     {
@@ -195,5 +205,15 @@ public class EcsClientConfig
     public Optional<String> getPlacementStrategyField()
     {
         return placementStrategyField;
+    }
+
+    public Optional<String> getTaskCpu()
+    {
+        return taskCpu;
+    }
+
+    public Optional<String> getTaskMemory()
+    {
+        return taskMemory;
     }
 }
