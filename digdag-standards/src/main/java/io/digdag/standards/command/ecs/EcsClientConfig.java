@@ -35,6 +35,7 @@ public class EcsClientConfig
         this.placementStrategyType = builder.getPlacementStrategyType();
         this.placementStrategyField = builder.getPlacementStrategyField();
         this.taskCpu = builder.getTaskCpu();
+        this.taskMemory = builder.getTaskMemory();
 
         // All PlacementStrategyFields must be used with a PlacementStrategyType.
         // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
@@ -113,6 +114,7 @@ public class EcsClientConfig
                 .withPlacementStrategyType(ecsConfig.getOptional("placement_strategy_type", String.class))
                 .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
                 .withTaskCpu(ecsConfig.getOptional("task_cpu", String.class))
+                .withTaskMemory(ecsConfig.getOptional("task_memory", String.class))
                 .build();
     }
 
@@ -136,6 +138,7 @@ public class EcsClientConfig
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
     private final Optional<String> placementStrategyField;
     private final Optional<String> taskCpu;
+    private final Optional<String> taskMemory;
 
     public String getClusterName()
     {
@@ -204,5 +207,10 @@ public class EcsClientConfig
     public Optional<String> getTaskCpu()
     {
         return taskCpu;
+    }
+
+    public Optional<String> getTaskMemory()
+    {
+        return taskMemory;
     }
 }

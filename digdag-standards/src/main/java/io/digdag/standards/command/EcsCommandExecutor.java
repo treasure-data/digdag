@@ -883,5 +883,9 @@ public class EcsCommandExecutor
         if (clientConfig.getTaskCpu().isPresent()) {
             taskOverride.setCpu(clientConfig.getTaskCpu().get());
         }
+
+        if (clientConfig.getTaskMemory().isPresent()) {
+            taskOverride.setMemory(clientConfig.getTaskMemory().get());
+        }
     }
 }
