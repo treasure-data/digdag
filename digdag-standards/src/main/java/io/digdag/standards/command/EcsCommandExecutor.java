@@ -603,20 +603,6 @@ public class EcsCommandExecutor
         setTaskOverrideResource(clientConfig, taskOverride);
 
         request.withOverrides(taskOverride);
-
-        //final ContainerOverride containerOverride = new ContainerOverride();
-        //containerOverride.withName()
-        //containerOverride.withCommand()
-        //containerOverride.withCpu();
-        //containerOverride.withMemory();
-        //containerOverride.withMemoryReservation();
-        //containerOverride.withResourceRequirements();
-
-        //final TaskOverride taskOverride = new TaskOverride();
-        //taskOverride.withContainerOverrides();
-        //taskOverride.withExecutionRoleArn();
-        //taskOverride.withTaskRoleArn();
-        //request.withOverrides(taskOverride);
     }
 
     protected void setEcsContainerOverrideName(
@@ -812,15 +798,6 @@ public class EcsCommandExecutor
                             .withAssignPublicIp(clientConfig.isAssignPublicIp() ? AssignPublicIp.ENABLED : AssignPublicIp.DISABLED)
             ));
         }
-
-        //final AwsVpcConfiguration awsVpcConfig = new AwsVpcConfiguration();
-        //awsVpcConfig.withAssignPublicIp();
-        //awsVpcConfig.withAssignPublicIp();
-        //awsVpcConfig.withSecurityGroups();
-        //awsVpcConfig.withSubnets();
-        //final NetworkConfiguration config = new NetworkConfiguration();
-        //config.withAwsvpcConfiguration(vpcConfig);
-        //request.withNetworkConfiguration(config);
     }
 
     protected void setCapacityProviderStrategy(final EcsClientConfig clientConfig, final RunTaskRequest request)
@@ -878,7 +855,7 @@ public class EcsCommandExecutor
         return sb.toString();
     }
 
-    private void setTaskOverrideResource(EcsClientConfig clientConfig, TaskOverride taskOverride)
+    protected void setTaskOverrideResource(EcsClientConfig clientConfig, TaskOverride taskOverride)
     {
         if (clientConfig.getTaskCpu().isPresent()) {
             taskOverride.setCpu(clientConfig.getTaskCpu().get());

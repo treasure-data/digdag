@@ -132,6 +132,8 @@ public class EcsClientConfig
     private final Optional<String> capacityProviderName;
     private final Optional<Integer> containerCpu;
     private final Optional<Integer> containerMemory;
+    private final Optional<String> taskCpu;
+    private final Optional<String> taskMemory;
     private final Optional<String> startedBy;
     // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategyType.java#L23-L25
@@ -140,8 +142,6 @@ public class EcsClientConfig
     // E.g. For the `binpack` placement strategy, valid values are `cpu` and `memory`.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
     private final Optional<String> placementStrategyField;
-    private final Optional<String> taskCpu;
-    private final Optional<String> taskMemory;
 
     public String getClusterName()
     {
