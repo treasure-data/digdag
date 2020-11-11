@@ -50,16 +50,19 @@ public class EcsClientConfig
         final String name;
         // `taskConfig` is assumed to have a nested taskConfig with following values
         // at the key of `TASK_CONFIG_ECS_KEY` from `taskConfig`.
-        // - launch_type (optional)
-        // - region
-        // - subnets (optional)
-        // - max_retries (optional)
-        // - capacity_provider_name (optional)
-        // - container_memory (optional)
-        // - container_cpu (optional)
-        // - placementStrategyType (optional)
-        // - placementStrategyField (optional)
-        // - task_cpu
+        // - launch_type (optional/String)
+        // - region (String)
+        // - subnets (optional/String)
+        // - max_retries (optional/int)
+        // - capacity_provider_name (optional/String)
+        // - container_memory (optional/Integer)
+        // - container_cpu (optional/Integer)
+        // - placementStrategyType (optional/String)
+        // - placementStrategyField (optional/String)
+        // - task_cpu (optional/String) e.g. `1 vcpu` or `1024` (CPU unit)
+        // - task_memory (optional/String) e.g. `1 GB` or `1024` (Mib)
+        // For more detail of the value format of `task_cpu` and `task_memory`, please see
+        // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
         if (!clusterName.isPresent()) {
             // Throw ConfigException if 'name' doesn't exist in system ecsConfig.
