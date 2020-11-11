@@ -108,7 +108,7 @@ public class EcsClientConfig
                 .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
                 .withContainerCpu(ecsConfig.getOptional("container_cpu", Integer.class))
-                .withContainerMemory(ecsConfig.getOptional("memory", Integer.class))
+                .withContainerMemory(ecsConfig.getOptional("container_memory", Integer.class))
                 .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
                 // TODO removing default value.
                 // This value was previously hard coded.
