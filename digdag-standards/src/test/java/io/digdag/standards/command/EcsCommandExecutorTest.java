@@ -14,6 +14,7 @@ import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
@@ -103,6 +104,47 @@ public class EcsCommandExecutorTest
 
         assertThat(actual.isFinished(), is(commandStatus.isFinished()));
         assertThat(actual.toJson(), is(commandStatus.toJson()));
+    }
+
+    @Test
+    public void testCleanup()
+            throws Exception
+    {
+        final EcsCommandExecutor executor = spy(new EcsCommandExecutor(
+                systemConfig, ecsClientFactory, dockerCommandExecutor,
+                storageManager, projectArchiveLoader, commandLogger));
+
+        EcsClient ecsClient = mock(EcsClient.class);
+
+        doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
+        when(ecsClientFactory.createClient(any(EcsClientConfig.class))).thenReturn(ecsClient);
+        doReturn(mock(Task.class)).when(ecsClient).getTask(any(), any());
+
+        CommandContext commandContext = mock(CommandContext.class);
+        doReturn(mock(TaskRequest.class)).when(commandContext).getTaskRequest();
+
+        ObjectNode previousStatusJson = om.createObjectNode()
+                .put("cluster_name", "my_cluster")
+                .put("task_arn", "my_task_arn");
+        Config state = configFactory.create().set("commandStatus", previousStatusJson);
+
+        {
+            try {
+                executor.cleanup(commandContext, state);
+                fail();
+            } catch (TaskExecutionException te) {
+                assertThat(te.getMessage(), is("Command task execution cancel requested: attemptId=0, taskId=0"));
+            }
+        }
+        {
+            doThrow(TaskSetNotFoundException.class).when(ecsClient).getTask(any(), any());
+            try {
+                executor.cleanup(commandContext, state);
+                fail();
+            } catch (TaskExecutionException te) {
+                assertThat(te.getMessage(), is("Cannot get the ECS task status. attemptId=0, taskId=0"));
+            }
+        }
     }
 
     @Test

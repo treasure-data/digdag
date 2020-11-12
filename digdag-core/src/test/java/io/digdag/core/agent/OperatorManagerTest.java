@@ -8,6 +8,8 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.OperatorTestingUtils;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
@@ -19,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -86,6 +89,33 @@ public class OperatorManagerTest
         verify(callback, times(1)).taskSucceeded(eq(taskRequest), any(), eq(result));
         verify(callback, times(0)).taskFailed(any(), any(), any());
         verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
+
+    @Test
+    public void testRunWithHeartbeatWithCancelRequestedTask()
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig).withIsCancelRequested(true);
+
+        {
+            OperatorManager om = spy(operatorManager);
+            doThrow(new TaskExecutionException("Zzz")).when(om).callExecutor(any(), any(), any());
+            om.runWithHeartbeat(taskRequest);
+            verify(callback, times(0)).taskSucceeded(any(), any(), any());
+            verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
+            verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+        }
+        {
+            OperatorManager om = spy(operatorManager);
+            Operator op = mock(Operator.class);
+            OperatorFactory of = mock(OperatorFactory.class);
+
+            doReturn(of).when(registry).get(any(), any());
+            doReturn(op).when(of).newOperator(any());
+
+            om.callExecutor(Paths.get("test"), "echo", taskRequest);
+            verify(op, times(1)).cleanup(eq(taskRequest));
+            verify(op, times(0)).run();
+        }
     }
 
     @Test
