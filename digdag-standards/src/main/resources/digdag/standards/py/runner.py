@@ -140,32 +140,37 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
     else:
         return args
 
-callable_type, method_name = digdag_inspect_command(command)
 error = None
+error_message = None
 error_value = None
 error_traceback = None
+callable_type = None
+method_name = None
 
-if method_name:
-    init_args = digdag_inspect_arguments(callable_type.__init__, True, params)
-    instance = callable_type(**init_args)
+try:
+    callable_type, method_name = digdag_inspect_command(command)
+    if method_name:
+        init_args = digdag_inspect_arguments(callable_type.__init__, True, params)
+        instance = callable_type(**init_args)
 
-    method = getattr(instance, method_name)
-    method_args = digdag_inspect_arguments(method, True, params)
-    try:
+        method = getattr(instance, method_name)
+        method_args = digdag_inspect_arguments(method, True, params)
         result = method(**method_args)
-    except Exception as e:
-        error = e
-        error_type, error_value, _tb = sys.exc_info()
-        error_traceback = traceback.format_exception(error_type, error_value, _tb)
-
-else:
-    args = digdag_inspect_arguments(callable_type, False, params)
-    try:
+    else:
+        args = digdag_inspect_arguments(callable_type, False, params)
         result = callable_type(**args)
-    except Exception as e:
-        error = e
-        error_type, error_value, _tb = sys.exc_info()
-        error_traceback = traceback.format_exception(error_type, error_value, _tb)
+except SystemExit as e:
+    # SystemExit only shows an exit code and it is not kind to users. So this block creates a specific error message.
+    # This error will happen if called python module name and method name are equal to those of the standard library module. (e.g. tokenize.main)
+    error = Exception("Failed to call python command with code:%d" % e.code, "Possible cause: Ivalid python module call, duplicae module name with standard library")
+    error_type, error_value, _tb = sys.exc_info()
+    error_message = "%s %s" % (error.args[0], error.args[1])
+    error_traceback = traceback.format_exception(error_type, error_value, _tb)
+except Exception as e:
+    error = e
+    error_type, error_value, _tb = sys.exc_info()
+    error_message = str(error_value)
+    error_traceback = traceback.format_exception(error_type, error_value, _tb)
 
 out = {
     'subtask_config': digdag_env.subtask_config,
@@ -177,7 +182,7 @@ out = {
 if error:
     out['error'] = {
         'class': error_value.__class__.__name__,
-        'message': str(error_value),
+        'message': error_message,
         'backtrace': error_traceback
     }
 
