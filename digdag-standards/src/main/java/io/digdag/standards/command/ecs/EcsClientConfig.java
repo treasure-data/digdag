@@ -118,7 +118,7 @@ public class EcsClientConfig
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
                 .withContainerCpu(ecsConfig.getOptional("container_cpu", Integer.class))
                 .withContainerMemory(ecsConfig.getOptional("container_memory", Integer.class))
-                .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
+                .withStartedBy(ecsConfig.getOptional("started_by", String.class))
                 // TODO removing default value.
                 // This value was previously hard coded.
                 // To keep consistency I once set the default value. But it should be removed after migration.
