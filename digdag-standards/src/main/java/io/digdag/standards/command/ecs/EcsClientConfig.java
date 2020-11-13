@@ -10,7 +10,7 @@ import java.util.List;
 public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
-    private static final String SYSTEM_CONFIG_DEFAULT_PREFIX = "agent.command_executor.ecs.__default_config__.";
+    private static final String SYSTEM_CONFIG_DEFAULT_PREFIX = SYSTEM_CONFIG_PREFIX + "__default_config__.";
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
     private static final int DEFAULT_MAX_RETRIES = 3;
 
