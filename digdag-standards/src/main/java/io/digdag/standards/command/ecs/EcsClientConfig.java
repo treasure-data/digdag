@@ -58,8 +58,10 @@ public class EcsClientConfig
         // - capacity_provider_name (optional/String)
         // - container_memory (optional/Integer)
         // - container_cpu (optional/Integer)
-        // - placementStrategyType (optional/String)
-        // - placementStrategyField (optional/String)
+        // - placement_strategy_type(optional/String)
+        // - placement_strategy_field (optional/String)
+        // - assign_public_ip (optional/boolean)
+        // - started_by (optional/String)
         // - task_cpu (optional/String) e.g. `1 vcpu` or `1024` (CPU unit)
         // - task_memory (optional/String) e.g. `1 GB` or `1024` (MiB)
         // For more detail of the value format of `task_cpu` and `task_memory`, please see
