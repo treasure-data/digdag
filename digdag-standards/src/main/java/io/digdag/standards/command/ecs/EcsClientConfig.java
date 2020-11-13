@@ -10,6 +10,7 @@ import java.util.List;
 public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
+    private static final String SYSTEM_CONFIG_DEFAULT_PREFIX = "agent.command_executor.ecs.__default_config__.";
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
     private static final int DEFAULT_MAX_RETRIES = 3;
 
@@ -73,8 +74,16 @@ public class EcsClientConfig
         }
 
         // This method assumes that `access_key_id` and `secret_access_key` are stored at `systemConfig`.
-        ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".access_key_id", String.class));
-        ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".secret_access_key", String.class));
+        // If the `systemConfig` has cluster specific configuration items, they will be fetched.
+        // If not, the default configuration items will be done.
+        if (systemConfig.has(SYSTEM_CONFIG_PREFIX + name + ".access_key_id")) {
+            ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".access_key_id", String.class));
+            ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".secret_access_key", String.class));
+        }
+        else {
+            ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_DEFAULT_PREFIX + "access_key_id", String.class));
+            ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_DEFAULT_PREFIX + "secret_access_key", String.class));
+        }
 
         return buildEcsClientConfig(name, ecsConfig);
     }
