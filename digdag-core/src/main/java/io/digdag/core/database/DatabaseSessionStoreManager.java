@@ -1696,23 +1696,9 @@ public class DatabaseSessionStoreManager
                 " for update")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
 
-        // This query for H2 could cause a deadlock with other transactions because of unordered UPDATE.
-        //
-        // H2 doesn't support queries like the following and we'll leave the query as-is...
-        //
-        //     update tasks set ...
-        //     where id in (
-        //       select id from tasks
-        //       order by id for update where ...
-        //     )
-        @SqlUpdate("update tasks" +
-                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
-                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
-                " and retry_at \\<= now()")
-        int trySetRetryWaitingToReady();
-
         @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
         List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
+
     }
 
     @UseStringTemplate3StatementLocator
@@ -1758,18 +1744,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update skip locked")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
-
-        @SqlUpdate("update tasks" +
-                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
-                " from (" +
-                  "select id from tasks" +
-                  " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
-                  " and retry_at \\<= now()" +
-                  " order by id for update" +
-                " ) lck" +
-                " where tasks.id = lck.id"
-        )
-        int trySetRetryWaitingToReady();
 
         @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
         List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
@@ -2194,6 +2168,10 @@ public class DatabaseSessionStoreManager
                 " where id = :id")
         long setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("resetStoreParams") String resetStoreParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
 
+        @SqlUpdate("update tasks" +
+                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
+                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                " and retry_at \\<= now()")
         int trySetRetryWaitingToReady();
 
         @SqlQuery("select * from session_monitors" +
