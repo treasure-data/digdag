@@ -10,6 +10,7 @@ import java.util.List;
 public class EcsClientConfig
 {
     private static final String SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
+    private static final String SYSTEM_CONFIG_DEFAULT_PREFIX = SYSTEM_CONFIG_PREFIX + "__default_config__.";
     public static final String TASK_CONFIG_ECS_KEY = "agent.command_executor.ecs";
     private static final int DEFAULT_MAX_RETRIES = 3;
 
@@ -57,8 +58,10 @@ public class EcsClientConfig
         // - capacity_provider_name (optional/String)
         // - container_memory (optional/Integer)
         // - container_cpu (optional/Integer)
-        // - placementStrategyType (optional/String)
-        // - placementStrategyField (optional/String)
+        // - placement_strategy_type(optional/String)
+        // - placement_strategy_field (optional/String)
+        // - assign_public_ip (optional/boolean)
+        // - started_by (optional/String)
         // - task_cpu (optional/String) e.g. `1 vcpu` or `1024` (CPU unit)
         // - task_memory (optional/String) e.g. `1 GB` or `1024` (MiB)
         // For more detail of the value format of `task_cpu` and `task_memory`, please see
@@ -73,8 +76,16 @@ public class EcsClientConfig
         }
 
         // This method assumes that `access_key_id` and `secret_access_key` are stored at `systemConfig`.
-        ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".access_key_id", String.class));
-        ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".secret_access_key", String.class));
+        // If the `systemConfig` has cluster specific configuration items, they will be fetched.
+        // If not, the default configuration items will be done.
+        if (systemConfig.has(SYSTEM_CONFIG_PREFIX + name + ".access_key_id")) {
+            ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".access_key_id", String.class));
+            ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_PREFIX + name + ".secret_access_key", String.class));
+        }
+        else {
+            ecsConfig.set("access_key_id", systemConfig.get(SYSTEM_CONFIG_DEFAULT_PREFIX + "access_key_id", String.class));
+            ecsConfig.set("secret_access_key", systemConfig.get(SYSTEM_CONFIG_DEFAULT_PREFIX + "secret_access_key", String.class));
+        }
 
         return buildEcsClientConfig(name, ecsConfig);
     }
@@ -109,7 +120,7 @@ public class EcsClientConfig
                 .withCapacityProviderName(ecsConfig.getOptional("capacity_provider_name", String.class))
                 .withContainerCpu(ecsConfig.getOptional("container_cpu", Integer.class))
                 .withContainerMemory(ecsConfig.getOptional("container_memory", Integer.class))
-                .withStartedBy(ecsConfig.getOptional("startedBy", String.class))
+                .withStartedBy(ecsConfig.getOptional("started_by", String.class))
                 // TODO removing default value.
                 // This value was previously hard coded.
                 // To keep consistency I once set the default value. But it should be removed after migration.
