@@ -118,10 +118,16 @@ public class EcsCommandExecutorTest
 
         doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
         when(ecsClientFactory.createClient(any(EcsClientConfig.class))).thenReturn(ecsClient);
-        doReturn(mock(Task.class)).when(ecsClient).getTask(any(), any());
+
+        Task task = mock(Task.class);
+        when(task.getTaskArn()).thenReturn("my_task_arn");
+        doReturn(task).when(ecsClient).getTask(any(), any());
 
         CommandContext commandContext = mock(CommandContext.class);
-        doReturn(mock(TaskRequest.class)).when(commandContext).getTaskRequest();
+        TaskRequest taskRequest = mock(TaskRequest.class);
+        when(taskRequest.getAttemptId()).thenReturn(Long.valueOf(111));
+        when(taskRequest.getTaskId()).thenReturn(Long.valueOf(222));
+        doReturn(taskRequest).when(commandContext).getTaskRequest();
 
         ObjectNode previousStatusJson = om.createObjectNode()
                 .put("cluster_name", "my_cluster")
@@ -133,7 +139,7 @@ public class EcsCommandExecutorTest
                 executor.cleanup(commandContext, state);
                 fail();
             } catch (TaskExecutionException te) {
-                assertThat(te.getMessage(), is("Command task execution cancel requested: attemptId=0, taskId=0"));
+                assertThat(te.getMessage(), is("Command task execution will be stopped: attemptId=111, taskId=222"));
             }
         }
         {
@@ -142,7 +148,7 @@ public class EcsCommandExecutorTest
                 executor.cleanup(commandContext, state);
                 fail();
             } catch (TaskExecutionException te) {
-                assertThat(te.getMessage(), is("Cannot get the ECS task status. attemptId=0, taskId=0"));
+                assertThat(te.getMessage(), is("Cannot get the ECS task status. attemptId=111, taskId=222"));
             }
         }
     }
