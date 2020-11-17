@@ -309,7 +309,7 @@ public class EcsCommandExecutor
                 // Throw exception to stop the task
                 throw new TaskExecutionException(message);
             }
-            final String message = s("Command task execution cancel requested: attemptId=%d, taskId=%d", attemptId, taskId);
+            final String message = s("Command task execution will be stopped: attemptId=%d, taskId=%d", attemptId, taskId);
             logger.info(message);
             logger.debug(s("Stop command task %s", task.getTaskArn()));
             client.stopTask(clusterName, task.getTaskArn());
