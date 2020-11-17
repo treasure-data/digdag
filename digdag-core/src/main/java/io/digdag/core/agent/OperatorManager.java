@@ -161,7 +161,7 @@ public class OperatorManager
                     }
                     else {
                         if (request.isCancelRequested()) {
-                            logger.warn("Task {} canceled.", request.getTaskName());
+                            logger.warn("Task {} is canceled.", request.getTaskName());
                         }
                         else {
                             logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
