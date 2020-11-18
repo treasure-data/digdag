@@ -23,6 +23,7 @@ public interface CommandExecutor
 
     /**
      * Polls the command status by non-blocking and return CommandStatus.
+     *
      * @param context
      * @param previousStatusJson
      * @return
@@ -33,12 +34,12 @@ public interface CommandExecutor
 
     /**
      * Runs a cleanup script when an attempt gets CANCEL_REQUESTED.
+     *
      * @param context
      * @param state
      * @throws IOException
      */
     default void cleanup(CommandContext context, Config state)
-        throws IOException
-    {
-    }
+            throws IOException
+    { }
 }
