@@ -126,7 +126,7 @@ public class PyOperatorFactory
         }
 
         @Override
-        public TaskResult cleanup(TaskRequest request)
+        public void cleanup(TaskRequest request)
         {
             final Path projectPath = workspace.getProjectPath(); // absolute
             final CommandContext commandContext = buildCommandContext(projectPath);
@@ -141,7 +141,6 @@ public class PyOperatorFactory
                     throw Throwables.propagate(ex);
                 }
             }
-            return TaskResult.empty(request);
         }
 
         private Config runCode(final Config state)

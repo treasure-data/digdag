@@ -352,7 +352,7 @@ public class OperatorManager
         Operator operator = factory.newOperator(context);
 
         if (mergedRequest.isCancelRequested()) {
-            return operator.cleanup(mergedRequest);
+            operator.cleanup(mergedRequest);
         }
 
         return operator.run();
