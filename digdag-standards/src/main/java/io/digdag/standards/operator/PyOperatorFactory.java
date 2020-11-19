@@ -136,9 +136,11 @@ public class PyOperatorFactory
             if (state.has("commandStatus")) {
                 logger.debug(String.format("Starting cleanup: attemptId=%d, taskId=%d",  attemptId, taskId));
                 try {
+                    // TODO: Need to retry?
                     exec.cleanup(commandContext, state);
-                } catch (IOException ex) {
-                    throw Throwables.propagate(ex);
+                }
+                catch (Throwable e) {
+                    throw Throwables.propagate(e);
                 }
             }
         }
