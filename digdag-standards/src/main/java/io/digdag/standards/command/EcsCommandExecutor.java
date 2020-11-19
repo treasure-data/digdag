@@ -38,7 +38,6 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
@@ -299,22 +298,11 @@ public class EcsCommandExecutor
         final EcsClientConfig clientConfig = createEcsClientConfig(Optional.of(clusterName), systemConfig, taskConfig); // ConfigException
 
         try (final EcsClient client = ecsClientFactory.createClient(clientConfig)) { // ConfigException
-            final Task task;
-            try {
-                task = client.getTask(clusterName, taskArn);
-            }
-            catch (TaskSetNotFoundException e) {
-                final String message = s("Cannot get the ECS task status. attemptId=%d, taskId=%d", attemptId, taskId);
-                logger.warn(message);
-                // Throw exception to stop the task
-                throw new TaskExecutionException(message);
-            }
-            final String message = s("Command task execution will be stopped: attemptId=%d, taskId=%d", attemptId, taskId);
+            final Task task = client.getTask(clusterName, taskArn);
+            final String message = s("Command task execution will be stopped: attempt_id=%d, task_id=%d", attemptId, taskId);
             logger.info(message);
-            logger.debug(s("Stop command task %s", task.getTaskArn()));
+            logger.debug(s("Stop command task: %s", task.getTaskArn()));
             client.stopTask(clusterName, task.getTaskArn());
-            // Throw exception to stop the task
-            throw new TaskExecutionException(message);
         }
     }
 
