@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static java.util.Locale.ENGLISH;
 
 public class OperatorManager
 {
@@ -352,7 +353,13 @@ public class OperatorManager
         Operator operator = factory.newOperator(context);
 
         if (mergedRequest.isCancelRequested()) {
+            // NOTE: In the case of failure to perform cleanup,
+            // target resources continue to remain
             operator.cleanup(mergedRequest);
+            // Throw exception to stop the task
+            throw new TaskExecutionException(String.format(ENGLISH,
+                    "Got a cancel-requested: attempt_id=%d, task_id=%d",
+                    mergedRequest.getAttemptId(), mergedRequest.getTaskId()));
         }
 
         return operator.run();
