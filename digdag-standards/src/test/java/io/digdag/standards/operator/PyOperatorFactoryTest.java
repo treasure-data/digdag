@@ -1,6 +1,7 @@
 package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
@@ -23,8 +24,13 @@ import java.nio.file.Path;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import io.digdag.standards.operator.PyOperatorFactory.PyOperator;
 
 public class PyOperatorFactoryTest
@@ -75,6 +81,26 @@ public class PyOperatorFactoryTest
 		assertThat(reason, containsString("Error messages from CommandExecutor: Test error message"));
 		assertThat(reason, containsString("Error messages from python: name 'printaa' is not defined (NameError)"));
 		assertThat(reason, containsString("from NameError: name 'printaa' is not defined"));
+	}
+
+	@Test
+	public void testCleanup()
+			throws IOException
+	{
+		PyOperator py = (PyOperator)factory.newOperator(operatorContext);
+		doReturn(config).when(taskRequest).getLastStateParams();
+		{
+			py.cleanup(taskRequest);
+			verify(exec, times(0)).cleanup(any(), any());
+		}
+		{
+			ObjectNode previousStatusJson = objectMapper.createObjectNode()
+					.put("cluster_name", "my_cluster")
+					.put("task_arn", "my_task_arn");
+			config.set("commandStatus", previousStatusJson);
+			py.cleanup(taskRequest);
+			verify(exec, times(1)).cleanup(any(CommandContext.class), eq(config));
+		}
 	}
 
 }

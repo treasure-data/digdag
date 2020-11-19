@@ -14,7 +14,6 @@ import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
@@ -31,11 +30,14 @@ import java.util.Arrays;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -134,23 +136,8 @@ public class EcsCommandExecutorTest
                 .put("task_arn", "my_task_arn");
         Config state = configFactory.create().set("commandStatus", previousStatusJson);
 
-        {
-            try {
-                executor.cleanup(commandContext, state);
-                fail();
-            } catch (TaskExecutionException te) {
-                assertThat(te.getMessage(), is("Command task execution will be stopped: attemptId=111, taskId=222"));
-            }
-        }
-        {
-            doThrow(TaskSetNotFoundException.class).when(ecsClient).getTask(any(), any());
-            try {
-                executor.cleanup(commandContext, state);
-                fail();
-            } catch (TaskExecutionException te) {
-                assertThat(te.getMessage(), is("Cannot get the ECS task status. attemptId=111, taskId=222"));
-            }
-        }
+        executor.cleanup(commandContext, state);
+        verify(ecsClient, times(1)).stopTask(eq("my_cluster"), eq("my_task_arn"));
     }
 
     @Test
