@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import com.beust.jcommander.Parameter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -58,7 +59,8 @@ public abstract class ClientCommand
     protected boolean disableCertValidation;
 
     protected ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JacksonTimeModule());
+            .registerModule(new JacksonTimeModule())
+            .registerModule(new GuavaModule());
 
     @Override
     public void main()

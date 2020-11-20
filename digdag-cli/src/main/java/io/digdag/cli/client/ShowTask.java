@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.api.client.util.Throwables;
 import com.google.common.base.Optional;
@@ -14,6 +15,7 @@ import io.digdag.client.api.RestTask;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +38,10 @@ public class ShowTask
         if (args.size() != 1) {
             throw usage(null);
         }
-        show(parseAttemptIdOrUsage(args.get(0)));
+        try {
+            show(parseAttemptIdOrUsage(args.get(0)));
+        }
+        catch (Throwable e) { e.printStackTrace(); }
     }
 
     public SystemExitException usage(String error)
@@ -74,20 +79,74 @@ public class ShowTask
         public final long totalInvokedTasks;
         public final long totalSuccessTasks;
 
-        public final long averageStartDelayMillis;
-        public final long stdDevStartDelayMillis;
+        public final NullableLong averageStartDelayMillis;
+        public final NullableLong stdDevStartDelayMillis;
 
-        public final long averageExecTimeMillis;
-        public final long stdDevExecTimeMillis;
+        public final NullableLong averageExecTimeMillis;
+        public final NullableLong stdDevExecTimeMillis;
+
+        static class NullableLong
+        {
+            @JsonProperty
+            final Optional<Long> value;
+
+            NullableLong(Optional<Long> value)
+            {
+                this.value = value;
+            }
+
+            @Override
+            public String toString()
+            {
+                if (value.isPresent()) {
+                    return value.get().toString();
+                }
+                else {
+                    return "N/A";
+                }
+            }
+        }
+
+        static class TasksStats
+        {
+            final Optional<Stats> stats;
+
+            TasksStats(Optional<Stats> stats)
+            {
+                this.stats = stats;
+            }
+
+            static TasksStats of(Collection<Long> values)
+            {
+                if (values.isEmpty()) {
+                    return new TasksStats(Optional.absent());
+                }
+                else {
+                    return new TasksStats(Optional.of(Stats.of(values)));
+                }
+            }
+
+            NullableLong mean()
+            {
+                return new NullableLong(
+                        stats.transform(x -> Double.valueOf(x.mean()).longValue()));
+            }
+
+            NullableLong stdDev()
+            {
+                return new NullableLong(
+                        stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()));
+            }
+        }
 
         public TasksSummary(
             long totalTasks,
             long totalInvokedTasks,
             long totalSuccessTasks,
-            long averageStartDelayMillis,
-            long stdDevStartDelayMillis,
-            long averageExecTimeMillis,
-            long stdDevExecTimeMillis)
+            NullableLong averageStartDelayMillis,
+            NullableLong stdDevStartDelayMillis,
+            NullableLong averageExecTimeMillis,
+            NullableLong stdDevExecTimeMillis)
         {
             this.totalTasks = totalTasks;
             this.totalInvokedTasks = totalInvokedTasks;
@@ -122,10 +181,9 @@ public class ShowTask
                     Optional<Id> parentId = task.getParentId();
                     if (parentId.isPresent()) {
                         RestTask parent = taskMap.get(parentId.get().get());
-                        if (parent != null) {
-                            // FIXME: Parent's updated_at is updated after all children finished...
+                        if (parent != null && parent.getStartedAt().isPresent()) {
                             startDelayMillisList.add(
-                                    Duration.between(parent.getUpdatedAt(), task.getStartedAt().get()).toMillis());
+                                    Duration.between(parent.getStartedAt().get(), task.getStartedAt().get()).toMillis());
                         }
                     }
                     if (task.getState().equals("success")) {
@@ -134,17 +192,17 @@ public class ShowTask
                 }
             }
 
-            Stats statsOfStartDelayMillis = Stats.of(startDelayMillisList);
-            Stats statsOfExecTimeMillis = Stats.of(execTimeMillisList);
+            TasksStats statsOfStartDelayMillis = TasksStats.of(startDelayMillisList);
+            TasksStats statsOfExecTimeMillis = TasksStats.of(execTimeMillisList);
 
             return new TasksSummary(
                     totalTasks,
                     totalInvokedTasks,
                     totalSuccessTasks,
-                    (long) statsOfStartDelayMillis.mean(),
-                    (long) statsOfStartDelayMillis.populationStandardDeviation(),
-                    (long) statsOfExecTimeMillis.mean(),
-                    (long) statsOfExecTimeMillis.populationStandardDeviation());
+                    statsOfStartDelayMillis.mean(),
+                    statsOfStartDelayMillis.stdDev(),
+                    statsOfExecTimeMillis.mean(),
+                    statsOfExecTimeMillis.stdDev());
         }
     }
 
