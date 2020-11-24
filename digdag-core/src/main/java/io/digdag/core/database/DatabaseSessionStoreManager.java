@@ -1186,7 +1186,7 @@ public class DatabaseSessionStoreManager
                     " else " + TaskStateCode.READY_CODE +
                     " end, " +
                     " started_at = case" +
-                    // Update only empty `started_at` of group tasks.
+                    // Update `started_at` only when it's a group task and the column is null.
                     // Non group tasks' `started_at` are updated by TaskControlStore.setStartedState.
                     " when task_type = " + TaskType.GROUPING_ONLY + " then coalesce(started_at, now()) else started_at end" +
                     " where state = " + TaskStateCode.BLOCKED_CODE +
@@ -1554,7 +1554,8 @@ public class DatabaseSessionStoreManager
         public <T> T insertRootTask(long attemptId, Task task, SessionBuilderAction<T> func)
         {
             long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get(), task.getStateFlags().get());  // tasks table don't have unique index
-            // Just for setting `started_at` although there is room to optimize these SQLs
+            // Root task's `started_at` isn't updated by trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled().
+            // So this line is just for setting `started_at` of root task although there may be room for optimization.
             dao.setStartedState(taskId, task.getState().get(), task.getState().get());
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
