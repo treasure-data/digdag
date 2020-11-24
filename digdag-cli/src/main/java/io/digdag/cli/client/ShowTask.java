@@ -49,12 +49,13 @@ public class ShowTask
         err.println("Usage: " + programName + " tasks <attempt-id>");
         err.println("  Options:");
         showCommonOptions();
-        // TODO
+        err.println("    -f, --format  FORMAT             Format: text or json (default: text)");
+        err.println("    -t, --type    TYPE               Information type: full or summary (default: full)");
         return systemExit(error);
     }
 
     private void show(Id attemptId)
-            throws Exception
+        throws Exception
     {
         DigdagClient client = buildClient();
 
@@ -206,14 +207,14 @@ public class ShowTask
         }
     }
 
-    private interface Printer
+    interface Printer
     {
         void showTasks(ClientCommand command, List<RestTask> tasks);
 
         void showSummary(ClientCommand command, TasksSummary tasksSummary);
     }
 
-    private static class TextPrinter
+    static class TextPrinter
         implements Printer
     {
         @Override
@@ -250,7 +251,7 @@ public class ShowTask
         }
     }
 
-    private static class JsonPrinter
+    static class JsonPrinter
         implements Printer
     {
         @Override
