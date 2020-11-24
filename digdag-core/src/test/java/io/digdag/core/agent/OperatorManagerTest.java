@@ -103,6 +103,9 @@ public class OperatorManagerTest
         om.runWithHeartbeat(taskRequest);
         verify(op, times(0)).run();
         verify(op, times(1)).cleanup(any(TaskRequest.class));
+        verify(callback, times(0)).taskSucceeded(any(), any(), any());
+        verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
+        verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
     }
 
     @Test
