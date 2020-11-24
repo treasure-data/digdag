@@ -30,11 +30,14 @@ import java.util.Arrays;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -103,6 +106,38 @@ public class EcsCommandExecutorTest
 
         assertThat(actual.isFinished(), is(commandStatus.isFinished()));
         assertThat(actual.toJson(), is(commandStatus.toJson()));
+    }
+
+    @Test
+    public void testCleanup()
+            throws Exception
+    {
+        final EcsCommandExecutor executor = spy(new EcsCommandExecutor(
+                systemConfig, ecsClientFactory, dockerCommandExecutor,
+                storageManager, projectArchiveLoader, commandLogger));
+
+        EcsClient ecsClient = mock(EcsClient.class);
+
+        doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
+        when(ecsClientFactory.createClient(any(EcsClientConfig.class))).thenReturn(ecsClient);
+
+        Task task = mock(Task.class);
+        when(task.getTaskArn()).thenReturn("my_task_arn");
+        doReturn(task).when(ecsClient).getTask(any(), any());
+
+        CommandContext commandContext = mock(CommandContext.class);
+        TaskRequest taskRequest = mock(TaskRequest.class);
+        when(taskRequest.getAttemptId()).thenReturn(Long.valueOf(111));
+        when(taskRequest.getTaskId()).thenReturn(Long.valueOf(222));
+        doReturn(taskRequest).when(commandContext).getTaskRequest();
+
+        ObjectNode previousStatusJson = om.createObjectNode()
+                .put("cluster_name", "my_cluster")
+                .put("task_arn", "my_task_arn");
+        Config state = configFactory.create().set("commandStatus", previousStatusJson);
+
+        executor.cleanup(commandContext, state);
+        verify(ecsClient, times(1)).stopTask(eq("my_cluster"), eq("my_task_arn"));
     }
 
     @Test

@@ -38,14 +38,12 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
 import io.digdag.standards.command.ecs.EcsClientFactory;
 import io.digdag.standards.command.ecs.EcsTaskStatus;
 import io.digdag.standards.command.ecs.TemporalProjectArchiveStorage;
-import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +55,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -71,7 +68,6 @@ public class EcsCommandExecutor
     private static Logger logger = LoggerFactory.getLogger(CommandExecutor.class);
 
     private static final String ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
-    private static final String DEFAULT_COMMAND_TASK_TTL = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "default_command_task_ttl";
     private static final String ECS_END_OF_TASK_LOG_MARK = "--RWNzQ29tbWFuZEV4ZWN1dG9y--"; // base64("EcsCommandExecutor")
 
     private static final String CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_scripts_downloads";
@@ -86,7 +82,6 @@ public class EcsCommandExecutor
     private final StorageManager storageManager;
     private final ProjectArchiveLoader projectArchiveLoader;
     private final CommandLogger clog;
-    private final Optional<Duration> defaultCommandTaskTTL;
     private final int retryDownloads, retryUploads;
     private final boolean curlFailOptOnUploads; // false by the default
 
@@ -105,9 +100,6 @@ public class EcsCommandExecutor
         this.storageManager = storageManager;
         this.projectArchiveLoader = projectArchiveLoader;
         this.clog = clog;
-        this.defaultCommandTaskTTL = systemConfig.getOptional(DEFAULT_COMMAND_TASK_TTL, DurationParam.class)
-                .transform(DurationParam::getDuration)
-                .or(Optional.absent());
         this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
         this.curlFailOptOnUploads = systemConfig.get(CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
@@ -289,6 +281,31 @@ public class EcsCommandExecutor
         }
     }
 
+    @Override
+    public void cleanup(
+            final CommandContext commandContext,
+            final Config state)
+            throws IOException
+    {
+        final TaskRequest request = commandContext.getTaskRequest();
+        final long attemptId = request.getAttemptId();
+        final long taskId = request.getTaskId();
+        final Config taskConfig = request.getConfig();
+
+        final ObjectNode commandStatus = state.get("commandStatus", ObjectNode.class);
+        final String clusterName = commandStatus.get("cluster_name").asText();
+        final String taskArn = commandStatus.get("task_arn").asText();
+        final EcsClientConfig clientConfig = createEcsClientConfig(Optional.of(clusterName), systemConfig, taskConfig); // ConfigException
+
+        try (final EcsClient client = ecsClientFactory.createClient(clientConfig)) { // ConfigException
+            final Task task = client.getTask(clusterName, taskArn);
+            final String message = s("Command task execution will be stopped: attempt_id=%d, task_id=%d", attemptId, taskId);
+            logger.info(message);
+            logger.debug(s("Stop command task: %s", task.getTaskArn()));
+            client.stopTask(clusterName, task.getTaskArn());
+        }
+    }
+
     CommandStatus createNextCommandStatus(
             final CommandContext commandContext,
             final EcsClient client,
@@ -373,20 +390,7 @@ public class EcsCommandExecutor
             // Set exit code of container finished to nextStatus
             nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
         }
-        else if (defaultCommandTaskTTL.isPresent() && isRunningLongerThanTTL(previousStatus)) {
-            final TaskRequest request = commandContext.getTaskRequest();
-            final long attemptId = request.getAttemptId();
-            final long taskId = request.getTaskId();
 
-            final String message = s("Command task execution timeout: attempt=%d, task=%d", attemptId, taskId);
-            logger.warn(message);
-
-            logger.info(s("Stop command task %d", task.getTaskArn()));
-            client.stopTask(cluster, taskArn);
-
-            // Throw exception to stop the task as failure
-            throw new TaskExecutionException(message);
-        }
         // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
         return EcsCommandStatus.of(false, nextStatus);
     }
@@ -467,13 +471,6 @@ public class EcsCommandExecutor
     private static String toLogStreamName(final ObjectNode previousStatus)
     {
         return previousStatus.get("awslogs").get("awslogs-stream").asText();
-    }
-
-    private boolean isRunningLongerThanTTL(final ObjectNode previousStatus)
-    {
-        long creationTimestamp = previousStatus.get("pod_creation_timestamp").asLong();
-        long currentTimestamp = Instant.now().getEpochSecond();
-        return currentTimestamp > creationTimestamp + defaultCommandTaskTTL.get().getSeconds();
     }
 
     static class EcsCommandStatus

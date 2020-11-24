@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static java.util.Locale.ENGLISH;
 
 public class OperatorManager
 {
@@ -160,8 +161,13 @@ public class OperatorManager
                         callback.retryTask(request, agentId, ex.getRetryInterval().get(), ex.getStateParams(cf).get(), ex.getError(cf));
                     }
                     else {
-                        logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
-                        logger.debug("", ex);
+                        if (request.isCancelRequested()) {
+                            logger.warn("Task {} is canceled.", request.getTaskName());
+                        }
+                        else {
+                            logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
+                            logger.debug("", ex);
+                        }
                         // TODO use debug to log stacktrace here
                         callback.taskFailed(request, agentId, ex.getError(cf).get());  // TODO is error set?
                     }
@@ -345,6 +351,16 @@ public class OperatorManager
                 projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
         Operator operator = factory.newOperator(context);
+
+        if (mergedRequest.isCancelRequested()) {
+            // NOTE: In the case of failure to perform cleanup,
+            // target resources continue to remain
+            operator.cleanup(mergedRequest);
+            // Throw exception to stop the task
+            throw new TaskExecutionException(String.format(ENGLISH,
+                    "Got a cancel-requested: attempt_id=%d, task_id=%d",
+                    mergedRequest.getAttemptId(), mergedRequest.getTaskId()));
+        }
 
         return operator.run();
     }
