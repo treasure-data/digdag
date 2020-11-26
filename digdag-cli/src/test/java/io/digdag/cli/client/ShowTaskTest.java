@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.Stats;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.TypeLiteral;
@@ -13,6 +14,7 @@ import io.digdag.cli.StdErr;
 import io.digdag.cli.StdIn;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.TimeUtil;
+import io.digdag.cli.client.ShowTask.TasksSummary.TasksStats;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestTask;
@@ -88,15 +90,20 @@ public class ShowTaskTest
                 .build()
         );
 
+    private static final Stats TASKS_STATS_0_START_DELAY = Stats.of(10, 20, 30);
+    private static final Stats TASKS_STATS_0_EXEC_DURATION_OF_GROUP_TASKS = Stats.of(200, 300, 400);
+    private static final Stats TASKS_STATS_0_EXEC_DURATION_OF_NON_GROUP_TASKS = Stats.of(3000, 4000, 5000);
+    private static final Stats TASKS_STATS_1_EXEC_DURATION_OF_GROUP_TASKS = Stats.of(40000, 50000, 60000);
+    private static final Stats TASKS_STATS_1_EXEC_DURATION_OF_NON_GROUP_TASKS = Stats.of(700000, 800000, 900000);
+
     private static final ShowTask.TasksSummary TASKS_SUMMARY_0 =
         new ShowTask.TasksSummary(
             9876,
             9870,
             9866,
-            new ShowTask.TasksSummary.NullableLong(Optional.of(1234L)),
-            new ShowTask.TasksSummary.NullableLong(Optional.of(222L)),
-            new ShowTask.TasksSummary.NullableLong(Optional.of(5678L)),
-            new ShowTask.TasksSummary.NullableLong(Optional.of(666L))
+            new TasksStats(Optional.of(TASKS_STATS_0_START_DELAY)),
+            new TasksStats(Optional.of(TASKS_STATS_0_EXEC_DURATION_OF_GROUP_TASKS)),
+            new TasksStats(Optional.of(TASKS_STATS_0_EXEC_DURATION_OF_NON_GROUP_TASKS))
         );
 
     private static final ShowTask.TasksSummary TASKS_SUMMARY_1 =
@@ -104,10 +111,9 @@ public class ShowTaskTest
             1234,
             1135,
             1133,
-            new ShowTask.TasksSummary.NullableLong(Optional.absent()),
-            new ShowTask.TasksSummary.NullableLong(Optional.absent()),
-            new ShowTask.TasksSummary.NullableLong(Optional.absent()),
-            new ShowTask.TasksSummary.NullableLong(Optional.absent())
+            new TasksStats(Optional.absent()),
+            new TasksStats(Optional.of(TASKS_STATS_1_EXEC_DURATION_OF_GROUP_TASKS)),
+            new TasksStats(Optional.of(TASKS_STATS_1_EXEC_DURATION_OF_NON_GROUP_TASKS))
         );
 
     @Before
@@ -172,15 +178,21 @@ public class ShowTaskTest
         printer.showSummary(showTask, TASKS_SUMMARY_0);
 
         ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(stdout, times(7)).println(argumentCaptor.capture());
+        verify(stdout, times(12)).println(argumentCaptor.capture());
         List<String> values = argumentCaptor.getAllValues();
-        assertEquals("   totalTasks: 9876", values.get(0));
-        assertEquals("   totalInvokedTasks: 9870", values.get(1));
-        assertEquals("   totalSuccessTasks: 9866", values.get(2));
-        assertEquals("   averageStartDelayMillis: 1234", values.get(3));
-        assertEquals("   stdDevStartDelayMillis: 222", values.get(4));
-        assertEquals("   averageExecTimeMillis: 5678", values.get(5));
-        assertEquals("   stdDevExecTimeMillis: 666", values.get(6));
+        int i = 0;
+        assertEquals("   total tasks: 9876", values.get(i++));
+        assertEquals("   total invoked tasks: 9870", values.get(i++));
+        assertEquals("   total success tasks: 9866", values.get(i++));
+        assertEquals("   start delay (ms):", values.get(i++));
+        assertEquals("       average: 20", values.get(i++));
+        assertEquals("       stddev: 8", values.get(i++));
+        assertEquals("   exec duration of group tasks (ms):", values.get(i++));
+        assertEquals("       average: 300", values.get(i++));
+        assertEquals("       stddev: 81", values.get(i++));
+        assertEquals("   exec duration of non-group tasks (ms):", values.get(i++));
+        assertEquals("       average: 4000", values.get(i++));
+        assertEquals("       stddev: 816", values.get(i++));
     }
 
     @Test
@@ -190,15 +202,18 @@ public class ShowTaskTest
         printer.showSummary(showTask, TASKS_SUMMARY_1);
 
         ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(stdout, times(7)).println(argumentCaptor.capture());
+        verify(stdout, times(9)).println(argumentCaptor.capture());
         List<String> values = argumentCaptor.getAllValues();
-        assertEquals("   totalTasks: 1234", values.get(0));
-        assertEquals("   totalInvokedTasks: 1135", values.get(1));
-        assertEquals("   totalSuccessTasks: 1133", values.get(2));
-        assertEquals("   averageStartDelayMillis: N/A", values.get(3));
-        assertEquals("   stdDevStartDelayMillis: N/A", values.get(4));
-        assertEquals("   averageExecTimeMillis: N/A", values.get(5));
-        assertEquals("   stdDevExecTimeMillis: N/A", values.get(6));
+        int i = 0;
+        assertEquals("   total tasks: 1234", values.get(i++));
+        assertEquals("   total invoked tasks: 1135", values.get(i++));
+        assertEquals("   total success tasks: 1133", values.get(i++));
+        assertEquals("   exec duration of group tasks (ms):", values.get(i++));
+        assertEquals("       average: 50000", values.get(i++));
+        assertEquals("       stddev: 8164", values.get(i++));
+        assertEquals("   exec duration of non-group tasks (ms):", values.get(i++));
+        assertEquals("       average: 800000", values.get(i++));
+        assertEquals("       stddev: 81649", values.get(i++));
     }
 
     @Test

@@ -80,11 +80,9 @@ public class ShowTask
         public final long totalInvokedTasks;
         public final long totalSuccessTasks;
 
-        public final NullableLong averageStartDelayMillis;
-        public final NullableLong stdDevStartDelayMillis;
-
-        public final NullableLong averageExecTimeMillis;
-        public final NullableLong stdDevExecTimeMillis;
+        public final TasksStats startDelayMillis;
+        public final TasksStats execDurationOfGroupTasks;
+        public final TasksStats execDurationOfNonGroupTasks;
 
         static class NullableLong
         {
@@ -144,18 +142,16 @@ public class ShowTask
             long totalTasks,
             long totalInvokedTasks,
             long totalSuccessTasks,
-            NullableLong averageStartDelayMillis,
-            NullableLong stdDevStartDelayMillis,
-            NullableLong averageExecTimeMillis,
-            NullableLong stdDevExecTimeMillis)
+            TasksStats startDelayMillis,
+            TasksStats execDurationOfGroupTasks,
+            TasksStats execDurationOfNonGroupTasks)
         {
             this.totalTasks = totalTasks;
             this.totalInvokedTasks = totalInvokedTasks;
             this.totalSuccessTasks = totalSuccessTasks;
-            this.averageStartDelayMillis = averageStartDelayMillis;
-            this.stdDevStartDelayMillis = stdDevStartDelayMillis;
-            this.averageExecTimeMillis = averageExecTimeMillis;
-            this.stdDevExecTimeMillis = stdDevExecTimeMillis;
+            this.startDelayMillis = startDelayMillis;
+            this.execDurationOfGroupTasks = execDurationOfGroupTasks;
+            this.execDurationOfNonGroupTasks = execDurationOfNonGroupTasks;
         }
 
         public static TasksSummary fromTasks(List<RestTask> tasks)
@@ -170,14 +166,20 @@ public class ShowTask
             long totalInvokedTasks = 0;
 
             List<Long> startDelayMillisList = new ArrayList<>(tasks.size());
-
-            List<Long> execTimeMillisList = new ArrayList<>(tasks.size());
+            List<Long> execTimeOfGroupTasksMillisList = new ArrayList<>(tasks.size());
+            List<Long> execTimeOfNonGroupTasksMillisList = new ArrayList<>(tasks.size());
 
             for (RestTask task : tasks) {
                 if (task.getStartedAt().isPresent()) {
                     totalInvokedTasks++;
-                    execTimeMillisList.add(
-                            Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
+                    if (task.isGroup()) {
+                        execTimeOfGroupTasksMillisList.add(
+                                Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
+                    }
+                    else {
+                        execTimeOfNonGroupTasksMillisList.add(
+                                Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
+                    }
 
                     Optional<Id> parentId = task.getParentId();
                     if (parentId.isPresent()) {
@@ -194,16 +196,16 @@ public class ShowTask
             }
 
             TasksStats statsOfStartDelayMillis = TasksStats.of(startDelayMillisList);
-            TasksStats statsOfExecTimeMillis = TasksStats.of(execTimeMillisList);
+            TasksStats statsOfExecTimeOfGroupTasksMillis = TasksStats.of(execTimeOfGroupTasksMillisList);
+            TasksStats statsOfExecTimeOfNonGroupTasksMillis = TasksStats.of(execTimeOfNonGroupTasksMillisList);
 
             return new TasksSummary(
                     totalTasks,
                     totalInvokedTasks,
                     totalSuccessTasks,
-                    statsOfStartDelayMillis.mean(),
-                    statsOfStartDelayMillis.stdDev(),
-                    statsOfExecTimeMillis.mean(),
-                    statsOfExecTimeMillis.stdDev());
+                    statsOfStartDelayMillis,
+                    statsOfExecTimeOfGroupTasksMillis,
+                    statsOfExecTimeOfNonGroupTasksMillis);
         }
     }
 
@@ -241,13 +243,20 @@ public class ShowTask
         @Override
         public void showSummary(ClientCommand command, TasksSummary tasksSummary)
         {
-            command.ln("   totalTasks: %s", tasksSummary.totalTasks);
-            command.ln("   totalInvokedTasks: %s", tasksSummary.totalInvokedTasks);
-            command.ln("   totalSuccessTasks: %s", tasksSummary.totalSuccessTasks);
-            command.ln("   averageStartDelayMillis: %s", tasksSummary.averageStartDelayMillis);
-            command.ln("   stdDevStartDelayMillis: %s", tasksSummary.stdDevStartDelayMillis);
-            command.ln("   averageExecTimeMillis: %s", tasksSummary.averageExecTimeMillis);
-            command.ln("   stdDevExecTimeMillis: %s", tasksSummary.stdDevExecTimeMillis);
+            command.ln("   total tasks: %s", tasksSummary.totalTasks);
+            command.ln("   total invoked tasks: %s", tasksSummary.totalInvokedTasks);
+            command.ln("   total success tasks: %s", tasksSummary.totalSuccessTasks);
+            if (tasksSummary.startDelayMillis.stats.isPresent()) {
+                command.ln("   start delay (ms):");
+                command.ln("       average: %s", tasksSummary.startDelayMillis.mean());
+                command.ln("       stddev: %s", tasksSummary.startDelayMillis.stdDev());
+            }
+            command.ln("   exec duration of group tasks (ms):");
+            command.ln("       average: %s", tasksSummary.execDurationOfGroupTasks.mean());
+            command.ln("       stddev: %s", tasksSummary.execDurationOfGroupTasks.stdDev());
+            command.ln("   exec duration of non-group tasks (ms):");
+            command.ln("       average: %s", tasksSummary.execDurationOfNonGroupTasks.mean());
+            command.ln("       stddev: %s", tasksSummary.execDurationOfNonGroupTasks.stdDev());
         }
     }
 
