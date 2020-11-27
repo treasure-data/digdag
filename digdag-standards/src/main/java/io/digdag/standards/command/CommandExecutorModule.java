@@ -15,15 +15,8 @@ public class CommandExecutorModule
     @Override
     public void configure(Binder binder)
     {
-        //binder.bind(CommandExecutor.class).to(EcsCommandExecutor.class).in(Scopes.SINGLETON);
-        //binder.bind(CommandExecutor.class).to(KubernetesCommandExecutor.class).in(Scopes.SINGLETON);
-
         binder.bind(EcsClientFactory.class).to(DefaultEcsClientFactory.class).in(Scopes.SINGLETON);
         //binder.bind(KubernetesClientFactory.class).to(DefaultKubernetesClientFactory.class).in(Scopes.SINGLETON);
-
-//        binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
-//        binder.bind(DockerCommandExecutor.class).in(Scopes.SINGLETON);
-//        binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
 
         // CommandExecutor
         binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
