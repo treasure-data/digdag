@@ -91,6 +91,8 @@ public class ShowTask
         public final long totalInvokedTasks;
         @JsonProperty
         public final long totalSuccessTasks;
+        @JsonProperty
+        public final long totalErrorTasks;
 
         @JsonProperty
         public final TasksStats startDelayMillis;
@@ -103,6 +105,7 @@ public class ShowTask
                     "totalTasks=" + totalTasks +
                     ", totalInvokedTasks=" + totalInvokedTasks +
                     ", totalSuccessTasks=" + totalSuccessTasks +
+                    ", totalErrorTasks=" + totalErrorTasks +
                     ", startDelayMillis=" + startDelayMillis +
                     ", execDuration=" + execDuration +
                     '}';
@@ -193,12 +196,14 @@ public class ShowTask
             long totalTasks,
             long totalInvokedTasks,
             long totalSuccessTasks,
+            long totalErrorTasks,
             TasksStats startDelayMillis,
             TasksStats execDuration)
         {
             this.totalTasks = totalTasks;
             this.totalInvokedTasks = totalInvokedTasks;
             this.totalSuccessTasks = totalSuccessTasks;
+            this.totalErrorTasks = totalErrorTasks;
             this.startDelayMillis = startDelayMillis;
             this.execDuration = execDuration;
         }
@@ -212,6 +217,7 @@ public class ShowTask
 
             long totalTasks = tasks.size() - 1; // Remove a root task
             long totalSuccessTasks = 0;
+            long totalErrorTasks = 0;
             long totalInvokedTasks = 0;
 
             List<Long> startDelayMillisList = new ArrayList<>(tasks.size());
@@ -270,6 +276,7 @@ public class ShowTask
                     totalTasks,
                     totalInvokedTasks,
                     totalSuccessTasks,
+                    totalErrorTasks,
                     statsOfStartDelayMillis,
                     statsOfExecTime);
         }
@@ -312,6 +319,7 @@ public class ShowTask
             command.ln("   total tasks: %s", tasksSummary.totalTasks);
             command.ln("   total invoked tasks: %s", tasksSummary.totalInvokedTasks);
             command.ln("   total success tasks: %s", tasksSummary.totalSuccessTasks);
+            command.ln("   total error tasks: %s", tasksSummary.totalErrorTasks);
             if (tasksSummary.startDelayMillis.stats.isPresent()) {
                 command.ln("   start delay (ms):");
                 command.ln("       average: %s", tasksSummary.startDelayMillis.mean());

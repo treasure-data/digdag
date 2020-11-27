@@ -100,6 +100,7 @@ public class ShowTaskTest
             9876,
             9870,
             9866,
+            0,
             new TasksStats(Optional.of(TASKS_STATS_0_START_DELAY)),
             new TasksStats(Optional.of(TASKS_STATS_0_EXEC_DURATION))
         );
@@ -109,6 +110,7 @@ public class ShowTaskTest
             1234,
             1135,
             1133,
+            42,
             new TasksStats(Optional.absent()),
             new TasksStats(Optional.of(TASKS_STATS_1_EXEC_DURATION))
         );
@@ -175,21 +177,19 @@ public class ShowTaskTest
         printer.showSummary(showTask, TASKS_SUMMARY_0);
 
         ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(stdout, times(12)).println(argumentCaptor.capture());
+        verify(stdout, times(10)).println(argumentCaptor.capture());
         List<String> values = argumentCaptor.getAllValues();
         int i = 0;
         assertEquals("   total tasks: 9876", values.get(i++));
         assertEquals("   total invoked tasks: 9870", values.get(i++));
         assertEquals("   total success tasks: 9866", values.get(i++));
+        assertEquals("   total error tasks: 0", values.get(i++));
         assertEquals("   start delay (ms):", values.get(i++));
         assertEquals("       average: 20", values.get(i++));
         assertEquals("       stddev: 8", values.get(i++));
-        assertEquals("   exec duration of group tasks (ms):", values.get(i++));
+        assertEquals("   exec duration (ms):", values.get(i++));
         assertEquals("       average: 300", values.get(i++));
         assertEquals("       stddev: 81", values.get(i++));
-        assertEquals("   exec duration of non-group tasks (ms):", values.get(i++));
-        assertEquals("       average: 4000", values.get(i++));
-        assertEquals("       stddev: 816", values.get(i++));
     }
 
     @Test
@@ -199,18 +199,16 @@ public class ShowTaskTest
         printer.showSummary(showTask, TASKS_SUMMARY_1);
 
         ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(stdout, times(9)).println(argumentCaptor.capture());
+        verify(stdout, times(7)).println(argumentCaptor.capture());
         List<String> values = argumentCaptor.getAllValues();
         int i = 0;
         assertEquals("   total tasks: 1234", values.get(i++));
         assertEquals("   total invoked tasks: 1135", values.get(i++));
         assertEquals("   total success tasks: 1133", values.get(i++));
-        assertEquals("   exec duration of group tasks (ms):", values.get(i++));
+        assertEquals("   total error tasks: 42", values.get(i++));
+        assertEquals("   exec duration (ms):", values.get(i++));
         assertEquals("       average: 50000", values.get(i++));
         assertEquals("       stddev: 8164", values.get(i++));
-        assertEquals("   exec duration of non-group tasks (ms):", values.get(i++));
-        assertEquals("       average: 800000", values.get(i++));
-        assertEquals("       stddev: 81649", values.get(i++));
     }
 
     @Test
@@ -388,6 +386,7 @@ public class ShowTaskTest
         assertEquals(6, summary.totalTasks);
         assertEquals(6, summary.totalInvokedTasks);
         assertEquals(6, summary.totalSuccessTasks);
+        assertEquals(0, summary.totalErrorTasks);
         assertEquals(2000, summary.startDelayMillis.mean().value.get().longValue());
         assertEquals(4000, summary.execDuration.mean().value.get().longValue());
     }
