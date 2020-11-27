@@ -181,7 +181,7 @@ public class ShowTaskTest
         List<String> values = argumentCaptor.getAllValues();
         int i = 0;
         assertEquals("   total tasks: 9876", values.get(i++));
-        assertEquals("   total invoked tasks: 9870", values.get(i++));
+        assertEquals("   total run tasks: 9870", values.get(i++));
         assertEquals("   total success tasks: 9866", values.get(i++));
         assertEquals("   total error tasks: 0", values.get(i++));
         assertEquals("   start delay (ms):", values.get(i++));
@@ -203,7 +203,7 @@ public class ShowTaskTest
         List<String> values = argumentCaptor.getAllValues();
         int i = 0;
         assertEquals("   total tasks: 1234", values.get(i++));
-        assertEquals("   total invoked tasks: 1135", values.get(i++));
+        assertEquals("   total run tasks: 1135", values.get(i++));
         assertEquals("   total success tasks: 1133", values.get(i++));
         assertEquals("   total error tasks: 42", values.get(i++));
         assertEquals("   exec duration (ms):", values.get(i++));
@@ -384,7 +384,7 @@ public class ShowTaskTest
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:28Z"))
         ));
         assertEquals(6, summary.totalTasks);
-        assertEquals(6, summary.totalInvokedTasks);
+        assertEquals(6, summary.totalRunTasks);
         assertEquals(6, summary.totalSuccessTasks);
         assertEquals(0, summary.totalErrorTasks);
         assertEquals(2000, summary.startDelayMillis.mean().value.get().longValue());

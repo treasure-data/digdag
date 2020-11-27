@@ -88,7 +88,7 @@ public class ShowTask
         @JsonProperty
         public final long totalTasks;
         @JsonProperty
-        public final long totalInvokedTasks;
+        public final long totalRunTasks;
         @JsonProperty
         public final long totalSuccessTasks;
         @JsonProperty
@@ -103,7 +103,7 @@ public class ShowTask
         public String toString() {
             return "TasksSummary{" +
                     "totalTasks=" + totalTasks +
-                    ", totalInvokedTasks=" + totalInvokedTasks +
+                    ", totalRunTasks=" + totalRunTasks +
                     ", totalSuccessTasks=" + totalSuccessTasks +
                     ", totalErrorTasks=" + totalErrorTasks +
                     ", startDelayMillis=" + startDelayMillis +
@@ -194,14 +194,14 @@ public class ShowTask
 
         public TasksSummary(
             long totalTasks,
-            long totalInvokedTasks,
+            long totalRunTasks,
             long totalSuccessTasks,
             long totalErrorTasks,
             TasksStats startDelayMillis,
             TasksStats execDuration)
         {
             this.totalTasks = totalTasks;
-            this.totalInvokedTasks = totalInvokedTasks;
+            this.totalRunTasks = totalRunTasks;
             this.totalSuccessTasks = totalSuccessTasks;
             this.totalErrorTasks = totalErrorTasks;
             this.startDelayMillis = startDelayMillis;
@@ -218,7 +218,7 @@ public class ShowTask
             long totalTasks = tasks.size() - 1; // Remove a root task
             long totalSuccessTasks = 0;
             long totalErrorTasks = 0;
-            long totalInvokedTasks = 0;
+            long totalRunTasks = 0;
 
             List<Long> startDelayMillisList = new ArrayList<>(tasks.size());
             List<Long> execTimeMillisList = new ArrayList<>(tasks.size());
@@ -227,7 +227,7 @@ public class ShowTask
             boolean isRoot = true;
             for (RestTask task : tasks) {
                 if (!isRoot && task.getStartedAt().isPresent()) {
-                    totalInvokedTasks++;
+                    totalRunTasks++;
                     execTimeMillisList.add(
                             Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
 
@@ -274,7 +274,7 @@ public class ShowTask
 
             return new TasksSummary(
                     totalTasks,
-                    totalInvokedTasks,
+                    totalRunTasks,
                     totalSuccessTasks,
                     totalErrorTasks,
                     statsOfStartDelayMillis,
@@ -317,7 +317,7 @@ public class ShowTask
         public void showSummary(ClientCommand command, TasksSummary tasksSummary)
         {
             command.ln("   total tasks: %s", tasksSummary.totalTasks);
-            command.ln("   total invoked tasks: %s", tasksSummary.totalInvokedTasks);
+            command.ln("   total run tasks: %s", tasksSummary.totalRunTasks);
             command.ln("   total success tasks: %s", tasksSummary.totalSuccessTasks);
             command.ln("   total error tasks: %s", tasksSummary.totalErrorTasks);
             if (tasksSummary.startDelayMillis.stats.isPresent()) {
