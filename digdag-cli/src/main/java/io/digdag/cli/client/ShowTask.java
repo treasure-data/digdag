@@ -95,9 +95,7 @@ public class ShowTask
         @JsonProperty
         public final TasksStats startDelayMillis;
         @JsonProperty
-        public final TasksStats execDurationOfGroupTasks;
-        @JsonProperty
-        public final TasksStats execDurationOfNonGroupTasks;
+        public final TasksStats execDuration;
 
         @Override
         public String toString() {
@@ -106,8 +104,7 @@ public class ShowTask
                     ", totalInvokedTasks=" + totalInvokedTasks +
                     ", totalSuccessTasks=" + totalSuccessTasks +
                     ", startDelayMillis=" + startDelayMillis +
-                    ", execDurationOfGroupTasks=" + execDurationOfGroupTasks +
-                    ", execDurationOfNonGroupTasks=" + execDurationOfNonGroupTasks +
+                    ", execDuration=" + execDuration +
                     '}';
         }
 
@@ -197,15 +194,13 @@ public class ShowTask
             long totalInvokedTasks,
             long totalSuccessTasks,
             TasksStats startDelayMillis,
-            TasksStats execDurationOfGroupTasks,
-            TasksStats execDurationOfNonGroupTasks)
+            TasksStats execDuration)
         {
             this.totalTasks = totalTasks;
             this.totalInvokedTasks = totalInvokedTasks;
             this.totalSuccessTasks = totalSuccessTasks;
             this.startDelayMillis = startDelayMillis;
-            this.execDurationOfGroupTasks = execDurationOfGroupTasks;
-            this.execDurationOfNonGroupTasks = execDurationOfNonGroupTasks;
+            this.execDuration = execDuration;
         }
 
         public static TasksSummary fromTasks(List<RestTask> tasks)
@@ -220,23 +215,15 @@ public class ShowTask
             long totalInvokedTasks = 0;
 
             List<Long> startDelayMillisList = new ArrayList<>(tasks.size());
-            List<Long> execTimeOfGroupTasksMillisList = new ArrayList<>(tasks.size());
-            List<Long> execTimeOfNonGroupTasksMillisList = new ArrayList<>(tasks.size());
+            List<Long> execTimeMillisList = new ArrayList<>(tasks.size());
 
             // Calculate the delays of task invocations
             boolean isRoot = true;
             for (RestTask task : tasks) {
                 if (!isRoot && task.getStartedAt().isPresent()) {
                     totalInvokedTasks++;
-                    // Collect the metrics of group / non-group tasks separately
-                    if (task.isGroup()) {
-                        execTimeOfGroupTasksMillisList.add(
-                                Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
-                    }
-                    else {
-                        execTimeOfNonGroupTasksMillisList.add(
-                                Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
-                    }
+                    execTimeMillisList.add(
+                            Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
 
                     // To know the delay of a task, it's needed to choose the correct previous task
                     // considering sequential execution and/or nested task.
@@ -277,16 +264,14 @@ public class ShowTask
             }
 
             TasksStats statsOfStartDelayMillis = TasksStats.of(startDelayMillisList);
-            TasksStats statsOfExecTimeOfGroupTasksMillis = TasksStats.of(execTimeOfGroupTasksMillisList);
-            TasksStats statsOfExecTimeOfNonGroupTasksMillis = TasksStats.of(execTimeOfNonGroupTasksMillisList);
+            TasksStats statsOfExecTime = TasksStats.of(execTimeMillisList);
 
             return new TasksSummary(
                     totalTasks,
                     totalInvokedTasks,
                     totalSuccessTasks,
                     statsOfStartDelayMillis,
-                    statsOfExecTimeOfGroupTasksMillis,
-                    statsOfExecTimeOfNonGroupTasksMillis);
+                    statsOfExecTime);
         }
     }
 
@@ -332,12 +317,9 @@ public class ShowTask
                 command.ln("       average: %s", tasksSummary.startDelayMillis.mean());
                 command.ln("       stddev: %s", tasksSummary.startDelayMillis.stdDev());
             }
-            command.ln("   exec duration of group tasks (ms):");
-            command.ln("       average: %s", tasksSummary.execDurationOfGroupTasks.mean());
-            command.ln("       stddev: %s", tasksSummary.execDurationOfGroupTasks.stdDev());
-            command.ln("   exec duration of non-group tasks (ms):");
-            command.ln("       average: %s", tasksSummary.execDurationOfNonGroupTasks.mean());
-            command.ln("       stddev: %s", tasksSummary.execDurationOfNonGroupTasks.stdDev());
+            command.ln("   exec duration (ms):");
+            command.ln("       average: %s", tasksSummary.execDuration.mean());
+            command.ln("       stddev: %s", tasksSummary.execDuration.stdDev());
         }
     }
 

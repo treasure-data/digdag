@@ -92,10 +92,8 @@ public class ShowTaskTest
         );
 
     private static final Stats TASKS_STATS_0_START_DELAY = Stats.of(10, 20, 30);
-    private static final Stats TASKS_STATS_0_EXEC_DURATION_OF_GROUP_TASKS = Stats.of(200, 300, 400);
-    private static final Stats TASKS_STATS_0_EXEC_DURATION_OF_NON_GROUP_TASKS = Stats.of(3000, 4000, 5000);
-    private static final Stats TASKS_STATS_1_EXEC_DURATION_OF_GROUP_TASKS = Stats.of(40000, 50000, 60000);
-    private static final Stats TASKS_STATS_1_EXEC_DURATION_OF_NON_GROUP_TASKS = Stats.of(700000, 800000, 900000);
+    private static final Stats TASKS_STATS_0_EXEC_DURATION = Stats.of(200, 300, 400);
+    private static final Stats TASKS_STATS_1_EXEC_DURATION = Stats.of(40000, 50000, 60000);
 
     private static final ShowTask.TasksSummary TASKS_SUMMARY_0 =
         new ShowTask.TasksSummary(
@@ -103,8 +101,7 @@ public class ShowTaskTest
             9870,
             9866,
             new TasksStats(Optional.of(TASKS_STATS_0_START_DELAY)),
-            new TasksStats(Optional.of(TASKS_STATS_0_EXEC_DURATION_OF_GROUP_TASKS)),
-            new TasksStats(Optional.of(TASKS_STATS_0_EXEC_DURATION_OF_NON_GROUP_TASKS))
+            new TasksStats(Optional.of(TASKS_STATS_0_EXEC_DURATION))
         );
 
     private static final ShowTask.TasksSummary TASKS_SUMMARY_1 =
@@ -113,8 +110,7 @@ public class ShowTaskTest
             1135,
             1133,
             new TasksStats(Optional.absent()),
-            new TasksStats(Optional.of(TASKS_STATS_1_EXEC_DURATION_OF_GROUP_TASKS)),
-            new TasksStats(Optional.of(TASKS_STATS_1_EXEC_DURATION_OF_NON_GROUP_TASKS))
+            new TasksStats(Optional.of(TASKS_STATS_1_EXEC_DURATION))
         );
 
     @Before
@@ -385,15 +381,14 @@ public class ShowTaskTest
                         .withParentId(Id.of("1"))
                         .withUpstreams(ImmutableList.of(Id.of("6")))
                         // Delay: 5 sec
-                        // Duration: 1 sec
+                        // Duration: 4 sec
                         .withStartedAt(Instant.parse("2000-01-01T00:00:24Z"))
-                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:25Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:28Z"))
         ));
         assertEquals(6, summary.totalTasks);
         assertEquals(6, summary.totalInvokedTasks);
         assertEquals(6, summary.totalSuccessTasks);
         assertEquals(2000, summary.startDelayMillis.mean().value.get().longValue());
-        assertEquals(9000, summary.execDurationOfGroupTasks.mean().value.get().longValue());
-        assertEquals(2400, summary.execDurationOfNonGroupTasks.mean().value.get().longValue());
+        assertEquals(4000, summary.execDuration.mean().value.get().longValue());
     }
 }
