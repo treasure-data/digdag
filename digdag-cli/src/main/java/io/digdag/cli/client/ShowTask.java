@@ -3,7 +3,11 @@ package io.digdag.cli.client;
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.api.client.util.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.math.Stats;
@@ -13,6 +17,7 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestTask;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -76,14 +81,22 @@ public class ShowTask
         }
     }
 
+    // Helper classes
+
     static class TasksSummary
     {
+        @JsonProperty
         public final long totalTasks;
+        @JsonProperty
         public final long totalInvokedTasks;
+        @JsonProperty
         public final long totalSuccessTasks;
 
+        @JsonProperty
         public final TasksStats startDelayMillis;
+        @JsonProperty
         public final TasksStats execDurationOfGroupTasks;
+        @JsonProperty
         public final TasksStats execDurationOfNonGroupTasks;
 
         @Override
@@ -120,6 +133,7 @@ public class ShowTask
             }
         }
 
+        @JsonSerialize(using = TasksStatsSerializer.class)
         static class TasksStats
         {
             final Optional<Stats> stats;
@@ -156,6 +170,25 @@ public class ShowTask
                 return "TasksStats{" +
                         "stats=" + stats +
                         '}';
+            }
+        }
+
+        static class TasksStatsSerializer
+            extends StdSerializer<TasksStats>
+        {
+            protected TasksStatsSerializer()
+            {
+                super(TasksStats.class);
+            }
+
+            @Override
+            public void serialize(TasksStats tasksStats, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                throws IOException
+            {
+                jsonGenerator.writeStartObject();
+                jsonGenerator.writeObjectField("average", tasksStats.mean());
+                jsonGenerator.writeObjectField("stddev", tasksStats.stdDev());
+                jsonGenerator.writeEndObject();
             }
         }
 
