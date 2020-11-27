@@ -16,6 +16,7 @@ import io.digdag.cli.StdOut;
 import io.digdag.cli.TimeUtil;
 import io.digdag.cli.client.ShowTask.TasksSummary.TasksStats;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.ImmutableRestTask;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.config.Config;
@@ -253,5 +254,146 @@ public class ShowTaskTest
         verify(stdout, times(1)).println(argumentCaptor.capture());
         String value = argumentCaptor.getValue();
         assertEquals(OBJECT_MAPPER.writeValueAsString(TASKS_SUMMARY_1), value);
+    }
+
+    @Test
+    public void taskSummary()
+    {
+        /*
+            (root task: +wf)
+            # id:1
+            # started_at: 00:00:00
+            # updated_at: 00:00:00
+
+            # id:2
+            # started_at: 00:00:01 (delay: 1 sec)
+            # updated_at: 00:00:02
+            +start:
+              echo>: Start
+
+            # id:3
+            # started_at: 00:00:02 (delay: 0 sec)
+            # updated_at: 00:00:11
+            +parent:
+              # id:4
+              # started_at: 00:00:03 (delay: 1 sec)
+              # updated_at: 00:00:07
+              +child_wait:
+                sh>: sleep 3
+
+              # id:5
+              # started_at: 00:00:09 (delay: 2 sec)
+              # updated_at: 00:00:10
+              +child_hello:
+                echo>: Hello
+
+            # id:6
+            # started_at: 00:00:14 (delay: 3 sec)
+            # updated_at: 00:00:19
+            +sleep:
+              sh>: sleep 4
+
+            # id:7
+            # started_at: 00:00:24 (delay: 5 sec)
+            # updated_at: 00:00:25
+            +finish:
+              echo>: Finish
+         */
+
+        Config emptyConfig = new ConfigFactory(OBJECT_MAPPER).create();
+        RestTask base = ImmutableRestTask.builder()
+                .id(Id.of("xxxx"))
+                .fullName("xxxx")
+                .state("xxxx")
+                .isGroup(false)
+                .updatedAt(Instant.now())
+                .config(emptyConfig)
+                .exportParams(emptyConfig)
+                .storeParams(emptyConfig)
+                .stateParams(emptyConfig)
+                .error(emptyConfig)
+                .build();
+
+        ShowTask.TasksSummary summary = ShowTask.TasksSummary.fromTasks(ImmutableList.of(
+                // Root task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("1"))
+                        .withFullName("+wf+start")
+                        .withState("success")
+                        .withIsGroup(true)
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:00Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:25Z")),
+                // Non-group task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("2"))
+                        .withFullName("+wf+start")
+                        .withState("success")
+                        .withParentId(Id.of("1"))
+                        // Delay: 1 sec
+                        // Duration: 1 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:01Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:02Z")),
+                // Group task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("3"))
+                        .withFullName("+wf+parent")
+                        .withState("success")
+                        .withIsGroup(true)
+                        .withParentId(Id.of("1"))
+                        .withUpstreams(ImmutableList.of(Id.of("2")))
+                        // Delay: 0 sec
+                        // Duration: 9 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:02Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:11Z")),
+                // Non-group task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("4"))
+                        .withFullName("+wf+parent+child_wait")
+                        .withState("success")
+                        .withParentId(Id.of("3"))
+                        // Delay: 1 sec
+                        // Duration: 4 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:03Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:07Z")),
+                // Non-group task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("5"))
+                        .withFullName("+wf+parent+child_hello")
+                        .withState("success")
+                        .withParentId(Id.of("3"))
+                        .withUpstreams(ImmutableList.of(Id.of("4")))
+                        // Delay: 2 sec
+                        // Duration: 1 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:09Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:10Z")),
+                // Non-group task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("6"))
+                        .withFullName("+wf+sleep")
+                        .withState("success")
+                        .withParentId(Id.of("1"))
+                        .withUpstreams(ImmutableList.of(Id.of("3")))
+                        // Delay: 3 sec
+                        // Duration: 5 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:14Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:19Z")),
+                // Non-group task
+                ImmutableRestTask.copyOf(base)
+                        .withId(Id.of("7"))
+                        .withFullName("+wf+finish")
+                        .withState("success")
+                        .withParentId(Id.of("1"))
+                        .withUpstreams(ImmutableList.of(Id.of("6")))
+                        // Delay: 5 sec
+                        // Duration: 1 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:24Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:25Z"))
+        ));
+        assertEquals(6, summary.totalTasks);
+        assertEquals(6, summary.totalInvokedTasks);
+        assertEquals(6, summary.totalSuccessTasks);
+        assertEquals(2000, summary.startDelayMillis.mean().value.get().longValue());
+        assertEquals(9000, summary.execDurationOfGroupTasks.mean().value.get().longValue());
+        assertEquals(2400, summary.execDurationOfNonGroupTasks.mean().value.get().longValue());
     }
 }

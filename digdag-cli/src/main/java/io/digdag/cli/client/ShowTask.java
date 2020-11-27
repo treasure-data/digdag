@@ -14,8 +14,10 @@ import io.digdag.client.api.Id;
 import io.digdag.client.api.RestTask;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,18 @@ public class ShowTask
         public final TasksStats execDurationOfGroupTasks;
         public final TasksStats execDurationOfNonGroupTasks;
 
+        @Override
+        public String toString() {
+            return "TasksSummary{" +
+                    "totalTasks=" + totalTasks +
+                    ", totalInvokedTasks=" + totalInvokedTasks +
+                    ", totalSuccessTasks=" + totalSuccessTasks +
+                    ", startDelayMillis=" + startDelayMillis +
+                    ", execDurationOfGroupTasks=" + execDurationOfGroupTasks +
+                    ", execDurationOfNonGroupTasks=" + execDurationOfNonGroupTasks +
+                    '}';
+        }
+
         static class NullableLong
         {
             @JsonProperty
@@ -136,6 +150,13 @@ public class ShowTask
                 return new NullableLong(
                         stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()));
             }
+
+            @Override
+            public String toString() {
+                return "TasksStats{" +
+                        "stats=" + stats +
+                        '}';
+            }
         }
 
         public TasksSummary(
@@ -156,12 +177,12 @@ public class ShowTask
 
         public static TasksSummary fromTasks(List<RestTask> tasks)
         {
-            Map<String, RestTask> taskMap = new HashMap<>(tasks.size());
+            Map<Long, RestTask> taskMap = new HashMap<>(tasks.size());
             for (RestTask task : tasks) {
-                taskMap.put(task.getId().get(), task);
+                taskMap.put(task.getId().asLong(), task);
             }
 
-            long totalTasks = tasks.size();
+            long totalTasks = tasks.size() - 1; // Remove a root task
             long totalSuccessTasks = 0;
             long totalInvokedTasks = 0;
 
@@ -169,9 +190,12 @@ public class ShowTask
             List<Long> execTimeOfGroupTasksMillisList = new ArrayList<>(tasks.size());
             List<Long> execTimeOfNonGroupTasksMillisList = new ArrayList<>(tasks.size());
 
+            // Calculate the delays of task invocations
+            boolean isRoot = true;
             for (RestTask task : tasks) {
-                if (task.getStartedAt().isPresent()) {
+                if (!isRoot && task.getStartedAt().isPresent()) {
                     totalInvokedTasks++;
+                    // Collect the metrics of group / non-group tasks separately
                     if (task.isGroup()) {
                         execTimeOfGroupTasksMillisList.add(
                                 Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
@@ -181,18 +205,42 @@ public class ShowTask
                                 Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
                     }
 
-                    Optional<Id> parentId = task.getParentId();
-                    if (parentId.isPresent()) {
-                        RestTask parent = taskMap.get(parentId.get().get());
-                        if (parent != null && parent.getStartedAt().isPresent()) {
-                            startDelayMillisList.add(
-                                    Duration.between(parent.getStartedAt().get(), task.getStartedAt().get()).toMillis());
+                    // To know the delay of a task, it's needed to choose the correct previous task
+                    // considering sequential execution and/or nested task.
+                    Optional<Instant> timestampWhenTaskIsReady = Optional.absent();
+                    if (task.getUpstreams().isEmpty()) {
+                        // This task is the first child task of a group task
+                        Optional<Id> parentId = task.getParentId();
+                        if (parentId.isPresent()) {
+                            RestTask previousTask = taskMap.get(parentId.get().asLong());
+                            // Just for backward compatibility
+                            if (previousTask.getStartedAt().isPresent()) {
+                                // This task was executed after the previous group task started,
+                                // so check the previous one's `started_at`
+                                timestampWhenTaskIsReady = Optional.of(previousTask.getStartedAt().get());
+                            }
                         }
+                    }
+                    else {
+                        // This task is executed sequentially. Get the latest `updated_at` of upstream tasks.
+                        long previousTaskId = task.getUpstreams().stream()
+                            .max(Comparator.comparingLong(
+                                id -> taskMap.get(id.asLong()).getUpdatedAt().toEpochMilli()))
+                            .get().asLong();
+                        RestTask previousTask = taskMap.get(previousTaskId);
+                        // This task was executed after the previous task finished,
+                        // so check the previous one's `updated_at`
+                        timestampWhenTaskIsReady = Optional.of(previousTask.getUpdatedAt());
+                    }
+                    if (timestampWhenTaskIsReady.isPresent()) {
+                        startDelayMillisList.add(
+                                Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis());
                     }
                     if (task.getState().equals("success")) {
                         totalSuccessTasks++;
                     }
                 }
+                isRoot = false;
             }
 
             TasksStats statsOfStartDelayMillis = TasksStats.of(startDelayMillisList);
