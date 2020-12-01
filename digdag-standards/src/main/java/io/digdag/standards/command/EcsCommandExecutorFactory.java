@@ -23,13 +23,13 @@ public class EcsCommandExecutorFactory
     public EcsCommandExecutorFactory(
             final Config systemConfig,
             final EcsClientFactory ecsClientFactory,
-            DockerCommandExecutor docker, final StorageManager storageManager,
+            final StorageManager storageManager,
             final ProjectArchiveLoader projectArchiveLoader,
             final CommandLogger clog)
     {
         this.systemConfig = systemConfig;
         this.ecsClientFactory = ecsClientFactory;
-        this.docker = docker;
+        this.docker = new DockerCommandExecutor(clog, new SimpleCommandExecutor(clog));
         this.storageManager = storageManager;
         this.projectArchiveLoader = projectArchiveLoader;
         this.clog = clog;

@@ -19,10 +19,6 @@ public class CommandExecutorModule
         //binder.bind(KubernetesClientFactory.class).to(DefaultKubernetesClientFactory.class).in(Scopes.SINGLETON);
 
         // CommandExecutor
-        binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
-        binder.bind(DockerCommandExecutor.class).in(Scopes.SINGLETON);
-        binder.bind(EcsCommandExecutor.class).in(Scopes.SINGLETON);
-
         Multibinder<CommandExecutorFactory> commandExecutorBinder = Multibinder.newSetBinder(binder, CommandExecutorFactory.class);
         commandExecutorBinder.addBinding().to(SimpleCommandExecutorFactory.class).in(Scopes.SINGLETON);
         commandExecutorBinder.addBinding().to(DockerCommandExecutorFactory.class).in(Scopes.SINGLETON);
