@@ -16,7 +16,6 @@ public class SimpleCommandExecutor
 {
     private final CommandLogger clog;
 
-    @Inject
     public SimpleCommandExecutor(final CommandLogger clog)
     {
         this.clog = clog;

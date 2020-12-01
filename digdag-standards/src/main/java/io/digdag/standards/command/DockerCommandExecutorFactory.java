@@ -12,10 +12,10 @@ public class DockerCommandExecutorFactory
     private final SimpleCommandExecutor simple;
 
     @Inject
-    public DockerCommandExecutorFactory(CommandLogger clog, SimpleCommandExecutor simple)
+    public DockerCommandExecutorFactory(CommandLogger clog)
     {
         this.clog = clog;
-        this.simple = simple;
+        this.simple = new SimpleCommandExecutor(clog);
     }
 
     @Override

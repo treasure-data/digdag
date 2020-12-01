@@ -38,7 +38,6 @@ public class DockerCommandExecutor
     private final CommandLogger clog;
     private final SimpleCommandExecutor simple;
 
-    @Inject
     public DockerCommandExecutor(final CommandLogger clog, final SimpleCommandExecutor simple)
     {
         this.clog = clog;
