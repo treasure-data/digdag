@@ -1,7 +1,5 @@
 # if>: Conditional execution
 
-(This operator is EXPERIMENTAL. Parameters may change in a future release)
-
 **if>** operator runs `_do` subtasks if `true` is given.
 
     +run_if_param_is_true:
