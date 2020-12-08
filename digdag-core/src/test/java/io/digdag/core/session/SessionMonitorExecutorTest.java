@@ -16,7 +16,9 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -44,6 +46,22 @@ public class SessionMonitorExecutorTest
     @Before
     public void setUp()
     {
+        // Make io.digdag.core.database.TransactionManager#begin execute a passed function
+        doAnswer(answer -> {
+            TransactionManager.SupplierInTransaction<Void, RuntimeException, RuntimeException, RuntimeException, RuntimeException> func =
+                    (TransactionManager.SupplierInTransaction<Void, RuntimeException, RuntimeException, RuntimeException, RuntimeException>) answer.getArguments()[0];
+            func.get();
+            return null;
+        }).when(transactionManager).begin(any());
+
+        // Make io.digdag.core.session.SessionStoreManager#lockReadySessionMonitors execute a passed function
+        StoredSessionMonitor sessionMonitor = mock(StoredSessionMonitor.class);
+        doAnswer(answer -> {
+            SessionStoreManager.SessionMonitorAction action = (SessionStoreManager.SessionMonitorAction) answer.getArguments()[1];
+            action.schedule(sessionMonitor);
+            return null;
+        }).when(sessionStoreManager).lockReadySessionMonitors(any(), any());
+
         sessionMonitorExecutor = spy(Guice.createInjector(binder -> {
             binder.bind(ConfigFactory.class).toInstance(configFactory);
             binder.bind(SessionStoreManager.class).toInstance(sessionStoreManager);
@@ -59,7 +77,7 @@ public class SessionMonitorExecutorTest
     @Test
     public void handleUnexpectedExceptionInRun()
     {
-        doThrow(RuntimeException.class).when(transactionManager).begin(any());
+        doThrow(RuntimeException.class).when(sessionMonitorExecutor).runMonitor(any());
 
         sessionMonitorExecutor.run();
 
@@ -69,7 +87,7 @@ public class SessionMonitorExecutorTest
     @Test
     public void handleConfigExceptionInRun()
     {
-        doThrow(ConfigException.class).when(transactionManager).begin(any());
+        doThrow(ConfigException.class).when(sessionMonitorExecutor).runMonitor(any());
 
         sessionMonitorExecutor.run();
 
@@ -79,7 +97,7 @@ public class SessionMonitorExecutorTest
     @Test
     public void handleModelValidationExceptionInRun()
     {
-        doThrow(ModelValidationException.class).when(transactionManager).begin(any());
+        doThrow(ModelValidationException.class).when(sessionMonitorExecutor).runMonitor(any());
 
         sessionMonitorExecutor.run();
 

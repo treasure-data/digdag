@@ -96,15 +96,18 @@ public class SessionMonitorExecutor
         try {
             tm.begin(() -> {
                 sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
-                    // runMonitor needs to return next runtime if this monitor should run again later
-                    return runMonitor(storedMonitor);
+                    try {
+                        // runMonitor needs to return next runtime if this monitor should run again later
+                        return runMonitor(storedMonitor);
+                    }
+                    catch (ModelValidationException | ConfigException e) {
+                        logger.error(
+                                "Failed to schedule a session monitor task due to deterministic error. This won't be retried.", e);
+                        return Optional.absent();
+                    }
                 });
                 return null;
             });
-        }
-        catch (ModelValidationException | ConfigException e) {
-            logger.error(
-                    "Failed to schedule a session monitor task. This will be retried.", e);
         }
         catch (Throwable t) {
             logger.error(
