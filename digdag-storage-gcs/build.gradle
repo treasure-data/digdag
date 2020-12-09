@@ -18,7 +18,7 @@ dependencies {
         exclude group: 'org.apache.httpcomponents', module: 'httpclient'
     }
 
-    compile ('com.google.auth:google-auth-library-oauth2-http:0.4.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+    compile ('com.google.auth:google-auth-library-oauth2-http:0.18.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
     compile ("com.google.cloud:google-cloud-nio:0.119.0-alpha") {
         // Avoid compilation failures due to dependencies
         exclude group: 'com.google.guava', module: 'guava'
