@@ -9,9 +9,11 @@ import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.client.config.ConfigException;
 import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.log.LogMarkers;
+import io.digdag.core.repository.ModelValidationException;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
@@ -94,8 +96,15 @@ public class SessionMonitorExecutor
         try {
             tm.begin(() -> {
                 sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
-                    // runMonitor needs to return next runtime if this monitor should run again later
-                    return runMonitor(storedMonitor);
+                    try {
+                        // runMonitor needs to return next runtime if this monitor should run again later
+                        return runMonitor(storedMonitor);
+                    }
+                    catch (ModelValidationException | ConfigException e) {
+                        logger.error(
+                                "Failed to schedule a session monitor task due to deterministic error. This won't be retried.", e);
+                        return Optional.absent();
+                    }
                 });
                 return null;
             });
