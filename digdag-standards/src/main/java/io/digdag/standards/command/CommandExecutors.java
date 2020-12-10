@@ -69,6 +69,7 @@ class CommandExecutors
                     }
                     tar.closeArchiveEntry(); // throw IOExcpetion
                 }
+                return true;
             });
 
             // Add .digdag/tmp/ files to the archive
