@@ -3,8 +3,6 @@ package io.digdag.core.database;
 import java.util.*;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.hamcrest.Matchers;
 import org.junit.*;
@@ -532,43 +530,5 @@ public class DatabaseSessionStoreManagerTest
                     .resumingTaskId(Optional.absent())  // d0c5f950 added ArchivedTask.getResumingTaskId
                     .build()
                     ));
-    }
-
-    @Test
-    public void findTasksStartedBeforeWithState()
-        throws Exception
-    {
-        Instant sessionTime = Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600);
-
-        WorkflowDefinition wf = WorkflowDefinition.of(
-                wf1.getName(),
-//                newConfig().set("+wf", "{\"+start\":{\"echo>\":\"Start\"},\"+group\":{\"+wait\":{\"sh>\":\"sleep 5\"},\"+finish\":{\"echo>\":\"Finish\"}}}"),
-                newConfig().set("+wf", newConfig().set("+start", newConfig().set("echo>", "Start"))),
-                ZoneId.of("UTC")
-        );
-        AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                rev,
-                wf1,
-                newConfig(),
-                ScheduleTime.runNow(sessionTime));
-
-        StoredSessionAttemptWithSession attempt = factory.begin(() -> exec.submitWorkflow(0, ar, wf));
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(() -> {
-            try {
-                exec.runUntilDone(attempt.getId());
-            } catch (InterruptedException | ResourceNotFoundException e) {
-                e.printStackTrace();
-            }
-        });
-        factory.begin(() -> {
-                    for (TaskRelation taskRelation : manager.getTaskRelations(attempt.getId())) {
-                        manager.lockTaskIfExists(taskRelation.getId(), (lockedTask, storedTask) -> {
-                            System.out.println(storedTask);
-                            return true;
-                        });
-                    }
-                }
-        );
     }
 }
