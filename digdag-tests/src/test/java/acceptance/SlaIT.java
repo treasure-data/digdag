@@ -223,6 +223,14 @@ public class SlaIT
         }
 
         @Test
+        public void slaShouldNotBeTriggeredEvenIfTotalDurationExceedsThreshold()
+                throws Exception
+        {
+            Id attemptId = pushAndStart("duration_with_multiple_tasks.dig", Duration.ofSeconds(5));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+        }
+
+        @Test
         public void verifyAlertIsRetried()
                 throws Exception
         {

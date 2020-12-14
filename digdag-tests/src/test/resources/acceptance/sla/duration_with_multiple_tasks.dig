@@ -1,0 +1,15 @@
+timezone: UTC
+
+sla:
+  duration: 00:00:06
+  fail: true
+
++task0:
+  +first:
+    sh>: sleep 4
+
+  +second:
+    sh>: sleep 4
+
++task1:
+  sh>: sleep 4
