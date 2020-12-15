@@ -1,0 +1,27 @@
+
+
+dependencies {
+    compile project(':digdag-spi')
+    compile project(':digdag-plugin-utils')
+    testCompile project(':digdag-core')
+
+    compile ("com.google.cloud:google-cloud-storage:1.101.0") {
+        // Avoid compilation failures due to dependencies
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
+        exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+        exclude group: 'com.google.http-client', module: 'google-http-client-jackson2'
+        exclude group: 'com.google.http-client', module: 'google-http-client'
+        exclude group: 'com.google.auth', module: 'google-auth-library-oauth2-http'
+        exclude group: 'com.google.auth', module: 'google-auth-library-credentials'
+        exclude group: 'com.google.api-client', module: 'google-api-client'
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    }
+
+    compile ('com.google.auth:google-auth-library-oauth2-http:0.18.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+    compile ("com.google.cloud:google-cloud-nio:0.119.0-alpha") {
+        // Avoid compilation failures due to dependencies
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.google.code.findbugs', module: 'jsr305'
+    }
+}
