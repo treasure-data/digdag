@@ -153,7 +153,9 @@ public class RequireOperatorFactory
             }
             else {
                 // Wait for finish running attempt
-                throw nextPolling(lastStateParams.deepCopy());
+                throw nextPolling(lastStateParams.deepCopy()
+                        .set("target_session_id", attempt.getSessionId())
+                        .set("target_attempt_id", attempt.getId()));
             }
         }
 
