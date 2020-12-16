@@ -8,6 +8,7 @@ public interface AuthenticatedUser
 {
     int getSiteId();
 
+    @Value.Default
     default boolean isAdmin()
     {
         return false;
