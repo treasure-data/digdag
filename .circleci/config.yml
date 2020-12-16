@@ -102,3 +102,4 @@ workflows:
             branches:
               only:
                 - v0_10
+                - v0_11
