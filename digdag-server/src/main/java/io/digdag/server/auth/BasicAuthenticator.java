@@ -13,13 +13,15 @@ public class BasicAuthenticator
     private final ConfigFactory cf;
     private final String username;
     private final String password;
+    private final boolean admin;
 
     public BasicAuthenticator(ConfigFactory cf,
-            String username, String password)
+            String username, String password, boolean admin)
     {
         this.cf = cf;
         this.username = username;
         this.password = password;
+        this.admin = admin;
     }
 
     @Override
@@ -37,6 +39,7 @@ public class BasicAuthenticator
                 .siteId(0)
                 .userInfo(cf.create())
                 .userContext(cf.create())
+                .isAdmin(admin)
                 .build();
             return Result.accept(user);
         }

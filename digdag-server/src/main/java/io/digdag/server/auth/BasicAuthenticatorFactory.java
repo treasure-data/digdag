@@ -36,12 +36,14 @@ public class BasicAuthenticatorFactory
             logger.warn("Setting basicauth.username or basicauth.password works but is deprecated. It is going to be removed in a near future version. Use server.authenticator.basic.username and server.authenticator.basic.password instead.");
             return new BasicAuthenticator(cf,
                     systemConfig.get("basicauth.username", String.class),
-                    systemConfig.get("basicauth.password", String.class));
+                    systemConfig.get("basicauth.password", String.class),
+                    systemConfig.get("basicauth.admin", boolean.class, false));
         }
         else if (systemConfig.has("server.authenticator.basic.username")) {
             return new BasicAuthenticator(cf,
                     systemConfig.get("server.authenticator.basic.username", String.class),
-                    systemConfig.get("server.authenticator.basic.password", String.class));
+                    systemConfig.get("server.authenticator.basic.password", String.class),
+                    systemConfig.get("server.authenticator.basic.admin", boolean.class, false));
         }
         else {
             return new NoAuthenticator(cf);

@@ -417,6 +417,7 @@ Configuration:
 
 * server.authenticator.basic.username (string, if not set, no authentications happen)
 * server.authenticator.basic.password (string. Required if username is set)
+* server.authenticator.basic.admin (boolean. default `false`)
 
 
 Secret Encryption Key
