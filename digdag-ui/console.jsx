@@ -716,19 +716,137 @@ class StatusFilter extends React.Component {
   }
 }
 
+class SessionsPagination extends React.Component {
+  props: {
+    current: number,
+    max: number,
+    onSelect: (number) => void,
+  };
+
+  pages(): Array<Array<number>> {
+    // [1, 2, ..., 10, 11, 12, 13, 14, ..., 20, 21]
+    //  ^  ^                                 ^   ^ <- edgeN
+    //              ^   ^       ^   ^              <- sideN
+    const edgeN = 2;
+    const sideN = 2;
+
+    const inclusiveRange = (start, end) => _.range(start, end + 1);
+    const leftRange = inclusiveRange(1, edgeN);
+    const rightRange = inclusiveRange(this.props.max - edgeN + 1, this.props.max);
+    const centerRange = inclusiveRange(
+      this.props.current - sideN,
+      this.props.current + sideN,
+    );
+
+    if (this.props.max <= edgeN * 2 + sideN * 2 + 1) {
+      return [inclusiveRange(1, this.props.max)]
+    }
+
+    // [1, 2, 3, 4, 5, 6, 7, 8, ..., 20, 21]
+    //                       ^ jointLeftEnd
+    const jointLeftEnd = leftRange.length + centerRange.length + 1
+    if (this.props.current + sideN <= jointLeftEnd) {
+      return [
+        inclusiveRange(1, jointLeftEnd),
+        rightRange,
+      ];
+    }
+
+    // [1, 2, ..., 14, 15, 16, 17, 18, 19, 20, 21]
+    //              ^ jointRightStart
+    const jointRightStart = this.props.max - rightRange.length - centerRange.length
+    if (this.props.current - sideN >= jointRightStart) {
+      return [
+        leftRange,
+        inclusiveRange(jointRightStart, this.props.max),
+      ];
+    }
+
+    return [
+      leftRange,
+      centerRange,
+      rightRange,
+    ];
+  }
+
+  render() {
+    const pages = this.pages()
+    return (
+      <nav className="d-flex justify-content-center">
+        <ul className="pagination">
+          {pages.map((ps, i) => (
+            <React.Fragment>
+              {i > 0 && (
+                <li className="page-item disabled">
+                  <span className="page-link">...</span>
+                </li>
+              )}
+              {ps.map((p) => (
+                <li
+                  className={
+                    p === this.props.current ? "page-item active" : "page-item"
+                  }
+                  key={p}
+                  onClick={() => this.props.onSelect(p)}
+                >
+                  <button className="page-link" type="button">
+                    {p}
+                  </button>
+                </li>
+              ))}
+            </React.Fragment>
+          ))}
+        </ul>
+      </nav>
+    );
+  }
+}
+
 class SessionsView extends React.Component {
+  static pageSize = 100;
+
   state = {
-    sessions: []
+    sessions: [],
+    page: 1,
+    latestId: null,
   };
 
   componentDidMount () {
     this.fetch()
   }
 
+  componentDidUpdate (_, prevState) {
+    if (this.state.page != prevState.page) {
+      this.fetch()
+    }
+  }
+
   fetch () {
-    model().fetchSessions().then(({ sessions }) => {
+    const lastId = this.lastIdAt(this.state.page)
+    model().fetchSessions(SessionsView.pageSize, lastId).then(({ sessions }) => {
       this.setState({ sessions })
+      if (this.state.page === 1 && sessions[0]) {
+        this.setState({ latestId: sessions[0].id })
+      }
     })
+  }
+
+  switchPage (page: number) {
+    this.setState({ page })
+  }
+
+  maxPage (): number {
+    if (!this.state.latestId) {
+      return 1
+    }
+    return Math.floor((this.state.latestId - 1) / SessionsView.pageSize) + 1
+  }
+
+  lastIdAt(page: number): ?number {
+    if (!this.state.latestId || page === 1) {
+      return null
+    }
+    return this.state.latestId - SessionsView.pageSize * (page - 1) + 1
   }
 
   render () {
@@ -738,6 +856,7 @@ class SessionsView extends React.Component {
         <StatusFilter sessions={this.state.sessions} >
           <SessionListView />
         </StatusFilter>
+        {this.maxPage() > 1 && <SessionsPagination onSelect={(page) => this.switchPage(page)} current={this.state.page} max={this.maxPage()}/>}
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
