@@ -723,20 +723,20 @@ class SessionsPagination extends React.Component {
     onSelect: (number) => void,
   };
 
-  pages(): Array<Array<number>> {
+  pages (): Array<Array<number>> {
     // [1, 2, ..., 10, 11, 12, 13, 14, ..., 20, 21]
     //  ^  ^                                 ^   ^ <- edgeN
     //              ^   ^       ^   ^              <- sideN
-    const edgeN = 2;
-    const sideN = 2;
+    const edgeN = 2
+    const sideN = 2
 
-    const inclusiveRange = (start, end) => _.range(start, end + 1);
-    const leftRange = inclusiveRange(1, edgeN);
-    const rightRange = inclusiveRange(this.props.max - edgeN + 1, this.props.max);
+    const inclusiveRange = (start, end) => _.range(start, end + 1)
+    const leftRange = inclusiveRange(1, edgeN)
+    const rightRange = inclusiveRange(this.props.max - edgeN + 1, this.props.max)
     const centerRange = inclusiveRange(
       this.props.current - sideN,
-      this.props.current + sideN,
-    );
+      this.props.current + sideN
+    )
 
     if (this.props.max <= edgeN * 2 + sideN * 2 + 1) {
       return [inclusiveRange(1, this.props.max)]
@@ -748,8 +748,8 @@ class SessionsPagination extends React.Component {
     if (this.props.current + sideN <= jointLeftEnd) {
       return [
         inclusiveRange(1, jointLeftEnd),
-        rightRange,
-      ];
+        rightRange
+      ]
     }
 
     // [1, 2, ..., 14, 15, 16, 17, 18, 19, 20, 21]
@@ -758,38 +758,38 @@ class SessionsPagination extends React.Component {
     if (this.props.current - sideN >= jointRightStart) {
       return [
         leftRange,
-        inclusiveRange(jointRightStart, this.props.max),
-      ];
+        inclusiveRange(jointRightStart, this.props.max)
+      ]
     }
 
     return [
       leftRange,
       centerRange,
-      rightRange,
-    ];
+      rightRange
+    ]
   }
 
-  render() {
+  render () {
     const pages = this.pages()
     return (
-      <nav className="d-flex justify-content-center">
-        <ul className="pagination">
+      <nav className='d-flex justify-content-center'>
+        <ul className='pagination'>
           {pages.map((ps, i) => (
             <React.Fragment>
               {i > 0 && (
-                <li className="page-item disabled">
-                  <span className="page-link">...</span>
+                <li className='page-item disabled'>
+                  <span className='page-link'>...</span>
                 </li>
               )}
               {ps.map((p) => (
                 <li
                   className={
-                    p === this.props.current ? "page-item active" : "page-item"
+                    p === this.props.current ? 'page-item active' : 'page-item'
                   }
                   key={p}
                   onClick={() => this.props.onSelect(p)}
                 >
-                  <button className="page-link" type="button">
+                  <button className='page-link' type='button'>
                     {p}
                   </button>
                 </li>
@@ -798,7 +798,7 @@ class SessionsPagination extends React.Component {
           ))}
         </ul>
       </nav>
-    );
+    )
   }
 }
 
@@ -808,7 +808,7 @@ class SessionsView extends React.Component {
   state = {
     sessions: [],
     page: 1,
-    latestId: null,
+    latestId: null
   };
 
   componentDidMount () {
@@ -816,7 +816,7 @@ class SessionsView extends React.Component {
   }
 
   componentDidUpdate (_, prevState) {
-    if (this.state.page != prevState.page) {
+    if (this.state.page !== prevState.page) {
       this.fetch()
     }
   }
@@ -842,7 +842,7 @@ class SessionsView extends React.Component {
     return Math.floor((this.state.latestId - 1) / SessionsView.pageSize) + 1
   }
 
-  lastIdAt(page: number): ?number {
+  lastIdAt (page: number): ?number {
     if (!this.state.latestId || page === 1) {
       return null
     }
@@ -856,7 +856,7 @@ class SessionsView extends React.Component {
         <StatusFilter sessions={this.state.sessions} >
           <SessionListView />
         </StatusFilter>
-        {this.maxPage() > 1 && <SessionsPagination onSelect={(page) => this.switchPage(page)} current={this.state.page} max={this.maxPage()}/>}
+        {this.maxPage() > 1 && <SessionsPagination onSelect={(page) => this.switchPage(page)} current={this.state.page} max={this.maxPage()} />}
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
