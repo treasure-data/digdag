@@ -101,5 +101,4 @@ workflows:
           filters:
             branches:
               only:
-                - v0_10
                 - v0_11
