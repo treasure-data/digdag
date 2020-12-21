@@ -9,8 +9,11 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 
@@ -31,6 +34,8 @@ import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 public class Server
     extends Command
 {
+    private static final Logger logger = LoggerFactory.getLogger(Server.class);
+
     @Parameter(names = {"-n", "--port"})
     Integer port = null;
 
@@ -132,9 +137,17 @@ public class Server
     {
         // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
         Properties props = buildServerProperties();
+        showDeprecatedConfigWarnings(props);
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig serverConfig = ServerConfig.convertFrom(ce);
-        ServerBootstrap.start(buildServerBootstrap(version, serverConfig));
+        ServerBootstrap.start(buildServerBootstrap(version, serverConfig, loadSystemPlugins(props)));
+    }
+
+    private void showDeprecatedConfigWarnings(Properties props)
+    {
+        if (props.getProperty("server.authenticator-class") != null) {
+            logger.error("Setting server.authenticator-class is deprecated and ignored. Use server.authenticator.type instead");
+        }
     }
 
     protected Properties buildServerProperties()
@@ -214,8 +227,8 @@ public class Server
         return props;
     }
 
-    protected ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig)
+    protected ServerBootstrap buildServerBootstrap(final Version version, final ServerConfig serverConfig, PluginSet systemPlugins)
     {
-        return new ServerBootstrap(version, serverConfig);
+        return new ServerBootstrap(version, serverConfig, systemPlugins);
     }
 }

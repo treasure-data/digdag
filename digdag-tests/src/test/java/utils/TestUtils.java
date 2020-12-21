@@ -454,6 +454,11 @@ public class TestUtils
 
     public static Id pushProject(String endpoint, Path project, String projectName)
     {
+        return pushProject(endpoint, project, projectName, asList());
+    }
+
+    public static Id pushProject(String endpoint, Path project, String projectName, List<String> additionalArgs)
+    {
         List<String> command = new ArrayList<>();
         command.addAll(asList(
                 "push",
@@ -461,6 +466,7 @@ public class TestUtils
                 projectName,
                 "-c", "/dev/null",
                 "-e", endpoint));
+        command.addAll(additionalArgs);
         CommandStatus pushStatus = main(command);
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
