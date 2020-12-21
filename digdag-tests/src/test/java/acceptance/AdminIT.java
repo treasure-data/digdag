@@ -2,6 +2,10 @@ package acceptance;
 
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.config.Config;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -15,6 +19,8 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotFoundException;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Arrays;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.is;
@@ -29,6 +35,10 @@ public class AdminIT
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration("server.admin.port = 0")
+            .configuration("server.authenticator.type = basic")
+            .configuration("server.authenticator.basic.username = user1")
+            .configuration("server.authenticator.basic.password = pass1")
+            .configuration("server.authenticator.basic.admin = true")
             .build();
 
     private Path config;
@@ -36,6 +46,7 @@ public class AdminIT
     private DigdagClient client;
     private DigdagClient adminClient;
 
+    private static final String basicAuthHeaderValue = "Basic dXNlcjE6cGFzczE="; // user1:pass1
     @Before
     public void setUp()
             throws Exception
@@ -45,11 +56,13 @@ public class AdminIT
         client = DigdagClient.builder()
                 .host(server.host())
                 .port(server.port())
+                .header("Authorization",  basicAuthHeaderValue)
                 .build();
 
         adminClient = DigdagClient.builder()
                 .host(server.host())
                 .port(server.adminPort())
+                .header("Authorization", basicAuthHeaderValue)
                 .build();
     }
 
@@ -58,8 +71,16 @@ public class AdminIT
             throws Exception
     {
         TestUtils.addWorkflow(projectDir, "acceptance/basic.dig");
-        Id attemptId = TestUtils.pushAndStart(server.endpoint(), projectDir, "basic");
-
+        String projectName = projectDir.getFileName().toString();
+        Id projectId = TestUtils.pushProject(server.endpoint(), projectDir, projectName, Arrays.asList("--basic-auth", "user1:pass1"));
+        RestWorkflowDefinition wf = client.getWorkflowDefinition(projectId, "basic");
+        RestSessionAttemptRequest startReq = RestSessionAttemptRequest.builder()
+                .workflowId(wf.getId())
+                .sessionTime(Instant.now())
+                .params(TestUtils.configFactory().create())
+                .build();
+        RestSessionAttempt attempt = client.startSessionAttempt(startReq);
+        Id attemptId = attempt.getId();
         Config userinfo = adminClient.adminGetAttemptUserInfo(attemptId);
         assertThat(userinfo, is(not(Matchers.nullValue())));
 

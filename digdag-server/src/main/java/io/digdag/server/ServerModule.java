@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.DigdagVersion;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
@@ -17,6 +19,7 @@ import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.server.ac.DefaultAccessController;
+import io.digdag.server.auth.BasicAuthenticatorFactory;
 import io.digdag.server.rs.AdminResource;
 import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
@@ -28,11 +31,13 @@ import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.AuthenticatedUser;
-import io.digdag.spi.ac.AccessControlException;
-import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.Authenticator;
+import io.digdag.spi.AuthenticatorFactory;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
+import io.digdag.spi.ac.AccessControlException;
+import io.digdag.spi.ac.AccessController;
 import io.swagger.jaxrs.config.BeanConfig;
 import io.swagger.jaxrs.listing.ApiListingResource;
 import io.swagger.jaxrs.listing.SwaggerSerializers;
@@ -50,6 +55,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static io.digdag.guice.rs.GuiceRsServerRuntimeInfo.LISTEN_ADDRESS_NAME_ATTRIBUTE;
@@ -109,7 +115,9 @@ public class ServerModule
 
     protected void bindAuthenticator()
     {
-        binder().bind(Authenticator.class).to(JwtAuthenticator.class);
+        Multibinder.newSetBinder(binder(), AuthenticatorFactory.class)
+            .addBinding().to(BasicAuthenticatorFactory.class).in(Scopes.SINGLETON);
+        binder().bind(Authenticator.class).toProvider(AuthenticatorProvider.class).in(Scopes.SINGLETON);
     }
 
     protected void bindAuthorization()

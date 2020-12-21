@@ -1,16 +1,15 @@
-package io.digdag.server;
+package io.digdag.spi;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.spi.AuthenticatedUser;
-import org.immutables.value.Value;
-
-import javax.ws.rs.container.ContainerRequestContext;
-
 import java.util.Map;
+import javax.ws.rs.container.ContainerRequestContext;
+import org.immutables.value.Value;
 
 import static org.immutables.value.Value.Style.ImplementationVisibility.PACKAGE;
 
@@ -22,6 +21,11 @@ public interface Authenticator
     @JsonDeserialize(as = ImmutableResult.class)
     interface Result
     {
+        static Result accept(AuthenticatedUser user)
+        {
+            return accept(user, () -> ImmutableMap.of());
+        }
+
         static Result accept(AuthenticatedUser user, Supplier<Map<String, String>> secrets)
         {
             return ImmutableResult.builder()

@@ -351,7 +351,7 @@ In the config file, following parameters are available
 * server.http.enable-http2 (enable HTTP/2. default: false)
 * server.http.headers.KEY = VALUE (HTTP header to set on API responses)
 * server.jmx.port (port to listen JMX in integer. default: JMX is disabled) Since Java 9, to use this option, you need to set '-Djdk.attach.allowAttachSelf=true' to command line option of java or to JDK_JAVA_OPTIONS environment variable.
-* server.authenticator-class (string) The FQCN of the ``io.digdag.spi.Authenticator`` implementation to use. The implementation is to be provided by a system plugin. The auth plugin configuration is implementation specific. Default: ``io.digdag.standards.auth.jwt.JwtAuthenticator``
+* server.authenticator.type (string) The name an authenticator plugin. (See also Authenticator Plugins section bellow): ``basic``
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
 * database.password (string)
@@ -414,6 +414,21 @@ Configurations of `mail` operator's default values
 * config.mail.connect_timeout (string. default: 60s)
 * config.mail.socket_timeout (string. default: 180s)
 
+Authenticator Plugins
+*********************
+
+Authenticator implementation is to be provided by a system plugin (See `System plugins section in Internal architecture <internal.html#system-plugins>`). Interface is ``io.digdag.spi.AuthenticatorFactory``.
+
+**Basic Auth**
+
+Enabled by default (``server.authenticator.type = basic``).
+
+Configuration:
+
+* server.authenticator.basic.username (string, if not set, no authentications happen)
+* server.authenticator.basic.password (string. Required if username is set)
+* server.authenticator.basic.admin (boolean. default `false`)
+
 Secret Encryption Key
 *********************
 
@@ -440,6 +455,9 @@ Client-mode common options:
 
 :command:`-H, --header KEY=VALUE`
   Add a custom HTTP header. Use multiple times to set multiple headers.
+
+:command:`--basic-auth <user:pass>`
+  Add an Authorization header with the provided username and password.
 
 :command:`-c, --config PATH`
   Configuration file to load. (default: ~/.config/digdag/config)
