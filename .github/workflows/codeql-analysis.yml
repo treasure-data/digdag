@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ref: [ v0_10 ]
+        ref: [ v0_10, v0_11 ]
 
     steps:
     - name: Checkout repository
