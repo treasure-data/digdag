@@ -31,6 +31,7 @@ import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredProjectWithRevision;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
@@ -57,6 +58,20 @@ public final class RestModels
 {
     private RestModels()
     { }
+
+    public static RestProject project(StoredProjectWithRevision projWithRev)
+    {
+        return RestProject.builder()
+            .id(id(projWithRev.getId()))
+            .name(projWithRev.getName())
+            .revision(projWithRev.getRevisionName())
+            .createdAt(projWithRev.getCreatedAt())
+            .updatedAt(projWithRev.getRevisionCreatedAt())
+            .deletedAt(projWithRev.getDeletedAt())
+            .archiveType(projWithRev.getRevisionArchiveType().getName())
+            .archiveMd5(projWithRev.getRevisionArchiveMd5())
+            .build();
+    }
 
     public static RestProject project(StoredProject proj, StoredRevision lastRevision)
     {
