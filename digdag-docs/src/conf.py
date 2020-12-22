@@ -25,7 +25,7 @@ from recommonmark.transform import AutoStructify
 project = 'Digdag'
 copyright = '2016-' + datetime.now().strftime("%Y") + ', Digdag Project'
 author = '2016, Digdag Project'
-version = '0.9'
+version = '0.10'
 release = subprocess.check_output(['git', 'describe', '--abbrev=0', '--tags'])[1:].strip().decode("utf-8")
 
 
