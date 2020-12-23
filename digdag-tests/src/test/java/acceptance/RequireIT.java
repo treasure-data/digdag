@@ -122,7 +122,7 @@ public class RequireIT
         CommandStatus attemptTasks = main("tasks",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                String.valueOf(attemptId));
+                attemptId.toString());
 
         List<Config> stateParams = getStateParams(attemptTasks);
 
@@ -134,7 +134,7 @@ public class RequireIT
         CommandStatus targetAttemptStatus = main("attempts",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                String.valueOf(targetAttemptId));
+                targetAttemptId.toString());
 
         assertThat(targetAttemptStatus.outUtf8().contains("workflow: child"), is(true));
         assertThat(targetAttemptStatus.outUtf8().contains("status: success"), is(true));
@@ -507,7 +507,7 @@ public class RequireIT
             CommandStatus attemptsStatus = main("attempts",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    String.valueOf(attemptId));
+                    attemptId.toString());
             success = attemptsStatus.outUtf8().contains("status: success");
             if (success) {
                 break;
@@ -519,7 +519,7 @@ public class RequireIT
         CommandStatus attemptTasks = main("tasks",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                String.valueOf(attemptId));
+                attemptId.toString());
 
         List<Config> stateParams = getStateParams(attemptTasks);
 
