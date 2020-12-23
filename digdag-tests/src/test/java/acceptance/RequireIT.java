@@ -103,7 +103,7 @@ public class RequireIT
 
         // Wait for the attempt to complete
         boolean success = false;
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 60; i++) {
             CommandStatus attemptsStatus = main("attempts",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
@@ -503,7 +503,7 @@ public class RequireIT
 
         // Wait for the attempt to complete
         boolean success = false;
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 60; i++) {
             CommandStatus attemptsStatus = main("attempts",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
