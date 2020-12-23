@@ -1,39 +1,44 @@
 package io.digdag.standards.command;
 
-import com.amazonaws.services.logs.model.AWSLogsException;
-import com.amazonaws.services.logs.model.GetLogEventsResult;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.amazonaws.services.ecs.model.Container;
+import com.amazonaws.services.ecs.model.Task;
+import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.storage.StorageManager;
+import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandLogger;
+import io.digdag.spi.CommandRequest;
+import io.digdag.spi.CommandStatus;
+import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
 import io.digdag.standards.command.ecs.EcsClientFactory;
+import io.digdag.standards.command.EcsCommandExecutor.EcsCommandStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyLong;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 @RunWith(MockitoJUnitRunner.class)
 public class EcsCommandExecutorTest
@@ -42,9 +47,7 @@ public class EcsCommandExecutorTest
     private final ConfigFactory configFactory = new ConfigFactory(om);
 
     private Config systemConfig;
-    private EcsCommandExecutor commandExecutor;
     @Mock private EcsClientFactory ecsClientFactory;
-    @Mock private EcsClient ecsClient;
     @Mock private DockerCommandExecutor dockerCommandExecutor;
     @Mock private StorageManager storageManager;
     @Mock private ProjectArchiveLoader projectArchiveLoader;
@@ -55,47 +58,132 @@ public class EcsCommandExecutorTest
             throws Exception
     {
         this.systemConfig = configFactory.create();
-        this.commandExecutor = spy(new EcsCommandExecutor(systemConfig, ecsClientFactory, dockerCommandExecutor, storageManager, projectArchiveLoader, commandLogger ));
-        doReturn(mock(EcsClientConfig.class)).when(commandExecutor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
-        doNothing().when(commandExecutor).waitWithRandomJitter(anyLong(), anyLong());
-        when(ecsClientFactory.createClient(any(EcsClientConfig.class))).thenReturn(ecsClient);
     }
 
     @Test
-    public void getLogWithRetryTest()
+    public void testRun()
+            throws Exception
     {
-        JsonNode prevStatus = om.createObjectNode().set("awslogs", om.createObjectNode()
-                                    .put("awslogs-group", "test-group")
-                                    .put("awslogs-stream", "test-stream"));
+        final EcsCommandExecutor executor = spy(new EcsCommandExecutor(
+                systemConfig, ecsClientFactory, dockerCommandExecutor,
+                storageManager, projectArchiveLoader, commandLogger));
 
-        final List<Boolean> answerList = new ArrayList<>();
-        // Throw exception 3times then succeed.
-        Answer<GetLogEventsResult> answer = new Answer<GetLogEventsResult>()
+        final EcsCommandExecutor.EcsCommandStatus commandStatus = EcsCommandStatus.of(false, om.createObjectNode().put("foo", "bar"));
+        doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
+        doReturn(commandStatus).when(executor).run(any(CommandContext.class), any(CommandRequest.class));
+        when(ecsClientFactory.createClient(any(EcsClientConfig.class))).thenReturn(mock(EcsClient.class));
+
+        CommandContext commandContext = mock(CommandContext.class);
+        CommandRequest commandRequest = mock(CommandRequest.class);
+        doReturn(mock(TaskRequest.class)).when(commandContext).getTaskRequest();
+
+        CommandStatus actual = executor.run(commandContext, commandRequest);
+        assertThat(actual.isFinished(), is(commandStatus.isFinished()));
+        assertThat(actual.toJson(), is(commandStatus.toJson()));
+    }
+
+    @Test
+    public void testPoll()
+            throws Exception
+    {
+        final EcsClient ecsClient = mock(EcsClient.class);
+        final CommandContext commandContext = mock(CommandContext.class);
+        final EcsCommandExecutor executor = spy(new EcsCommandExecutor(
+                systemConfig, ecsClientFactory, dockerCommandExecutor,
+                storageManager, projectArchiveLoader, commandLogger));
+        final EcsCommandStatus commandStatus = EcsCommandStatus.of(false, om.createObjectNode().put("foo", "bar"));
+
+        doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
+        doReturn(ecsClient).when(ecsClientFactory).createClient(any(EcsClientConfig.class));
+        doReturn(mock(TaskRequest.class)).when(commandContext).getTaskRequest();
+        doReturn(commandStatus).when(executor).createNextCommandStatus(any(CommandContext.class), any(EcsClient.class), any(ObjectNode.class));
+
+        ObjectNode previousStatusJson = om.createObjectNode()
+                .put("cluster_name", "my_cluster")
+                .put("task_arn", "my_task_arn");
+
+        CommandStatus actual = executor.poll(commandContext, previousStatusJson);
+
+        assertThat(actual.isFinished(), is(commandStatus.isFinished()));
+        assertThat(actual.toJson(), is(commandStatus.toJson()));
+    }
+
+    @Test
+    public void testCleanup()
+            throws Exception
+    {
+        final EcsCommandExecutor executor = spy(new EcsCommandExecutor(
+                systemConfig, ecsClientFactory, dockerCommandExecutor,
+                storageManager, projectArchiveLoader, commandLogger));
+
+        EcsClient ecsClient = mock(EcsClient.class);
+
+        doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
+        when(ecsClientFactory.createClient(any(EcsClientConfig.class))).thenReturn(ecsClient);
+
+        Task task = mock(Task.class);
+        when(task.getTaskArn()).thenReturn("my_task_arn");
+        doReturn(task).when(ecsClient).getTask(any(), any());
+
+        CommandContext commandContext = mock(CommandContext.class);
+        TaskRequest taskRequest = mock(TaskRequest.class);
+        when(taskRequest.getAttemptId()).thenReturn(Long.valueOf(111));
+        when(taskRequest.getTaskId()).thenReturn(Long.valueOf(222));
+        doReturn(taskRequest).when(commandContext).getTaskRequest();
+
+        ObjectNode previousStatusJson = om.createObjectNode()
+                .put("cluster_name", "my_cluster")
+                .put("task_arn", "my_task_arn");
+        Config state = configFactory.create().set("commandStatus", previousStatusJson);
+
+        executor.cleanup(commandContext, state);
+        verify(ecsClient, times(1)).stopTask(eq("my_cluster"), eq("my_task_arn"));
+    }
+
+    @Test
+    public void testGetErrorMessageFromTask()
+    {
+        final EcsClient ecsClient = mock(EcsClient.class);
+        final Task task = mock(Task.class);
+        doReturn(task).when(ecsClient).getTask(any(String.class), any(String.class));
+
         {
-            int count = 0;
-
-            public GetLogEventsResult answer(InvocationOnMock invocation)
-            {
-                count++;
-                if (count > 3) {
-                    answerList.add(Boolean.TRUE);
-                    return new GetLogEventsResult();
-                }
-                else {
-                    AWSLogsException ex = new AWSLogsException("Rate exceeded");
-                    ex.setErrorCode("ThrottlingException");
-                    ex.setStatusCode(400);
-                    ex.setServiceName("AWSLogs");
-                    ex.setRequestId("XXXXX");
-                    answerList.add(Boolean.FALSE);
-                    throw ex;
-                }
+            Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+            assertThat(msg1.or("test failed"), is("No container information"));
+        }
+        {
+            Container container = mock(Container.class);
+            doReturn(Arrays.asList(container)).when(task).getContainers();
+            doReturn("test test test").when(container).getReason();
+            Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+            assertThat(msg1.or("test failed"), is("test test test"));
+        }
+        {  // null or "" in getReason() is ignored.
+            Container container1 = mock(Container.class);
+            Container container2 = mock(Container.class);
+            doReturn(Arrays.asList(container1, container2)).when(task).getContainers();
+            doReturn(null).when(container1).getReason();
+            doReturn("").when(container2).getReason();
+            Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+            assertThat(msg1.or("test failed"), is("No container information"));
+        }
+        {
+            doThrow(new TaskSetNotFoundException("No task set found")).when(ecsClient).getTask(any(String.class), any(String.class));
+            Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+            assertThat(msg1.or("test failed"), is("No task set found"));
+        }
+        {
+            doThrow(new RuntimeException("Task aborted")).when(ecsClient).getTask(any(String.class), any(String.class));
+            try {
+                Optional<String> msg1 = EcsCommandExecutor.getErrorMessageFromTask("my_cluster", "my_task_arn", ecsClient);
+                fail("Test failed without RuntimeException");
             }
-        };
-
-        when(ecsClient.getLog(any(), any(), any())).then(answer);
-        commandExecutor.getLogWithRetry(ecsClient, prevStatus.deepCopy(), Optional.absent());
-        assertThat(answerList.size(), is(4));
-        assertThat(answerList.get(3), is(true));
+            catch (RuntimeException re) {
+                assertThat(re.getMessage(), is("Task aborted"));
+            }
+            catch (Exception e) {
+                fail("Unexpected Exception happened. " + e.toString());
+            }
+        }
     }
 }

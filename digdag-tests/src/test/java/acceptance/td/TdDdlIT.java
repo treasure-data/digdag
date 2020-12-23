@@ -12,6 +12,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,7 +28,9 @@ import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,11 +54,14 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.main;
@@ -188,13 +194,13 @@ public class TdDdlIT
                                 int i = requests.computeIfAbsent(key, uri -> new AtomicInteger())
                                         .incrementAndGet();
                                 HttpResponse response;
+                                ByteBuf body;
                                 if (i < failures) {
                                     logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", key);
                                     response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
                                 }
                                 else {
                                     logger.info("Simulation 200 OK for request: {}", key);
-                                    ByteBuf body;
                                     if (fullHttpRequest.getUri().contains("v3/table/list")) {
                                         // response body for listTables used by rename_tables
                                         body = Unpooled.wrappedBuffer(
@@ -203,6 +209,16 @@ public class TdDdlIT
                                                     "{\"name\":\"rename_table_1_from\",\"schema\":\"[]\"}," +
                                                     "{\"name\":\"rename_table_2_from\",\"schema\":\"[]\"}" +
                                                 "]}"
+                                                ).getBytes(UTF_8));
+                                    }
+                                    else if (fullHttpRequest.getUri().contains("v3/database/list")) {
+                                        // response body for listTables used by rename_tables
+                                        body = Unpooled.wrappedBuffer(
+                                                (
+                                                "{\"databases\": [" +
+                                                    "{\"name\":\"" + createDb1 + "\",\"schema\":\"[]\"}," +
+                                                    "{\"name\":\"" + createDb2 + "\",\"schema\":\"[]\"}" +
+                                                    "]}"
                                                 ).getBytes(UTF_8));
                                     }
                                     else {
@@ -248,7 +264,7 @@ public class TdDdlIT
         }
         for (String table : concat(createTables, emptyTables, String.class)) {
             String key = "POST " + endpoint + "v3/table/create/" + database + "/" + table + "/log";
-            assertThat(requests.get(key).get(), is(failures));
+            assertThat(requests.get(key).get(), greaterThanOrEqualTo(failures));
         }
 
         for (String db : concat(dropDatabases, emptyDatabases, String.class)) {
@@ -257,7 +273,7 @@ public class TdDdlIT
         }
         for (String db : concat(createDatabases, emptyDatabases, String.class)) {
             String key = "POST " + endpoint + "v3/database/create/" + db;
-            assertThat(requests.get(key).get(), is(failures));
+            assertThat(requests.get(key).get(), greaterThanOrEqualTo(failures));
         }
 
         for (String[] pair : renameTables) {
@@ -282,6 +298,43 @@ public class TdDdlIT
 
         List<String> tables = client.listTables(database).stream().map(TDTable::getName).collect(toList());
         assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2", "rename_table_1_to", "rename_table_2_to"));
+    }
+
+    @Test
+    public void testRetryAndTryUpdateApikeyforDdl()
+            throws Exception
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(out));
+
+        try {
+            String dummyKey = "dummy";
+            noTdConf = folder.newFolder().toPath().resolve("non-existing-td.conf").toString();
+            projectDir = folder.newFolder().toPath();
+            config = folder.newFile().toPath();
+            Files.write(config, asList(
+                    "secrets.td.apikey = " + dummyKey,
+                    "config.td.min_retry_interval = 1s",
+                    "config.td.max_retry_interval = 1s"
+            ), APPEND);
+
+            env = new HashMap<>();
+            env.put("TD_CONFIG_PATH", noTdConf);
+
+            addWorkflow(projectDir, "acceptance/td/td_ddl/td_ddl.dig");
+            CommandStatus runStatus = runWorkflow("td_ddl.dig",
+                    "database=" + database,
+                    "drop_db_1=" + dropDb1,
+                    "drop_db_2=" + dropDb2,
+                    "create_db_1=" + createDb1,
+                    "create_db_2=" + createDb2,
+                    "empty_db_1=" + emptyDb1,
+                    "empty_db_2=" + emptyDb2);
+
+            assertThat(out.toString(), Matchers.containsString("apikey will be tried to update by retrying"));
+        } finally {
+            System.setOut(System.out);
+        }
     }
 
     @Test
@@ -343,6 +396,7 @@ public class TdDdlIT
         List<String> args = new ArrayList<>();
         args.addAll(asList("run",
                 "-o", projectDir.toString(),
+                "--log-level", "debug",
                 "--config", config.toString(),
                 "--project", projectDir.toString(),
                 "-p", "outfile=" + outfile));

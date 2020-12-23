@@ -1,8 +1,6 @@
 package io.digdag.core.workflow;
 
-import java.nio.file.Path;
 import com.google.inject.Inject;
-import io.digdag.core.Limits;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -10,6 +8,8 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.util.ParallelControl;
+
 import static java.util.Locale.ENGLISH;
 
 public class LoopOperatorFactory
@@ -34,10 +34,12 @@ public class LoopOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final OperatorContext context;
 
         public LoopOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
+            this.context = context;
         }
 
         @Override
@@ -50,11 +52,9 @@ public class LoopOperatorFactory
             int count = params.get("count", int.class,
                     params.get("_command", int.class));
 
-            if (count > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many loop subtasks. Limit: " + Limits.maxWorkflowTasks());
+            if (count > context.getMaxWorkflowTasks()) {
+                throw new ConfigException("Too many loop subtasks. Limit: " + context.getMaxWorkflowTasks());
             }
-
-            boolean parallel = params.get("_parallel", boolean.class, false);
 
             Config generated = doConfig.getFactory().create();
             for (int i = 0; i < count; i++) {
@@ -66,9 +66,7 @@ public class LoopOperatorFactory
                         subtask);
             }
 
-            if (parallel) {
-                generated.set("_parallel", parallel);
-            }
+            ParallelControl.of(params).copyIfNeeded(generated);
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(generated)

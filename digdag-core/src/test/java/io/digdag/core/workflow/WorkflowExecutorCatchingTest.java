@@ -7,6 +7,7 @@ import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
@@ -135,9 +136,10 @@ public class WorkflowExecutorCatchingTest
                                                    ConfigFactory cf,
                                                    ObjectMapper archiveMapper,
                                                    Config systemConfig,
-                                                   DigdagMetrics metrics)
+                                                   DigdagMetrics metrics,
+                                                   Limits limits)
         {
-            super(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, metrics);
+            super(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, limits, metrics);
         }
 
         @Override

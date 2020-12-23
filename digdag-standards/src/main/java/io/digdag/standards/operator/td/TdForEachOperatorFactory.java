@@ -9,7 +9,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Environment;
-import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -18,6 +17,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
+import io.digdag.util.ParallelControl;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -42,7 +42,8 @@ public class TdForEachOperatorFactory
     private final Config systemConfig;
     private final BaseTDClientFactory clientFactory;
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env, Config systemConfig, BaseTDClientFactory clientFactory)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env,
+                                    Config systemConfig, BaseTDClientFactory clientFactory)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
@@ -71,6 +72,7 @@ public class TdForEachOperatorFactory
         private final int jobRetry;
         private final String engine;
         private final Optional<String> engineVersion;
+        private final Optional<String> hiveEngineVersion;
         private final Optional<String> poolName;
 
         private final Config doConfig;
@@ -88,14 +90,13 @@ public class TdForEachOperatorFactory
             this.poolName = poolNameOfEngine(params, engine);
             this.doConfig = request.getConfig().getNested("_do");
             this.engineVersion = params.getOptional("engine_version", String.class);
+            this.hiveEngineVersion = params.getOptional("hive_engine_version", String.class);
         }
 
         @Override
         protected TaskResult processJobResult(TDOperator op, TDJobOperator j)
         {
             List<Config> rows = fetchRows(j);
-
-            boolean parallel = params.get("_parallel", boolean.class, false);
 
             Config subtasks = doConfig.getFactory().create();
             for (int i = 0; i < rows.size(); i++) {
@@ -106,9 +107,7 @@ public class TdForEachOperatorFactory
                 subtasks.set("+td-for-each-" + i, subtask);
             }
 
-            if (parallel) {
-                subtasks.set("_parallel", true);
-            }
+            ParallelControl.of(params).copyIfNeeded(subtasks);
 
             return TaskResult.defaultBuilder(request)
                     .subtaskConfig(subtasks)
@@ -122,6 +121,12 @@ public class TdForEachOperatorFactory
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
 
+            Optional<String> ev = engineVersion;
+
+            if (engine.equals("hive") && hiveEngineVersion.isPresent()) {
+                ev = hiveEngineVersion;
+            }
+
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
                     .setDatabase(op.getDatabase())
@@ -131,7 +136,7 @@ public class TdForEachOperatorFactory
                     .setPoolName(poolName.orNull())
                     .setDomainKey(domainkey)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
-                    .setEngineVersion(engineVersion.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
+                    .setEngineVersion(ev.transform(e -> TDJob.EngineVersion.fromString(e)).orNull())
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);
@@ -151,8 +156,8 @@ public class TdForEachOperatorFactory
                             List<Config> rows = new ArrayList<>();
                             while (ite.hasNext()) {
                                 rows.add(row(columnNames, ite.next().asArrayValue()));
-                                if (rows.size() > Limits.maxWorkflowTasks()) {
-                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                                if (rows.size() > context.getMaxWorkflowTasks()) {
+                                    TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + context.getMaxWorkflowTasks());
                                     throw new TaskExecutionException(cause);
                                 }
                             }

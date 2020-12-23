@@ -360,6 +360,7 @@ public class TemporaryDigdagServer
                 processArgs.add("-D" + key + "=" + properties.getProperty(key));
             }
             if (!isNullOrEmpty(JACOCO_JVM_ARG)) {
+                log.debug("TEMP_JACOCO_JVM_ARG: {}", JACOCO_JVM_ARG);
                 processArgs.add(JACOCO_JVM_ARG);
             }
             processArgs.add(Trampoline.class.getName());

@@ -5,12 +5,12 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.util.ParallelControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +39,12 @@ public class ForRangeOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final OperatorContext context;
 
         public ForRangeOperator(OperatorContext context)
         {
             this.request = context.getTaskRequest();
+            this.context = context;
         }
 
         @Override
@@ -51,7 +53,6 @@ public class ForRangeOperatorFactory
             Config params = request.getConfig();
 
             Config doConfig = request.getConfig().getNested("_do");
-            boolean parallel = params.get("_parallel", boolean.class, false);
 
             Config rangeConfig = params.parseNested("_command");
             long from = rangeConfig.get("from", long.class);
@@ -97,9 +98,7 @@ public class ForRangeOperatorFactory
 
             enforceTaskCountLimit(index);
 
-            if (parallel) {
-                generated.set("_parallel", parallel);
-            }
+            ParallelControl.of(params).copyIfNeeded(generated);
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(generated)
@@ -111,10 +110,10 @@ public class ForRangeOperatorFactory
             return String.format("+range-from=%d&to=%d", rangeFrom, rangeTo);
         }
 
-        private static void enforceTaskCountLimit(int size)
+        private void enforceTaskCountLimit(int size)
         {
-            if (size > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + Limits.maxWorkflowTasks());
+            if (size > context.getMaxWorkflowTasks()) {
+                throw new ConfigException("Too many for_range subtasks (" + size + "). Limit: " + context.getMaxWorkflowTasks());
             }
         }
     }

@@ -434,4 +434,42 @@ public class ServerScheduleIT
                         .get("last_executed_session_time", String.class))),
                 is(Instant.ofEpochSecond(lastProcessedUnixTime2Epoch)));
     }
+
+    @Test
+    public void testSkipAndEnable()
+            throws Exception
+    {
+        Files.createDirectories(projectDir);
+        addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "daily10.dig");
+        addWorkflow(projectDir, "acceptance/schedule/hourly9.dig", "hourly9.dig");
+        Id projectId = pushProject(server.endpoint(), projectDir);
+
+        RestSchedule daily = client.getSchedule(projectId, "daily10");
+        RestSchedule hourly = client.getSchedule(projectId, "hourly9");
+        Optional<String> skipToTime = Optional.of("2291-02-09T00:01:00Z");
+
+        // daily
+        // schedule is 10:00:00 every day
+        {
+            client.disableSchedule(daily.getId());
+            client.enableSchedule(daily.getId(), true, skipToTime);
+            // get schedule
+            RestSchedule enabled = client.getSchedule(daily.getId());
+            assertThat(enabled.getDisabledAt(), is(Optional.absent()));
+            assertThat(enabled.getNextRunTime(), is(Instant.parse("2291-02-09T10:00:00Z")));
+            assertThat(enabled.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T00:00Z")));
+        }
+
+        // hourly
+        // schedule is 09:00 every hour
+        {
+            client.disableSchedule(hourly.getId());
+            client.enableSchedule(hourly.getId(), true, skipToTime);
+            // get schedule
+            RestSchedule enabled = client.getSchedule(hourly.getId());
+            assertThat(enabled.getDisabledAt(), is(Optional.absent()));
+            assertThat(enabled.getNextRunTime(), is(Instant.parse("2291-02-09T00:09:00Z")));
+            assertThat(enabled.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T00:00Z")));
+        }
+    }
 }

@@ -74,16 +74,6 @@ public class ShowAttempts
     }
 
     private void printAttempt(RestSessionAttempt attempt) {
-        String status;
-        if (attempt.getSuccess()) {
-            status = "success";
-        }
-        else if (attempt.getDone()) {
-            status = "error";
-        }
-        else {
-            status = "running";
-        }
         ln("  session id: %s", attempt.getSessionId());
         ln("  attempt id: %s", attempt.getId());
         ln("  uuid: %s", attempt.getSessionUuid());
@@ -95,7 +85,7 @@ public class ShowAttempts
         ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
         ln("  finished at: %s", attempt.getFinishedAt().transform(TimeUtil::formatTime).or(""));
         ln("  kill requested: %s", attempt.getCancelRequested());
-        ln("  status: %s", status);
+        ln("  status: %s", attempt.getStatus());
         ln("");
     }
 }

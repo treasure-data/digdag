@@ -81,7 +81,7 @@ public class LogResource
         return tm.<RestLogFileHandleCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkGetLogFiles(
-                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
+                            WorkflowTarget.of(getSiteId(), a.getSession().getWorkflowName(), p.getName()),
                             getAuthenticatedUser()));
             List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName), enableDirectDownload);
             return RestModels.logFileHandleCollection(handles);
@@ -103,7 +103,7 @@ public class LogResource
         return tm.<byte[], ResourceNotFoundException, IOException, StorageFileNotFoundException, AccessControlException>begin(() -> {
             final LogFilePrefix prefix = getPrefix(attemptId, // NotFound, AccessControl
                     (p, a) -> ac.checkGetLogFiles(
-                            WorkflowTarget.of(getSiteId(), p.getName(), a.getSession().getWorkflowName()),
+                            WorkflowTarget.of(getSiteId(), a.getSession().getWorkflowName(), p.getName()),
                             getAuthenticatedUser()));
             return logServer.getFile(prefix, fileName);
         }, ResourceNotFoundException.class, IOException.class, StorageFileNotFoundException.class, AccessControlException.class);

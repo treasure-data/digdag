@@ -2,8 +2,6 @@
 
 **for_each>** operator runs subtasks multiple times using sets of variables.
 
-(This operator is EXPERIMENTAL. Parameters may change in a future release)
-
     +repeat:
       for_each>:
         fruit: [apple, orange]
@@ -38,14 +36,24 @@
   for_each>: {i: '[1, 2, 3]'}
   ```
 
-* **\_parallel**: BOOLEAN
+* **\_parallel**: BOOLEAN | OBJECT
 
   Runs the repeating tasks in parallel.
+  If ``_parallel: {limit: N}`` (N is an integer: 1, 2, 3, …) parameter is set,
+  the number of tasks running in parallel is limited to N.
+  Note that the tasks in the loop will be running in serial.
 
   Examples:
 
   ```
   _parallel: true
+  ```
+
+  Examples:
+
+  ```
+  _parallel:
+    limit: 2
   ```
 
 * **\_do**: TASKS

@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.ErrorReporter;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -444,7 +445,9 @@ public class DatabaseTaskQueueServer
             }
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.DB, "uncaughtErrors");
         }

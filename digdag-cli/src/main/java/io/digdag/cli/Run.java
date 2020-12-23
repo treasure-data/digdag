@@ -14,6 +14,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.Limits;
 import io.digdag.core.LocalSite;
 import io.digdag.core.LocalSite.StoreWorkflowResult;
 import io.digdag.core.agent.AgentConfig;
@@ -664,9 +665,9 @@ public class Run
                 ConfigFactory cf,
                 ConfigEvalEngine evalEngine, OperatorRegistry registry,
                 Run cmd, YamlMapper yamlMapper,
-                SecretStoreManager secretStoreManager)
+                SecretStoreManager secretStoreManager, Limits limits)
         {
-            super(config, agentId, callback, workspaceManager, cf, evalEngine, registry, secretStoreManager);
+            super(config, agentId, callback, workspaceManager, cf, evalEngine, registry, secretStoreManager, limits);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;

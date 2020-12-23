@@ -4,8 +4,6 @@
 
 This operator exports `${range.from}`, `${range.to}`, and `${range.index}` variables for the subtasks. Index begins from 0.
 
-(This operator is EXPERIMENTAL. Parameters may change in a future release)
-
     +repeat:
       for_range>:
         from: 10
@@ -14,16 +12,16 @@ This operator exports `${range.from}`, `${range.to}`, and `${range.index}` varia
       _do:
         echo>: processing from ${range.from} to ${range.to}.
         # this will generate 4 tasks:
-        #  +range-from=10&verb=20:
+        #  +range-from=10&to=20:
         #    echo>: processing from 10 to 20.
-        #  +range-from=20&verb=30:
+        #  +range-from=20&to=30:
         #    echo>: processing from 20 to 30.
-        #  +range-from=30&verb=40:
+        #  +range-from=30&to=40:
         #    echo>: processing from 30 to 40.
-        #  +range-from=40&verb=50:
+        #  +range-from=40&to=50:
         #    echo>: processing from 40 to 50.
 
-* **for_each>**: object of from, to, and slices or step
+* **for_range>**: object of from, to, and slices or step
 
   This nested object is used to declare a range from **from** to **to**.
 
@@ -59,14 +57,24 @@ This operator exports `${range.from}`, `${range.to}`, and `${range.index}` varia
     echo>: from ${range.from} to ${range.to}
   ```
 
-* **\_parallel**: BOOLEAN
+* **\_parallel**: BOOLEAN | OBJECT
 
   Runs the repeating tasks in parallel.
+  If ``_parallel: {limit: N}`` (N is an integer: 1, 2, 3, …) parameter is set,
+  the number of tasks running in parallel is limited to N.
+  Note that the tasks in the loop will be running in serial.
 
   Examples:
 
   ```
   _parallel: true
+  ```
+
+  Examples:
+
+  ```
+  _parallel:
+    limit: 2
   ```
 
 * **\_do**: TASKS

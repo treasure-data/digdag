@@ -1,5 +1,9 @@
 package io.digdag.core;
 
+import io.digdag.client.config.Config;
+
+import javax.inject.Inject;
+
 public class Limits
 {
     private static final long MAX_WORKFLOW_TASKS = Long.valueOf(
@@ -8,15 +12,23 @@ public class Limits
     private static final long MAX_ATTEMPTS = Long.valueOf(
             System.getProperty("io.digdag.limits.maxAttempts", "100"));
 
-    // TODO (dano): this should be configurable by config file etc and not just system property
+    private final long numOfMaxWorkflowTasks;
+    private final long numOfMaxAttempts;
 
-    public static long maxWorkflowTasks()
+    @Inject
+    public Limits(Config systemConfig)
     {
-        return MAX_WORKFLOW_TASKS;
+        this.numOfMaxWorkflowTasks =  systemConfig.get("executor.task_max_run", long.class, MAX_WORKFLOW_TASKS);
+        this.numOfMaxAttempts = systemConfig.get("executor.attempt_max_run", long.class, MAX_ATTEMPTS);
     }
 
-    public static long maxAttempts()
+    public long maxWorkflowTasks()
     {
-        return MAX_ATTEMPTS;
+        return numOfMaxWorkflowTasks;
+    }
+
+    public long maxAttempts()
+    {
+        return numOfMaxAttempts;
     }
 }

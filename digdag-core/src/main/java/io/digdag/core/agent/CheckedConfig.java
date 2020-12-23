@@ -9,10 +9,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.digdag.client.config.Config;
 
-class CheckedConfig
+public class CheckedConfig
     extends Config
 {
-    static class UsedKeysSet
+    public static class UsedKeysSet
             extends HashSet<String>
     {
         private boolean all = false;
@@ -30,7 +30,7 @@ class CheckedConfig
 
     private final UsedKeysSet usedKeys;
 
-    CheckedConfig(Config config, UsedKeysSet usedKeys)
+    public CheckedConfig(Config config, UsedKeysSet usedKeys)
     {
         super(config);
         this.usedKeys = usedKeys;

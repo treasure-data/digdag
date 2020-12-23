@@ -15,6 +15,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.agent.EditDistance;
+import io.digdag.util.ParallelControl;
+
 import static java.util.Locale.ENGLISH;
 import static com.google.common.collect.Maps.immutableEntry;
 
@@ -231,22 +233,27 @@ public class WorkflowCompiler
                     .map(pair -> collect(Optional.of(tb), fullName, pair.getKey(), pair.getValue(), validator))
                     .collect(Collectors.toList());
 
-                if (config.get("_parallel", boolean.class, false)) {
-                    // _after: is valid only when parallel: is true
-                    Map<String, TaskBuilder> names = new HashMap<>();
-                    for (TaskBuilder subtask : subtasks) {
-                        if (subtask.getConfig().get("_background", boolean.class, false)) {
-                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option");
-                        }
-                        for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
-                            TaskBuilder up = names.get(upName);
-                            if (up == null) {
-                                throw new ConfigException("Dependency task '"+upName+"' does not exist");
+                ParallelControl pc = ParallelControl.of(config);
+                Map<String, TaskBuilder> names = new HashMap<>();
+                if (pc.isParallel()) {
+                    if (pc.getParallelLimit() > 0) {
+                        int limit = pc.getParallelLimit();
+                        List<TaskBuilder> beforeList = new ArrayList<>();
+                        for (List<TaskBuilder> chunkedSubtasks : Lists.partition(subtasks, limit)) {
+                            for (TaskBuilder subtask : chunkedSubtasks) {
+                                parseSubtaskWithParallel(names, subtask);
+                                for (TaskBuilder before : beforeList) {
+                                    subtask.addUpstream(before);
+                                }
                             }
-                            subtask.addUpstream(up);
+                            beforeList.clear();
+                            beforeList.addAll(chunkedSubtasks);
                         }
-                        subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
-                        names.put(subtask.getName(), subtask);
+                    }
+                    else {
+                        for (TaskBuilder subtask : subtasks) {
+                            parseSubtaskWithParallel(names, subtask);
+                        }
                     }
                 }
                 else {
@@ -302,6 +309,23 @@ public class WorkflowCompiler
             return new TaskType.Builder()
                 .groupingOnly(groupingOnly)
                 .build();
+        }
+
+        private void parseSubtaskWithParallel(Map<String, TaskBuilder> names, TaskBuilder subtask)
+        {
+            if (subtask.getConfig().get("_background", boolean.class, false)) {
+                throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) if its parent task has \"_parallel: true\" option");
+            }
+            // _after: is valid only when parallel: is true
+            for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
+                TaskBuilder up = names.get(upName);
+                if (up == null) {
+                    throw new ConfigException("Dependency task '"+upName+"' does not exist");
+                }
+                subtask.addUpstream(up);
+            }
+            subtask.modifyConfig().remove("_after");  // suppress "Parameter '_after' is not used" warning message
+            names.put(subtask.getName(), subtask);
         }
     }
 }

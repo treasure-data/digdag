@@ -118,6 +118,18 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   engine_version: stable
   ```
 
+* **hive_engine_version**: NAME
+
+  Specify engine version for Hive.
+  This option overrides ``engine_version`` if ``engine`` is ``hive``.
+
+  Examples:
+
+  ```
+  engine: hive
+  hive_engine_version: stable
+  ```
+
 ## Output parameters
 
 * **td.last_job_id** or **td.last_job.id**

@@ -9,7 +9,9 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import org.junit.After;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -63,18 +65,18 @@ public class TaskDependenciesTest {
                 runWorkflow(embed, projectPath, "basic", loadYamlResource("/io/digdag/core/workflow/basic.dig"));
         // # basic.dig
         // +step1:
-        //  _type: noop
+        //   _type: noop
         //
-        //+step2:
-        //  _export:
-        //    oval: o
-        //    pval: p
+        // +step2:
+        //   _export:
+        //     oval: o
+        //     pval: p
         //
-        //  +step3:
-        //    _type: n${oval}${oval}${pval}
-        //    _check:
-        //      +step4:
-        //        _type: noop
+        //   +step3:
+        //     _type: n${oval}${oval}${pval}
+        //     _check:
+        //       +step4:
+        //         _type: noop
         //
         // id | tasks index  | full_name                   | expected parent_id | expected upstream_id 　
         // 1  | tasks.get(0) | +basic                      |                    |
@@ -209,6 +211,115 @@ public class TaskDependenciesTest {
             assertThat(tasks.get(21).getUpstreams(), is(Collections.singletonList(tasks.get(19).getId())));
             assertThat(tasks.get(22).getUpstreams(), is(Collections.singletonList(tasks.get(21).getId())));
             assertThat(tasks.get(23).getUpstreams(), is(Collections.emptyList()));
+            return null;
+        });
+    }
+
+    @Test
+    public void testParallelLimitDependencies()
+            throws Exception {
+        StoredSessionAttemptWithSession attempt =
+                runWorkflow(embed, projectPath, "parallel_limit", loadYamlResource("/io/digdag/core/workflow/parallel_limit.dig"));
+        tm.begin(() -> {
+            assertThat(attempt.getStateFlags().isSuccess(), is(true));
+            List<ArchivedTask> tasks = localSite.getSessionStore().getTasksOfAttempt(attempt.getId());
+            // # parallel_limit.dig
+            // +repeat:
+            //   loop>: 5
+            //   _parallel:
+            //     limit: 2
+            //   _do:
+            //     +step1:
+            //       echo>: '${task_name}'
+            //     +step2:
+            //       echo>: '${task_name}'
+            //     +step3:
+            //       echo>: '${task_name}'
+            //
+            // id | tasks index   | full_name                               | expected parent_id | expected upstream_id 　
+            // 1  | tasks.get(0)  | +parallel_limit                         |                    |
+            // 2  | tasks.get(1)  | +parallel_limit+repeat                  | 1                  |
+            // 3  | tasks.get(2)  | +parallel_limit+repeat^sub              | 2                  |
+            // 4  | tasks.get(3)  | +parallel_limit+repeat^sub+loop-0       | 3                  |
+            // 5  | tasks.get(4)  | +parallel_limit+repeat^sub+loop-0+step1 | 4                  |
+            // 6  | tasks.get(5)  | +parallel_limit+repeat^sub+loop-0+step2 | 4                  | 5
+            // 7  | tasks.get(6)  | +parallel_limit+repeat^sub+loop-0+step3 | 4                  | 6
+            // 8  | tasks.get(7)  | +parallel_limit+repeat^sub+loop-1       | 3                  |
+            // 9  | tasks.get(8)  | +parallel_limit+repeat^sub+loop-1+step1 | 8                  |
+            // 10 | tasks.get(9)  | +parallel_limit+repeat^sub+loop-1+step2 | 8                  | 9
+            // 11 | tasks.get(10) | +parallel_limit+repeat^sub+loop-1+step3 | 8                  | 10
+            // 12 | tasks.get(11) | +parallel_limit+repeat^sub+loop-2       | 3                  | 4,8
+            // 13 | tasks.get(12) | +parallel_limit+repeat^sub+loop-1+step1 | 12                 |
+            // 14 | tasks.get(13) | +parallel_limit+repeat^sub+loop-1+step2 | 12                 | 13
+            // 15 | tasks.get(14) | +parallel_limit+repeat^sub+loop-1+step3 | 12                 | 14
+            // 16 | tasks.get(15) | +parallel_limit+repeat^sub+loop-3       | 3                  | 4,8
+            // 17 | tasks.get(16) | +parallel_limit+repeat^sub+loop-3+step1 | 16                 |
+            // 18 | tasks.get(17) | +parallel_limit+repeat^sub+loop-3+step2 | 16                 | 17
+            // 19 | tasks.get(18) | +parallel_limit+repeat^sub+loop-3+step3 | 16                 | 18
+            // 20 | tasks.get(19) | +parallel_limit+repeat^sub+loop-4       | 3                  | 12,16
+            // 21 | tasks.get(20) | +parallel_limit+repeat^sub+loop-4+step1 | 20                 |
+            // 22 | tasks.get(21) | +parallel_limit+repeat^sub+loop-4+step2 | 20                 | 21
+            // 23 | tasks.get(22) | +parallel_limit+repeat^sub+loop-4+step3 | 20                 | 22
+
+            // parent_id test
+            assertThat(tasks.get(0).getParentId(), is(Optional.absent()));
+            assertThat(tasks.get(1).getParentId(), is(Optional.of(tasks.get(0).getId())));
+            assertThat(tasks.get(2).getParentId(), is(Optional.of(tasks.get(1).getId())));
+
+            assertThat(tasks.get(3).getParentId(), is(Optional.of(tasks.get(2).getId())));
+            assertThat(tasks.get(4).getParentId(), is(Optional.of(tasks.get(3).getId())));
+            assertThat(tasks.get(5).getParentId(), is(Optional.of(tasks.get(3).getId())));
+            assertThat(tasks.get(6).getParentId(), is(Optional.of(tasks.get(3).getId())));
+
+            assertThat(tasks.get(7).getParentId(), is(Optional.of(tasks.get(2).getId())));
+            assertThat(tasks.get(8).getParentId(), is(Optional.of(tasks.get(7).getId())));
+            assertThat(tasks.get(9).getParentId(), is(Optional.of(tasks.get(7).getId())));
+            assertThat(tasks.get(10).getParentId(), is(Optional.of(tasks.get(7).getId())));
+
+            assertThat(tasks.get(11).getParentId(), is(Optional.of(tasks.get(2).getId())));
+            assertThat(tasks.get(12).getParentId(), is(Optional.of(tasks.get(11).getId())));
+            assertThat(tasks.get(13).getParentId(), is(Optional.of(tasks.get(11).getId())));
+            assertThat(tasks.get(14).getParentId(), is(Optional.of(tasks.get(11).getId())));
+
+            assertThat(tasks.get(15).getParentId(), is(Optional.of(tasks.get(2).getId())));
+            assertThat(tasks.get(16).getParentId(), is(Optional.of(tasks.get(15).getId())));
+            assertThat(tasks.get(17).getParentId(), is(Optional.of(tasks.get(15).getId())));
+            assertThat(tasks.get(18).getParentId(), is(Optional.of(tasks.get(15).getId())));
+
+            assertThat(tasks.get(19).getParentId(), is(Optional.of(tasks.get(2).getId())));
+            assertThat(tasks.get(20).getParentId(), is(Optional.of(tasks.get(19).getId())));
+            assertThat(tasks.get(21).getParentId(), is(Optional.of(tasks.get(19).getId())));
+            assertThat(tasks.get(22).getParentId(), is(Optional.of(tasks.get(19).getId())));
+
+            // upstream_id test
+            assertThat(tasks.get(0).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(1).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(2).getUpstreams(), is(Collections.emptyList()));
+
+            assertThat(tasks.get(3).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(4).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(5).getUpstreams(), is(Collections.singletonList(tasks.get(4).getId())));
+            assertThat(tasks.get(6).getUpstreams(), is(Collections.singletonList(tasks.get(5).getId())));
+
+            assertThat(tasks.get(7).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(8).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(9).getUpstreams(), is(Collections.singletonList(tasks.get(8).getId())));
+            assertThat(tasks.get(10).getUpstreams(), is(Collections.singletonList(tasks.get(9).getId())));
+
+            assertThat(tasks.get(11).getUpstreams(), is(Stream.of(tasks.get(3).getId(), tasks.get(7).getId()).collect(Collectors.toList())));
+            assertThat(tasks.get(12).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(13).getUpstreams(), is(Collections.singletonList(tasks.get(12).getId())));
+            assertThat(tasks.get(14).getUpstreams(), is(Collections.singletonList(tasks.get(13).getId())));
+
+            assertThat(tasks.get(15).getUpstreams(), is(Stream.of(tasks.get(3).getId(), tasks.get(7).getId()).collect(Collectors.toList())));
+            assertThat(tasks.get(16).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(17).getUpstreams(), is(Collections.singletonList(tasks.get(16).getId())));
+            assertThat(tasks.get(18).getUpstreams(), is(Collections.singletonList(tasks.get(17).getId())));
+
+            assertThat(tasks.get(19).getUpstreams(), is(Stream.of(tasks.get(11).getId(), tasks.get(15).getId()).collect(Collectors.toList())));
+            assertThat(tasks.get(20).getUpstreams(), is(Collections.emptyList()));
+            assertThat(tasks.get(21).getUpstreams(), is(Collections.singletonList(tasks.get(20).getId())));
+            assertThat(tasks.get(22).getUpstreams(), is(Collections.singletonList(tasks.get(21).getId())));
             return null;
         });
     }

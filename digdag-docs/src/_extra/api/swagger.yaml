@@ -1239,6 +1239,13 @@ definitions:
       cancelRequested:
         type: "boolean"
         default: false
+      status:
+        type: "string"
+        enum:
+        - "success"
+        - "error"
+        - "killed"
+        - "running"
   RestLogFilePutResult:
     type: "object"
     properties:
@@ -1582,6 +1589,13 @@ definitions:
       index:
         type: "integer"
         format: "int32"
+      status:
+        type: "string"
+        enum:
+        - "success"
+        - "error"
+        - "killed"
+        - "running"
   OffsetDateTime:
     type: "object"
     properties:

@@ -1,0 +1,9 @@
++group1:
+  _parallel:
+    limit: 2
+  +task1:
+    echo>: task1
+  +task2:
+    echo>: task2
+  +task3:
+    echo>: task3

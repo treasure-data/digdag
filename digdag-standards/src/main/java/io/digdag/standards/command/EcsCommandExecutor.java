@@ -2,12 +2,15 @@ package io.digdag.standards.command;
 
 import com.amazonaws.services.ecs.model.AssignPublicIp;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
+import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.LogConfiguration;
 import com.amazonaws.services.ecs.model.NetworkConfiguration;
+import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.Tag;
@@ -15,35 +18,32 @@ import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
 import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
-import com.amazonaws.services.logs.model.AWSLogsException;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.ProjectArchives;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
 import io.digdag.standards.command.ecs.EcsClientFactory;
 import io.digdag.standards.command.ecs.EcsTaskStatus;
 import io.digdag.standards.command.ecs.TemporalProjectArchiveStorage;
-import io.digdag.util.DurationParam;
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +55,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,8 +68,13 @@ public class EcsCommandExecutor
     private static Logger logger = LoggerFactory.getLogger(CommandExecutor.class);
 
     private static final String ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
-    private static final String DEFAULT_COMMAND_TASK_TTL = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "default_command_task_ttl";
     private static final String ECS_END_OF_TASK_LOG_MARK = "--RWNzQ29tbWFuZEV4ZWN1dG9y--"; // base64("EcsCommandExecutor")
+
+    private static final String CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_scripts_downloads";
+    private static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
+    private static final int DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS = 8;
+    private static final int DEFAULT_RETRY_TASK_OUTPUT_UPLOADS = 7;
+    private static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -77,7 +82,8 @@ public class EcsCommandExecutor
     private final StorageManager storageManager;
     private final ProjectArchiveLoader projectArchiveLoader;
     private final CommandLogger clog;
-    private final Optional<Duration> defaultCommandTaskTTL;
+    private final int retryDownloads, retryUploads;
+    private final boolean curlFailOptOnUploads; // false by the default
 
     @Inject
     public EcsCommandExecutor(
@@ -94,9 +100,9 @@ public class EcsCommandExecutor
         this.storageManager = storageManager;
         this.projectArchiveLoader = projectArchiveLoader;
         this.clog = clog;
-        this.defaultCommandTaskTTL = systemConfig.getOptional(DEFAULT_COMMAND_TASK_TTL, DurationParam.class)
-                .transform(DurationParam::getDuration)
-                .or(Optional.absent());
+        this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
+        this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
+        this.curlFailOptOnUploads = systemConfig.get(CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
     }
 
     @Override
@@ -121,7 +127,7 @@ public class EcsCommandExecutor
             }
         }
         catch (ConfigException e) {
-            logger.debug("Fall back to DockerCommandExecutor: {}", e.toString());
+            logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
             return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
         }
     }
@@ -135,7 +141,9 @@ public class EcsCommandExecutor
     {
         final EcsClientConfig clientConfig = client.getConfig();
         final RunTaskRequest runTaskRequest = buildRunTaskRequest(commandContext, commandRequest, clientConfig, td); // RuntimeException,ConfigException
+        logger.debug("Submit task request:" + dumpTaskRequest(runTaskRequest));
         final RunTaskResult runTaskResult = client.submitTask(runTaskRequest); // RuntimeException, ConfigException
+        logger.debug("Submit task response:" + dumpTaskResult(runTaskResult));
         return findTask(td.getTaskDefinitionArn(), runTaskResult); // RuntimeException
     }
 
@@ -273,12 +281,40 @@ public class EcsCommandExecutor
         }
     }
 
+    @Override
+    public void cleanup(
+            final CommandContext commandContext,
+            final Config state)
+            throws IOException
+    {
+        final TaskRequest request = commandContext.getTaskRequest();
+        final long attemptId = request.getAttemptId();
+        final long taskId = request.getTaskId();
+        final Config taskConfig = request.getConfig();
+
+        final ObjectNode commandStatus = state.get("commandStatus", ObjectNode.class);
+        final String clusterName = commandStatus.get("cluster_name").asText();
+        final String taskArn = commandStatus.get("task_arn").asText();
+        final EcsClientConfig clientConfig = createEcsClientConfig(Optional.of(clusterName), systemConfig, taskConfig); // ConfigException
+
+        try (final EcsClient client = ecsClientFactory.createClient(clientConfig)) { // ConfigException
+            final Task task = client.getTask(clusterName, taskArn);
+            final String message = s("Command task execution will be stopped: attempt_id=%d, task_id=%d", attemptId, taskId);
+            logger.info(message);
+            logger.debug(s("Stop command task: %s", task.getTaskArn()));
+            client.stopTask(clusterName, task.getTaskArn());
+        }
+    }
+
     CommandStatus createNextCommandStatus(
             final CommandContext commandContext,
             final EcsClient client,
             final ObjectNode previousStatus)
             throws IOException
     {
+        final String cluster = previousStatus.get("cluster_name").asText();
+        final String taskArn = previousStatus.get("task_arn").asText();
+
         ObjectNode previousExecutorStatus = (ObjectNode) previousStatus.get("executor_state");
         ObjectNode nextExecutorStatus;
 
@@ -293,7 +329,8 @@ public class EcsCommandExecutor
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
                 }
-            } while (Instant.now().getEpochSecond() < timeout);
+            }
+            while (Instant.now().getEpochSecond() < timeout);
 
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
@@ -306,15 +343,15 @@ public class EcsCommandExecutor
             final ObjectNode nextStatus = previousStatus.deepCopy();
             nextStatus.set("executor_state", previousExecutorStatus);
 
-            return EcsCommandStatus.of(true, nextStatus);
+            Optional<String> errorMessage = getErrorMessageFromTask(cluster, taskArn, client);
+            return EcsCommandStatus.of(true, nextStatus, errorMessage);
         }
 
-        final String cluster = previousStatus.get("cluster_name").asText();
-        final String taskArn = previousStatus.get("task_arn").asText();
         final Task task;
         try {
             task = client.getTask(cluster, taskArn);
-        } catch (TaskSetNotFoundException e) {
+        }
+        catch (TaskSetNotFoundException e) {
             // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
             logger.info("Cannot get the Ecs task status. Will be retried.");
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
@@ -353,22 +390,33 @@ public class EcsCommandExecutor
             // Set exit code of container finished to nextStatus
             nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
         }
-        else if (defaultCommandTaskTTL.isPresent() && isRunningLongerThanTTL(previousStatus)) {
-            final TaskRequest request = commandContext.getTaskRequest();
-            final long attemptId = request.getAttemptId();
-            final long taskId = request.getTaskId();
 
-            final String message = s("Command task execution timeout: attempt=%d, task=%d", attemptId, taskId);
-            logger.warn(message);
-
-            logger.info(s("Stop command task %d", task.getTaskArn()));
-            client.stopTask(cluster, taskArn);
-
-            // Throw exception to stop the task as failure
-            throw new TaskExecutionException(message);
-        }
         // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
         return EcsCommandStatus.of(false, nextStatus);
+    }
+
+    @VisibleForTesting
+    static Optional<String> getErrorMessageFromTask(String cluster, String taskArn, EcsClient client)
+    {
+        Optional<String> errorMessage = Optional.absent();
+        try {
+            final Task task = client.getTask(cluster, taskArn);
+            final List<String> reasons = task.getContainers().stream()
+                    .map(c -> c.getReason())
+                    .filter(r -> !Strings.isNullOrEmpty(r))
+                    .collect(Collectors.toList());
+            if (reasons.size() > 0) {
+                errorMessage = Optional.of(String.join(",", reasons));
+            }
+            else {
+                errorMessage = Optional.of("No container information");
+            }
+        }
+        catch (TaskSetNotFoundException e) {
+            errorMessage = Optional.fromNullable(e.getErrorMessage());
+
+        }
+        return errorMessage;
     }
 
     @VisibleForTesting
@@ -383,36 +431,6 @@ public class EcsCommandExecutor
         }
     }
 
-    /**
-     * Catch ThrottlingException of AWSLogs.getLogEvents() and retry with random jitter.
-     * @param client
-     * @param previousStatus
-     * @param previousToken
-     * @return
-     */
-    GetLogEventsResult getLogWithRetry(final EcsClient client, final ObjectNode previousStatus, final Optional<String> previousToken)
-    {
-        final int maxRetry = 60;
-        final long baseJitterSecs = 10; // 0.0 <= jitterSecs < 10.0
-        final int maxBaseWaitSecs = 50; // maxBaseWaitSecs + jitter < 60
-        for (int i = 0; i < maxRetry; i++) {
-            try {
-                waitWithRandomJitter(10*i > maxBaseWaitSecs? maxBaseWaitSecs: 10*i, baseJitterSecs);
-                return client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
-            }
-            catch (AWSLogsException ex) {
-                if ("ThrottlingException".equals(ex.getErrorCode())) {
-                    logger.debug("Rate exceed in AWSLogs.getLogEvents: {}. Will be retried.", ex.toString());
-                }
-                else {
-                    throw new RuntimeException("Unknown AWSLogsException happened.", ex);
-                }
-            }
-        }
-        logger.error("Failed to call EcsClient.getLog() after Retried {} times", maxRetry);
-        throw new RuntimeException("Failed to call EcsClient.getLog()");
-    }
-
     ObjectNode fetchLogEvents(final EcsClient client,
             final ObjectNode previousStatus,
             final ObjectNode previousExecutorStatus)
@@ -420,7 +438,7 @@ public class EcsCommandExecutor
     {
         final Optional<String> previousToken = !previousExecutorStatus.has("next_token") ?
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
-        final GetLogEventsResult result = getLogWithRetry(client, previousStatus, previousToken);
+        final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
@@ -455,29 +473,28 @@ public class EcsCommandExecutor
         return previousStatus.get("awslogs").get("awslogs-stream").asText();
     }
 
-    private boolean isRunningLongerThanTTL(final ObjectNode previousStatus)
-    {
-        long creationTimestamp = previousStatus.get("pod_creation_timestamp").asLong();
-        long currentTimestamp = Instant.now().getEpochSecond();
-        return currentTimestamp > creationTimestamp + defaultCommandTaskTTL.get().getSeconds();
-    }
-
     static class EcsCommandStatus
             implements CommandStatus
     {
         static EcsCommandStatus of(final boolean isFinished, final ObjectNode json)
         {
-            return new EcsCommandStatus(isFinished, json);
+            return of(isFinished, json, Optional.absent());
+        }
+
+        static EcsCommandStatus of(final boolean isFinished, final ObjectNode json, Optional<String> errorMessage)
+        {
+            return new EcsCommandStatus(isFinished, json, errorMessage);
         }
 
         private final boolean isFinished;
         private final ObjectNode json;
+        private final Optional<String> errorMessage;
 
-        private EcsCommandStatus(final boolean isFinished,
-                final ObjectNode json)
+        private EcsCommandStatus(final boolean isFinished, final ObjectNode json, final Optional<String> errorMessage)
         {
             this.isFinished = isFinished;
             this.json = json;
+            this.errorMessage = errorMessage;
         }
 
         @Override
@@ -493,6 +510,12 @@ public class EcsCommandExecutor
         }
 
         @Override
+        public Optional<String> getErrorMessage()
+        {
+            return errorMessage;
+        }
+
+        @Override
         public String getIoDirectory()
         {
             return json.get("io_directory").textValue();
@@ -505,7 +528,8 @@ public class EcsCommandExecutor
         }
     }
 
-    protected Task findTask(final String taskDefinitionArn, final RunTaskResult result) {
+    protected Task findTask(final String taskDefinitionArn, final RunTaskResult result)
+    {
         for (final Task t : result.getTasks()) {
             if (t.getTaskDefinitionArn().equals(taskDefinitionArn)) {
                 return t;
@@ -514,12 +538,17 @@ public class EcsCommandExecutor
         throw new RuntimeException("Submitted task could not be found"); // TODO the message should be improved more understandably.
     }
 
-    EcsClientConfig createEcsClientConfig(
+    protected EcsClientConfig createEcsClientConfig(
             final Optional<String> clusterName,
             final Config systemConfig,
-            final Config config)
+            final Config taskConfig)
     {
-        return EcsClientConfig.of(clusterName, systemConfig, config);
+        if (taskConfig.has(EcsClientConfig.TASK_CONFIG_ECS_KEY)) {
+            return EcsClientConfig.createFromTaskConfig(clusterName, taskConfig, systemConfig);
+        }
+        else {
+            return EcsClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        }
     }
 
     RunTaskRequest buildRunTaskRequest(
@@ -534,10 +563,36 @@ public class EcsCommandExecutor
         setEcsGroup(runTaskRequest);
         setEcsTaskDefinition(commandContext, commandRequest, td, runTaskRequest);
         setEcsTaskCount(runTaskRequest);
-        setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest); // RuntimeException,ConfigException
+        setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest, clientConfig); // RuntimeException,ConfigException
         setEcsTaskLaunchType(clientConfig, runTaskRequest);
+        setEcsTaskStartedBy(clientConfig, runTaskRequest);
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
+        setCapacityProviderStrategy(clientConfig, runTaskRequest);
+        setPlacementStrategy(clientConfig, runTaskRequest);
         return runTaskRequest;
+    }
+
+    private void setPlacementStrategy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+            throws ConfigException
+    {
+        if (clientConfig.getPlacementStrategyType().isPresent()) {
+            final PlacementStrategyType placementStrategyType;
+            try {
+                placementStrategyType = PlacementStrategyType.fromValue(clientConfig.getPlacementStrategyType().get());
+            }
+            // The message of this exception object has the validation error message.
+            catch (IllegalArgumentException validationError) {
+                throw new ConfigException("PlacementStrategyType is invalid", validationError);
+            }
+            final PlacementStrategy placementStrategy = new PlacementStrategy();
+            placementStrategy.setType(placementStrategyType);
+
+            if (clientConfig.getPlacementStrategyField().isPresent()) {
+                placementStrategy.setField(clientConfig.getPlacementStrategyField().get());
+            }
+
+            runTaskRequest.setPlacementStrategy(Arrays.asList(placementStrategy));
+        }
     }
 
     protected void setEcsTaskDefinition(
@@ -567,7 +622,8 @@ public class EcsCommandExecutor
             final CommandContext commandContext,
             final CommandRequest commandRequest,
             final TaskDefinition td,
-            final RunTaskRequest request)
+            final RunTaskRequest request,
+            final EcsClientConfig clientConfig)
             throws ConfigException
     {
         final ContainerOverride containerOverride = new ContainerOverride();
@@ -576,25 +632,13 @@ public class EcsCommandExecutor
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
         setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
-        setEcsContainerOverrideResource(commandContext, commandRequest, containerOverride);
+        setEcsContainerOverrideResource(clientConfig, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
         taskOverride.withContainerOverrides(containerOverride);
+        setTaskOverrideResource(clientConfig, taskOverride);
+
         request.withOverrides(taskOverride);
-
-        //final ContainerOverride containerOverride = new ContainerOverride();
-        //containerOverride.withName()
-        //containerOverride.withCommand()
-        //containerOverride.withCpu();
-        //containerOverride.withMemory();
-        //containerOverride.withMemoryReservation();
-        //containerOverride.withResourceRequirements();
-
-        //final TaskOverride taskOverride = new TaskOverride();
-        //taskOverride.withContainerOverrides();
-        //taskOverride.withExecutionRoleArn();
-        //taskOverride.withTaskRoleArn();
-        //request.withOverrides(taskOverride);
     }
 
     protected void setEcsContainerOverrideName(
@@ -634,7 +678,7 @@ public class EcsCommandExecutor
         }
         catch (IOException e) {
             final String message = s("Cannot archive the project archive. It will be retried.");
-            logger.error(message, e);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
 
@@ -649,7 +693,7 @@ public class EcsCommandExecutor
         }
         catch (IOException e) {
             final String message = s("Cannot upload a temporal project archive '%s'with storage key '%s'. It will be retried.", projectArchivePath.toString(), projectArchiveStorageKey);
-            logger.error(message, e);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
         finally {
@@ -675,7 +719,9 @@ public class EcsCommandExecutor
         // by the executor and will include pre-signed URLs in the commands.
         //bashArguments.add("set -eux");
         bashArguments.add(s("mkdir -p %s", ioDirectoryPath.toString()));
-        bashArguments.add(s("curl -s \"%s\" --output %s", projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
+        // retry by exponential backoff 1+2+4+8+16+32+64+128=255 seconds by the default to avoid temporary network outage and/or S3 errors
+        // exit 22 on non-transient http errors so that task can be retried
+        bashArguments.add(s("curl --retry %d --retry-connrefused --fail -s \"%s\" --output %s", retryDownloads, projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
         bashArguments.add(s("tar -zxf %s", relativeProjectArchivePath.toString()));
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
@@ -689,7 +735,9 @@ public class EcsCommandExecutor
             bashArguments.add(s("popd"));
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
-        bashArguments.add(s("curl -s -X PUT -T %s -L \"%s\"", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds by the default
+        // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
+        bashArguments.add(s("curl --retry %d --retry-connrefused%s -s -X PUT -T %s -L \"%s\"", retryUploads, curlFailOptOnUploads ? " --fail" : "", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
         bashArguments.add(s("exit $exit_code"));
 
@@ -707,7 +755,6 @@ public class EcsCommandExecutor
     {
         return ImmutableList.of();
     }
-
 
     protected List<String> setEcsContainerOverrideArgumentsAfterCommand()
     {
@@ -727,10 +774,23 @@ public class EcsCommandExecutor
     }
 
     protected void setEcsContainerOverrideResource(
-            final CommandContext commandContext,
-            final CommandRequest commandRequest,
+            final EcsClientConfig clientConfig,
             final ContainerOverride containerOverride)
-    { }
+    {
+        if (clientConfig.getContainerCpu().isPresent()) {
+            containerOverride.setCpu(clientConfig.getContainerCpu().get());
+        }
+        if (clientConfig.getContainerMemory().isPresent()) {
+            containerOverride.setMemory(clientConfig.getContainerMemory().get());
+        }
+    }
+
+    protected void setEcsTaskStartedBy(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+    {
+        if (clientConfig.getStartedBy().isPresent()) {
+            runTaskRequest.setStartedBy(clientConfig.getStartedBy().get());
+        }
+    }
 
     private static void log(final String message, final CommandLogger to)
             throws IOException
@@ -756,26 +816,89 @@ public class EcsCommandExecutor
 
     protected void setEcsTaskLaunchType(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        final String type = clientConfig.getLaunchType();
-        final LaunchType launchType = LaunchType.fromValue(type);
-        request.withLaunchType(launchType);
+        // Note: `LaunchType` CAN NOT be specified with `CapacityProviderStrategy` in the same time.
+        // So when you specify `CapacityProviderStrategy`, do not specify `LaunchType`.
+        // https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html#ECS-RunTask-request-capacityProviderStrategy
+        if (clientConfig.getLaunchType().isPresent()) {
+            final LaunchType launchType = LaunchType.fromValue(clientConfig.getLaunchType().get());
+            request.withLaunchType(launchType);
+        }
     }
 
     protected void setEcsNetworkConfiguration(final EcsClientConfig clientConfig, final RunTaskRequest request)
     {
-        request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
-                new AwsVpcConfiguration()
-                        .withSubnets(clientConfig.getSubnets())
-                        .withAssignPublicIp(AssignPublicIp.ENABLED) // TODO should be extracted
-                ));
+        if (clientConfig.getSubnets().isPresent()) {
+            request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
+                    new AwsVpcConfiguration()
+                            .withSubnets(clientConfig.getSubnets().get())
+                            .withAssignPublicIp(clientConfig.isAssignPublicIp() ? AssignPublicIp.ENABLED : AssignPublicIp.DISABLED)
+            ));
+        }
+    }
 
-        //final AwsVpcConfiguration awsVpcConfig = new AwsVpcConfiguration();
-        //awsVpcConfig.withAssignPublicIp();
-        //awsVpcConfig.withAssignPublicIp();
-        //awsVpcConfig.withSecurityGroups();
-        //awsVpcConfig.withSubnets();
-        //final NetworkConfiguration config = new NetworkConfiguration();
-        //config.withAwsvpcConfiguration(vpcConfig);
-        //request.withNetworkConfiguration(config);
+    protected void setCapacityProviderStrategy(final EcsClientConfig clientConfig, final RunTaskRequest request)
+    {
+        if (clientConfig.getCapacityProviderName().isPresent()) {
+            CapacityProviderStrategyItem capacityProviderStrategyItem = new CapacityProviderStrategyItem()
+                    .withCapacityProvider(clientConfig.getCapacityProviderName().get());
+            request.setCapacityProviderStrategy(Arrays.asList(capacityProviderStrategyItem));
+        }
+    }
+
+    private static String dumpTaskRequest(final RunTaskRequest request)
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        if (request.getCluster() != null) { sb.append("Cluster: ").append(request.getCluster()).append(","); }
+        if (request.getTaskDefinition() != null) { sb.append("TaskDefinition: ").append(request.getTaskDefinition()).append(","); }
+        if (request.getLaunchType() != null) { sb.append("LaunchType: ").append(request.getLaunchType()).append(","); }
+        if (request.getCapacityProviderStrategy() != null) { sb.append("CapacityProviderStrategy: ").append(request.getCapacityProviderStrategy()).append(","); }
+        if (request.getPlacementConstraints() != null) { sb.append("PlacementConstraints: ").append(request.getPlacementConstraints()).append(","); }
+        if (request.getPlacementStrategy() != null) { sb.append("PlacementStrategy: ").append(request.getPlacementStrategy()).append(","); }
+        if (request.getPlatformVersion() != null) { sb.append("PlatformVersion: ").append(request.getPlatformVersion()).append(","); }
+        TaskOverride overrides = request.getOverrides();
+        if (overrides != null) {
+            if (overrides.getCpu() != null) {
+                sb.append("CPU: ").append(overrides.getCpu()).append(",");
+            }
+
+            if (overrides.getCpu() != null) {
+                sb.append("Memory: ").append(overrides.getMemory());
+            }
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    private static String dumpTaskResult(final RunTaskResult result)
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (Task task : result.getTasks()) {
+            sb.append("{");
+            if (task.getTaskArn() != null) { sb.append("TaskArn: ").append(task.getTaskArn()).append(","); }
+            if (task.getClusterArn() != null) { sb.append("ClusterArn: ").append(task.getClusterArn()).append(","); }
+            if (task.getContainerInstanceArn() != null) { sb.append("ContainerInstanceArn: ").append(task.getContainerInstanceArn()).append(","); }
+            if (task.getTaskDefinitionArn() != null) { sb.append("TaskDefinitionArn: ").append(task.getTaskDefinitionArn()).append(","); }
+            if (task.getHealthStatus() != null) { sb.append("HealthStatus: ").append(task.getHealthStatus()).append(","); }
+            if (task.getPlatformVersion() != null) { sb.append("PlatformVersion: ").append(task.getPlatformVersion()).append(","); }
+            if (task.getCreatedAt() != null) { sb.append("CreatedAt: ").append(task.getCreatedAt()).append(","); }
+            if (task.getStartedAt() != null) { sb.append("StartedAt: ").append(task.getStartedAt()); }
+            sb.append("}");
+            sb.append(",");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    protected void setTaskOverrideResource(EcsClientConfig clientConfig, TaskOverride taskOverride)
+    {
+        if (clientConfig.getTaskCpu().isPresent()) {
+            taskOverride.setCpu(clientConfig.getTaskCpu().get());
+        }
+
+        if (clientConfig.getTaskMemory().isPresent()) {
+            taskOverride.setMemory(clientConfig.getTaskMemory().get());
+        }
     }
 }

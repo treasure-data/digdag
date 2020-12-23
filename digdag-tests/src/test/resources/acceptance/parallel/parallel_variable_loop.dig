@@ -1,0 +1,13 @@
+_export:
+  parallel: true
+
++loop:
+  loop>: 2
+  _parallel: ${parallel}
+  _do:
+    +task1:
+      echo>: loop${i},task1
+    +task2:
+      echo>: loop${i},task2
+    +task3:
+      echo>: loop${i},task3

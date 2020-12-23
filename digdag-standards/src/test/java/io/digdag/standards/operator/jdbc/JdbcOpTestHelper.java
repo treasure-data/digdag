@@ -15,6 +15,7 @@ import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 
+import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class JdbcOpTestHelper
         public void configure(Binder binder)
         {
             binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
+            binder.bind(Config.class).toInstance(newConfig());
         }
     }
 

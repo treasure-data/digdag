@@ -55,6 +55,7 @@ Here is the list of built-in variables:
 Name                            Description                                 Example
 =============================== =========================================== ==========================
 **timezone**                    Timezone of this workflow                   America/Los_Angeles
+**project_id**                  The project ID of this workflow             12345
 **session_uuid**                Unique UUID of this session                 414a8b9e-b365-4394-916a-f0ed9987bd2b
 **session_id**                  Integer ID of this session                  2381
 **session_time**                Time of this session with time zone         2016-01-30T00:00:00-08:00
@@ -239,6 +240,32 @@ If ``_parallel: true`` parameter is set to a group, child tasks in the group run
 
       +data3:
         sh>: tasks/prepare_data3.sh
+
+    +analyze:
+      sh>: tasks/analyze_prepared_data_sets.sh
+
+If ``_parallel: {limit: N}`` (N is an integer: 1, 2, 3, …) parameter is set to a group,
+child tasks in the group run in parallel is limited to N  (grandchildren are not affected):
+
+.. code-block:: yaml
+
+    +prepare:
+      # +data1 and +data2 run in parallel, then +data3 and +data4 run in parallel.
+      # (+data1 and +data2 need to be successful.)
+      _parallel:
+        limit: 2
+
+      +data1:
+        sh>: tasks/prepare_data1.sh
+
+      +data2:
+        sh>: tasks/prepare_data2.sh
+
+      +data3:
+        sh>: tasks/prepare_data3.sh
+
+      +data4:
+        sh>: tasks/prepare_data4.sh
 
     +analyze:
       sh>: tasks/analyze_prepared_data_sets.sh

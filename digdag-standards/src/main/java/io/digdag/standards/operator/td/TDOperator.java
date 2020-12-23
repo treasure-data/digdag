@@ -7,7 +7,6 @@ import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
-import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
@@ -19,9 +18,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
-import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
-import org.eclipse.jetty.http.HttpStatus;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +29,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.treasuredata.client.model.TDJob.Status.SUCCESS;
-import static io.digdag.util.RetryExecutor.retryExecutor;
 
-public class TDOperator
+public class TDOperator extends BaseTDOperator
         implements Closeable
 {
     public interface SystemDefaultConfig
@@ -45,10 +41,6 @@ public class TDOperator
     private static final Logger logger = LoggerFactory.getLogger(TDOperator.class);
 
     // TODO: adjust these retry intervals and limits when all td operators have persistent retry mechanisms implemented
-
-    private static final int INITIAL_RETRY_WAIT = 500;
-    private static final int MAX_RETRY_WAIT = 2000;
-    private static final int MAX_RETRY_LIMIT = 3;
 
     public static TDOperator fromConfig(BaseTDClientFactory clientFactory, SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config config, SecretProvider secrets)
     {
@@ -67,14 +59,8 @@ public class TDOperator
 
         TDClient client = clientFactory.createClient(systemDefaultConfig, env, config, secrets);
 
-        return new TDOperator(client, database);
+        return new TDOperator(client, database, secrets);
     }
-
-    static final RetryExecutor defaultRetryExecutor = retryExecutor()
-            .withInitialRetryWait(INITIAL_RETRY_WAIT)
-            .withMaxRetryWait(MAX_RETRY_WAIT)
-            .withRetryLimit(MAX_RETRY_LIMIT)
-            .retryIf((exception) -> !isDeterministicClientException(exception));
 
     public static String escapeHiveIdent(String ident)
     {
@@ -108,18 +94,18 @@ public class TDOperator
         }
     }
 
-    private final TDClient client;
     private final String database;
 
-    TDOperator(TDClient client, String database)
+    TDOperator(TDClient client, String database, SecretProvider secrets)
     {
         this.client = client;
         this.database = database;
+        this.secrets = secrets;
     }
 
     public TDOperator withDatabase(String anotherDatabase)
     {
-        return new TDOperator(client, anotherDatabase);
+        return new TDOperator(client, anotherDatabase, secrets);
     }
 
     public String getDatabase()
@@ -127,101 +113,74 @@ public class TDOperator
         return database;
     }
 
-    public void ensureDatabaseCreated(String name)
-            throws TDClientException
+    private void runWithRetry(Runnable op, Class ignoreException)
     {
         try {
-            defaultRetryExecutor.run(() -> client.createDatabase(name));
+            defaultRetryExecutor.run(() -> {
+                try {
+                    authenticatinRetryExecutor().run(() -> op.run());
+                } catch (RetryGiveupException ex) {
+                    throw Throwables.propagate(ex.getCause());
+                }
+            });
         }
         catch (RetryGiveupException ex) {
-            if (ex.getCause() instanceof TDClientHttpConflictException) {
+            if (ignoreException.isInstance(ex.getCause())) {
                 // ignore
                 return;
             }
             throw Throwables.propagate(ex.getCause());
+        }
+    }
+
+    public void ensureDatabaseCreated(String name)
+            throws TDClientException
+    {
+        runWithRetry(() -> client.createDatabase(name), TDClientHttpConflictException.class);
+        // Check database existing and retry only once if it doesn't exit by session error(WM-763)
+        if (!client.existsDatabase(name)){
+            runWithRetry(() -> client.createDatabase(name), TDClientHttpConflictException.class);
         }
     }
 
     public void ensureDatabaseDeleted(String name)
             throws TDClientException
     {
-        try {
-            defaultRetryExecutor.run(() -> client.deleteDatabase(name));
-        }
-        catch (RetryGiveupException ex) {
-            if (ex.getCause() instanceof TDClientHttpNotFoundException) {
-                // ignore
-                return;
-            }
-            throw Throwables.propagate(ex.getCause());
-        }
+        runWithRetry(() -> client.deleteDatabase(name), TDClientHttpNotFoundException.class);
     }
 
     public void ensureTableCreated(String tableName)
             throws TDClientException
     {
-        try {
-            // TODO set include_v=false option
-            defaultRetryExecutor.run(() -> client.createTable(database, tableName));
-        }
-        catch (RetryGiveupException ex) {
-            if (ex.getCause() instanceof TDClientHttpConflictException) {
-                // ignore
-                return;
-            }
-            throw Throwables.propagate(ex.getCause());
+        // TODO set include_v=false option
+        runWithRetry(() -> client.createTable(database, tableName), TDClientHttpConflictException.class);
+        // Check table existing and retry only once if it doesn't exit by session error(WM-763)
+        if (!client.existsTable(database, tableName)){
+            runWithRetry(() -> client.createTable(database, tableName), TDClientHttpConflictException.class);
         }
     }
 
     public void ensureTableDeleted(String tableName)
             throws TDClientException
     {
-        try {
-            // TODO set include_v=false option
-            defaultRetryExecutor.run(() -> client.deleteTable(database, tableName));
-        }
-        catch (RetryGiveupException ex) {
-            if (ex.getCause() instanceof TDClientHttpNotFoundException) {
-                // ignore
-                return;
-            }
-            throw Throwables.propagate(ex.getCause());
-        }
+        // TODO set include_v=false option
+        runWithRetry(() -> client.deleteTable(database, tableName), TDClientHttpNotFoundException.class);
     }
 
     public void ensureExistentTableRenamed(String existentTable, String toName)
             throws TDClientException
     {
-        try {
-            defaultRetryExecutor.run(() -> client.renameTable(database, existentTable, toName, true));
-        }
-        catch (RetryGiveupException ex) {
-            if (ex.getCause() instanceof TDClientHttpNotFoundException) {
-                // ignore
-                return;
-            }
-            throw Throwables.propagate(ex.getCause());
-        }
+        runWithRetry(() -> client.renameTable(database, existentTable, toName, true), TDClientHttpNotFoundException.class);
     }
 
     public boolean tableExists(String table)
     {
-        try {
-            return defaultRetryExecutor.run(() -> client.existsTable(database, table));
-        }
-        catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
-        }
+        return callWithRetry(() -> client.existsTable(database, table));
     }
 
     public long lookupConnection(String name)
     {
-        try {
-            return defaultRetryExecutor.run(() -> client.lookupConnection(name));
-        }
-        catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
-        }
+        return callWithRetry(() -> client.lookupConnection(name));
     }
 
     private String submitNewJob(TDJobRequest request)
@@ -271,17 +230,12 @@ public class TDOperator
 
     public String submitNewJobWithRetry(Submitter submitter)
     {
-        try {
-            return defaultRetryExecutor.run(() -> submitNewJob(submitter));
-        }
-        catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
-        }
+        return callWithRetry(() -> submitNewJob(submitter));
     }
 
     public TDJobOperator newJobOperator(String jobId)
     {
-        return new TDJobOperator(client, jobId);
+        return new TDJobOperator(client, jobId, secrets);
     }
 
     /**
@@ -355,6 +309,12 @@ public class TDOperator
             }
             throw errorPollingException(state, key, jobState, retryInterval);
         }
+        catch (TaskExecutionException ex) {
+            if (ex.getMessage().contains("HTTP request execution failed with code 401")) {
+                updateApikey(secrets);
+            }
+            throw Throwables.propagate(ex);
+        }
 
         // Reset error state
         jobState = jobState.withErrorPollIteration(Optional.absent());
@@ -403,34 +363,6 @@ public class TDOperator
     private static int exponentialBackoffInterval(DurationInterval pollInterval, int iteration)
     {
         return (int) Math.min(pollInterval.min().getSeconds() * Math.pow(2, iteration), pollInterval.max().getSeconds());
-    }
-
-    static boolean isDeterministicClientException(Exception ex)
-    {
-        if (ex instanceof TDClientHttpException) {
-            int statusCode = ((TDClientHttpException) ex).getStatusCode();
-            switch (statusCode) {
-                case HttpStatus.TOO_MANY_REQUESTS_429:
-                case HttpStatus.REQUEST_TIMEOUT_408:
-                    return false;
-                default:
-                    // return true if 4xx
-                    return statusCode >= 400 && statusCode < 500;
-            }
-        }
-        else if (ex instanceof TDClientException) {
-            // failed before sending HTTP request or receiving HTTP response
-            TDClientException.ErrorType errorType = ((TDClientException) ex).getErrorType();
-            switch (errorType) {
-                case INVALID_CONFIGURATION:  // failed to read td.conf, failed to pares integer in properties set to TDClientBuilder, etc.
-                case INVALID_INPUT:          // early table name validation fails, failed to format request body in json, etc.
-                    return true;
-                default:
-                    // other cases such as PROXY_AUTHENTICATION_FAILURE, SSL_ERROR, REQUEST_TIMEOUT, INTERRUPTED, etc.
-                    break;  // pass-through
-            }
-        }
-        return false;
     }
 
     @Override

@@ -1,0 +1,6 @@
+
++require:
+  require>: child
+  rerun_on: ${param_rerun_on}
+  params:
+    child_fail: ${child_fail}

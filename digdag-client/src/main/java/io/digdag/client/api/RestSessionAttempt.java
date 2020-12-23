@@ -10,13 +10,11 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(as = ImmutableRestSessionAttempt.class)
-public interface RestSessionAttempt
-{
+public interface RestSessionAttempt {
     Id getId();
 
     @Value.Default
-    default int getIndex()
-    {
+    default int getIndex() {
         // index has default value only to keep backward compatibility.
         // index is added since 01714615088e315ba401f4deca41b6dd58bb349b.
         return 0;
@@ -24,7 +22,7 @@ public interface RestSessionAttempt
 
     IdAndName getProject();
 
-    //Optional<String> getRevision();
+    // Optional<String> getRevision();
 
     NameOptionalId getWorkflow();
 
@@ -48,8 +46,22 @@ public interface RestSessionAttempt
 
     Optional<Instant> getFinishedAt();
 
-    static ImmutableRestSessionAttempt.Builder builder()
-    {
+    default String getStatus() {
+        if (this.getSuccess()) {
+            return "success";
+        }
+        if (this.getDone()) {
+            if (this.getCancelRequested()) {
+                return "killed";
+            }
+            else {
+                return "error";
+            }
+        }
+        return "running";
+    }
+
+    static ImmutableRestSessionAttempt.Builder builder() {
         return ImmutableRestSessionAttempt.builder();
     }
 }

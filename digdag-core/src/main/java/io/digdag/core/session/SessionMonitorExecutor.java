@@ -8,9 +8,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
-import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.client.config.ConfigException;
+import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
+import io.digdag.core.repository.ModelValidationException;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ public class SessionMonitorExecutor
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
     private final TransactionManager tm;
+    private final Limits limits;
     private ScheduledExecutorService executor;
 
     @Inject(optional = true)
@@ -45,12 +49,14 @@ public class SessionMonitorExecutor
             ConfigFactory cf,
             SessionStoreManager sm,
             TransactionManager tm,
-            WorkflowExecutor exec)
+            WorkflowExecutor exec,
+            Limits limits)
     {
         this.cf = cf;
         this.sm = sm;
         this.tm = tm;
         this.exec = exec;
+        this.limits = limits;
     }
 
     @PostConstruct
@@ -90,14 +96,23 @@ public class SessionMonitorExecutor
         try {
             tm.begin(() -> {
                 sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
-                    // runMonitor needs to return next runtime if this monitor should run again later
-                    return runMonitor(storedMonitor);
+                    try {
+                        // runMonitor needs to return next runtime if this monitor should run again later
+                        return runMonitor(storedMonitor);
+                    }
+                    catch (ModelValidationException | ConfigException e) {
+                        logger.error(
+                                "Failed to schedule a session monitor task due to deterministic error. This won't be retried.", e);
+                        return Optional.absent();
+                    }
                 });
                 return null;
             });
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. This session monitor scheduling will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "An uncaught exception is ignored. This session monitor scheduling will be retried.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.DEFAULT, "uncaughtErrors");
         }
@@ -110,7 +125,7 @@ public class SessionMonitorExecutor
                 try {
                     return sessionAttemptControlStore.lockRootTask(summary.getId(), (store, storedTask) -> {
                         if (!Tasks.isDone(storedTask.getState())) {
-                            exec.addMonitorTask(new TaskControl(store, storedTask), storedMonitor.getType(), storedMonitor.getConfig());
+                            exec.addMonitorTask(new TaskControl(store, storedTask, limits), storedMonitor.getType(), storedMonitor.getConfig());
                             return true;
                         }
                         else {

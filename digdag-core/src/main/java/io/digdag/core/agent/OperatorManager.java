@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -7,7 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.log.LogLevel;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.ErrorReporter;
@@ -47,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static java.util.Locale.ENGLISH;
 
 public class OperatorManager
 {
@@ -70,12 +74,14 @@ public class OperatorManager
     @Inject
     private DigdagMetrics metrics;
 
+    private final Limits limits;
+
     @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             ConfigFactory cf,
             ConfigEvalEngine evalEngine, OperatorRegistry registry,
-            SecretStoreManager secretStoreManager)
+            SecretStoreManager secretStoreManager, Limits limits)
     {
         this.agentConfig = agentConfig;
         this.agentId = agentId;
@@ -85,6 +91,7 @@ public class OperatorManager
         this.evalEngine = evalEngine;
         this.registry = registry;
         this.secretStoreManager = secretStoreManager;
+        this.limits = limits;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -154,8 +161,13 @@ public class OperatorManager
                         callback.retryTask(request, agentId, ex.getRetryInterval().get(), ex.getStateParams(cf).get(), ex.getError(cf));
                     }
                     else {
-                        logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
-                        logger.debug("", ex);
+                        if (request.isCancelRequested()) {
+                            logger.warn("Task {} is canceled.", request.getTaskName());
+                        }
+                        else {
+                            logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
+                            logger.debug("", ex);
+                        }
                         // TODO use debug to log stacktrace here
                         callback.taskFailed(request, agentId, ex.getError(cf).get());  // TODO is error set?
                     }
@@ -165,19 +177,34 @@ public class OperatorManager
                         logger.error("Configuration error at task {}: {}", request.getTaskName(), formatExceptionMessage(ex));
                     }
                     else {
-                        logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
+                        logger.error(
+                                LogMarkers.UNEXPECTED_SERVER_ERROR,
+                                "Task failed with unexpected error: {}", ex.getMessage(), ex);
                     }
                     callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));  // no retry
+                }
+                catch (Throwable ex) {
+                    logger.error(
+                            LogMarkers.UNEXPECTED_SERVER_ERROR,
+                            "Task failed with unexpected error: {}", ex.getMessage(), ex);
+
+                    // This block catches OutOfMemoryError and its cause can be either deterministic or non-deterministic.
+                    // So, OperatorManager can't always cancel the failed task.
+                    if (request.isCancelRequested()) {
+                        logger.warn("This task will be canceled since it's already requested to be canceled");
+                        // This call cancels a task if it's requested to be canceled
+                        callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));
+                    }
                 }
                 return true;
             });
         }
         catch (RuntimeException | IOException ex) {
             // exception happened in workspaceManager
-            logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Task failed with unexpected error: {}", ex.getMessage(), ex);
             callback.taskFailed(request, agentId, buildExceptionErrorConfig(ex).toConfig(cf));
-
-
         }
     }
 
@@ -220,7 +247,7 @@ public class OperatorManager
         catch (AssertionError ex) { // Avoid infinite task retry cause of AssertionError by ConfigEvalEngine(nashorn)
             throw new RuntimeException("Unexpected error happened in ConfigEvalEngine: " + ex.getMessage(), ex);
         }
-        logger.debug("evaluated config: {}", config);
+        logger.debug("evaluated config: {}", filterConfigForLogging(config));
 
         Set<String> shouldBeUsedKeys = new HashSet<>(request.getLocalConfig().getKeys());
 
@@ -278,8 +305,6 @@ public class OperatorManager
         }
 
         callback.taskSucceeded(request, agentId, result);
-
-
     }
 
     private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, Collection<String> candidateKeys)
@@ -323,9 +348,19 @@ public class OperatorManager
                 GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretStore));
 
         OperatorContext context = new DefaultOperatorContext(
-                projectPath, mergedRequest, secretProvider, privilegedVariables);
+                projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
         Operator operator = factory.newOperator(context);
+
+        if (mergedRequest.isCancelRequested()) {
+            // NOTE: In the case of failure to perform cleanup,
+            // target resources continue to remain
+            operator.cleanup(mergedRequest);
+            // Throw exception to stop the task
+            throw new TaskExecutionException(String.format(ENGLISH,
+                    "Got a cancel-requested: attempt_id=%d, task_id=%d",
+                    mergedRequest.getAttemptId(), mergedRequest.getTaskId()));
+        }
 
         return operator.run();
     }
@@ -345,7 +380,9 @@ public class OperatorManager
             }
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.AGENT, "uncaughtErrors");
         }
@@ -387,5 +424,31 @@ public class OperatorManager
         for (Throwable t : ex.getSuppressed()) {
             collectExceptionMessage(sb, t, used);
         }
+    }
+
+    private static final String[] CONFIG_KEYS_FOR_LOGGING = {
+            "project_id",
+            "session_id",
+            "session_time",
+            "attempt_id",
+            "task_name",
+            "last_session_time",
+            "last_executed_session_time",
+            "next_session_time",
+            "session_uuid",
+            "timezone"
+    };
+
+    @VisibleForTesting
+    public Config filterConfigForLogging(Config src)
+    {
+        Config dst = cf.create();
+        for (String key : CONFIG_KEYS_FOR_LOGGING) {
+            Optional<Object> v = src.getOptional(key, Object.class);
+            if (v.isPresent()) {
+                dst.set(key, v.get());
+            }
+        }
+        return dst;
     }
 }

@@ -175,7 +175,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
             ac.checkGetAttempt( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(),attempt.getSession().getWorkflowName(), proj.getName()),
                     getAuthenticatedUser());
 
             return RestModels.attempt(attempt, proj.getName());
@@ -198,7 +198,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // to build WorkflowTarget
 
             ac.checkGetAttemptsFromSession( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), attempt.getSession().getWorkflowName(), proj.getName()),
                     getAuthenticatedUser());
 
             List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
@@ -224,7 +224,7 @@ public class AttemptResource
                     .getProjectById(attempt.getSession().getProjectId()); // NotFound
 
             ac.checkGetTasksFromAttempt( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), attempt.getSession().getWorkflowName()),
+                    WorkflowTarget.of(getSiteId(), attempt.getSession().getWorkflowName(), proj.getName()),
                     getAuthenticatedUser());
 
             List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
@@ -247,7 +247,7 @@ public class AttemptResource
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
             ac.checkRunWorkflow( // AccessControl
-                    WorkflowTarget.of(getSiteId(), def.getProject().getName(), def.getName()),
+                    WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
                     getAuthenticatedUser());
 
             Optional<Long> resumingAttemptId = request.getResume()

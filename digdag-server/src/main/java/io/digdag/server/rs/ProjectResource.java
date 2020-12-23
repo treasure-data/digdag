@@ -63,6 +63,7 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredProjectWithRevision;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -273,23 +274,12 @@ public class ProjectResource
                             siteTarget,
                             getAuthenticatedUser());
 
-                    // TODO fix n-m db access
-                    collection = ps.getProjects(100, Optional.absent(),
-                            ac.getListProjectsFilterOfSite(
-                                    siteTarget,
-                                    getAuthenticatedUser()))
+                    collection = ps.getProjectsWithLatestRevision(100, Optional.absent(),
+                                ac.getListProjectsFilterOfSite(siteTarget, getAuthenticatedUser()))
                             .stream()
-                            .map(proj -> {
-                                try {
-                                    StoredRevision rev = ps.getLatestRevision(proj.getId());
-                                    return RestModels.project(proj, rev);
-                                }
-                                catch (ResourceNotFoundException ex) {
-                                    // This exception should never happen as long as database consistency is kept.
-                                    return null;
-                                }
+                            .map(projWithRev -> {
+                                return RestModels.project(projWithRev);
                             })
-                            .filter(proj -> proj != null)
                             .collect(Collectors.toList());
                 }
                 catch (AccessControlException ex) {
@@ -390,7 +380,7 @@ public class ProjectResource
             StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name); // check NotFound first
 
             ac.checkGetWorkflow( // AccessControl
-                    WorkflowTarget.of(getSiteId(), proj.getName(), name),
+                    WorkflowTarget.of(getSiteId(), name, proj.getName()),
                     getAuthenticatedUser());
 
             return RestModels.workflowDefinition(proj, rev, def);

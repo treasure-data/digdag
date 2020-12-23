@@ -1,6 +1,7 @@
 package io.digdag.core.workflow;
 
 import com.google.common.base.Optional;
+import com.google.inject.Inject;
 import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStore;
@@ -24,15 +25,18 @@ public class WorkflowSubmitter
     private final ProjectStore projectStore;
     private final SessionStore sessionStore;
     private final TransactionManager transactionManager;
+    private final Limits limits;
+
 
     WorkflowSubmitter(int siteId, SessionTransaction transaction,
-            ProjectStore projectStore, SessionStore sessionStore, TransactionManager transactionManager)
+            ProjectStore projectStore, SessionStore sessionStore, TransactionManager transactionManager, Limits limits)
     {
         this.siteId = siteId;
         this.transaction = transaction;
         this.projectStore = projectStore;
         this.sessionStore = sessionStore;
         this.transactionManager = transactionManager;
+        this.limits = limits;
     }
 
     public StoredSessionAttemptWithSession submitDelayedAttempt(
@@ -54,8 +58,8 @@ public class WorkflowSubmitter
         try {
             long activeAttempts = transaction.getActiveAttemptCount();
 
-            if (activeAttempts + 1 > Limits.maxAttempts()) {
-                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + Limits.maxAttempts() + ", Current: " + activeAttempts);
+            if (activeAttempts + 1 > limits.maxAttempts()) {
+                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + limits.maxAttempts() + ", Current: " + activeAttempts);
             }
 
             return transaction.putAndLockSession(session, (store, storedSession) -> {

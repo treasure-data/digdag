@@ -79,7 +79,10 @@ public class ProjectArchiveTest
         }
 
         Map<String, Path> files = new HashMap<>();
-        projectArchive().listFiles(files::put);
+        projectArchive().listFiles((name, path) -> {
+            files.put(name, path);
+            return true;
+        });
 
         // keys are normalized path names
         ImmutableMap.Builder<String, Path> expected = ImmutableMap.builder();
@@ -112,7 +115,10 @@ public class ProjectArchiveTest
         }
 
         Map<String, Path> files = new HashMap<>();
-        projectArchive().listFiles(files::put);
+        projectArchive().listFiles((name, path) -> {
+            files.put(name, path);
+            return true;
+        });
 
         ImmutableMap.Builder<String, Path> expected = ImmutableMap.builder();
         expected.put("d1", d1);

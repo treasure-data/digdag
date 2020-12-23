@@ -9,7 +9,6 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.YamlConfigLoader;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,4 +90,21 @@ public class WorkflowCompilerTest
         exception.expect(ConfigException.class);
         compiler.compile("invalid_error_task", config);
     }
+
+    @Test
+    public void verifyVariableForParallelInGroupFail()
+    {
+        Config config = loadYamlResource("/io/digdag/core/workflow/parallel_variable_group.dig");
+        exception.expect(ConfigException.class);
+        compiler.compile("parallel_variable_group", config);
+    }
+
+    @Test
+    public void verifyVariableForParallel()
+    {
+        Config config = loadYamlResource("/io/digdag/core/workflow/parallel_variable_loop.dig");
+        // Currently there is no error in this case (loop operators with parallel)
+        compiler.compile("parallel_variable_loop", config);
+    }
+
 }

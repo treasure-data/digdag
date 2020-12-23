@@ -81,6 +81,80 @@ public class TdWaitOperatorFactoryTest
 
     }
 
+    @Test
+    public void testTDJobRequestParamsWithHiveEngineVersion()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+                .set("database", "testdb")
+                .set("query", "select 1")
+                .set("engine", "hive")
+                .set("hive_engine_version", "stable");
+
+        when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
+        when(op.getDatabase()).thenReturn("testdb");
+
+        TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+
+        assertEquals("testdb", jobRequest.getDatabase());
+        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals("hive", jobRequest.getType().toString());
+        assertTrue(jobRequest.getEngineVersion().isPresent());
+        assertEquals("stable", jobRequest.getEngineVersion().get().toString());
+    }
+
+    @Test
+    public void testHiveEngineVersionOverridesEngineVersion()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+                .set("database", "testdb")
+                .set("query", "select 1")
+                .set("engine", "hive")
+                .set("engine_version", "stable")
+                .set("hive_engine_version", "current");
+
+        when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
+        when(op.getDatabase()).thenReturn("testdb");
+
+        TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+
+        assertEquals("testdb", jobRequest.getDatabase());
+        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals("hive", jobRequest.getType().toString());
+        assertTrue(jobRequest.getEngineVersion().isPresent());
+        assertEquals("current", jobRequest.getEngineVersion().get().toString());
+    }
+
+    @Test
+    public void testHiveEngineVersionNotOverridesEngineVersionIfEngineIsPresto()
+            throws Exception
+    {
+        Path projectPath = Paths.get("").normalize().toAbsolutePath();
+
+        Config config = newConfig()
+                .set("database", "testdb")
+                .set("query", "select 1")
+                .set("engine", "presto")
+                .set("engine_version", "stable")
+                .set("hive_engine_version", "current");
+
+        when(op.submitNewJobWithRetry(any(TDJobRequest.class))).thenReturn("");
+        when(op.getDatabase()).thenReturn("testdb");
+
+        TDJobRequest jobRequest = testTDJobRequestParams(projectPath, config);
+
+        assertEquals("testdb", jobRequest.getDatabase());
+        assertEquals("select 1", jobRequest.getQuery());
+        assertEquals("presto", jobRequest.getType().toString());
+        assertTrue(jobRequest.getEngineVersion().isPresent());
+        assertEquals("stable", jobRequest.getEngineVersion().get().toString());
+    }
+
     private TDJobRequest testTDJobRequestParams(Path projectPath, Config config)
     {
         ArgumentCaptor<TDJobRequest> captor = ArgumentCaptor.forClass(TDJobRequest.class);

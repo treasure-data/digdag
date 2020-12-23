@@ -1,10 +1,5 @@
-// Code from Underscore.js
-function template(code, variables)
+function template(input, variables, extendedSyntax)
 {
-  var matcher = RegExp([
-    (/\${(?![a-z]+:)([\s\S]+?)}/g).source  // exclude operator-defined templates such as ${secret:sec.ret.key}
-  ].join('|') + '|$', 'g');
-
   var escapes = {
     "'":      "'",
     '\\':     '\\',
@@ -20,18 +15,68 @@ function template(code, variables)
     return '\\' + escapes[match];
   };
 
-  var index = 0;
-  var source = "__p+='";
-  code.replace(matcher, function(match, expression, offset) {
-    source += code.slice(index, offset).replace(/\$\$/g, "$").replace(escaper, escapeChar);
-    index = offset + match.length;
+  if (extendedSyntax) {
+    // (?![a-z]+:) => exclude operator-defined templates such as ${secret:sec.ret.key}
+    var matcher = /\$\{(?![a-z]+:)([\s\S]+)|$/;
 
-    if (expression) {
-      source += "'+\n((__t=(" + expression + "))==null?'':(typeof __t==\"string\"?__t:JSON.stringify(__t)))+\n'";
+    var position = 0;
+    var source = "__p+='";
+    while (position < input.length) {
+      m = input.slice(position).match(matcher);
+      if (m) {
+        all = m[0];
+        match = m[1];
+        // append text before '${' - THIS_TEXT${...}
+        source += input.slice(position, position + m.index).replace(/\$\$/g, "$").replace(escaper, escapeChar);
+        position += m.index;
+
+        if (match) {
+          // for the text after '${' - ${THIS_TEXT}
+          var paren = 0;
+          var script = "";
+          for (var i = 0; i < match.length; i++) {
+            if (match[i] == '{') {
+              paren++;
+            } else if (match[i] == '}') {
+              paren--;
+              if (paren == -1) {
+                script = match.slice(0, i);
+                break;
+              }
+            }
+          }
+
+          if (paren != -1) {
+            source += all.replace(/\$\$/g, "$").replace(escaper, escapeChar);
+            position += all.length;
+          } else {
+            if (script) {
+              source += "'+\n((__t=(" + script + "))==null?'':(typeof __t==\"string\"?__t:JSON.stringify(__t)))+\n'";
+            }
+            position += script.length + (all.length - match.length + 1);
+          }
+        }
+      }
     }
 
-    return match;
-  });
+  } else {
+    // (?![a-z]+:) => exclude operator-defined templates such as ${secret:sec.ret.key}
+    var matcher = /\${(?![a-z]+:)((?:\{)|[\s\S]+?)}|$/g;
+
+    var index = 0;
+    var source = "__p+='";
+    input.replace(matcher, function(match, expression, offset) {
+      source += input.slice(index, offset).replace(/\$\$/g, "$").replace(escaper, escapeChar);
+      index = offset + match.length;
+
+      if (expression) {
+        source += "'+\n((__t=(" + expression + "))==null?'':(typeof __t==\"string\"?__t:JSON.stringify(__t)))+\n'";
+      }
+
+      return match;
+    });
+  }
+
   source += "';\n";
 
   source = "var __t,__p='',__j=Array.prototype.join," +

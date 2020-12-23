@@ -66,7 +66,7 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   Examples:
 
   ```
-  field_delimiter: '\\t'
+  field_delimiter: "\t"
   ```
 
 * **destination_format**: CSV | NEWLINE_DELIMITED_JSON | AVRO

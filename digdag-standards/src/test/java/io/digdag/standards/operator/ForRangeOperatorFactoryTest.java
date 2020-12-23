@@ -89,6 +89,16 @@ public class ForRangeOperatorFactoryTest
     }
 
     @Test
+    public void testParallelLimit()
+            throws Exception
+    {
+        assertByResource(
+                "/io/digdag/standards/operator/for_range/parallel_limit.yml",
+                "/io/digdag/standards/operator/for_range/parallel_limit_expected.yml");
+    }
+
+
+    @Test
     public void testParse()
         throws Exception
     {

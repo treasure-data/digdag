@@ -13,6 +13,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.core.log.LogMarkers;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -85,8 +86,6 @@ import static java.util.Locale.ENGLISH;
  * READY:
  *   enqueueReadyTasks:
  *     enqueueTask:
- *       (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
- *         : CANCELED
  *       lockedTask.setReadyToRunning:
  *         : RUNNING
  *   NOTE: because updated_at column is used as a part of identifier of
@@ -95,6 +94,8 @@ import static java.util.Locale.ENGLISH;
  *
  * RUNNING:
  *   taskFailed:
+ *     (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
+ *       : CANCELED
  *     (if retryInterval is set) lockedTask.setRunningToRetryWaiting:
  *       : RETRY_WAITING with error
  *     (if error task exists) lockedTask.setRunningToPlannedWithDelayedError:
@@ -103,6 +104,8 @@ import static java.util.Locale.ENGLISH;
  *       : ERROR with error
  *
  *   taskSucceeded:
+ *     (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
+ *       : CANCELED
  *     (if subtasks or check task exist) lockedTask.setRunningToPlannedSuccessful:
  *       : PLANNED
  *     lockedTask.setRunningToShortCircuitSuccess:
@@ -169,6 +172,7 @@ public class WorkflowExecutor
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
+    private final Limits limits;
     private final DigdagMetrics metrics;
 
     private final Lock propagatorLock = new ReentrantLock();
@@ -187,6 +191,7 @@ public class WorkflowExecutor
             ConfigFactory cf,
             ObjectMapper archiveMapper,
             Config systemConfig,
+            Limits limits,
             DigdagMetrics metrics)
     {
         this.rm = rm;
@@ -197,6 +202,7 @@ public class WorkflowExecutor
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
+        this.limits = limits;
         this.metrics = metrics;
         this.enqueueRandomFetch = systemConfig.get("executor.enqueue_random_fetch", Boolean.class, false);
         this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
@@ -227,7 +233,7 @@ public class WorkflowExecutor
     {
         try {
             return sm.getSessionStore(siteId).sessionTransaction((transaction) -> {
-                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId), tm));
+                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId), tm, limits));
             });
         }
         catch (Exception ex) {
@@ -285,8 +291,8 @@ public class WorkflowExecutor
             SessionStore ss = sm.getSessionStore(siteId);
 
             long activeAttempts = ss.getActiveAttemptCount();
-            if (activeAttempts + 1 > Limits.maxAttempts()) {
-                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + Limits.maxAttempts() + ", Current: " + activeAttempts);
+            if (activeAttempts + 1 > limits.maxAttempts()) {
+                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + limits.maxAttempts() + ", Current: " + activeAttempts);
             }
 
             stored = ss
@@ -380,7 +386,7 @@ public class WorkflowExecutor
             store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
                 try {
                     TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                            storedTaskId, tasks, resumingTasks);
+                            storedTaskId, tasks, resumingTasks, limits);
                 }
                 catch (TaskLimitExceededException ex) {
                     throw new WorkflowTaskLimitExceededException(ex);
@@ -629,7 +635,7 @@ public class WorkflowExecutor
         return (tId) ->
                 tm.begin(() ->
                         sm.lockTaskIfNotLocked(tId, (store, storedTask) ->
-                                setDoneFromDoneChildren(new TaskControl(store, storedTask))));
+                                setDoneFromDoneChildren(new TaskControl(store, storedTask, limits))));
     }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
@@ -947,7 +953,7 @@ public class WorkflowExecutor
     protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
         sm.lockTaskIfNotLocked(taskId, (store, task) -> {
-            TaskControl lockedTask = new TaskControl(store, task);
+            TaskControl lockedTask = new TaskControl(store, task, limits);
             if (lockedTask.getState() != TaskStateCode.READY) {
                 return false;
             }
@@ -956,9 +962,8 @@ public class WorkflowExecutor
                 return retryGroupingTask(lockedTask);
             }
 
-            if (task.getStateFlags().isCancelRequested()) {
-                return lockedTask.setToCanceled();
-            }
+            // NOTE: Nothing to do here because CANCEL_REQUESTED task will be handled by　an agent.
+            // See also state transitions.
 
             int siteId;
             try {
@@ -1010,7 +1015,9 @@ public class WorkflowExecutor
             }
             catch (Exception ex) {
                 tm.reset();
-                logger.error("Enqueue error, making this task failed: {}", task, ex);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Enqueue error, making this task failed: {}", task, ex);
                 // TODO retry here?
                 return taskFailed(lockedTask,
                         buildExceptionErrorConfig(ex).toConfig(cf));
@@ -1057,7 +1064,9 @@ public class WorkflowExecutor
             }
             catch (RuntimeException ex) {
                 tm.reset();
-                logger.error("Invalid association of task queue lock id: {}", lock, ex);
+                logger.error(
+                        LogMarkers.UNEXPECTED_SERVER_ERROR,
+                        "Invalid association of task queue lock id: {}", lock, ex);
             }
         }
         return builder.build();
@@ -1138,6 +1147,7 @@ public class WorkflowExecutor
                 .attemptId(attempt.getId())
                 .sessionId(attempt.getSessionId())
                 .retryAttemptName(attempt.getRetryAttemptName())
+                .isCancelRequested(task.getStateFlags().isCancelRequested())
                 .taskName(task.getFullName())
                 .lockId(lockId)
                 .timeZone(attempt.getTimeZone())
@@ -1177,7 +1187,7 @@ public class WorkflowExecutor
             Config error)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            taskFailed(new TaskControl(store, task), error)
+            taskFailed(new TaskControl(store, task, limits), error)
         ).or(false);
         if (changed) {
             try {
@@ -1199,7 +1209,7 @@ public class WorkflowExecutor
             TaskResult result)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            taskSucceeded(new TaskControl(store, task),
+            taskSucceeded(new TaskControl(store, task, limits),
                     result)
         ).or(false);
         if (changed) {
@@ -1223,7 +1233,7 @@ public class WorkflowExecutor
             Optional<Config> error)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            retryTask(new TaskControl(store, task),
+            retryTask(new TaskControl(store, task, limits),
                 retryInterval, retryStateParams,
                 error)
         ).or(false);
@@ -1327,7 +1337,11 @@ public class WorkflowExecutor
         }
         catch (ConfigException ex) {
             // Subtask config or _check task config has a problem (e.g. more than one operator).
-            return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
+            Config errorConfig = buildExceptionErrorConfig(ex).toConfig(cf);
+            logger.error("Configuration error at task {}: {}",
+                    lockedTask.get().getFullName(),
+                    errorConfig.get("message", String.class, ""));
+            return taskFailed(lockedTask, errorConfig);
         }
 
         boolean updated;
