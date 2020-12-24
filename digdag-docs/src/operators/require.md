@@ -46,7 +46,7 @@
     loop>: ${moment(last_session_time).daysInMonth()}
     _do:
       require>: daily_workflow
-      session_time: ${moment(last_session_time).add(i, 'day')}
+      session_time: ${moment(last_session_time).add(i, 'day').format()}
   ```
 
 * **project_id**: project_id
