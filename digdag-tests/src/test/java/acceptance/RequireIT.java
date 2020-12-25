@@ -451,7 +451,7 @@ public class RequireIT
     }
 
     @Test
-    public void testRequireHasTargetSessionIdEvenWhenJustWaiting()
+    public void testRequireHasTargetSessionIdEvenWhenChildIsNotKicked()
             throws Exception
     {
         // Create new project
