@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import com.google.common.base.Optional;
 
 public class TemporalConfigStorage
 {
@@ -74,5 +75,15 @@ public class TemporalConfigStorage
         catch (StorageFileNotFoundException e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    public Optional<Long> getDirectDownloadExpiration()
+    {
+        return storage.getDirectDownloadExpiration();
+    }
+
+    public Optional<Long> getDirectUploadExpiration()
+    {
+        return storage.getDirectUploadExpiration();
     }
 }
