@@ -9,6 +9,7 @@ import org.immutables.value.Value;
 public interface RestSessionCollection
 {
     List<RestSession> getSessions();
+    int getTotalCount();
 
     static ImmutableRestSessionCollection.Builder builder()
     {

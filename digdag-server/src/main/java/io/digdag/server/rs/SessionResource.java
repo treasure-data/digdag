@@ -52,6 +52,7 @@ public class SessionResource
     private final AccessController ac;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
+    private static final int DEFAULT_SESSIONS_PAGE = 1;
     private static int MAX_ATTEMPTS_PAGE_SIZE;
     private static final int DEFAULT_ATTEMPTS_PAGE_SIZE = 100;
     private final DigdagMetrics metrics;
@@ -83,27 +84,40 @@ public class SessionResource
             @ApiParam(value="list sessions whose id is grater than this id for pagination", required=false)
             @QueryParam("last_id") Long lastId,
             @ApiParam(value="number of sessions to return", required=false)
-            @QueryParam("page_size") Integer pageSize)
+            @QueryParam("page_size") Integer pageSize,
+            @ApiParam(value="page of sessions to return", required=false)
+            @QueryParam("page") Integer page
+    )
             throws AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+        int validPage = Optional.fromNullable(page).or(DEFAULT_SESSIONS_PAGE);
 
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
         ac.checkListSessionsOfSite( // AccessControl
                 siteTarget,
                 getAuthenticatedUser());
 
+        AccessController.ListFilter acFilter = ac.getListSessionsFilterOfSite(
+                siteTarget,
+                getAuthenticatedUser()
+        );
+
         return tm.begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
             SessionStore ss = sm.getSessionStore(getSiteId());
 
             // of site
-            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(validPageSize, Optional.fromNullable(lastId),
-                    ac.getListSessionsFilterOfSite(
-                            siteTarget,
-                            getAuthenticatedUser()));
+            List<StoredSessionWithLastAttempt> sessions = ss.getSessions(
+                    validPageSize,
+                    Optional.fromNullable(lastId),
+                    validPage,
+                    acFilter
+            );
 
-            return RestModels.sessionCollection(rs, sessions);
+            int totalCount = ss.getSessionsCount(acFilter);
+
+            return RestModels.sessionCollection(rs, sessions, totalCount);
         });
     }
 

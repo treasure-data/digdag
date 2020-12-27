@@ -9,14 +9,20 @@ import io.digdag.spi.ac.AccessController;
 public interface SessionStore
         extends SessionTransaction
 {
-    List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId, AccessController.ListFilter acFilter);
+    List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId, int page, AccessController.ListFilter acFilter);
+
+    int getSessionsCount(AccessController.ListFilter acFilter);
 
     StoredSessionWithLastAttempt getSessionById(long sessionId)
         throws ResourceNotFoundException;
 
-    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId, AccessController.ListFilter acFilter);
+    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId, int page, AccessController.ListFilter acFilter);
 
-    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId, AccessController.ListFilter acFilter);
+    int getSessionsCountOfProject(int projectId, AccessController.ListFilter acFilter);
+
+    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId, int page, AccessController.ListFilter acFilter);
+
+    int getSessionsCountOfWorkflowByName(int projectId, String workflowName, AccessController.ListFilter acFilter);
 
     List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId, AccessController.ListFilter acFilter);
 

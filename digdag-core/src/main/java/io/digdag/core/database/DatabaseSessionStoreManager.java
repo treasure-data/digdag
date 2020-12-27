@@ -1260,9 +1260,17 @@ public class DatabaseSessionStoreManager
         public List<StoredSessionWithLastAttempt> getSessions(
                 int pageSize,
                 Optional<Long> lastId,
+                int page,
                 AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE), acFilter.getSql()));
+            int offset = (page - 1) * pageSize;
+            return autoCommit((handle, dao) -> dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE), offset, acFilter.getSql()));
+        }
+
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
+        @Override
+        public int getSessionsCount(AccessController.ListFilter acFilter) {
+            return autoCommit((handle, dao) -> dao.getSessionsCount(siteId, acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
@@ -1282,9 +1290,24 @@ public class DatabaseSessionStoreManager
                 String workflowName,
                 int pageSize,
                 Optional<Long> lastId,
+                int page,
                 AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(siteId, projectId, workflowName, pageSize, lastId.or(Long.MAX_VALUE), acFilter.getSql()));
+            int offset = (page - 1) * pageSize;
+            return autoCommit((handle, dao) -> dao.getSessionsOfWorkflowByName(
+                    siteId,
+                    projectId,
+                    workflowName,
+                    pageSize,
+                    lastId.or(Long.MAX_VALUE),
+                    offset,
+                    acFilter.getSql()));
+        }
+
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
+        @Override
+        public int getSessionsCountOfWorkflowByName(int projectId, String workflowName, AccessController.ListFilter acFilter) {
+            return autoCommit((handle, dao) -> dao.getSessionsCountOfWorkflowByName(siteId, projectId, workflowName, acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
@@ -1326,9 +1349,23 @@ public class DatabaseSessionStoreManager
                 int projectId,
                 int pageSize,
                 Optional<Long> lastId,
+                int page,
                 AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE), acFilter.getSql()));
+            int offset = (page - 1) * pageSize;
+            return autoCommit((handle, dao) -> dao.getSessionsOfProject(
+                    siteId,
+                    projectId,
+                    pageSize,
+                    lastId.or(Long.MAX_VALUE),
+                    offset,
+                    acFilter.getSql()));
+        }
+
+        @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
+        @Override
+        public int getSessionsCountOfProject(int projectId, AccessController.ListFilter acFilter) {
+            return autoCommit((handle, dao) -> dao.getSessionsCountOfProject(siteId, projectId, acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dsst_", category = "db", appendMethodName = true)
@@ -1668,11 +1705,13 @@ public class DatabaseSessionStoreManager
                 " and s.id \\< :lastId" +
                 " and <acFilter>" +
                 " order by s.id desc" +
-                " limit :limit")
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessions(
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("offset") int offset,
                 @Define("acFilter") String acFilter);
 
         // h2's MERGE doesn't reutrn generated id when conflicting row already exists
@@ -1715,11 +1754,13 @@ public class DatabaseSessionStoreManager
                 " and s.id \\< :lastId" +
                 " and <acFilter>" +
                 " order by s.id desc" +
-                " limit :limit")
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessions(
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("offset") int offset,
                 @Define("acFilter") String acFilter);
 
         @SqlQuery("insert into sessions" +
@@ -1758,7 +1799,14 @@ public class DatabaseSessionStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("offset") int offset,
                 @Define("acFilter") String acFilter);
+
+        @SqlQuery("select count(1)" +
+                 " from sessions" +
+                 " where project_id in (select id from projects where site_id = :siteId)" +
+                 " and <acFilter>")
+        int getSessionsCount(@Bind("siteId") int siteId, @Define("acFilter") String acFilter);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
@@ -1776,12 +1824,26 @@ public class DatabaseSessionStoreManager
                 " and s.id \\< :lastId" +
                 " and <acFilter>" +
                 " order by s.id desc" +
-                " limit :limit")
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessionsOfProject(
                 @Bind("siteId") int siteId,
                 @Bind("projId") int projId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("offset") int offset,
+                @Define("acFilter") String acFilter);
+
+        @SqlQuery("select count(1)" +
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " join projects proj on proj.id = s.project_id" +
+                " where s.project_id = :projId" +
+                " and sa.site_id = :siteId" +
+                " and <acFilter>")
+        int getSessionsCountOfProject(
+                @Bind("siteId") int siteId,
+                @Bind("projId") int projId,
                 @Define("acFilter") String acFilter);
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
@@ -1794,13 +1856,29 @@ public class DatabaseSessionStoreManager
                 " and s.id \\< :lastId" +
                 " and <acFilter>" +
                 " order by s.id desc" +
-                " limit :limit")
+                " limit :limit" +
+                " offset :offset")
         List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(
                 @Bind("siteId") int siteId,
                 @Bind("projId") int projId,
                 @Bind("workflowName") String workflowName,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("offset") int offset,
+                @Define("acFilter") String acFilter);
+
+        @SqlQuery("select count(1)" +
+                " from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " join projects proj on proj.id = s.project_id" +
+                " where s.project_id = :projId" +
+                " and s.workflow_name = :workflowName" +
+                " and sa.site_id = :siteId" +
+                " and <acFilter>")
+        int getSessionsCountOfWorkflowByName(
+                @Bind("siteId") int siteId,
+                @Bind("projId") int projId,
+                @Bind("workflowName") String workflowName,
                 @Define("acFilter") String acFilter);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +

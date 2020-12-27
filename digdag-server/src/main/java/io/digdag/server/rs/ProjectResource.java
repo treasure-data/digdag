@@ -148,6 +148,7 @@ public class ProjectResource
     private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
+    private static final int DEFAULT_SESSIONS_PAGE = 1;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -531,10 +532,14 @@ public class ProjectResource
             @ApiParam(value="list sessions whose id is grater than this id for pagination", required=false)
             @QueryParam("last_id") Long lastId,
             @ApiParam(value="number of sessions to return", required=false)
-            @QueryParam("page_size") Integer pageSize)
+            @QueryParam("page_size") Integer pageSize,
+            @ApiParam(value="page of sessions to return", required=false)
+            @QueryParam("page") Integer page
+    )
             throws ResourceNotFoundException, AccessControlException
     {
         int validPageSize = QueryParamValidator.validatePageSize(Optional.fromNullable(pageSize), MAX_SESSIONS_PAGE_SIZE, DEFAULT_SESSIONS_PAGE_SIZE);
+        int validPage = Optional.fromNullable(page).or(DEFAULT_SESSIONS_PAGE);
 
         return tm.<RestSessionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -543,6 +548,7 @@ public class ProjectResource
             StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId)); // check NotFound first
 
             List<StoredSessionWithLastAttempt> sessions;
+            int totalCount;
             if (workflowName != null) {
                 // of workflow
 
@@ -551,10 +557,20 @@ public class ProjectResource
                         wfTarget,
                         getAuthenticatedUser());
 
-                sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, validPageSize, Optional.fromNullable(lastId),
-                        ac.getListSessionsFilterOfWorkflow(
-                                wfTarget,
-                                getAuthenticatedUser()));
+                AccessController.ListFilter acFilter = ac.getListSessionsFilterOfWorkflow(
+                        wfTarget,
+                        getAuthenticatedUser()
+                );
+
+                sessions = ss.getSessionsOfWorkflowByName(
+                        proj.getId(),
+                        workflowName,
+                        validPageSize,
+                        Optional.fromNullable(lastId),
+                        validPage,
+                        acFilter);
+
+                totalCount = ss.getSessionsCountOfWorkflowByName(proj.getId(), workflowName, acFilter);
             }
             else {
                 // of project
@@ -564,13 +580,22 @@ public class ProjectResource
                         projTarget,
                         getAuthenticatedUser());
 
-                sessions = ss.getSessionsOfProject(proj.getId(), validPageSize, Optional.fromNullable(lastId),
-                        ac.getListSessionsFilterOfProject(
-                                projTarget,
-                                getAuthenticatedUser()));
+                AccessController.ListFilter acFilter = ac.getListSessionsFilterOfProject(
+                        projTarget,
+                        getAuthenticatedUser()
+                );
+
+                sessions = ss.getSessionsOfProject(
+                        proj.getId(),
+                        validPageSize,
+                        Optional.fromNullable(lastId),
+                        validPage,
+                        acFilter);
+
+                totalCount = ss.getSessionsCountOfProject(proj.getId(), acFilter);
             }
 
-            return RestModels.sessionCollection(ps, sessions);
+            return RestModels.sessionCollection(ps, sessions, totalCount);
         }, ResourceNotFoundException.class, AccessControlException.class);
     }
 
