@@ -807,8 +807,8 @@ class SessionsView extends React.Component {
 
   state = {
     sessions: [],
-    page: 1,
-    latestId: null
+    totalCount: 0,
+    page: 1
   };
 
   componentDidMount () {
@@ -822,12 +822,8 @@ class SessionsView extends React.Component {
   }
 
   fetch () {
-    const lastId = this.lastIdAt(this.state.page)
-    model().fetchSessions(SessionsView.pageSize, lastId).then(({ sessions }) => {
-      this.setState({ sessions })
-      if (this.state.page === 1 && sessions[0]) {
-        this.setState({ latestId: sessions[0].id })
-      }
+    model().fetchSessions(SessionsView.pageSize, this.state.page).then(({ sessions, totalCount }) => {
+      this.setState({ sessions, totalCount })
     })
   }
 
@@ -836,17 +832,7 @@ class SessionsView extends React.Component {
   }
 
   maxPage (): number {
-    if (!this.state.latestId) {
-      return 1
-    }
-    return Math.floor((this.state.latestId - 1) / SessionsView.pageSize) + 1
-  }
-
-  lastIdAt (page: number): ?number {
-    if (!this.state.latestId || page === 1) {
-      return null
-    }
-    return this.state.latestId - SessionsView.pageSize * (page - 1) + 1
+    return Math.floor((this.state.totalCount - 1) / SessionsView.pageSize) + 1
   }
 
   render () {

@@ -270,11 +270,8 @@ export class Model {
     return this.get(`attempts`)
   }
 
-  fetchSessions (pageSize: number, lastId: ?number): Promise<SessionCollection> {
-    if (lastId) {
-      return this.get(`sessions?page_size=${pageSize}&last_id=${lastId}`)
-    }
-    return this.get(`sessions?page_size=${pageSize}`)
+  fetchSessions (pageSize: number, page: number): Promise<SessionCollection> {
+    return this.get(`sessions?page_size=${pageSize}&page=${page}`)
   }
 
   fetchAttempt (attemptId: string): Promise<Attempt> {
