@@ -1,5 +1,6 @@
 package io.digdag.standards.command.ecs;
 
+import com.amazonaws.services.ecs.model.Tag;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -38,6 +39,7 @@ public class EcsClientConfig
         this.taskCpu = builder.getTaskCpu();
         this.taskMemory = builder.getTaskMemory();
         this.fargatePlatformVersion = builder.getFargatePlatformVersion();
+        this.tags = builder.getTags();
 
         // All PlacementStrategyFields must be used with a PlacementStrategyType.
         // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
@@ -131,6 +133,7 @@ public class EcsClientConfig
                 .withTaskCpu(ecsConfig.getOptional("task_cpu", String.class))
                 .withTaskMemory(ecsConfig.getOptional("task_memory", String.class))
                 .withFargatePlatformVersion(ecsConfig.getOptional("fargate_platform_version", String.class))
+                .withTags(ecsConfig.getOptionalNested("tags"))
                 .build();
     }
 
@@ -156,6 +159,7 @@ public class EcsClientConfig
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
     private final Optional<String> placementStrategyField;
     private final Optional<String> fargatePlatformVersion;
+    private final Optional<List<Tag>> tags;
 
     public String getClusterName()
     {
@@ -234,5 +238,10 @@ public class EcsClientConfig
     public Optional<String> getFargatePlatformVersion()
     {
         return fargatePlatformVersion;
+    }
+
+    public Optional<List<Tag>> getTags()
+    {
+        return tags;
     }
 }

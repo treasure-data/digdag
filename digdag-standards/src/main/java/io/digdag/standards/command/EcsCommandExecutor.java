@@ -565,6 +565,7 @@ public class EcsCommandExecutor
         setEcsTaskOverride(commandContext, commandRequest, td, runTaskRequest, clientConfig); // RuntimeException,ConfigException
         setEcsTaskLaunchType(clientConfig, runTaskRequest);
         setEcsTaskStartedBy(clientConfig, runTaskRequest);
+        setEcsTaskTags(clientConfig, runTaskRequest);
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
         setCapacityProviderStrategy(clientConfig, runTaskRequest);
         setPlacementStrategy(clientConfig, runTaskRequest);
@@ -789,6 +790,13 @@ public class EcsCommandExecutor
     {
         if (clientConfig.getStartedBy().isPresent()) {
             runTaskRequest.setStartedBy(clientConfig.getStartedBy().get());
+        }
+    }
+
+    protected void setEcsTaskTags(EcsClientConfig clientConfig, RunTaskRequest runTaskRequest)
+    {
+        if (clientConfig.getTags().isPresent()) {
+            runTaskRequest.setTags(clientConfig.getTags().get());
         }
     }
 
