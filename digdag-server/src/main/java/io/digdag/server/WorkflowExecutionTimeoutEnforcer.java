@@ -46,11 +46,14 @@ public class WorkflowExecutionTimeoutEnforcer
     private static final Duration DEFAULT_REAPING_INTERVAL = Duration.ofSeconds(5);
 
     // This is similar to TaskStateCode.notDoneStates() but BLOCKED, PLANNED, and READY are excluded.
-    // BLOCKED and PLANNED are excluded because there're other running tasks that should be enforced instead.
-    // READY is excluded the workflow itself is working correctly and number of threads is insufficient.
+    //
+    // - BLOCKED and PLANNED are excluded because there're other running tasks that should be enforced instead.
+    // - READY is excluded the workflow itself is working correctly and number of threads is insufficient.
+    // - GROUP_RETRY_WAITING is excluded because this status is supposed to be immediately changed to PLANNED
+    //   and long running group tasks with this state could happen only due to WorkflowExecutor trouble
+    //   not due to workflow definitions.
     private static final TaskStateCode[] TASK_TTL_ENFORCED_STATE_CODES = new TaskStateCode[] {
         TaskStateCode.RETRY_WAITING,
-        TaskStateCode.GROUP_RETRY_WAITING,
         TaskStateCode.RUNNING,
     };
 
