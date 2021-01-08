@@ -1,7 +1,8 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -14,11 +15,11 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestVersionCheckResult;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
-import io.digdag.standards.td.TdDigdagClientConfigurationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,10 @@ public abstract class ClientCommand
 
     @Parameter(names = {"--disable-cert-validation"})
     protected boolean disableCertValidation;
+
+    protected ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JacksonTimeModule())
+            .registerModule(new GuavaModule());
 
     @Override
     public void main()
