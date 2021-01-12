@@ -51,6 +51,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, EchoOperatorFactory.class);
         addStandardOperatorFactory(binder, IfOperatorFactory.class);
         addStandardOperatorFactory(binder, FailOperatorFactory.class);
+        addStandardOperatorFactory(binder, WaitOperatorFactory.class);
         addStandardOperatorFactory(binder, NotifyOperatorFactory.class);
         addStandardOperatorFactory(binder, PgOperatorFactory.class);
         addStandardOperatorFactory(binder, RedshiftOperatorFactory.class);
