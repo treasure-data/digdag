@@ -459,6 +459,7 @@ public class WorkflowExecutorTest
             assertEquals(TaskStateCode.SUCCESS, task.getState());
             assertThat(task.getUpdatedAt(), is(greaterThanOrEqualTo(startTime)));
             assertThat(task.getUpdatedAt(), is(lessThanOrEqualTo(finishTime)));
+            // `started_at` should be set even in group tasks including the root task
             assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(startTime)));
             assertThat(task.getStartedAt().get(), is(lessThanOrEqualTo(finishTime)));
             rootTaskStartedAt = task.getStartedAt().get().truncatedTo(ChronoUnit.SECONDS);
@@ -473,6 +474,7 @@ public class WorkflowExecutorTest
             assertEquals(TaskStateCode.SUCCESS, task.getState());
             assertThat(task.getUpdatedAt(), is(greaterThanOrEqualTo(startTime)));
             assertThat(task.getUpdatedAt(), is(lessThanOrEqualTo(finishTime)));
+            // `started_at` should be set even in group tasks including the root task
             assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(startTime)));
             assertThat(task.getStartedAt().get(), is(lessThanOrEqualTo(finishTime)));
             assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(rootTaskStartedAt)));

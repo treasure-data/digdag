@@ -1186,7 +1186,7 @@ public class DatabaseSessionStoreManager
                     " else " + TaskStateCode.READY_CODE +
                     " end, " +
                     " started_at = case" +
-                    // Update `started_at` only when it's a group task and the column is null.
+                    // Update `started_at` only when it's a group task and the column is null, in other words "not started group task."
                     // Non group tasks' `started_at` are updated by TaskControlStore.setStartedState.
                     " when task_type = " + TaskType.GROUPING_ONLY + " then coalesce(started_at, now()) else started_at end" +
                     " where state = " + TaskStateCode.BLOCKED_CODE +
