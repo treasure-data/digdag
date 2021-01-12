@@ -2,6 +2,7 @@ package io.digdag.core.workflow;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,8 +23,11 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.TaskStateCode;
 import io.digdag.metrics.StdDigdagMetrics;
 import io.digdag.spi.metrics.DigdagMetrics;
 import io.digdag.util.RetryControl;
@@ -434,6 +438,63 @@ public class WorkflowExecutorTest
         }
     }
 
+    @Test
+    public void verifySubmittedTasks()
+            throws Exception
+    {
+        Instant startTime = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        StoredSessionAttemptWithSession attempt = runWorkflow("nested", loadYamlResource("/io/digdag/core/workflow/nested.dig"));
+        embed.getLocalSite().runUntilDone(attempt.getId());
+        Instant finishTime = Instant.now().plusSeconds(1).truncatedTo(ChronoUnit.SECONDS);
+
+        List<ArchivedTask> tasks = tm.begin(() -> embed.getLocalSite().getSessionStore().getTasksOfAttempt(attempt.getId()));
+        assertEquals(3, tasks.size());
+
+        Instant rootTaskStartedAt;
+        {
+            // Root task
+            StoredTask task = tasks.get(0);
+            assertEquals("+nested", task.getFullName());
+            assertTrue(task.getTaskType().isGroupingOnly());
+            assertEquals(TaskStateCode.SUCCESS, task.getState());
+            assertThat(task.getUpdatedAt(), is(greaterThanOrEqualTo(startTime)));
+            assertThat(task.getUpdatedAt(), is(lessThanOrEqualTo(finishTime)));
+            // `started_at` should be set even in group tasks including the root task
+            assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(startTime)));
+            assertThat(task.getStartedAt().get(), is(lessThanOrEqualTo(finishTime)));
+            rootTaskStartedAt = task.getStartedAt().get().truncatedTo(ChronoUnit.SECONDS);
+        }
+
+        Instant parentTaskStartedAt;
+        {
+            // Group task
+            StoredTask task = tasks.get(1);
+            assertEquals("+nested+parent", task.getFullName());
+            assertTrue(task.getTaskType().isGroupingOnly());
+            assertEquals(TaskStateCode.SUCCESS, task.getState());
+            assertThat(task.getUpdatedAt(), is(greaterThanOrEqualTo(startTime)));
+            assertThat(task.getUpdatedAt(), is(lessThanOrEqualTo(finishTime)));
+            // `started_at` should be set even in group tasks including the root task
+            assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(startTime)));
+            assertThat(task.getStartedAt().get(), is(lessThanOrEqualTo(finishTime)));
+            assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(rootTaskStartedAt)));
+            parentTaskStartedAt = task.getStartedAt().get().truncatedTo(ChronoUnit.SECONDS);
+        }
+
+        {
+            // Nested non-group task
+            StoredTask task = tasks.get(2);
+            assertEquals("+nested+parent+child", task.getFullName());
+            assertFalse(task.getTaskType().isGroupingOnly());
+            assertEquals(TaskStateCode.SUCCESS, task.getState());
+            assertThat(task.getUpdatedAt(), is(greaterThanOrEqualTo(startTime)));
+            assertThat(task.getUpdatedAt(), is(lessThanOrEqualTo(finishTime)));
+            assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(startTime)));
+            assertThat(task.getStartedAt().get(), is(lessThanOrEqualTo(finishTime)));
+            assertThat(task.getStartedAt().get(), is(greaterThanOrEqualTo(parentTaskStartedAt)));
+        }
+    }
+
     private Optional<String> getResult(String fileName, TemporaryFolder folder)
     {
         try {
@@ -445,15 +506,15 @@ public class WorkflowExecutorTest
         }
     }
 
-    private void runWorkflow(String workflowName, Config config)
+    private StoredSessionAttemptWithSession runWorkflow(String workflowName, Config config)
             throws Exception
     {
-        WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
+        return WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
     }
 
-    private void runWorkflow(DigdagEmbed embed, String workflowName, Config config)
+    private StoredSessionAttemptWithSession runWorkflow(DigdagEmbed embed, String workflowName, Config config)
             throws Exception
     {
-        WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
+        return WorkflowTestingUtils.runWorkflow(embed, folder.getRoot().toPath(), workflowName, config);
     }
 }
