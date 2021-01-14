@@ -13,4 +13,5 @@ Workflow control operators
     if.md
     fail.md
     echo.md
+    wait.md
 
