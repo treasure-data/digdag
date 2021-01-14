@@ -79,13 +79,13 @@ public class WaitOperatorFactory
                     .transform(Instant::ofEpochMilli)
                     .or(now);
 
-            if (start.plusMillis(duration.toMillis()).compareTo(now) <= 0) {
+            if (now.isAfter(start.plusMillis(duration.toMillis()))) {
                 logger.info("wait finished. start:{}", start);
             }
             else {
                 // Wait at least 1 second
                 long nextPollSecs = Math.max(
-                        start.plusMillis(duration.toMillis()).minusMillis(now.toEpochMilli()).getEpochSecond(),
+                        Duration.between(now, start.plusMillis(duration.toMillis())).getSeconds(),
                         1);
                 logger.debug("polling after {}s", nextPollSecs);
                 throw TaskExecutionException.ofNextPolling(

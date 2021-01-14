@@ -70,7 +70,7 @@ public class WaitIT
             assertThat(status.errUtf8(), status.code(), is(0));
             assertThat(result.duration, greaterThan(baselineDuration));
             assertThat(result.duration, lessThan(
-                    // Actual wait can be delayed for some reason, so multiply the expected duration
+                    // Actual wait duration can be longer than the specified 10 seconds for some reason
                     baselineDuration.plusSeconds((long) (10 * 1.5))));
         }
     }
