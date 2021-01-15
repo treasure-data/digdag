@@ -132,12 +132,12 @@ public class WaitOperatorFactory
                     return TaskResult.empty(request);
                 }
                 catch (InterruptedException e) {
-                    // The blocking wait will be restart from the beginning when interrupted.
+                    // The blocking wait task will be restarted from the beginning when interrupted.
                     //
-                    // There is room to improve this by making the task resume from when interrupted.
+                    // There is room to improve this behavior by making the task resume from when interrupted.
                     // But this operator, especially blocking mode, is for development use,
                     // so we'll go with this simple implementation for now.
-                    throw new RuntimeException("`wait` operator with blocking mode is interrupted and this will be restart from the beginning of the wait");
+                    throw new RuntimeException("`wait` operator with blocking mode is interrupted and this will be restarted from the beginning of the wait");
                 }
             }
             else {
