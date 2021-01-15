@@ -45,7 +45,7 @@ public class WaitOperatorFactory
     private static class WaitOperator
             implements Operator
     {
-        private static final String WAIT_START_TIME_PARAM = "wait_start_time";
+        private static final String WAIT_START_TIME_PARAM = "wait_start_time_millis";
 
         private static final Logger logger = LoggerFactory.getLogger(WaitOperator.class);
 
