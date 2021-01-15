@@ -39,7 +39,6 @@ public class WaitIT
         }
     }
 
-
     private ExecResult runAndMonitorDuration(Supplier<CommandStatus> task)
     {
         Instant start = Instant.now();
@@ -48,30 +47,67 @@ public class WaitIT
         return new ExecResult(commandStatus, duration);
     }
 
-    @Test
-    public void testRun()
+    private void testWorkflow(String workflowName, int expectedDuration)
             throws Exception
     {
+        String nowaitResourcePath = "acceptance/wait/nowait.dig";
+        String targetResourcePath = "acceptance/wait/" + workflowName;
+
         Duration baselineDuration;
         {
-            copyResource("acceptance/wait/nowait.dig", root().resolve("nowait.dig"));
+            copyResource(nowaitResourcePath, root().resolve("wait.dig"));
             ExecResult result = runAndMonitorDuration(() ->
-                    main("run", "-o", root().toString(), "--project", root().toString(), "nowait.dig"));
+                    main("run", "-o", root().toString(), "--project", root().toString(), "wait.dig"));
             CommandStatus status = result.commandStatus;
             assertThat(status.errUtf8(), status.code(), is(0));
             baselineDuration = result.duration;
         }
 
         {
-            copyResource("acceptance/wait/wait_10s.dig", root().resolve("wait_10s.dig"));
+            copyResource(targetResourcePath, root().resolve("wait.dig"));
             ExecResult result = runAndMonitorDuration(() ->
-                    main("run", "-o", root().toString(), "--project", root().toString(), "wait_10s.dig"));
+                    main("run", "-o", root().toString(), "--project", root().toString(), "wait.dig"));
             CommandStatus status = result.commandStatus;
             assertThat(status.errUtf8(), status.code(), is(0));
             assertThat(result.duration, greaterThan(baselineDuration));
             assertThat(result.duration, lessThan(
                     // Actual wait duration can be longer than the specified 10 seconds for some reason
-                    baselineDuration.plusSeconds((long) (10 * 1.5))));
+                    baselineDuration.plusSeconds((long) (expectedDuration * 1.5))));
         }
+    }
+
+    @Test
+    public void testSimpleVersion()
+            throws Exception
+    {
+        testWorkflow("wait.dig", 10);
+    }
+
+    @Test
+    public void testBlockingMode()
+            throws Exception
+    {
+        testWorkflow("wait_blocking.dig", 10);
+    }
+
+    @Test
+    public void testPollInterval()
+            throws Exception
+    {
+        testWorkflow("wait_poll_interval.dig", 10);
+    }
+
+    @Test
+    public void testInvalidConfig()
+            throws Exception
+    {
+        String targetResourcePath = "acceptance/wait/wait_invalid_config.dig";
+
+        copyResource(targetResourcePath, root().resolve("wait.dig"));
+        ExecResult result = runAndMonitorDuration(() ->
+                main("run", "-o", root().toString(), "--project", root().toString(), "wait.dig"));
+        CommandStatus status = result.commandStatus;
+        // The workflow contains a conflict configuration and it should fail.
+        assertThat(status.errUtf8(), status.code(), is(1));
     }
 }
