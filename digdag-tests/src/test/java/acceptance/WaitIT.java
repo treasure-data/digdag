@@ -91,6 +91,13 @@ public class WaitIT
     }
 
     @Test
+    public void testNonBlockingMode()
+            throws Exception
+    {
+        testWorkflow("wait_nonblocking.dig", 10);
+    }
+
+    @Test
     public void testPollInterval()
             throws Exception
     {
