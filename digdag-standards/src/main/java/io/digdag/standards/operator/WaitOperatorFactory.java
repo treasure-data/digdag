@@ -81,13 +81,13 @@ public class WaitOperatorFactory
             return blocking;
         }
 
-        private Duration pollInterval(Config config)
+        private Optional<Duration> pollInterval(Config config)
         {
             Duration pollInterval;
             try {
                 Optional<String> pollIntervalStr = config.getOptional("poll_interval", String.class);
                 if (!pollIntervalStr.isPresent()) {
-                    return null;
+                    return Optional.absent();
                 }
                 pollInterval = Durations.parseDuration(pollIntervalStr.get());
             }
@@ -95,7 +95,7 @@ public class WaitOperatorFactory
                 throw new ConfigException("Invalid configuration", re);
             }
             logger.debug("wait poll_interval: {}", pollInterval);
-            return pollInterval;
+            return Optional.of(pollInterval);
         }
 
         public TaskResult run()
@@ -104,8 +104,8 @@ public class WaitOperatorFactory
 
             Duration duration = duration(config);
             boolean blocking = blocking(config);
-            Duration pollInterval = pollInterval(config);
-            if (blocking && pollInterval != null) {
+            Optional<Duration> pollInterval = pollInterval(config);
+            if (blocking && pollInterval.isPresent()) {
                 throw new ConfigException("poll_interval can't be specified with blocking:true");
             }
 
@@ -141,8 +141,8 @@ public class WaitOperatorFactory
                 }
             }
             else {
-                if (pollInterval != null) {
-                    waitDurationSeconds = pollInterval.getSeconds();
+                if (pollInterval.isPresent()) {
+                    waitDurationSeconds = pollInterval.get().getSeconds();
                 }
                 logger.debug("polling after {}s", waitDurationSeconds);
                 throw TaskExecutionException.ofNextPolling(
