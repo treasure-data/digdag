@@ -45,12 +45,14 @@ public class WaitOperatorFactory
     private static class WaitOperator
             implements Operator
     {
-        private static Logger logger = LoggerFactory.getLogger(WaitOperator.class);
+        private static final String WAIT_START_TIME_PARAM = "wait_start_time";
+
+        private static final Logger logger = LoggerFactory.getLogger(WaitOperator.class);
+
         private final OperatorContext context;
         private final TaskRequest request;
         private final Workspace workspace;
 
-        private final String WAIT_START_TIME_PARAM = "wait_start_time";
 
         private WaitOperator(OperatorContext context)
         {
