@@ -14,6 +14,7 @@ If there is no valid configuration for ECS, fallback to Docker.
 If there is no valid configuration for Docker, fallback to local.
 
 ## ECS
+### Setup
 The following is an example configuration for ECS Command Executor.
 
 ```
@@ -32,37 +33,44 @@ agent.command_executor.ecs.temporal_storage.s3.endpoint = s3.amazonaws.com
 agent.command_executor.ecs.temporal_storage.s3.credentials.access-key-id = <ACCESS KEY>
 agent.command_executor.ecs.temporal_storage.s3.credentials.secret-access-key = <SECRET KEY>
 ```
-* agent.command_executor.ecs.name = &lt;name&gt;  ECS Cluster name. &lt;name&gt; is used as the key of following configuration
 
-* agent.command_executor.ecs.&lt;name&gt;.access_key_id AWS access key for ECS. The key needs permissions for ECS and CloudWatch
-* agent.command_executor.ecs.&lt;name&gt;.secret_access_key AWS secret key
-* agent.command_executor.ecs.&lt;name&gt;.launch_type The launch type of container. `FARGATE` or `EC2`
-* agent.command_executor.ecs.&lt;name&gt;.region AWS Region
-* agent.command_executor.ecs.&lt;name&gt;.subnets AWS Subnet
-* agent.command_executor.ecs.&lt;name&gt;.max_retries retry number for AWS client
+Each sub keys of `agent.command_executor` are as follows:
 
-Following is configuration for S3 as temporal storage of ECS Command Executor.
+|  key   |  description   |
+| :----  | :----          |
+| ecs.name | ECS Cluster name. The value &lt;name&gt; is used as the key of following configuration |
+| ecs.&lt;name&gt;.access_key_id |  AWS access key for ECS. The key needs permissions for ECS and CloudWatch  |
+| ecs.&lt;name&gt;.secret_access_key | AWS secret key |
+| ecs.&lt;name&gt;.launch_type| The launch type of container. `FARGATE` or `EC2` |
+| ecs.&lt;name&gt;.region| AWS region |
+| ecs.&lt;name&gt;.subnets| AWS subnet |
+| ecs.&lt;name&gt;.max_retries| Number of retry for AWS client |
 
-* agent.command_executor.ecs.temporal_storage ECS Command Executor requires a storage for running.
-* agent.command_executor.ecs.temporal_storage.type Storage type. `s3` or `gcs`
-* agent.command_executor.ecs.temporal_storage.s3.bucket The bucket name.
-* agent.command_executor.ecs.temporal_storage.s3.endpoint The end point URL for S3
-* agent.command_executor.ecs.temporal_storage.s3.credentials.access-key-id AWS access key for the bucket 
-* agent.command_executor.ecs.temporal_storage.s3.credentials.secret-access-key AWS secret key
+Following keys are for configuration of temporal storage with AWS S3.
+
+| key   | description  |
+| :---- | :----        |
+| ecs.temporal_storage.type        | The bucket type. `s3` for AWS S3 |
+| ecs.temporal_storage.s3.bucket   | Bucket name |
+| ecs.temporal_storage.s3.endpoint | The end point URL for S3|
+| ecs.temporal_storage.s3.credentials.access-key-id    | AWS access key for the bucket |
+| ecs.temporal_storage.s3.credentials.secret-access-key| AWS secret key |
+
+### How to use from workflow
 
 In workflow definition, there are two ways to set a task on ECS.
 
-* Set `ecs.task_definition_arn`
+#### Set `ecs.task_definition_arn`
 ```
 _export:
   ecs:
     task_definition_arn: "arn:aws:ecs:us-east-1:..."
 
 +task1:
-  py>:
+  py>: ...
 ```
 
-* Set `docker.image`
+#### Set `docker.image`
 ```
 _export:
   docker:
@@ -74,7 +82,7 @@ _export:
 
 In this way, you need to set a tag `digdag.docker.image` as the image name.
 ECS Command Executor try to search the tagged Task Definition.
-(This way list and check all task definition until found and cause of stress. See issue #1488)
+(This way list and check all task definition until found and cause of high stress. See issue #1488)
 
 ## Docker
 The following is an example configuration for Docker Command Executor.
@@ -91,3 +99,37 @@ _export:
   py>: ...
 
 ```
+
+| key         | description  |
+| :---        | :---         |
+| image       | Docker image |
+| docker      | Docker command. default is `docker` |
+| run_options | Arguments to be passed to docker command.
+| pull_always | Default is `false`. Digdag caches the docker image. If you want to pull the image always, set to `true`
+
+Instead of pull a docker image, you can build a docker image to be used.
+
+```
+_export:
+  docker:
+    image: "azul/zulu-openjdk:8"
+    docker: "/usr/local/bin/docker"
+    run_options: [ "-m", "1G" ]
+    build:
+      - apt-get -y update
+      - apt-get -y install software-properties-common
+    build_options:
+      - --build-arg var1=test1
+
++task1:
+  py>: ...
+
+```
+
+Docker Command Executor generate a Dockerfile and build a image then run a container with the image.
+
+| key           | description  |
+| :---          | :---         |
+| image         | Base image in the generated Dockerfile |
+| build         | Command list which are described in the generated Dockerfile with `RUN` |
+| build_options | Option list for `docker build` |
