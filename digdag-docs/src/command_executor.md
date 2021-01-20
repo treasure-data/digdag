@@ -3,11 +3,11 @@
 
 `sh>`, `py>` `rb>` support Command Executor.
 
-Supported environments are `AWS ECS(Elastic Container Service`, `Docker`, and local.
+Supported environments are `AWS ECS (Elastic Container Service)`, `Docker`, and local.
 `Kubernetes` is under development.
 
-For example, if you define a task with `sh>`, the task runs in local. But if you add configuration for Docker, the task is executed in a docker container.
-You can switch environment to run a task with simple modification.
+For example, if you define a task with `sh>`, the task runs in local. If you add configuration for Docker, the task is executed in a docker container.
+You can switch environment to run a task without changing task definition.
 
 Currently, ECS is default Command Executor.
 If there is no valid configuration for ECS, fallback to Docker. 
@@ -36,25 +36,25 @@ agent.command_executor.ecs.temporal_storage.s3.credentials.secret-access-key = <
 
 Each sub keys of `agent.command_executor` are as follows:
 
-|  key   |  description   |
-| :----  | :----          |
-| ecs.name | ECS Cluster name. The value &lt;name&gt; is used as the key of following configuration |
-| ecs.&lt;name&gt;.access_key_id |  AWS access key for ECS. The key needs permissions for ECS and CloudWatch  |
+| key                                |  description |
+| :----                              | :---- |
+| ecs.name                           | ECS Cluster name. The value &lt;name&gt; is used as the key of following configuration |
+| ecs.&lt;name&gt;.access_key_id     | AWS access key for ECS. The key needs permissions for ECS and CloudWatch  |
 | ecs.&lt;name&gt;.secret_access_key | AWS secret key |
-| ecs.&lt;name&gt;.launch_type| The launch type of container. `FARGATE` or `EC2` |
-| ecs.&lt;name&gt;.region| AWS region |
-| ecs.&lt;name&gt;.subnets| AWS subnet |
-| ecs.&lt;name&gt;.max_retries| Number of retry for AWS client |
+| ecs.&lt;name&gt;.launch_type       | The launch type of container. `FARGATE` or `EC2` |
+| ecs.&lt;name&gt;.region            | AWS region |
+| ecs.&lt;name&gt;.subnets           | AWS subnet |
+| ecs.&lt;name&gt;.max_retries       | Number of retry for AWS client |
 
 Following keys are for configuration of temporal storage with AWS S3.
 
-| key   | description  |
-| :---- | :----        |
-| ecs.temporal_storage.type        | The bucket type. `s3` for AWS S3 |
-| ecs.temporal_storage.s3.bucket   | Bucket name |
-| ecs.temporal_storage.s3.endpoint | The end point URL for S3|
-| ecs.temporal_storage.s3.credentials.access-key-id    | AWS access key for the bucket |
-| ecs.temporal_storage.s3.credentials.secret-access-key| AWS secret key |
+| key                                                   | description |
+| :----                                                 | :----       |
+| ecs.temporal_storage.type                             | The bucket type. `s3` for AWS S3 |
+| ecs.temporal_storage.s3.bucket                        | Bucket name |
+| ecs.temporal_storage.s3.endpoint                      | The end point URL for S3|
+| ecs.temporal_storage.s3.credentials.access-key-id     | AWS access key for the bucket |
+| ecs.temporal_storage.s3.credentials.secret-access-key | AWS secret key |
 
 ### How to use from workflow
 
@@ -80,12 +80,17 @@ _export:
   py>: ...
 ```
 
-In this way, you need to set a tag `digdag.docker.image` as the image name.
-ECS Command Executor try to search the tagged Task Definition.
-(This way list and check all task definition until found and cause of high stress. See issue #1488)
+You need to set a tag `digdag.docker.image` in the task definition.
+ECS Command Executor try to search the tagged task definition.
+
+(This way list and check all task definition until found and take long time. See issue #1488)
 
 ## Docker
-The following is an example configuration for Docker Command Executor.
+### Setup
+No configuration is required to use Docker Command Executor.
+
+### How to use from workflow
+The following is an example workflow definition for Docker Command Executor.
 
 ```
 _export:
@@ -99,15 +104,16 @@ _export:
   py>: ...
 
 ```
+The sub keys in docker are as follows.
 
-| key         | description  |
-| :---        | :---         |
+| key         | description |
+| :---        | :--- |
 | image       | Docker image |
 | docker      | Docker command. default is `docker` |
 | run_options | Arguments to be passed to docker command.
-| pull_always | Default is `false`. Digdag caches the docker image. If you want to pull the image always, set to `true`
+| pull_always | Default is `false`. Digdag caches the docker image. If you want to pull the image always, set to `true` |
 
-Instead of pull a docker image, you can build a docker image to be used.
+You can build a docker image to be used with `build`
 
 ```
 _export:
@@ -126,10 +132,11 @@ _export:
 
 ```
 
-Docker Command Executor generate a Dockerfile and build a image then run a container with the image.
+Docker Command Executor generates a Dockerfile and build an image then run a container with the image.
 
-| key           | description  |
-| :---          | :---         |
+
+| key           | description |
+| :---          | :--- |
 | image         | Base image in the generated Dockerfile |
 | build         | Command list which are described in the generated Dockerfile with `RUN` |
-| build_options | Option list for `docker build` |
+| build_options | Option list for `docker build` command |
