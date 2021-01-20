@@ -69,3 +69,5 @@ html_extra_path = ['_extra']
 html_context = {
   'extra_css_files': ['_static/custom.css']
 }
+
+html_title = 'Digdag v0.10.0-SNAPSHOT'
