@@ -1,17 +1,45 @@
 package io.digdag.core.database;
 
-import java.util.*;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
-import org.skife.jdbi.v2.IDBI;
-import org.junit.*;
 import com.google.common.base.Optional;
-import com.google.common.collect.*;
-import io.digdag.core.repository.*;
-import io.digdag.core.schedule.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import io.digdag.core.repository.ImmutableProject;
+import io.digdag.core.repository.ImmutableRevision;
+import io.digdag.core.repository.ImmutableWorkflowDefinition;
+import io.digdag.core.repository.Project;
+import io.digdag.core.repository.ProjectControl;
+import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.Revision;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.TimeZoneMap;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.schedule.SchedulerManager;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.digdag.core.database.DatabaseTestingUtils.assertConflict;
+import static io.digdag.core.database.DatabaseTestingUtils.assertEmpty;
+import static io.digdag.core.database.DatabaseTestingUtils.assertNotConflict;
+import static io.digdag.core.database.DatabaseTestingUtils.assertNotFound;
+import static io.digdag.core.database.DatabaseTestingUtils.createRevision;
+import static io.digdag.core.database.DatabaseTestingUtils.createWorkflow;
+import static io.digdag.core.database.DatabaseTestingUtils.setupDatabase;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.digdag.core.database.DatabaseTestingUtils.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DatabaseProjectStoreManagerTest
 {
@@ -209,10 +237,10 @@ public class DatabaseProjectStoreManagerTest
             assertEquals(ImmutableList.of(wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.of(wf3.getId()), () -> "true"));
             assertEmpty(anotherSite.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent(), () -> "true"));
 
-            assertEquals(ImmutableList.of(wfDetails1, wfDetails3, wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(wfDetails1), store.getLatestActiveWorkflowDefinitions(1, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.of(wfDetails3.getId()), () -> "true"));
-            assertEmpty(anotherSite.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails1, wfDetails3, wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails1), store.getLatestActiveWorkflowDefinitions(1, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.of(wfDetails3.getId()), Optional.absent(), () -> "true"));
+            assertEmpty(anotherSite.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
 
             ////
             // public simple getters
@@ -328,7 +356,7 @@ public class DatabaseProjectStoreManagerTest
 
             // listing doesn't include deleted projects
             assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
 
             // lookup by project/revision id succeeds and deletedAt is set
             StoredProject deletedProj = store.getProjectById(deletingProject.getId());

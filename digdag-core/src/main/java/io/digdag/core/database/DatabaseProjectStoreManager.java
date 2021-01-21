@@ -39,8 +39,6 @@ import org.skife.jdbi.v2.sqlobject.customizers.Define;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import javax.activation.DataSource;
-
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -53,8 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ENGLISH;
 
 public class DatabaseProjectStoreManager
         extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
@@ -292,6 +290,7 @@ public class DatabaseProjectStoreManager
         public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 int pageSize,
                 Optional<Long> lastId,
+                Optional<String> name,
                 AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
