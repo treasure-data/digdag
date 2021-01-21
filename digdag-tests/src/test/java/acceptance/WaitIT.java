@@ -72,7 +72,7 @@ public class WaitIT
             assertThat(result.duration, greaterThan(baselineDuration));
             assertThat(result.duration, lessThan(
                     // Actual wait duration can be longer than the specified 10 seconds for some reason
-                    baselineDuration.plusSeconds((long) (expectedDuration * 1.5))));
+                    baselineDuration.plusSeconds(expectedDuration * 3)));
         }
     }
 
