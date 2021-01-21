@@ -294,7 +294,13 @@ public class DatabaseProjectStoreManager
                 AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
-            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(
+                    siteId,
+                    pageSize,
+                    lastId.or(0L),
+                    name.isPresent() && !name.get().isEmpty() ? "%" + escapeLikeParameter(name.get()) + "%" : "%",
+                    acFilter.getSql())
+            );
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
@@ -353,6 +359,12 @@ public class DatabaseProjectStoreManager
 
             Map<Long, ZoneId> map = IdTimeZone.listToMap(list);
             return new TimeZoneMap(map);
+        }
+
+        private String escapeLikeParameter(String parameter)
+        {
+            return parameter.replace("%", "\\%")
+                    .replace("_", "\\_");
         }
     }
 
@@ -570,6 +582,7 @@ public class DatabaseProjectStoreManager
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id \\> :lastId" +
+                " and wd.name like :name" +
                 " and <acFilter>" +
                 " order by wd.id" +
                 " limit :limit")
@@ -577,6 +590,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("name") String name,
                 @Define("acFilter") String acFilter);
     }
 
@@ -612,6 +626,7 @@ public class DatabaseProjectStoreManager
                         " group by r.project_id" +
                     " )) " +
                     " and wf.id \\> :lastId" +
+                    " and wf.name like :name" +
                     " and <acFilter>" +
                     " order by wf.id" +
                     " limit :limit" +
@@ -624,6 +639,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("name") String name,
                 @Define("acFilter") String acFilter);
     }
 
@@ -727,7 +743,7 @@ public class DatabaseProjectStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String acFilter);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String name, String acFilter);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
