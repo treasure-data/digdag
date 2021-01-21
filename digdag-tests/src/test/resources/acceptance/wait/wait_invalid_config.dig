@@ -1,0 +1,4 @@
++wait:
+  wait>: 10s
+  blocking: true
+  poll_interval: 5s
