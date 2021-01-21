@@ -83,7 +83,7 @@ _export:
 You need to set a tag `digdag.docker.image` in the task definition.
 ECS Command Executor try to search the tagged task definition.
 
-(This way lists and check all task definitions until found and take long time to run the task. See issue #1488)
+(This way lists and check all task definitions until found and take long time to run the task. See issue [#1488](https://github.com/treasure-data/digdag/issues/1488))
 
 ## Docker
 ### Setup
