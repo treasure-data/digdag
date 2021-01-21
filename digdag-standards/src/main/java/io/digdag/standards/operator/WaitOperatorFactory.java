@@ -83,19 +83,18 @@ public class WaitOperatorFactory
 
         private Optional<Duration> pollInterval(Config config)
         {
-            Duration pollInterval;
             try {
-                Optional<String> pollIntervalStr = config.getOptional("poll_interval", String.class);
-                if (!pollIntervalStr.isPresent()) {
-                    return Optional.absent();
+                Optional<Duration> pollInterval = config
+                        .getOptional("poll_interval", String.class)
+                        .transform(Durations::parseDuration);
+                if (pollInterval.isPresent()) {
+                    logger.debug("wait poll_interval: {}", pollInterval.get());
                 }
-                pollInterval = Durations.parseDuration(pollIntervalStr.get());
+                return pollInterval;
             }
             catch (RuntimeException re) {
                 throw new ConfigException("Invalid configuration", re);
             }
-            logger.debug("wait poll_interval: {}", pollInterval);
-            return Optional.of(pollInterval);
         }
 
         public TaskResult run()
