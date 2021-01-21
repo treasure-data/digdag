@@ -1,7 +1,7 @@
 # Command Executor
 `Command Executor` provides a functionality to run operators in various environment like Docker.
 
-`sh>`, `py>` `rb>` support Command Executor.
+`sh>`, `py>`, and `rb>` support Command Executor.
 
 Supported environments are `AWS ECS (Elastic Container Service)`, `Docker`, and local.
 `Kubernetes` is under development.
