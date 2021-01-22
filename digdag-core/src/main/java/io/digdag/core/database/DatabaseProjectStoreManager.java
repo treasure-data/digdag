@@ -298,7 +298,7 @@ public class DatabaseProjectStoreManager
                     siteId,
                     pageSize,
                     lastId.or(0L),
-                    name.isPresent() && !name.get().isEmpty() ? "%" + escapeLikeParameter(name.get()) + "%" : "%",
+                    generatePartialMatchPattern(name),
                     acFilter.getSql())
             );
         }
@@ -361,9 +361,16 @@ public class DatabaseProjectStoreManager
             return new TimeZoneMap(map);
         }
 
-        private String escapeLikeParameter(String parameter)
+        private String generatePartialMatchPattern(Optional<String> pattern)
         {
-            return parameter.replace("%", "\\%")
+            // If provided pattern is absent or empty string, just set '%'
+            // so that the pattern does not affect to a where clause.
+            return pattern.isPresent() && !pattern.get().isEmpty() ? "%" + escapeLikeParameter(pattern.get()) + "%" : "%";
+        }
+
+        private String escapeLikeParameter(String pattern)
+        {
+            return pattern.replace("%", "\\%")
                     .replace("_", "\\_");
         }
     }
