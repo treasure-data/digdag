@@ -303,6 +303,69 @@ public class DatabaseProjectStoreManagerTest
     }
 
     @Test
+    public void testGetActiveWorkflows()
+            throws Exception
+    {
+        factory.begin(() -> {
+            Project srcProj1 = Project.of("proj1");
+            Revision srcRev1 = createRevision("rev1");
+            WorkflowDefinition srcWf1 = createWorkflow("wf1");
+            WorkflowDefinition srcWf2 = createWorkflow("test_wf2");
+            WorkflowDefinition srcWf3 = createWorkflow("test_wf3");
+            WorkflowDefinition srcWf4 = createWorkflow("wf%4");
+            WorkflowDefinition srcWf5 = createWorkflow("wf_5");
+            WorkflowDefinition srcWf6 = createWorkflow("wf%_6");
+            final AtomicReference<StoredRevision> revRef = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRef1 = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRef2 = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRef3 = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRef4 = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRef5 = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRef6 = new AtomicReference<>();
+            StoredProject proj1 = store.putAndLockProject(
+                    srcProj1,
+                    (store, stored) -> {
+                        ProjectControl lock = new ProjectControl(store, stored);
+                        assertNotConflict(() -> {
+                            revRef.set(lock.insertRevision(srcRev1));
+                            wfRef1.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf1), sm, Instant.now()).get(0));
+                            wfRef2.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf2), sm, Instant.now()).get(0));
+                            wfRef3.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf3), sm, Instant.now()).get(0));
+                            wfRef4.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf4), sm, Instant.now()).get(0));
+                            wfRef5.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf5), sm, Instant.now()).get(0));
+                            wfRef6.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf6), sm, Instant.now()).get(0));
+                        });
+                        return lock.get();
+                    });
+            StoredWorkflowDefinition wf1 = wfRef1.get();
+            StoredWorkflowDefinition wf2 = wfRef2.get();
+            StoredWorkflowDefinition wf3 = wfRef3.get();
+            StoredWorkflowDefinition wf4 = wfRef4.get();
+            StoredWorkflowDefinition wf5 = wfRef5.get();
+            StoredWorkflowDefinition wf6 = wfRef6.get();
+            StoredWorkflowDefinitionWithProject wfDetails1 = StoredWorkflowDefinitionWithProject.of(wf1, proj1, srcRev1);
+            StoredWorkflowDefinitionWithProject wfDetails2 = StoredWorkflowDefinitionWithProject.of(wf2, proj1, srcRev1);
+            StoredWorkflowDefinitionWithProject wfDetails3 = StoredWorkflowDefinitionWithProject.of(wf3, proj1, srcRev1);
+            StoredWorkflowDefinitionWithProject wfDetails4 = StoredWorkflowDefinitionWithProject.of(wf4, proj1, srcRev1);
+            StoredWorkflowDefinitionWithProject wfDetails5 = StoredWorkflowDefinitionWithProject.of(wf5, proj1, srcRev1);
+            StoredWorkflowDefinitionWithProject wfDetails6 = StoredWorkflowDefinitionWithProject.of(wf6, proj1, srcRev1);
+
+            assertEquals(ImmutableList.of(wfDetails1, wfDetails2, wfDetails3, wfDetails4, wfDetails5, wfDetails6),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails2, wfDetails3),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("test"), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails4, wfDetails6),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("%"), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails2, wfDetails3, wfDetails5, wfDetails6),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("_"), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails6),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("%_"), () -> "true"));
+            assertEquals(ImmutableList.of(),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("*"), () -> "true"));
+        });
+    }
+
+    @Test
     public void testRevisionArchiveData()
         throws Exception
     {
