@@ -290,7 +290,7 @@ public class DatabaseProjectStoreManager
         public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 int pageSize,
                 Optional<Long> lastId,
-                Optional<String> name,
+                Optional<String> namePattern,
                 AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
@@ -298,7 +298,7 @@ public class DatabaseProjectStoreManager
                     siteId,
                     pageSize,
                     lastId.or(0L),
-                    generatePartialMatchPattern(name),
+                    generatePartialMatchPattern(namePattern),
                     acFilter.getSql())
             );
         }
@@ -365,10 +365,10 @@ public class DatabaseProjectStoreManager
         {
             // If provided pattern is absent or empty string, just set '%'
             // so that the pattern does not affect to a where clause.
-            return pattern.isPresent() && !pattern.get().isEmpty() ? "%" + escapeLikeParameter(pattern.get()) + "%" : "%";
+            return pattern.isPresent() && !pattern.get().isEmpty() ? "%" + escapeLikePattern(pattern.get()) + "%" : "%";
         }
 
-        private String escapeLikeParameter(String pattern)
+        private String escapeLikePattern(String pattern)
         {
             return pattern.replace("%", "\\%")
                     .replace("_", "\\_");
