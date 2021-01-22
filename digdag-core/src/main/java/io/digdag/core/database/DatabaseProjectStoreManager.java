@@ -589,6 +589,11 @@ public class DatabaseProjectStoreManager
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id \\> :lastId" +
+                // `workflow_definitions` table has a composite index
+                // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
+                // And the index is used for filter by `revision_id` and `name`.
+                // Since this query always limits the records by `revision_id` (the latest revision's one),
+                // partial matching of `name` (e.g. '%test%') can be accepted.
                 " and wd.name like :name" +
                 " and <acFilter>" +
                 " order by wd.id" +
@@ -633,6 +638,11 @@ public class DatabaseProjectStoreManager
                         " group by r.project_id" +
                     " )) " +
                     " and wf.id \\> :lastId" +
+                    // `workflow_definitions` table has a composite index
+                    // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
+                    // And the index is used for filter by `revision_id` and `name`.
+                    // Since this query always limits the records by `revision_id` (the latest revision's one),
+                    // partial matching of `name` (e.g. '%test%') can be accepted.
                     " and wf.name like :name" +
                     " and <acFilter>" +
                     " order by wf.id" +
