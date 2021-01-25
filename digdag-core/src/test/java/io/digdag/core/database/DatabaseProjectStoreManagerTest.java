@@ -352,6 +352,8 @@ public class DatabaseProjectStoreManagerTest
 
             assertEquals(ImmutableList.of(wfDetails1, wfDetails2, wfDetails3, wfDetails4, wfDetails5, wfDetails6),
                     store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(wfDetails1, wfDetails2, wfDetails3, wfDetails4, wfDetails5, wfDetails6),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable(""), () -> "true"));
             assertEquals(ImmutableList.of(wfDetails2, wfDetails3),
                     store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("test"), () -> "true"));
             assertEquals(ImmutableList.of(wfDetails4, wfDetails6),

@@ -365,7 +365,7 @@ public class DatabaseProjectStoreManager
         {
             // If provided pattern is absent or empty string, just set '%'
             // so that the pattern does not affect to a where clause.
-            return pattern.isPresent() && !pattern.get().isEmpty() ? "%" + escapeLikePattern(pattern.get()) + "%" : "%";
+            return !pattern.or("").isEmpty() ? "%" + escapeLikePattern(pattern.get()) + "%" : "%";
         }
 
         private String escapeLikePattern(String pattern)
