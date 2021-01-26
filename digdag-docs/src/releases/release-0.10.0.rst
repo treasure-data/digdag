@@ -12,7 +12,7 @@ General Changes
 * Abolished JWT authentication. [#1324]
 * Some API have been abolished and changed. [#1109 #1110 #1114 #1115 #1224 #1288 #1398 #1401]
 * `_parallel` option supports a number to control number of parallels. [#1413]
-* The maximum number of tasks, attempts are configurable. [#1430]
+* The maximum numbers of tasks and attempts are configurable. [#1430]
 * Upgrade Gradle to 6.3 [#1391]
 
 Fixed Issues
@@ -22,7 +22,7 @@ Fixed Issues
 * Group retry improvements. [#1184]
 * `http>` operator improvements. [#1197]
 * `s3_wait>` operator improvements. [#1280]
-* `py> operator` improvements. [#1477]
+* `py>` operator improvements. [#1477]
 * TD operators improvements [#1447 #1444]
 * Stability, performance improvements. [#1207 #1235 #1390 #1438 #1442 #1468 #1495]
 
