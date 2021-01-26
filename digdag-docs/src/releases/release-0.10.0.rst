@@ -37,7 +37,7 @@ Release Date
 Contributors
 ------------
 * You Yamagata
-* Leen
+* Leen Sun
 * Shota Suzuki
 * Muga Nishizawa
 * Hiroyuki Sato
