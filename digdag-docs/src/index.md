@@ -32,6 +32,7 @@ Digdag fits simple replacement of cron, IT operations automation, data analytics
    command_executor.md
    internal.rst
    metrics.rst
+   community_contributions.md
    releases.rst
    logo.md
 ```
