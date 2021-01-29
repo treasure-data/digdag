@@ -13,7 +13,8 @@ General Changes
 * Some API have been abolished and changed. [#1109 #1110 #1114 #1115 #1224 #1288 #1398 #1401]
 * `_parallel` option supports a number to control number of parallels. [#1413]
 * The maximum numbers of tasks and attempts are configurable. [#1430]
-* Upgrade Gradle to 6.3 [#1391]
+* Add a document `Community Contributions <https://docs.digdag.io/community_contributions.html>`_. [#1527]
+* Upgrade Gradle to 6.3. [#1391]
 
 Fixed Issues
 ------------
@@ -32,7 +33,7 @@ Milestone
 
 Release Date
 ------------
-2021-02-01
+2021-01-29
 
 Contributors
 ------------
