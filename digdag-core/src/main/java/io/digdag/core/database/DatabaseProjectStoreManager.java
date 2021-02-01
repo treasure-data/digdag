@@ -594,7 +594,7 @@ public class DatabaseProjectStoreManager
                 // And the index is used for filter by `revision_id` and `name`.
                 // Since this query always limits the records by `revision_id` (the latest revision's one),
                 // partial matching of `name` (e.g. '%test%') can be accepted.
-                " and wd.name like :name" +
+                " and wd.name like :namePattern" +
                 " and <acFilter>" +
                 " order by wd.id" +
                 " limit :limit")
@@ -602,7 +602,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
-                @Bind("name") String name,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
     }
 
@@ -643,7 +643,7 @@ public class DatabaseProjectStoreManager
                     // And the index is used for filter by `revision_id` and `name`.
                     // Since this query always limits the records by `revision_id` (the latest revision's one),
                     // partial matching of `name` (e.g. '%test%') can be accepted.
-                    " and wf.name like :name" +
+                    " and wf.name like :namePattern" +
                     " and <acFilter>" +
                     " order by wf.id" +
                     " limit :limit" +
@@ -656,7 +656,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
-                @Bind("name") String name,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
     }
 
@@ -760,7 +760,7 @@ public class DatabaseProjectStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String name, String acFilter);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String namePattern, String acFilter);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
