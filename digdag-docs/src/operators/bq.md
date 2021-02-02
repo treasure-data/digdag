@@ -32,6 +32,8 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
     digdag secrets --project my_project --set gcp.credential=@my-svc-account-b4df00d.json
 
+  If gcp.credential is not set, digdag tries to get [Application Default Credential](https://cloud.google.com/docs/authentication/production#automatically).
+
 ## Options
 
 * **bq>**: query.sql
