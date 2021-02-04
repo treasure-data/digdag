@@ -27,23 +27,23 @@ class GcpCredentialProvider
     GcpCredential credential(SecretProvider secrets)
     {
         Optional<String> credentialOpt = secrets.getSecretOptional("gcp.credential");
-         ImmutableGcpCredential.Builder builder = ImmutableGcpCredential.builder();
-         if (credentialOpt.isPresent()) {
-           String credential = credentialOpt.get();
-           builder.projectId(credentialProjectId(credential))
-             .credential(googleCredential(credential));
-         }
-         else {
-           try {
-             builder.projectId(ServiceOptions.getDefaultProjectId())
-               .credential(GoogleCredential.getApplicationDefault());
-           }
-           catch (IOException e) {
-             throw new TaskExecutionException(
-               "Could not get google cloud credential: need gcp.credential secret or Application Default Credentials",
-               e
-             );
-           }
+        ImmutableGcpCredential.Builder builder = ImmutableGcpCredential.builder();
+        if (credentialOpt.isPresent()) {
+            String credential = credentialOpt.get();
+            builder.projectId(credentialProjectId(credential))
+            .credential(googleCredential(credential));
+        }
+        else {
+            try {
+                builder.projectId(ServiceOptions.getDefaultProjectId())
+                .credential(GoogleCredential.getApplicationDefault());
+            }
+            catch (IOException e) {
+                throw new TaskExecutionException(
+                    "Could not get google cloud credential: need gcp.credential secret or Application Default Credentials",
+                    e
+                );
+            }
          }
          return builder.build();
     }
