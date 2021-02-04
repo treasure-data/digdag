@@ -113,7 +113,10 @@ public class WorkflowResource
             @ApiParam(value="list workflows whose id is grater than this id for pagination", required=false)
             @QueryParam("last_id") Long lastId,
             @ApiParam(value="number of workflows to return", required=false)
-            @QueryParam("count") Integer count)
+            @QueryParam("count") Integer count,
+            @ApiParam(value="name pattern to be partially matched", required=false)
+            @QueryParam("name_pattern") String namePattern
+    )
             throws ResourceNotFoundException, AccessControlException
     {
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
@@ -123,6 +126,7 @@ public class WorkflowResource
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
                             .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // check NotFound first
+                                    Optional.fromNullable(namePattern),
                                     ac.getListWorkflowsFilterOfSite(
                                             SiteTarget.of(getSiteId()),
                                             getAuthenticatedUser()));

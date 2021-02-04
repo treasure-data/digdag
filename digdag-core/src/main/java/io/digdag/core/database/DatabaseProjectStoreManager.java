@@ -39,8 +39,6 @@ import org.skife.jdbi.v2.sqlobject.customizers.Define;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import javax.activation.DataSource;
-
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -53,8 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ENGLISH;
 
 public class DatabaseProjectStoreManager
         extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
@@ -292,10 +290,17 @@ public class DatabaseProjectStoreManager
         public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 int pageSize,
                 Optional<Long> lastId,
+                Optional<String> namePattern,
                 AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
-            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(
+                    siteId,
+                    pageSize,
+                    lastId.or(0L),
+                    generatePartialMatchPattern(namePattern),
+                    acFilter.getSql())
+            );
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
@@ -354,6 +359,19 @@ public class DatabaseProjectStoreManager
 
             Map<Long, ZoneId> map = IdTimeZone.listToMap(list);
             return new TimeZoneMap(map);
+        }
+
+        private String generatePartialMatchPattern(Optional<String> pattern)
+        {
+            // If provided pattern is absent or empty string, just set '%'
+            // so that the pattern does not affect to a where clause.
+            return !pattern.or("").isEmpty() ? "%" + escapeLikePattern(pattern.get()) + "%" : "%";
+        }
+
+        private String escapeLikePattern(String pattern)
+        {
+            return pattern.replace("%", "\\%")
+                    .replace("_", "\\_");
         }
     }
 
@@ -571,6 +589,12 @@ public class DatabaseProjectStoreManager
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id \\> :lastId" +
+                // `workflow_definitions` table has a composite index
+                // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
+                // And the index is used for filter by `revision_id` and `name`.
+                // Since this query always limits the records by `revision_id` (the latest revision's one),
+                // partial matching of `name` (e.g. '%test%') can be accepted.
+                " and wd.name like :namePattern" +
                 " and <acFilter>" +
                 " order by wd.id" +
                 " limit :limit")
@@ -578,6 +602,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
     }
 
@@ -613,6 +638,12 @@ public class DatabaseProjectStoreManager
                         " group by r.project_id" +
                     " )) " +
                     " and wf.id \\> :lastId" +
+                    // `workflow_definitions` table has a composite index
+                    // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
+                    // And the index is used for filter by `revision_id` and `name`.
+                    // Since this query always limits the records by `revision_id` (the latest revision's one),
+                    // partial matching of `name` (e.g. '%test%') can be accepted.
+                    " and wf.name like :namePattern" +
                     " and <acFilter>" +
                     " order by wf.id" +
                     " limit :limit" +
@@ -625,6 +656,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
     }
 
@@ -728,7 +760,7 @@ public class DatabaseProjectStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String acFilter);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String namePattern, String acFilter);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
