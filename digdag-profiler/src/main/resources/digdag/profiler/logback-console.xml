@@ -1,0 +1,21 @@
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\) %class: %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="com.zaxxer.hikari" level="WARN"/>
+
+  <!-- disable header and content logging by default that may leak security information -->
+  <logger name="org.apache.http.wire" level="WARN"/>
+  <logger name="org.apache.http.headers" level="WARN"/>
+
+  <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
+  </appender>
+
+  <root level="${digdag.log.level}">
+    <appender-ref ref="console"/>
+    <appender-ref ref="digdag-context"/>
+  </root>
+</configuration>
