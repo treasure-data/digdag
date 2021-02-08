@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -13,6 +14,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -87,6 +90,8 @@ public class MailOperatorFactory
         boolean debug();
         Optional<String> username();
         Optional<String> password();
+        Optional<DurationParam> connectionTimeout();
+        Optional<DurationParam> socketTimeout();
     }
 
     @Value.Immutable
@@ -223,8 +228,12 @@ public class MailOperatorFactory
                 props.put("mail.smtp.socketFactory.fallback", "false");
             }
             props.setProperty("mail.debug", String.valueOf(smtpConfig.debug()));
-            props.setProperty("mail.smtp.connectiontimeout", "10000");
-            props.setProperty("mail.smtp.timeout", "60000");
+            props.setProperty("mail.smtp.connectiontimeout",
+                    String.valueOf(smtpConfig.connectionTimeout()
+                            .or(DurationParam.of(Duration.ofSeconds(30))).getDuration().toMillis()));
+            props.setProperty("mail.smtp.timeout",
+                    String.valueOf(smtpConfig.socketTimeout()
+                            .or(DurationParam.of(Duration.ofSeconds(120))).getDuration().toMillis()));
 
             Session session;
             Optional<String> username = smtpConfig.username();
@@ -258,7 +267,8 @@ public class MailOperatorFactory
         }
     }
 
-    private static Optional<SmtpConfig> systemSmtpConfig(Config systemConfig)
+    @VisibleForTesting
+    static Optional<SmtpConfig> systemSmtpConfig(Config systemConfig)
     {
         Optional<String> host = systemConfig.getOptional("config.mail.host", String.class);
         if (!host.isPresent()) {
@@ -272,11 +282,14 @@ public class MailOperatorFactory
                 .debug(systemConfig.get("config.mail.debug", boolean.class, false))
                 .username(systemConfig.getOptional("config.mail.username", String.class))
                 .password(systemConfig.getOptional("config.mail.password", String.class))
+                .connectionTimeout(systemConfig.getOptional("config.mail.connect_timeout", DurationParam.class))
+                .socketTimeout(systemConfig.getOptional("config.mail.socket_timeout", DurationParam.class))
                 .build();
         return Optional.of(config);
     }
 
-    private static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, Config params)
+    @VisibleForTesting
+    static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, Config params)
     {
         Optional<String> userHost = secrets.getSecretOptional("host").or(params.getOptional("host", String.class));
         if (!userHost.isPresent()) {
@@ -294,6 +307,8 @@ public class MailOperatorFactory
                 .debug(params.get("debug", boolean.class, false))
                 .username(secrets.getSecretOptional("username").or(params.getOptional("username", String.class)))
                 .password(secrets.getSecretOptional("password"))
+                .connectionTimeout(params.getOptional("connect_timeout", DurationParam.class))
+                .socketTimeout(params.getOptional("socket_timeout", DurationParam.class))
                 .build();
         return Optional.of(config);
     }
