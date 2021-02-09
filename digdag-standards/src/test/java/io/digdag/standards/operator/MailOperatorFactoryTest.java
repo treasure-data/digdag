@@ -55,6 +55,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -501,15 +502,17 @@ public class MailOperatorFactoryTest
     public void userSmtpConfig()
     {
         SecretProvider secretProvider = mock(SecretProvider.class);
+        doReturn(Optional.absent()).when(secretProvider).getSecretOptional(any());
         doReturn(Optional.of("hello")).when(secretProvider).getSecretOptional(eq("username"));
         doReturn(Optional.of("world1234")).when(secretProvider).getSecretOptional(eq("password"));
         doReturn(Optional.of("mail.digdag.io")).when(secretProvider).getSecretOptional(eq("host"));
-        doReturn(Optional.of("2525")).when(secretProvider).getSecretOptional(eq("port"));
-        doReturn(Optional.of(false)).when(secretProvider).getSecretOptional(eq("tls"));
-        doReturn(Optional.of(true)).when(secretProvider).getSecretOptional(eq("ssl"));
-        doReturn(Optional.of(true)).when(secretProvider).getSecretOptional(eq("debug"));
 
         Config params = newConfig()
+                .set("host", "mail.digdag.io")
+                .set("port", 2525)
+                .set("tls", false)
+                .set("ssl", true)
+                .set("debug", true)
                 .set("connect_timeout", "42s")
                 .set("socket_timeout", "7m");
 

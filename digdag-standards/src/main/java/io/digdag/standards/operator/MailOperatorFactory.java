@@ -44,6 +44,11 @@ public class MailOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(MailOperatorFactory.class);
 
+    private static final String CONFIG_KEY_CONNECT_TIMEOUT = "connect_timeout";
+    private static final String CONFIG_KEY_SOCKET_TIMEOUT = "socket_timeout";
+    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(60);
+    private static final Duration DEFAULT_SOCKET_TIMEOUT = Duration.ofSeconds(180);
+
     private final TemplateEngine templateEngine;
     private final MailDefaults mailDefaults;
     private final Optional<SmtpConfig> systemSmtpConfig;
@@ -301,6 +306,8 @@ public class MailOperatorFactory
         }
         SmtpConfig config = ImmutableSmtpConfig.builder()
                 .host(userHost.get())
+                // This code expects `params` has `port` field even if `secrets` has the field.
+                // Maybe we need to revisit here later to see whether this is intentional or not.
                 .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(params.get("port", int.class)))
                 .startTls(secrets.getSecretOptional("tls").transform(Boolean::parseBoolean).or(params.get("tls", boolean.class, true)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false)))
