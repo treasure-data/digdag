@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -13,6 +14,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -40,6 +43,11 @@ public class MailOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(MailOperatorFactory.class);
+
+    private static final String CONFIG_KEY_CONNECT_TIMEOUT = "connect_timeout";
+    private static final String CONFIG_KEY_SOCKET_TIMEOUT = "socket_timeout";
+    private static final DurationParam DEFAULT_CONNECT_TIMEOUT = DurationParam.of(Duration.ofSeconds(60));
+    private static final DurationParam DEFAULT_SOCKET_TIMEOUT = DurationParam.of(Duration.ofSeconds(180));
 
     private final TemplateEngine templateEngine;
     private final MailDefaults mailDefaults;
@@ -87,6 +95,8 @@ public class MailOperatorFactory
         boolean debug();
         Optional<String> username();
         Optional<String> password();
+        DurationParam connectTimeout();
+        DurationParam socketTimeout();
     }
 
     @Value.Immutable
@@ -223,8 +233,10 @@ public class MailOperatorFactory
                 props.put("mail.smtp.socketFactory.fallback", "false");
             }
             props.setProperty("mail.debug", String.valueOf(smtpConfig.debug()));
-            props.setProperty("mail.smtp.connectiontimeout", "10000");
-            props.setProperty("mail.smtp.timeout", "60000");
+            props.setProperty("mail.smtp.connectiontimeout",
+                    String.valueOf(smtpConfig.connectTimeout().getDuration().toMillis()));
+            props.setProperty("mail.smtp.timeout",
+                    String.valueOf(smtpConfig.socketTimeout().getDuration().toMillis()));
 
             Session session;
             Optional<String> username = smtpConfig.username();
@@ -258,7 +270,13 @@ public class MailOperatorFactory
         }
     }
 
-    private static Optional<SmtpConfig> systemSmtpConfig(Config systemConfig)
+    private static String sysConfKey(String key)
+    {
+        return "config.mail." + key;
+    }
+
+    @VisibleForTesting
+    static Optional<SmtpConfig> systemSmtpConfig(Config systemConfig)
     {
         Optional<String> host = systemConfig.getOptional("config.mail.host", String.class);
         if (!host.isPresent()) {
@@ -272,11 +290,16 @@ public class MailOperatorFactory
                 .debug(systemConfig.get("config.mail.debug", boolean.class, false))
                 .username(systemConfig.getOptional("config.mail.username", String.class))
                 .password(systemConfig.getOptional("config.mail.password", String.class))
+                .connectTimeout(
+                        systemConfig.get(sysConfKey(CONFIG_KEY_CONNECT_TIMEOUT), DurationParam.class, DEFAULT_CONNECT_TIMEOUT))
+                .socketTimeout(
+                        systemConfig.get(sysConfKey(CONFIG_KEY_SOCKET_TIMEOUT), DurationParam.class, DEFAULT_SOCKET_TIMEOUT))
                 .build();
         return Optional.of(config);
     }
 
-    private static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, Config params)
+    @VisibleForTesting
+    static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, Config params)
     {
         Optional<String> userHost = secrets.getSecretOptional("host").or(params.getOptional("host", String.class));
         if (!userHost.isPresent()) {
@@ -288,12 +311,16 @@ public class MailOperatorFactory
         }
         SmtpConfig config = ImmutableSmtpConfig.builder()
                 .host(userHost.get())
+                // TODO: This code expects `params` has `port` field even if `secrets` has the field.
+                //       Maybe we need to revisit here later to see whether this behavior is reasonable or not.
                 .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(params.get("port", int.class)))
                 .startTls(secrets.getSecretOptional("tls").transform(Boolean::parseBoolean).or(params.get("tls", boolean.class, true)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false)))
                 .debug(params.get("debug", boolean.class, false))
                 .username(secrets.getSecretOptional("username").or(params.getOptional("username", String.class)))
                 .password(secrets.getSecretOptional("password"))
+                .connectTimeout(params.get(CONFIG_KEY_CONNECT_TIMEOUT, DurationParam.class, DEFAULT_CONNECT_TIMEOUT))
+                .socketTimeout(params.get(CONFIG_KEY_SOCKET_TIMEOUT, DurationParam.class, DEFAULT_SOCKET_TIMEOUT))
                 .build();
         return Optional.of(config);
     }

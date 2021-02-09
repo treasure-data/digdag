@@ -201,19 +201,19 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   status_table: customized_status_table
   ```
 
-* **connect_timeout**: NAME
+* **connect_timeout**: DURATION
 
-  The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the connection is broken. *Default*: `30s`(30 seconds).
+  The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the operation fails. *Default*: `30s`(30 seconds).
 
   Examples:
 
   ```
   connect_timeout: 30s
   ```
-  
-* **socket_timeout**: NAME
 
-  The timeout value used for socket read operations. If reading from the server takes longer than this value, the connection is closed. *Default*: `1800s`(1800 seconds).
+* **socket_timeout**: DURATION
+
+  The timeout value used for socket read operations. If reading from the server takes longer than this value, the operation fails. *Default*: `1800s`(1800 seconds).
 
   Examples:
 
