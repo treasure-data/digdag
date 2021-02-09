@@ -22,14 +22,11 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -46,9 +43,7 @@ import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,13 +52,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 public class MailOperatorFactoryTest
 {
-
     private static GreenMail greenMail;
     private static int smtpPort;
 
@@ -475,8 +468,8 @@ public class MailOperatorFactoryTest
         assertTrue(smtpConfig.debug());
         assertEquals("hello", smtpConfig.username().get());
         assertEquals("world1234", smtpConfig.password().get());
-        assertEquals(DurationParam.of(Duration.ofSeconds(42)), smtpConfig.connectionTimeout().get());
-        assertEquals(DurationParam.of(Duration.ofMinutes(7)), smtpConfig.socketTimeout().get());
+        assertEquals(DurationParam.of(Duration.ofSeconds(42)), smtpConfig.connectTimeout());
+        assertEquals(DurationParam.of(Duration.ofMinutes(7)), smtpConfig.socketTimeout());
     }
 
     @Test
@@ -494,8 +487,8 @@ public class MailOperatorFactoryTest
         assertFalse(smtpConfig.debug());
         assertFalse(smtpConfig.username().isPresent());
         assertFalse(smtpConfig.password().isPresent());
-        assertFalse(smtpConfig.connectionTimeout().isPresent());
-        assertFalse(smtpConfig.socketTimeout().isPresent());
+        assertEquals(DurationParam.of(Duration.ofSeconds(60)), smtpConfig.connectTimeout());
+        assertEquals(DurationParam.of(Duration.ofSeconds(180)), smtpConfig.socketTimeout());
     }
 
     @Test
@@ -524,8 +517,8 @@ public class MailOperatorFactoryTest
         assertTrue(smtpConfig.debug());
         assertEquals("hello", smtpConfig.username().get());
         assertEquals("world1234", smtpConfig.password().get());
-        assertEquals(DurationParam.of(Duration.ofSeconds(42)), smtpConfig.connectionTimeout().get());
-        assertEquals(DurationParam.of(Duration.ofMinutes(7)), smtpConfig.socketTimeout().get());
+        assertEquals(DurationParam.of(Duration.ofSeconds(42)), smtpConfig.connectTimeout());
+        assertEquals(DurationParam.of(Duration.ofMinutes(7)), smtpConfig.socketTimeout());
     }
 
     private ExecutorService serverSocketConsumer(ServerSocketChannel serverSocketChannel)

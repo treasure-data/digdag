@@ -46,8 +46,8 @@ public class MailOperatorFactory
 
     private static final String CONFIG_KEY_CONNECT_TIMEOUT = "connect_timeout";
     private static final String CONFIG_KEY_SOCKET_TIMEOUT = "socket_timeout";
-    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(60);
-    private static final Duration DEFAULT_SOCKET_TIMEOUT = Duration.ofSeconds(180);
+    private static final DurationParam DEFAULT_CONNECT_TIMEOUT = DurationParam.of(Duration.ofSeconds(60));
+    private static final DurationParam DEFAULT_SOCKET_TIMEOUT = DurationParam.of(Duration.ofSeconds(180));
 
     private final TemplateEngine templateEngine;
     private final MailDefaults mailDefaults;
@@ -95,8 +95,8 @@ public class MailOperatorFactory
         boolean debug();
         Optional<String> username();
         Optional<String> password();
-        Optional<DurationParam> connectionTimeout();
-        Optional<DurationParam> socketTimeout();
+        DurationParam connectTimeout();
+        DurationParam socketTimeout();
     }
 
     @Value.Immutable
@@ -234,11 +234,9 @@ public class MailOperatorFactory
             }
             props.setProperty("mail.debug", String.valueOf(smtpConfig.debug()));
             props.setProperty("mail.smtp.connectiontimeout",
-                    String.valueOf(smtpConfig.connectionTimeout()
-                            .or(DurationParam.of(Duration.ofSeconds(30))).getDuration().toMillis()));
+                    String.valueOf(smtpConfig.connectTimeout().getDuration().toMillis()));
             props.setProperty("mail.smtp.timeout",
-                    String.valueOf(smtpConfig.socketTimeout()
-                            .or(DurationParam.of(Duration.ofSeconds(120))).getDuration().toMillis()));
+                    String.valueOf(smtpConfig.socketTimeout().getDuration().toMillis()));
 
             Session session;
             Optional<String> username = smtpConfig.username();
@@ -272,6 +270,11 @@ public class MailOperatorFactory
         }
     }
 
+    private static String sysConfKey(String key)
+    {
+        return "config.mail." + key;
+    }
+
     @VisibleForTesting
     static Optional<SmtpConfig> systemSmtpConfig(Config systemConfig)
     {
@@ -287,8 +290,10 @@ public class MailOperatorFactory
                 .debug(systemConfig.get("config.mail.debug", boolean.class, false))
                 .username(systemConfig.getOptional("config.mail.username", String.class))
                 .password(systemConfig.getOptional("config.mail.password", String.class))
-                .connectionTimeout(systemConfig.getOptional("config.mail.connect_timeout", DurationParam.class))
-                .socketTimeout(systemConfig.getOptional("config.mail.socket_timeout", DurationParam.class))
+                .connectTimeout(
+                        systemConfig.get(sysConfKey(CONFIG_KEY_CONNECT_TIMEOUT), DurationParam.class, DEFAULT_CONNECT_TIMEOUT))
+                .socketTimeout(
+                        systemConfig.get(sysConfKey(CONFIG_KEY_SOCKET_TIMEOUT), DurationParam.class, DEFAULT_SOCKET_TIMEOUT))
                 .build();
         return Optional.of(config);
     }
@@ -314,8 +319,8 @@ public class MailOperatorFactory
                 .debug(params.get("debug", boolean.class, false))
                 .username(secrets.getSecretOptional("username").or(params.getOptional("username", String.class)))
                 .password(secrets.getSecretOptional("password"))
-                .connectionTimeout(params.getOptional("connect_timeout", DurationParam.class))
-                .socketTimeout(params.getOptional("socket_timeout", DurationParam.class))
+                .connectTimeout(params.get(CONFIG_KEY_CONNECT_TIMEOUT, DurationParam.class, DEFAULT_CONNECT_TIMEOUT))
+                .socketTimeout(params.get(CONFIG_KEY_SOCKET_TIMEOUT, DurationParam.class, DEFAULT_SOCKET_TIMEOUT))
                 .build();
         return Optional.of(config);
     }
