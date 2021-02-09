@@ -443,6 +443,7 @@ public class MailOperatorFactoryTest
         }
         finally {
             executorService.shutdownNow();
+            serverSocketChannel.close();
         }
     }
 

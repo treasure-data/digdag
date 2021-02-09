@@ -311,8 +311,8 @@ public class MailOperatorFactory
         }
         SmtpConfig config = ImmutableSmtpConfig.builder()
                 .host(userHost.get())
-                // This code expects `params` has `port` field even if `secrets` has the field.
-                // Maybe we need to revisit here later to see whether this is intentional or not.
+                // TODO: This code expects `params` has `port` field even if `secrets` has the field.
+                //       Maybe we need to revisit here later to see whether this behavior is reasonable or not.
                 .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(params.get("port", int.class)))
                 .startTls(secrets.getSecretOptional("tls").transform(Boolean::parseBoolean).or(params.get("tls", boolean.class, true)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false)))
