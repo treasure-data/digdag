@@ -404,14 +404,14 @@ In the config file, following parameters are available
 * eval.js-engine-type (type of ConfigEvalEngine. "nashorn" or "graal". "nashorn" is default on Java8 and "graal" is default on Java11)
 * eval.extended-syntax (boolean, default: true. Enable or disable extended syntax in graal. If true, nested ``{..}`` is allowed)
 
-Default values in `mail` operators:
+Configurations of `mail` operator's default values
 * config.mail.host (string)
 * config.mail.port (integer)
 * config.mail.username (string)
 * config.mail.password (string)
 * config.mail.from (string)
 * config.mail.subject (string)
-* config.mail.connect_timeout (string. default: 30s)
+* config.mail.connect_timeout (string. default: 60s)
 * config.mail.socket_timeout (string. default: 180s)
 
 Secret Encryption Key
