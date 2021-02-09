@@ -219,6 +219,26 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   ssl: false
   ```
 
+* **connect_timeout**: DURATION
+
+  The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the operation fails. *Default*: `60s`(60 seconds).
+
+  Examples:
+
+  ```
+  connect_timeout: 30s
+  ```
+
+* **socket_timeout**: DURATION
+
+  The timeout value used for socket read operations. If reading from the server takes longer than this value, the operation fails. *Default*: `180s`(180 seconds).
+
+  Examples:
+
+  ```
+  socket_timeout: 120s
+  ```
+
 * **html**: BOOLEAN
 
   Uses HTML mail (default: false).
