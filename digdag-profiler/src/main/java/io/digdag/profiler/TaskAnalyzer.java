@@ -42,40 +42,24 @@ public class TaskAnalyzer
 {
     private static final Logger logger = LoggerFactory.getLogger(TaskAnalyzer.class);
 
-    private final ConfigElement configElement;
+    private final Injector injector;
 
-    public TaskAnalyzer(ConfigElement configElement)
+    public TaskAnalyzer(Injector injector)
     {
-        this.configElement = configElement;
+        this.injector = injector;
     }
 
-    public void run()
+    public void run(Instant createdFrom, Instant createdTo, int fetchedAttempts, int partitionSize)
     {
-        Injector injector = Guice.createInjector(
-                new ObjectMapperModule()
-                        .registerModule(new GuavaModule())
-                        .registerModule(new JacksonTimeModule()),
-                new DatabaseModule(false),
-                new ConfigModule(),
-                (binder) -> {
-                    binder.bind(ConfigElement.class).toInstance(configElement);
-                    binder.bind(Config.class).toProvider(DigdagEmbed.SystemConfigProvider.class);
-                }
-
-        );
         TransactionManager tm = injector.getInstance(TransactionManager.class);
         ProjectStoreManager pm = injector.getInstance(ProjectStoreManager.class);
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
 
-        // TODO: Receive these as arguments
-        Instant createdFrom = Instant.now().minusSeconds(3600000);
-        Instant createdTo = Instant.now();
-
-        int partitionSize = 10;
         AtomicLong counter = new AtomicLong();
 
         Map<Long, List<StoredSessionAttemptWithSession>> partitionedAttemptIds = tm.begin(() -> {
-            List<StoredSessionAttemptWithSession> attempts = sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, 0, 100);
+            List<StoredSessionAttemptWithSession> attempts =
+                    sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, 0, fetchedAttempts);
             return attempts.stream()
                     .collect(Collectors.groupingBy((attempt) -> counter.getAndIncrement() / partitionSize));
         });
