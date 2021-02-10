@@ -1,8 +1,14 @@
 package io.digdag.profiler;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.google.common.base.Optional;
+import com.google.common.math.Stats;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.digdag.client.api.JacksonTimeModule;
@@ -12,14 +18,30 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigModule;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.session.SessionStore;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.StoredSessionWithLastAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 public class TaskAnalyzer
 {
+    private static final Logger logger = LoggerFactory.getLogger(TaskAnalyzer.class);
+
     private final ConfigElement configElement;
 
     public TaskAnalyzer(ConfigElement configElement)
@@ -28,7 +50,6 @@ public class TaskAnalyzer
     }
 
     public void run()
-        throws Exception
     {
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
@@ -43,15 +64,44 @@ public class TaskAnalyzer
 
         );
         TransactionManager tm = injector.getInstance(TransactionManager.class);
+        ProjectStoreManager pm = injector.getInstance(ProjectStoreManager.class);
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
 
-        List<StoredSessionWithLastAttempt> sessions = tm.begin(() -> {
-            SessionStore ss = sm.getSessionStore(0);
-            return ss.getSessions(10, Optional.absent(), () -> "true");
+        // TODO: Receive these as arguments
+        Instant createdFrom = Instant.now().minusSeconds(3600000);
+        Instant createdTo = Instant.now();
+
+        int partitionSize = 10;
+        AtomicLong counter = new AtomicLong();
+
+        Map<Long, List<StoredSessionAttemptWithSession>> partitionedAttemptIds = tm.begin(() -> {
+            List<StoredSessionAttemptWithSession> attempts = sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, 0, 100);
+            return attempts.stream()
+                    .collect(Collectors.groupingBy((attempt) -> counter.getAndIncrement() / partitionSize));
         });
+
+        // Process attemptIds list from the beginning
+        for (long attemptIdsGroup : partitionedAttemptIds.keySet().stream().sorted().collect(Collectors.toList())) {
+            List<StoredSessionAttemptWithSession> attemptsWithSessions = partitionedAttemptIds.get(attemptIdsGroup);
+            tm.begin(() -> {
+                for (StoredSessionAttemptWithSession attemptWithSession : attemptsWithSessions) {
+                    // TODO: Reduce these round-trips with database to improve the performance
+                    int projectId = attemptWithSession.getSession().getProjectId();
+                    int siteId;
+                    try {
+                        siteId = pm.getProjectByIdInternal(projectId).getSiteId();
+                    } catch (ResourceNotFoundException e) {
+                        logger.error(String.format("Can't find the project: %d. Just skipping it...", projectId), e);
+                        continue;
+                    }
+                    List<ArchivedTask> tasks = sm.getSessionStore(siteId).getTasksOfAttempt(attemptWithSession.getId());
+                    logger.info("Attempt ID: {}, Summary: {}", attemptWithSession.getId(), TasksSummary.fromTasks(tasks));
+                }
+                return null;
+            });
+        }
     }
 
-    /*
     // Helper classes
 
     static class TasksSummary
@@ -179,11 +229,11 @@ public class TaskAnalyzer
             this.execDuration = execDuration;
         }
 
-        public static TasksSummary fromTasks(List<RestTask> tasks)
+        public static TasksSummary fromTasks(List<ArchivedTask> tasks)
         {
-            Map<Long, RestTask> taskMap = new HashMap<>(tasks.size());
-            for (RestTask task : tasks) {
-                taskMap.put(task.getId().asLong(), task);
+            Map<Long, ArchivedTask> taskMap = new HashMap<>(tasks.size());
+            for (ArchivedTask task : tasks) {
+                taskMap.put(task.getId(), task);
             }
 
             long totalTasks = tasks.size() - 1; // Remove a root task
@@ -196,7 +246,7 @@ public class TaskAnalyzer
 
             // Calculate the delays of task invocations
             boolean isRoot = true;
-            for (RestTask task : tasks) {
+            for (ArchivedTask task : tasks) {
                 if (!isRoot && task.getStartedAt().isPresent()) {
                     totalRunTasks++;
                     execTimeMillisList.add(
@@ -207,9 +257,9 @@ public class TaskAnalyzer
                     Optional<Instant> timestampWhenTaskIsReady = Optional.absent();
                     if (task.getUpstreams().isEmpty()) {
                         // This task is the first child task of a group task
-                        Optional<Id> parentId = task.getParentId();
+                        Optional<Long> parentId = task.getParentId();
                         if (parentId.isPresent()) {
-                            RestTask previousTask = taskMap.get(parentId.get().asLong());
+                            ArchivedTask previousTask = taskMap.get(parentId.get());
                             // Just for backward compatibility
                             if (previousTask.getStartedAt().isPresent()) {
                                 // This task was executed after the previous group task started,
@@ -222,9 +272,9 @@ public class TaskAnalyzer
                         // This task is executed sequentially. Get the latest `updated_at` of upstream tasks.
                         long previousTaskId = task.getUpstreams().stream()
                             .max(Comparator.comparingLong(
-                                id -> taskMap.get(id.asLong()).getUpdatedAt().toEpochMilli()))
-                            .get().asLong();
-                        RestTask previousTask = taskMap.get(previousTaskId);
+                                id -> taskMap.get(id).getUpdatedAt().toEpochMilli()))
+                            .get();
+                        ArchivedTask previousTask = taskMap.get(previousTaskId);
                         // This task was executed after the previous task finished,
                         // so check the previous one's `updated_at`
                         timestampWhenTaskIsReady = Optional.of(previousTask.getUpdatedAt());
@@ -233,7 +283,7 @@ public class TaskAnalyzer
                         startDelayMillisList.add(
                                 Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis());
                     }
-                    if (task.getState().equals("success")) {
+                    if (!task.getState().isError()) {
                         totalSuccessTasks++;
                     }
                 }
@@ -252,115 +302,4 @@ public class TaskAnalyzer
                     statsOfExecTime);
         }
     }
-
-    interface Printer
-    {
-        void showTasks(ClientCommand command, List<RestTask> tasks);
-
-        void showSummary(ClientCommand command, TasksSummary tasksSummary);
-    }
-
-    static class TextPrinter
-        implements Printer
-    {
-        @Override
-        public void showTasks(ClientCommand command, List<RestTask> tasks)
-        {
-            for (RestTask task : tasks) {
-                command.ln("   id: %s", task.getId());
-                command.ln("   name: %s", task.getFullName());
-                command.ln("   state: %s", task.getState());
-                command.ln("   started: %s", task.getStartedAt().transform(TimeUtil::formatTime).or(""));
-                command.ln("   updated: %s", TimeUtil.formatTime(task.getUpdatedAt()));
-                command.ln("   config: %s", task.getConfig());
-                command.ln("   parent: %s", task.getParentId().orNull());
-                command.ln("   upstreams: %s", task.getUpstreams());
-                command.ln("   export params: %s", task.getExportParams());
-                command.ln("   store params: %s", task.getStoreParams());
-                command.ln("   state params: %s", task.getStateParams());
-                command.ln("");
-            }
-
-            command.ln("%d entries.", tasks.size());
-        }
-
-        @Override
-        public void showSummary(ClientCommand command, TasksSummary tasksSummary)
-        {
-            command.ln("   total tasks: %s", tasksSummary.totalTasks);
-            command.ln("   total run tasks: %s", tasksSummary.totalRunTasks);
-            command.ln("   total success tasks: %s", tasksSummary.totalSuccessTasks);
-            command.ln("   total error tasks: %s", tasksSummary.totalErrorTasks);
-            if (tasksSummary.startDelayMillis.stats.isPresent()) {
-                command.ln("   start delay (ms):");
-                command.ln("       average: %s", tasksSummary.startDelayMillis.mean());
-                command.ln("       stddev: %s", tasksSummary.startDelayMillis.stdDev());
-            }
-            command.ln("   exec duration (ms):");
-            command.ln("       average: %s", tasksSummary.execDuration.mean());
-            command.ln("       stddev: %s", tasksSummary.execDuration.stdDev());
-        }
-    }
-
-    static class JsonPrinter
-        implements Printer
-    {
-        @Override
-        public void showTasks(ClientCommand command, List<RestTask> tasks)
-        {
-            try {
-                command.ln(command.objectMapper.writeValueAsString(tasks));
-            }
-            catch (JsonProcessingException e) {
-                Throwables.propagate(e);
-            }
-        }
-
-        @Override
-        public void showSummary(ClientCommand command, TasksSummary tasksSummary)
-        {
-            try {
-                command.ln(command.objectMapper.writeValueAsString(tasksSummary));
-            }
-            catch (JsonProcessingException e) {
-                Throwables.propagate(e);
-            }
-        }
-    }
-
-    enum Format
-    {
-        JSON(new JsonPrinter()), TEXT(new TextPrinter());
-
-        Printer printer;
-
-        Format(Printer printer)
-        {
-            this.printer = printer;
-        }
-    }
-
-    static class FormatConverter implements IStringConverter<Format>
-    {
-        @Override
-        public Format convert(String value)
-        {
-            return Format.valueOf(value.toUpperCase());
-        }
-    }
-
-    enum Type
-    {
-        FULL, SUMMARY
-    }
-
-    static class TypeConverter implements IStringConverter<Type>
-    {
-        @Override
-        public Type convert(String value)
-        {
-            return Type.valueOf(value.toUpperCase());
-        }
-    }
-     */
 }

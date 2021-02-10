@@ -303,6 +303,15 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
+    public List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant createdFrom, Instant createdTo, long lastId, int limit)
+    {
+        return autoCommit((handle, dao) -> dao.findAttemptsWithSessionsInternal(
+                AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE,
+                sqlTimestampOf(createdFrom), sqlTimestampOf(createdTo), lastId, limit));
+    }
+
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
+    @Override
     public List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
     {
         return autoCommit((handle, dao) ->
@@ -1999,6 +2008,21 @@ public class DatabaseSessionStoreManager
                 " order by id asc" +
                 " limit :limit")
         List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " where state_flags = :targetState" +
+                " and sa.created_at between :createdFrom and :createdTo" +
+                " and sa.id \\> :lastId" +
+                " order by sa.id asc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> findAttemptsWithSessionsInternal(
+                @Bind("targetState") int targetState,
+                @Bind("createdFrom") Timestamp createdFrom,
+                @Bind("createdTo") Timestamp createdTo,
+                @Bind("lastId") long lastId,
+                @Bind("limit") int limit);
 
         @SqlQuery("select site_id from tasks" +
                 " join session_attempts sa on sa.id = tasks.attempt_id" +
