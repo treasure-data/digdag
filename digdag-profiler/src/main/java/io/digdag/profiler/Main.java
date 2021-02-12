@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -93,6 +94,7 @@ public class Main
     }
 
     void run(ConfigElement configElement, Args args)
+            throws IOException
     {
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
@@ -108,6 +110,7 @@ public class Main
         );
         new TaskAnalyzer(injector)
                 .run(
+                        System.out,
                         args.timeRangeFrom,
                         args.timeRangeTo,
                         args.fetchedAttempts,
