@@ -5,18 +5,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.google.common.base.Optional;
 import com.google.common.math.Stats;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.digdag.client.api.JacksonTimeModule;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.ConfigModule;
-import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -65,6 +56,7 @@ public class TaskAnalyzer
         });
 
         // Process attemptIds list from the beginning
+        TasksSummary.Builder tasksSummaryBuilder = new TasksSummary.Builder();
         for (long attemptIdsGroup : partitionedAttemptIds.keySet().stream().sorted().collect(Collectors.toList())) {
             List<StoredSessionAttemptWithSession> attemptsWithSessions = partitionedAttemptIds.get(attemptIdsGroup);
             tm.begin(() -> {
@@ -79,11 +71,12 @@ public class TaskAnalyzer
                         continue;
                     }
                     List<ArchivedTask> tasks = sm.getSessionStore(siteId).getTasksOfAttempt(attemptWithSession.getId());
-                    logger.info("Attempt ID: {}, Summary: {}", attemptWithSession.getId(), TasksSummary.fromTasks(tasks));
+                    TasksSummary.updateBuilderWithTasks(tasks, tasksSummaryBuilder);
                 }
                 return null;
             });
         }
+        logger.info("Summary: {}", tasksSummaryBuilder.build());
     }
 
     // Helper classes
@@ -176,6 +169,21 @@ public class TaskAnalyzer
                         "stats=" + stats +
                         '}';
             }
+
+            static class Builder
+            {
+                private final List<Long> items = new ArrayList<>();
+
+                void add(long item)
+                {
+                    items.add(item);
+                }
+
+                TasksStats build()
+                {
+                    return TasksStats.of(items);
+                }
+            }
         }
 
         static class TasksStatsSerializer
@@ -203,37 +211,56 @@ public class TaskAnalyzer
             long totalSuccessTasks,
             long totalErrorTasks,
             TasksStats startDelayMillis,
-            TasksStats execDuration)
+            TasksStats execDurationMillis)
         {
             this.totalTasks = totalTasks;
             this.totalRunTasks = totalRunTasks;
             this.totalSuccessTasks = totalSuccessTasks;
             this.totalErrorTasks = totalErrorTasks;
             this.startDelayMillis = startDelayMillis;
-            this.execDuration = execDuration;
+            this.execDuration = execDurationMillis;
         }
 
-        public static TasksSummary fromTasks(List<ArchivedTask> tasks)
+        static class Builder
+        {
+            long totalTasks;
+            long totalRunTasks;
+            long totalSuccessTasks;
+            long totalErrorTasks;
+
+            final TasksStats.Builder startDelayMillis = new TasksStats.Builder();
+            final TasksStats.Builder execDurationMillis = new TasksStats.Builder();
+
+            TasksSummary build()
+            {
+                return new TasksSummary(
+                        totalTasks,
+                        totalRunTasks,
+                        totalSuccessTasks,
+                        totalErrorTasks,
+                        startDelayMillis.build(),
+                        execDurationMillis.build()
+                );
+            }
+        }
+
+        private static void updateBuilderWithTasks(
+            List<ArchivedTask> tasks,
+            Builder builder)
         {
             Map<Long, ArchivedTask> taskMap = new HashMap<>(tasks.size());
             for (ArchivedTask task : tasks) {
                 taskMap.put(task.getId(), task);
             }
 
-            long totalTasks = tasks.size() - 1; // Remove a root task
-            long totalSuccessTasks = 0;
-            long totalErrorTasks = 0;
-            long totalRunTasks = 0;
-
-            List<Long> startDelayMillisList = new ArrayList<>(tasks.size());
-            List<Long> execTimeMillisList = new ArrayList<>(tasks.size());
+            builder.totalTasks += tasks.size() - 1; // Remove a root task
 
             // Calculate the delays of task invocations
             boolean isRoot = true;
             for (ArchivedTask task : tasks) {
                 if (!isRoot && task.getStartedAt().isPresent()) {
-                    totalRunTasks++;
-                    execTimeMillisList.add(
+                    builder.totalRunTasks++;
+                    builder.execDurationMillis.add(
                             Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
 
                     // To know the delay of a task, it's needed to choose the correct previous task
@@ -263,27 +290,22 @@ public class TaskAnalyzer
                         // so check the previous one's `updated_at`
                         timestampWhenTaskIsReady = Optional.of(previousTask.getUpdatedAt());
                     }
+
                     if (timestampWhenTaskIsReady.isPresent()) {
-                        startDelayMillisList.add(
+                        builder.startDelayMillis.add(
                                 Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis());
                     }
-                    if (!task.getState().isError()) {
-                        totalSuccessTasks++;
+
+                    if (task.getState().isError()) {
+                        // TODO: This includes GROUP_ERROR. Is it okay...?
+                        builder.totalErrorTasks++;
+                    }
+                    else {
+                        builder.totalSuccessTasks++;
                     }
                 }
                 isRoot = false;
             }
-
-            TasksStats statsOfStartDelayMillis = TasksStats.of(startDelayMillisList);
-            TasksStats statsOfExecTime = TasksStats.of(execTimeMillisList);
-
-            return new TasksSummary(
-                    totalTasks,
-                    totalRunTasks,
-                    totalSuccessTasks,
-                    totalErrorTasks,
-                    statsOfStartDelayMillis,
-                    statsOfExecTime);
         }
     }
 }
