@@ -19,7 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class TasksSummary {
+class TasksSummary
+{
     @JsonProperty
     public final long attempts;
     @JsonProperty
@@ -37,7 +38,8 @@ class TasksSummary {
     public final TasksStats execDuration;
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "TasksSummary{" +
                 "attempts=" + attempts +
                 ", totalTasks=" + totalTasks +
@@ -49,33 +51,18 @@ class TasksSummary {
                 '}';
     }
 
-    static class NullableLong {
-        @JsonProperty
-        final Optional<Long> value;
-
-        NullableLong(Optional<Long> value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            if (value.isPresent()) {
-                return value.get().toString();
-            } else {
-                return "N/A";
-            }
-        }
-    }
-
     @JsonSerialize(using = TasksStatsSerializer.class)
-    static class TasksStats {
+    static class TasksStats
+    {
         final Optional<Stats> stats;
 
-        TasksStats(Optional<Stats> stats) {
+        TasksStats(Optional<Stats> stats)
+        {
             this.stats = stats;
         }
 
-        static TasksStats of(Collection<Long> values) {
+        static TasksStats of(Collection<Long> values)
+        {
             if (values.isEmpty()) {
                 return new TasksStats(Optional.absent());
             } else {
@@ -83,45 +70,52 @@ class TasksSummary {
             }
         }
 
-        NullableLong mean() {
-            return new NullableLong(
-                    stats.transform(x -> Double.valueOf(x.mean()).longValue()));
+        Long mean()
+        {
+            return stats.transform(x -> Double.valueOf(x.mean()).longValue()).orNull();
         }
 
-        NullableLong stdDev() {
-            return new NullableLong(
-                    stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()));
+        Long stdDev()
+        {
+            return stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()).orNull();
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return "TasksStats{" +
                     "stats=" + stats +
                     '}';
         }
 
-        static class Builder {
+        static class Builder
+        {
             private final List<Long> items = new ArrayList<>();
 
-            void add(long item) {
+            void add(long item)
+            {
                 items.add(item);
             }
 
-            TasksStats build() {
+            TasksStats build()
+            {
                 return TasksStats.of(items);
             }
         }
     }
 
     static class TasksStatsSerializer
-            extends StdSerializer<TasksStats> {
-        protected TasksStatsSerializer() {
+            extends StdSerializer<TasksStats>
+    {
+        protected TasksStatsSerializer()
+        {
             super(TasksStats.class);
         }
 
         @Override
         public void serialize(TasksStats tasksStats, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                throws IOException {
+                throws IOException
+        {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeObjectField("average", tasksStats.mean());
             jsonGenerator.writeObjectField("stddev", tasksStats.stdDev());
@@ -136,7 +130,8 @@ class TasksSummary {
             long totalSuccessTasks,
             long totalErrorTasks,
             TasksStats startDelayMillis,
-            TasksStats execDurationMillis) {
+            TasksStats execDurationMillis)
+    {
         this.attempts = attempts;
         this.totalTasks = totalTasks;
         this.totalRunTasks = totalRunTasks;
@@ -146,7 +141,8 @@ class TasksSummary {
         this.execDuration = execDurationMillis;
     }
 
-    static class Builder {
+    static class Builder
+    {
         long attempts;
         long totalTasks;
         long totalRunTasks;
@@ -156,7 +152,8 @@ class TasksSummary {
         final TasksStats.Builder startDelayMillis = new TasksStats.Builder();
         final TasksStats.Builder execDurationMillis = new TasksStats.Builder();
 
-        TasksSummary build() {
+        TasksSummary build()
+        {
             return new TasksSummary(
                     attempts,
                     totalTasks,
