@@ -39,6 +39,8 @@ public class TaskAnalyzer
         AtomicLong lastId = new AtomicLong();
         TasksSummary.Builder tasksSummaryBuilder = new TasksSummary.Builder();
 
+        logger.info("Task analysis started");
+
         while (true) {
             // Paginate to avoid too long transaction
             AtomicLong counter = new AtomicLong();
@@ -53,6 +55,7 @@ public class TaskAnalyzer
                 return attempts.stream()
                         .collect(Collectors.groupingBy((attempt) -> counter.getAndIncrement() / partitionSize));
             });
+            logger.debug("Collected {} attempts", counter.get());
 
             if (partitionedAttemptIds.isEmpty()) {
                 break;
@@ -61,6 +64,7 @@ public class TaskAnalyzer
             // Process partitioned attemptIds list from the beginning
             for (long attemptIdsGroup : partitionedAttemptIds.keySet().stream().sorted().collect(Collectors.toList())) {
                 List<StoredSessionAttemptWithSession> attemptsWithSessions = partitionedAttemptIds.get(attemptIdsGroup);
+                logger.debug("Processing {} attempts", attemptsWithSessions.size());
                 tm.begin(() -> {
                     for (StoredSessionAttemptWithSession attemptWithSession : attemptsWithSessions) {
                         // TODO: Reduce these round-trips with database to improve the performance
@@ -75,10 +79,13 @@ public class TaskAnalyzer
                         List<ArchivedTask> tasks = sm.getSessionStore(siteId).getTasksOfAttempt(attemptWithSession.getId());
                         TasksSummary.updateBuilderWithTasks(tasks, tasksSummaryBuilder);
                     }
+                    logger.debug("Processed {} attempts", attemptsWithSessions.size());
                     return null;
                 });
             }
         }
+
+        logger.info("Task analysis finished");
 
         objectMapper().writeValue(printStream, tasksSummaryBuilder.build());
     }
