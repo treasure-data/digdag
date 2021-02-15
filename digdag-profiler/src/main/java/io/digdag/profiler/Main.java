@@ -62,15 +62,21 @@ public class Main
 
         @Parameter(
                 names = {"--fetched-attempts"},
-                description = "The number of fetched attempt records at once (default: 100)"
+                description = "The number of fetched attempt records at once (default: 1000)"
         )
-        int fetchedAttempts = 100;
+        int fetchedAttempts = 1000;
 
         @Parameter(
                 names = {"--partition-size"},
-                description = "The number of internal partition size (default: 10)"
+                description = "The number of internal partition size (default: 100)"
         )
-        int partitionSize = 10;
+        int partitionSize = 100;
+
+        @Parameter(
+                names = {"--database-wait-millis"},
+                description = "The internal wait (milliseconds) between database transactions (default: 100)"
+        )
+        int databaseWaitMillis = 100;
     }
 
     static class ISO8601TimestampConverter
@@ -114,7 +120,8 @@ public class Main
                         args.timeRangeFrom,
                         args.timeRangeTo,
                         args.fetchedAttempts,
-                        args.partitionSize
+                        args.partitionSize,
+                        args.databaseWaitMillis
                 );
     }
 

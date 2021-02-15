@@ -15,6 +15,7 @@ import java.io.PrintStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -31,17 +32,35 @@ public class TaskAnalyzer
         this.injector = injector;
     }
 
-    public void run(PrintStream printStream, Instant createdFrom, Instant createdTo, int fetchedAttempts, int partitionSize) throws IOException {
+    private void waitAfterDatabaseAccess(int waitMillis)
+    {
+        try {
+            TimeUnit.MILLISECONDS.sleep(waitMillis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void run(PrintStream printStream,
+                    Instant createdFrom,
+                    Instant createdTo,
+                    int fetchedAttempts,
+                    int partitionSize,
+                    int databaseWaitMillis)
+            throws IOException
+    {
         TransactionManager tm = injector.getInstance(TransactionManager.class);
         ProjectStoreManager pm = injector.getInstance(ProjectStoreManager.class);
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
 
         AtomicLong lastId = new AtomicLong();
         TasksSummary.Builder tasksSummaryBuilder = new TasksSummary.Builder();
-
         logger.info("Task analysis started");
 
         while (true) {
+            logger.debug("Collecting attempts");
+
             // Paginate to avoid too long transaction
             AtomicLong counter = new AtomicLong();
             Map<Long, List<StoredSessionAttemptWithSession>> partitionedAttemptIds = tm.begin(() -> {
@@ -56,6 +75,7 @@ public class TaskAnalyzer
                         .collect(Collectors.groupingBy((attempt) -> counter.getAndIncrement() / partitionSize));
             });
             logger.debug("Collected {} attempts", counter.get());
+            waitAfterDatabaseAccess(databaseWaitMillis);
 
             if (partitionedAttemptIds.isEmpty()) {
                 break;
@@ -82,6 +102,7 @@ public class TaskAnalyzer
                     logger.debug("Processed {} attempts", attemptsWithSessions.size());
                     return null;
                 });
+                waitAfterDatabaseAccess(databaseWaitMillis);
             }
         }
 
