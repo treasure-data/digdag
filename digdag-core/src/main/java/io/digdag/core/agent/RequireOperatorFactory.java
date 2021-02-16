@@ -106,7 +106,7 @@ public class RequireOperatorFactory
             try {
                 projectIdentifier = Optional.of(makeProjectIdentifier());
 
-                callback.startSession(
+                StoredSessionAttempt kickedAttempt = callback.startSession(
                         context,
                         request.getSiteId(),
                         projectIdentifier.get(),
@@ -114,7 +114,10 @@ public class RequireOperatorFactory
                         instant,
                         retryAttemptName,
                         overrideParams);
-                throw nextPolling(request.getLastStateParams().deepCopy().set("require_kicked", true));
+                throw nextPolling(request.getLastStateParams().deepCopy()
+                        .set("require_kicked", true)
+                        .set("target_session_id", kickedAttempt.getSessionId())
+                        .set("target_attempt_id", kickedAttempt.getId()));
             }
             catch (SessionAttemptConflictException ex) {
                 return processAttempt(ex.getConflictedSession(), lastStateParams, rerunOn, ignoreFailure);
@@ -150,7 +153,9 @@ public class RequireOperatorFactory
             }
             else {
                 // Wait for finish running attempt
-                throw nextPolling(lastStateParams.deepCopy());
+                throw nextPolling(lastStateParams.deepCopy()
+                        .set("target_session_id", attempt.getSessionId())
+                        .set("target_attempt_id", attempt.getId()));
             }
         }
 

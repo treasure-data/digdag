@@ -24,6 +24,7 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -118,6 +119,8 @@ public class TestUtils
     public static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
 
     public static final Pattern PROJECT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
+
+    public static final Pattern STATE_PARAMS_PATTERN = Pattern.compile("\\s*state params:\\s*(.*)\\s*");
 
     public static CommandStatus main(String... args)
     {
@@ -269,6 +272,20 @@ public class TestUtils
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
         assertThat(matcher.find(), is(true));
         return Id.of(matcher.group(1));
+    }
+
+    public static List<Config> getStateParams(CommandStatus pushStatus)
+            throws IOException
+    {
+        Matcher matcher = STATE_PARAMS_PATTERN.matcher(pushStatus.outUtf8());
+        List<Config> l = new ArrayList<>();
+        while(matcher.find()) {
+            l.add(
+                Config.deserializeFromJackson(objectMapper(),
+                        objectMapper().readTree(matcher.group(1)))
+            );
+        }
+        return l;
     }
 
     public static String getAttemptLogs(DigdagClient client, Id attemptId)

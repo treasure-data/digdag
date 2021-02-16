@@ -3,6 +3,7 @@ package acceptance;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttemptCollection;
+import io.digdag.client.config.Config;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
@@ -30,6 +31,8 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.getSessionId;
+import static utils.TestUtils.getStateParams;
 import static utils.TestUtils.main;
 
 import static org.hamcrest.Matchers.containsString;
@@ -100,7 +103,7 @@ public class RequireIT
 
         // Wait for the attempt to complete
         boolean success = false;
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 60; i++) {
             CommandStatus attemptsStatus = main("attempts",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
@@ -115,6 +118,27 @@ public class RequireIT
 
         // Verify that the file created by the child workflow is there
         assertThat(Files.exists(childOutFile), is(true));
+
+        CommandStatus attemptTasks = main("tasks",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                attemptId.toString());
+
+        List<Config> stateParams = getStateParams(attemptTasks);
+
+        // It has 2 tasks, +parent and +parent+require.
+        assertThat(stateParams.size(), is(2));
+        Config requireOperatorStateParams = stateParams.get(1);
+
+        Id targetAttemptId = requireOperatorStateParams.get("target_attempt_id", Id.class);
+        CommandStatus targetAttemptStatus = main("attempts",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                targetAttemptId.toString());
+
+        assertThat(targetAttemptStatus.outUtf8().contains("workflow: child"), is(true));
+        assertThat(targetAttemptStatus.outUtf8().contains("status: success"), is(true));
+        assertThat(getSessionId(targetAttemptStatus), is(requireOperatorStateParams.get("target_session_id", Id.class)));
     }
 
     @Test
@@ -424,5 +448,86 @@ public class RequireIT
                     .replace("__FILE__", childOutFile.toString());
             Files.write(projectDir.resolve("child.dig"), child.getBytes("UTF-8"));
         }
+    }
+
+    @Test
+    public void testRequireHasTargetSessionIdEvenWhenChildIsNotKicked()
+            throws Exception
+    {
+        // Create new project
+        CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
+
+        Path childOutFile = projectDir.resolve("child.out").toAbsolutePath().normalize();
+        prepareForChildWF(childOutFile);
+        copyResource("acceptance/require/parent.dig", projectDir.resolve("parent.dig"));
+
+        // Push the project
+        CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "require",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+        // Start the child workflow first.
+        String session = "2016-01-01";
+
+        Id targetAttemptId;
+        Id targetSessionId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "require", "child",
+                    "--session", session);
+            assertThat(startStatus.code(), is(0));
+            targetAttemptId = getAttemptId(startStatus);
+            targetSessionId = getSessionId(startStatus);
+        }
+
+        // Start the workflow
+        Id attemptId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "require", "parent",
+                    "--session", session);
+            assertThat(startStatus.code(), is(0));
+            attemptId = getAttemptId(startStatus);
+        }
+
+        // Wait for the attempt to complete
+        boolean success = false;
+        for (int i = 0; i < 60; i++) {
+            CommandStatus attemptsStatus = main("attempts",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    attemptId.toString());
+            success = attemptsStatus.outUtf8().contains("status: success");
+            if (success) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        assertThat(success, is(true));
+
+        CommandStatus attemptTasks = main("tasks",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                attemptId.toString());
+
+        List<Config> stateParams = getStateParams(attemptTasks);
+
+        // It has 2 tasks, +parent and +parent+require.
+        assertThat(stateParams.size(), is(2));
+        Config requireOperatorStateParams = stateParams.get(1);
+
+        assertThat(requireOperatorStateParams.get("target_attempt_id", Id.class), is(targetAttemptId));
+        assertThat(requireOperatorStateParams.get("target_session_id", Id.class), is(targetSessionId));
     }
 }
