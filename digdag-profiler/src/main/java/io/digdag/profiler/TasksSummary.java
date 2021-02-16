@@ -33,95 +33,11 @@ class TasksSummary
     public final long totalErrorTasks;
 
     @JsonProperty
+    public final ArchivedTask mostDelayedTask;
+    @JsonProperty
     public final TasksStats startDelayMillis;
     @JsonProperty
     public final TasksStats execDuration;
-
-    @Override
-    public String toString()
-    {
-        return "TasksSummary{" +
-                "attempts=" + attempts +
-                ", totalTasks=" + totalTasks +
-                ", totalRunTasks=" + totalRunTasks +
-                ", totalSuccessTasks=" + totalSuccessTasks +
-                ", totalErrorTasks=" + totalErrorTasks +
-                ", startDelayMillis=" + startDelayMillis +
-                ", execDuration=" + execDuration +
-                '}';
-    }
-
-    @JsonSerialize(using = TasksStatsSerializer.class)
-    static class TasksStats
-    {
-        final Optional<Stats> stats;
-
-        TasksStats(Optional<Stats> stats)
-        {
-            this.stats = stats;
-        }
-
-        static TasksStats of(Collection<Long> values)
-        {
-            if (values.isEmpty()) {
-                return new TasksStats(Optional.absent());
-            } else {
-                return new TasksStats(Optional.of(Stats.of(values)));
-            }
-        }
-
-        Long mean()
-        {
-            return stats.transform(x -> Double.valueOf(x.mean()).longValue()).orNull();
-        }
-
-        Long stdDev()
-        {
-            return stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()).orNull();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "TasksStats{" +
-                    "stats=" + stats +
-                    '}';
-        }
-
-        static class Builder
-        {
-            private final List<Long> items = new ArrayList<>();
-
-            void add(long item)
-            {
-                items.add(item);
-            }
-
-            TasksStats build()
-            {
-                return TasksStats.of(items);
-            }
-        }
-    }
-
-    static class TasksStatsSerializer
-            extends StdSerializer<TasksStats>
-    {
-        protected TasksStatsSerializer()
-        {
-            super(TasksStats.class);
-        }
-
-        @Override
-        public void serialize(TasksStats tasksStats, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                throws IOException
-        {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeObjectField("average", tasksStats.mean());
-            jsonGenerator.writeObjectField("stddev", tasksStats.stdDev());
-            jsonGenerator.writeEndObject();
-        }
-    }
 
     public TasksSummary(
             long attempts,
@@ -129,6 +45,7 @@ class TasksSummary
             long totalRunTasks,
             long totalSuccessTasks,
             long totalErrorTasks,
+            ArchivedTask mostDelayedTask,
             TasksStats startDelayMillis,
             TasksStats execDurationMillis)
     {
@@ -137,6 +54,7 @@ class TasksSummary
         this.totalRunTasks = totalRunTasks;
         this.totalSuccessTasks = totalSuccessTasks;
         this.totalErrorTasks = totalErrorTasks;
+        this.mostDelayedTask = mostDelayedTask;
         this.startDelayMillis = startDelayMillis;
         this.execDuration = execDurationMillis;
     }
@@ -149,6 +67,9 @@ class TasksSummary
         long totalSuccessTasks;
         long totalErrorTasks;
 
+        long maxDelayMillis;
+        ArchivedTask mostDelayedTask;
+
         final TasksStats.Builder startDelayMillis = new TasksStats.Builder();
         final TasksStats.Builder execDurationMillis = new TasksStats.Builder();
 
@@ -160,6 +81,7 @@ class TasksSummary
                     totalRunTasks,
                     totalSuccessTasks,
                     totalErrorTasks,
+                    mostDelayedTask,
                     startDelayMillis.build(),
                     execDurationMillis.build()
             );
@@ -215,8 +137,12 @@ class TasksSummary
                 }
 
                 if (timestampWhenTaskIsReady.isPresent()) {
-                    builder.startDelayMillis.add(
-                            Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis());
+                    long delayMillis = Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis();
+                    builder.startDelayMillis.add(delayMillis);
+                    if (delayMillis > builder.maxDelayMillis) {
+                        builder.mostDelayedTask = task;
+                        builder.maxDelayMillis = delayMillis;
+                    }
                 }
 
                 if (task.getState().isError()) {
@@ -227,6 +153,103 @@ class TasksSummary
                 }
             }
             isRoot = false;
+        }
+    }
+    @Override
+    public String toString()
+    {
+        return "TasksSummary{" +
+                "attempts=" + attempts +
+                ", totalTasks=" + totalTasks +
+                ", totalRunTasks=" + totalRunTasks +
+                ", totalSuccessTasks=" + totalSuccessTasks +
+                ", totalErrorTasks=" + totalErrorTasks +
+                ", startDelayMillis=" + startDelayMillis +
+                ", execDuration=" + execDuration +
+                '}';
+    }
+
+    @JsonSerialize(using = TasksStatsSerializer.class)
+    static class TasksStats
+    {
+        final Optional<Stats> stats;
+
+        TasksStats(Optional<Stats> stats)
+        {
+            this.stats = stats;
+        }
+
+        static TasksStats of(Collection<Long> values)
+        {
+            if (values.isEmpty()) {
+                return new TasksStats(Optional.absent());
+            } else {
+                return new TasksStats(Optional.of(Stats.of(values)));
+            }
+        }
+
+        Long min()
+        {
+            return stats.transform(x -> Double.valueOf(x.min()).longValue()).orNull();
+        }
+
+        Long max()
+        {
+            return stats.transform(x -> Double.valueOf(x.max()).longValue()).orNull();
+        }
+
+        Long mean()
+        {
+            return stats.transform(x -> Double.valueOf(x.mean()).longValue()).orNull();
+        }
+
+        Long stdDev()
+        {
+            return stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()).orNull();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "TasksStats{" +
+                    "stats=" + stats +
+                    '}';
+        }
+
+        static class Builder
+        {
+            private final List<Long> items = new ArrayList<>();
+
+            void add(long item)
+            {
+                items.add(item);
+            }
+
+            TasksStats build()
+            {
+                return TasksStats.of(items);
+            }
+        }
+    }
+
+    static class TasksStatsSerializer
+            extends StdSerializer<TasksStats>
+    {
+        protected TasksStatsSerializer()
+        {
+            super(TasksStats.class);
+        }
+
+        @Override
+        public void serialize(TasksStats tasksStats, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                throws IOException
+        {
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeObjectField("min", tasksStats.min());
+            jsonGenerator.writeObjectField("max", tasksStats.max());
+            jsonGenerator.writeObjectField("average", tasksStats.mean());
+            jsonGenerator.writeObjectField("stddev", tasksStats.stdDev());
+            jsonGenerator.writeEndObject();
         }
     }
 }
