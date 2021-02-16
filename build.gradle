@@ -167,6 +167,9 @@ subprojects {
             destinationFile = file("$buildDir/jacoco/${name}.exec")
             excludes = ['**/Immutable*', '*Immutable*', 'generated/**']
         }
+
+        // for BqDdlOperatorFactoryTest
+        environment "GOOGLE_APPLICATION_CREDENTIALS", "/tmp/dummy-service-account-key.json"
     }
 
     javadoc {
