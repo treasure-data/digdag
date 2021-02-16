@@ -4,11 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.common.base.Optional;
 import com.google.common.io.Resources;
-
 import io.digdag.client.DigdagClient;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
-
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
