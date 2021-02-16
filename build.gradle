@@ -213,7 +213,7 @@ subprojects {
         }
 
         // for BqDdlOperatorFactoryTest
-        environment "GOOGLE_APPLICATION_CREDENTIALS", "/tmp/dummy-service-account-key.json"
+        environment "GOOGLE_APPLICATION_CREDENTIALS", System.getProperty("java.io.tmpdir") + "/dummy-service-account-key.json"
     }
 
     javadoc {
