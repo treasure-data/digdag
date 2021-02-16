@@ -857,7 +857,7 @@ paths:
       parameters:
       - name: "last_id"
         in: "query"
-        description: "list sessions whose id is grater than this id for pagination"
+        description: "list sessions whose id's are lesser than this id for pagination"
         required: false
         type: "integer"
         format: "int64"
