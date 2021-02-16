@@ -60,7 +60,7 @@ paths:
         type: "boolean"
       - name: "last_id"
         in: "query"
-        description: "list attempts whose id is grater than this id for pagination"
+        description: "list attempts whose id's are lesser than this id for pagination"
         required: false
         type: "integer"
         format: "int64"
