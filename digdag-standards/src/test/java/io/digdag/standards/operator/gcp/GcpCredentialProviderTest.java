@@ -25,14 +25,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
-// these tests shouldn't be executed concurrently.
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING) // these tests shouldn't be executed concurrently.
 @RunWith(MockitoJUnitRunner.class)
-public class GcpCredentialProviderTest {
+public class GcpCredentialProviderTest
+{
     private static final ObjectMapper OBJECT_MAPPER = DigdagClient.objectMapper();
 
-    @Mock
-    SecretProvider secrets;
+    @Mock SecretProvider secrets;
 
     @Test
     public void testCredentialWithServiceAccountKey() throws Exception
