@@ -38,7 +38,7 @@ class GcpCredentialProvider
                 builder.projectId(ServiceOptions.getDefaultProjectId())
                 .credential(GoogleCredential.getApplicationDefault());
             }
-            catch (IOException e) {
+            catch (Exception e) {
                 throw new TaskExecutionException(
                     "Could not get google cloud credential: need gcp.credential secret or Application Default Credentials",
                     e
