@@ -414,7 +414,6 @@ public class EcsCommandExecutor
         }
         catch (TaskSetNotFoundException e) {
             errorMessage = Optional.fromNullable(e.getErrorMessage());
-
         }
         return errorMessage;
     }
@@ -569,6 +568,7 @@ public class EcsCommandExecutor
         setEcsNetworkConfiguration(clientConfig, runTaskRequest);
         setCapacityProviderStrategy(clientConfig, runTaskRequest);
         setPlacementStrategy(clientConfig, runTaskRequest);
+        setFargatePlatformVersion(clientConfig, runTaskRequest);
         return runTaskRequest;
     }
 
@@ -842,6 +842,13 @@ public class EcsCommandExecutor
             CapacityProviderStrategyItem capacityProviderStrategyItem = new CapacityProviderStrategyItem()
                     .withCapacityProvider(clientConfig.getCapacityProviderName().get());
             request.setCapacityProviderStrategy(Arrays.asList(capacityProviderStrategyItem));
+        }
+    }
+
+    protected void setFargatePlatformVersion(final EcsClientConfig clientConfig, final RunTaskRequest request)
+    {
+        if (clientConfig.getFargatePlatformVersion().isPresent()) {
+            request.setPlatformVersion(clientConfig.getFargatePlatformVersion().get());
         }
     }
 

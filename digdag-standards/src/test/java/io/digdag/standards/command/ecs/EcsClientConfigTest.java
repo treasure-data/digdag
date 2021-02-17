@@ -108,4 +108,14 @@ public class EcsClientConfigTest
             assertEquals("PlacementStrategyField must be set with PlacementStrategyType", e.getMessage());
         }
     }
+
+    @Test
+    public void testCreateFromSystemConfigWithFargatePlatformVersion() {
+        Config sys = systemConfig.deepCopy();
+        sys.set("agent.command_executor.ecs.name", "cluster01");
+        sys.set("agent.command_executor.ecs.cluster01.fargate_platform_version", "1.4.0");
+        sys.set("agent.command_executor.ecs.cluster01.region", "us-east-1");
+        EcsClientConfig ecsConfig = EcsClientConfig.createFromSystemConfig(Optional.absent(), sys);
+        assertEquals("1.4.0", ecsConfig.getFargatePlatformVersion().get());
+    }
 }

@@ -23,6 +23,7 @@ public class EcsClientConfigBuilder
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
+    private Optional<String> fargatePlatformVersion;
 
     public EcsClientConfig build()
     {
@@ -130,6 +131,13 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    // see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#platform-version-migration
+    public EcsClientConfigBuilder withFargatePlatformVersion(Optional<String> fargatePlatformVersion)
+    {
+        this.fargatePlatformVersion = fargatePlatformVersion;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -208,5 +216,10 @@ public class EcsClientConfigBuilder
     public Optional<String> getTaskMemory()
     {
         return taskMemory;
+    }
+
+    public Optional<String> getFargatePlatformVersion()
+    {
+        return fargatePlatformVersion;
     }
 }
