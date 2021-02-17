@@ -37,6 +37,7 @@ public class EcsClientConfig
         this.placementStrategyField = builder.getPlacementStrategyField();
         this.taskCpu = builder.getTaskCpu();
         this.taskMemory = builder.getTaskMemory();
+        this.fargatePlatformVersion = builder.getFargatePlatformVersion();
 
         // All PlacementStrategyFields must be used with a PlacementStrategyType.
         // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
@@ -129,6 +130,7 @@ public class EcsClientConfig
                 .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
                 .withTaskCpu(ecsConfig.getOptional("task_cpu", String.class))
                 .withTaskMemory(ecsConfig.getOptional("task_memory", String.class))
+                .withFargatePlatformVersion(ecsConfig.getOptional("fargate_platform_version", String.class))
                 .build();
     }
 
@@ -153,6 +155,7 @@ public class EcsClientConfig
     // E.g. For the `binpack` placement strategy, valid values are `cpu` and `memory`.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategy.java#L44-L52
     private final Optional<String> placementStrategyField;
+    private final Optional<String> fargatePlatformVersion;
 
     public String getClusterName()
     {
@@ -226,5 +229,10 @@ public class EcsClientConfig
     public Optional<String> getTaskMemory()
     {
         return taskMemory;
+    }
+
+    public Optional<String> getFargatePlatformVersion()
+    {
+        return fargatePlatformVersion;
     }
 }
