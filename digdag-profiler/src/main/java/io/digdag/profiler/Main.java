@@ -112,7 +112,6 @@ public class Main
                     binder.bind(ConfigElement.class).toInstance(configElement);
                     binder.bind(Config.class).toProvider(DigdagEmbed.SystemConfigProvider.class);
                 }
-
         );
         new TaskAnalyzer(injector)
                 .run(

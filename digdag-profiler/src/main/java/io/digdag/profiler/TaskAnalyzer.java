@@ -97,7 +97,7 @@ public class TaskAnalyzer
                             continue;
                         }
                         List<ArchivedTask> tasks = sm.getSessionStore(siteId).getTasksOfAttempt(attemptWithSession.getId());
-                        TasksSummary.updateBuilderWithTasks(tasks, tasksSummaryBuilder);
+                        TasksSummary.updateBuilderWithTasks(tasksSummaryBuilder, tasks);
                     }
                     logger.debug("Processed {} attempts", attemptsWithSessions.size());
                     return null;

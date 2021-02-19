@@ -97,8 +97,8 @@ class TasksSummary
     // This method is called for each attempt and
     // accumulates stats in `builder`.
     static void updateBuilderWithTasks(
-            List<ArchivedTask> originalTasks,
-            Builder builder)
+            Builder builder,
+            List<ArchivedTask> originalTasks)
     {
         builder.attempts++;
 
