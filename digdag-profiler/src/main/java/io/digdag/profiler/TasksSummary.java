@@ -7,7 +7,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Optional;
 import com.google.common.math.Stats;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.ImmutableArchivedTask;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -18,6 +21,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.digdag.client.DigdagClient.objectMapper;
 
 class TasksSummary
 {
@@ -102,6 +107,7 @@ class TasksSummary
         builder.totalTasks += tasks.size() - 1; // Remove a root task
 
         // Calculate the delays of task invocations
+        Config emptyConfig = new ConfigFactory(objectMapper()).create();
         boolean isRoot = true;
         for (ArchivedTask task : tasks) {
             if (!isRoot && task.getStartedAt().isPresent()) {
@@ -140,7 +146,28 @@ class TasksSummary
                     long delayMillis = Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis();
                     builder.startDelayMillis.add(delayMillis);
                     if (delayMillis > builder.maxDelayMillis) {
-                        builder.mostDelayedTask = task;
+                        builder.mostDelayedTask = ImmutableArchivedTask.builder()
+                                .attemptId(task.getAttemptId())
+                                .id(task.getId())
+                                .fullName(task.getFullName())
+                                .taskType(task.getTaskType())
+                                .parentId(task.getParentId())
+                                .error(task.getError())
+                                .report(task.getReport())
+                                .state(task.getState())
+                                .stateFlags(task.getStateFlags())
+                                .upstreams(task.getUpstreams())
+                                .resumingTaskId(task.getResumingTaskId())
+                                .config(task.getConfig())
+                                .retryCount(task.getRetryCount())
+                                .retryAt(task.getRetryAt())
+                                .startedAt(task.getStartedAt())
+                                .updatedAt(task.getUpdatedAt())
+                                .subtaskConfig(emptyConfig)
+                                .exportParams(emptyConfig)
+                                .storeParams(emptyConfig)
+                                .stateParams(emptyConfig)
+                                .build();
                         builder.maxDelayMillis = delayMillis;
                     }
                 }
