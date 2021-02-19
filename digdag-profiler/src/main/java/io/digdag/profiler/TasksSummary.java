@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.digdag.client.DigdagClient.objectMapper;
 
@@ -93,12 +94,21 @@ class TasksSummary
         }
     }
 
+    // This method is called for each attempt and
+    // accumulates stats in `builder`.
     static void updateBuilderWithTasks(
-            List<ArchivedTask> tasks,
+            List<ArchivedTask> originalTasks,
             Builder builder)
     {
         builder.attempts++;
 
+        // Sort tasks by `id` just in case
+        List<ArchivedTask> tasks = originalTasks.stream()
+                // Make it fail if unexpected overflow happens just in case
+                .sorted((a, b) -> Math.toIntExact(a.getId() - b.getId()))
+                .collect(Collectors.toList());
+
+        // Create a task map for lookup by task id
         Map<Long, ArchivedTask> taskMap = new HashMap<>(tasks.size());
         for (ArchivedTask task : tasks) {
             taskMap.put(task.getId(), task);
@@ -110,8 +120,12 @@ class TasksSummary
         Config emptyConfig = new ConfigFactory(objectMapper()).create();
         boolean isRoot = true;
         for (ArchivedTask task : tasks) {
+            // It's possible some old group tasks don't have `started_at`,
+            // so skip if it doesn't exists
             if (!isRoot && task.getStartedAt().isPresent()) {
                 builder.totalRunTasks++;
+                // The stats of exec durations handle both group and non-group tasks for now.
+                // There may be room to discuss about it.
                 builder.execDurationMillis.add(
                         Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
 
@@ -132,6 +146,10 @@ class TasksSummary
                     }
                 } else {
                     // This task is executed sequentially. Get the latest `updated_at` of upstream tasks.
+                    //
+                    // This way also can deal with `_parallel`'s `limit: N` option since
+                    // tasks in the second or later parallel tasks set have
+                    // previous parallel task IDs in `upstreams` field
                     long previousTaskId = task.getUpstreams().stream()
                             .max(Comparator.comparingLong(
                                     id -> taskMap.get(id).getUpdatedAt().toEpochMilli()))
@@ -146,6 +164,7 @@ class TasksSummary
                     long delayMillis = Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis();
                     builder.startDelayMillis.add(delayMillis);
                     if (delayMillis > builder.maxDelayMillis) {
+                        // Mask some unnecessary fields
                         builder.mostDelayedTask = ImmutableArchivedTask.builder()
                                 .attemptId(task.getAttemptId())
                                 .id(task.getId())
