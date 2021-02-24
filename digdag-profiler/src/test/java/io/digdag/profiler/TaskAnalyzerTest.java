@@ -2,7 +2,9 @@ package io.digdag.profiler;
 
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -14,12 +16,18 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigModule;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.ImmutableArchivedTask;
 import io.digdag.core.session.ImmutableSession;
 import io.digdag.core.session.ImmutableStoredSessionAttemptWithSession;
+import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.session.TaskStateFlags;
+import io.digdag.core.session.TaskType;
+import io.digdag.core.workflow.TaskConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +38,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -37,19 +47,67 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TaskAnalyzerTest
 {
-    private static final int FETCH_ATTEMPTS = 4;
-    private static final int PARTITION_SIZE = 2;
+    private static Instant TIME_FROM = Instant.now().minusSeconds(3600);
+    private static Instant TIME_TO = Instant.now();
+
     private static final Config EMPTY_CONFIG = new ConfigFactory(objectMapper()).create();
 
+    private static final int FETCH_ATTEMPTS = 4;
+    private static final int PARTITION_SIZE = 2;
+
+    private static final int SITE_1 = 1;
+    private static final int SITE_2 = 2;
+    private static final int SITE_3 = 3;
+
+    private static final long PROJECT_S1_P10 = 10;
+    private static final long PROJECT_S1_P11 = 11;
+    private static final long PROJECT_S2_P20 = 20;
+    private static final long PROJECT_S3_P30 = 30;
+
+    private static final long SESSION_S1_P10_S100 = 100;
+    private static final long SESSION_S1_P11_S110 = 110;
+    private static final long SESSION_S2_P20_S200 = 200;
+    private static final long SESSION_S3_P30_S300 = 300;
+    private static final long SESSION_S3_P30_S301 = 301;
+
+    private static final long ATTEMPT_S1_P10_S100_A1000 = 1000;
+    private static final long ATTEMPT_S1_P10_S100_A1001 = 1001;
+    private static final long ATTEMPT_S1_P10_S100_A1002 = 1002;
+    private static final long ATTEMPT_S1_P11_S110_A1100 = 1100;
+    private static final long ATTEMPT_S2_P20_S200_A2000 = 2000;
+    private static final long ATTEMPT_S3_P30_S300_A3000 = 3000;
+    private static final long ATTEMPT_S3_P30_S301_A3010 = 3010;
+
+    private static final SessionStore SESSION_STORE_S1 =
+            createSessionStore(
+                    ImmutableMap.of(
+                            ATTEMPT_S1_P10_S100_A1000, createTasks(ATTEMPT_S1_P10_S100_A1000, "wf_s1_p10_s100", 10000, 10001),
+                            ATTEMPT_S1_P10_S100_A1001, createTasks(ATTEMPT_S1_P10_S100_A1001, "wf_s1_p10_s100", 10010, 10011),
+                            ATTEMPT_S1_P10_S100_A1002, createTasks(ATTEMPT_S1_P10_S100_A1002, "wf_s1_p10_s100", 10020, 10021),
+                            ATTEMPT_S1_P11_S110_A1100, createTasks(ATTEMPT_S1_P11_S110_A1100, "wf_s1_p11_s110", 11000, 11001)
+                    )
+            );
+    private static final SessionStore SESSION_STORE_S2 =
+            createSessionStore(
+                    ImmutableMap.of(
+                            ATTEMPT_S2_P20_S200_A2000, createTasks(ATTEMPT_S2_P20_S200_A2000, "wf_s2_p20_s200", 20000, 20001)
+                    )
+            );
+    private static final SessionStore SESSION_STORE_S3 =
+            createSessionStore(
+                    ImmutableMap.of(
+                            ATTEMPT_S3_P30_S300_A3000, createTasks(ATTEMPT_S3_P30_S300_A3000, "wf_s3_p30_s300", 30000, 30001),
+                            ATTEMPT_S3_P30_S301_A3010, createTasks(ATTEMPT_S3_P30_S301_A3010, "wf_s3_p30_s301", 30100, 30101)
+                    )
+            );
+
     @Mock TransactionManager transactionManager;
-    @Mock ProjectStoreManager projectStoreManager;
     @Mock SessionStoreManager sessionStoreManager;
-    Instant timeFrom = Instant.now().minusSeconds(3600);
-    Instant timeTo = Instant.now();
 
     StoredSessionAttemptWithSession attempt_1_p10_s100_a1000 =
             createAttempt(1, 10, "wf_s1_p10", 100, 1000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
@@ -66,7 +124,63 @@ public class TaskAnalyzerTest
     StoredSessionAttemptWithSession attempt_1_p10_s100_a1002 =
             createAttempt(1, 10, "wf_s1_p10", 100, 1002, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
 
-    private StoredSessionAttemptWithSession createAttempt(
+    private static List<ArchivedTask> createTasks(long attemptId, String rootTaskName, long rootTaskId, long childTaskId)
+    {
+        Instant startedAt = TIME_FROM.plusSeconds(600);
+
+        // Root task which took 5 seconds
+        ArchivedTask rootTask = ImmutableArchivedTask.builder()
+                .attemptId(attemptId)
+                .id(rootTaskId)
+                .parentId(Optional.absent())
+                .config(TaskConfig.validate(EMPTY_CONFIG))
+                .subtaskConfig(EMPTY_CONFIG)
+                .stateParams(EMPTY_CONFIG)
+                .storeParams(EMPTY_CONFIG)
+                .exportParams(EMPTY_CONFIG)
+                .taskType(TaskType.of(TaskType.GROUPING_ONLY))
+                .fullName(rootTaskName)
+                .error(EMPTY_CONFIG)
+                .state(TaskStateCode.SUCCESS)
+                .stateFlags(TaskStateFlags.empty())
+                .startedAt(startedAt)
+                .updatedAt(startedAt.plusSeconds(5))
+                .build();
+
+        // Child task which started with 1 second delay
+        ArchivedTask childTask = ImmutableArchivedTask.builder()
+                .attemptId(attemptId)
+                .id(childTaskId)
+                .parentId(rootTaskId)
+                .config(TaskConfig.validate(EMPTY_CONFIG))
+                .subtaskConfig(EMPTY_CONFIG)
+                .stateParams(EMPTY_CONFIG)
+                .storeParams(EMPTY_CONFIG)
+                .exportParams(EMPTY_CONFIG)
+                .taskType(TaskType.of(0))
+                .fullName(rootTaskName + "+child")
+                .error(EMPTY_CONFIG)
+                .state(TaskStateCode.SUCCESS)
+                .stateFlags(TaskStateFlags.empty())
+                .startedAt(startedAt.plusSeconds(1))
+                .updatedAt(startedAt.plusSeconds(5))
+                .build();
+
+        return ImmutableList.of(rootTask, childTask);
+    }
+
+    private static SessionStore createSessionStore(Map<Long, List<ArchivedTask>> attemptAndTasksMap)
+    {
+        SessionStore sessionStore = mock(SessionStore.class);
+        for (Map.Entry<Long, List<ArchivedTask>> attemptAndTasks : attemptAndTasksMap.entrySet()) {
+            doReturn(attemptAndTasks.getValue())
+                    .when(sessionStore)
+                    .getTasksOfAttempt(eq(attemptAndTasks.getKey()));
+        }
+        return sessionStore;
+    }
+
+    private static StoredSessionAttemptWithSession createAttempt(
             int siteId,
             int projectId,
             String workflowName,
@@ -96,7 +210,6 @@ public class TaskAnalyzerTest
                 .build();
     }
 
-
     @Before
     public void setUp()
             throws Exception
@@ -114,14 +227,18 @@ public class TaskAnalyzerTest
                 attempt_3_p30_s300_a3000,
                 attempt_1_p11_s110_a1100
         )).when(sessionStoreManager).findFinishedAttemptsWithSessions(
-                eq(timeFrom), eq(timeTo), eq(0L), eq(FETCH_ATTEMPTS));
+                eq(TIME_FROM), eq(TIME_TO), eq(0L), eq(FETCH_ATTEMPTS));
 
         doReturn(ImmutableList.of(
                 attempt_3_p30_s301_a3010,
                 attempt_1_p10_s100_a1001,
                 attempt_1_p10_s100_a1002
         )).when(sessionStoreManager).findFinishedAttemptsWithSessions(
-                eq(timeFrom), eq(timeTo), eq(attempt_1_p11_s110_a1100.getId()), eq(FETCH_ATTEMPTS));
+                eq(TIME_FROM), eq(TIME_TO), eq(attempt_1_p11_s110_a1100.getId()), eq(FETCH_ATTEMPTS));
+
+        doReturn(SESSION_STORE_S1).when(sessionStoreManager).getSessionStore(eq(SITE_1));
+        doReturn(SESSION_STORE_S2).when(sessionStoreManager).getSessionStore(eq(SITE_2));
+        doReturn(SESSION_STORE_S3).when(sessionStoreManager).getSessionStore(eq(SITE_3));
     }
 
     @After
@@ -136,7 +253,6 @@ public class TaskAnalyzerTest
         @Override
         public void configure(Binder binder) {
             binder.bind(TransactionManager.class).toInstance(transactionManager);
-            binder.bind(ProjectStoreManager.class).toInstance(projectStoreManager);
             binder.bind(SessionStoreManager.class).toInstance(sessionStoreManager);
         }
     }
@@ -160,8 +276,8 @@ public class TaskAnalyzerTest
 
         taskAnalyzer.run(
                 System.out,
-                timeFrom,
-                timeTo,
+                TIME_FROM,
+                TIME_TO,
                 FETCH_ATTEMPTS,
                 PARTITION_SIZE,
                 10);

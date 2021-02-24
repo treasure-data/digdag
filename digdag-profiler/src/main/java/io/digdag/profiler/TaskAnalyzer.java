@@ -5,6 +5,7 @@ import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import org.slf4j.Logger;
@@ -51,7 +52,6 @@ public class TaskAnalyzer
             throws IOException
     {
         TransactionManager tm = injector.getInstance(TransactionManager.class);
-        ProjectStoreManager pm = injector.getInstance(ProjectStoreManager.class);
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
 
         AtomicLong lastId = new AtomicLong();
@@ -87,15 +87,7 @@ public class TaskAnalyzer
                 logger.debug("Processing {} attempts", attemptsWithSessions.size());
                 tm.begin(() -> {
                     for (StoredSessionAttemptWithSession attemptWithSession : attemptsWithSessions) {
-                        // TODO: Reduce these round-trips with database to improve the performance
-                        int projectId = attemptWithSession.getSession().getProjectId();
-                        int siteId;
-                        try {
-                            siteId = pm.getProjectByIdInternal(projectId).getSiteId();
-                        } catch (ResourceNotFoundException e) {
-                            logger.error(String.format("Can't find the project: %d. Just skipping it...", projectId), e);
-                            continue;
-                        }
+                        int siteId = attemptWithSession.getSiteId();
                         List<ArchivedTask> tasks = sm.getSessionStore(siteId).getTasksOfAttempt(attemptWithSession.getId());
                         TasksSummary.updateBuilderWithTasks(tasksSummaryBuilder, tasks);
                     }
