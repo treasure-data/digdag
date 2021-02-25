@@ -171,6 +171,6 @@ public class TaskSummaryTest
         assertEquals(6, summary.totalSuccessTasks);
         assertEquals(0, summary.totalErrorTasks);
         assertEquals(2000, summary.startDelayMillis.mean().longValue());
-        assertEquals(4000, summary.execDuration.mean().longValue());
+        assertEquals(4000, summary.execDurationMillis.mean().longValue());
     }
 }

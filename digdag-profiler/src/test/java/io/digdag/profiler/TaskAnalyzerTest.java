@@ -327,9 +327,9 @@ public class TaskAnalyzerTest
         assertEquals(1000, tasksSummary.startDelayMillis.mean().longValue());
         assertEquals(0, tasksSummary.startDelayMillis.stdDev().longValue());
 
-        assertEquals(4000, tasksSummary.execDuration.min().longValue());
-        assertEquals(4000, tasksSummary.execDuration.max().longValue());
-        assertEquals(4000, tasksSummary.execDuration.mean().longValue());
-        assertEquals(0, tasksSummary.execDuration.stdDev().longValue());
+        assertEquals(4000, tasksSummary.execDurationMillis.min().longValue());
+        assertEquals(4000, tasksSummary.execDurationMillis.max().longValue());
+        assertEquals(4000, tasksSummary.execDurationMillis.mean().longValue());
+        assertEquals(0, tasksSummary.execDurationMillis.stdDev().longValue());
     }
 }

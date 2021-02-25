@@ -43,7 +43,7 @@ class TasksSummary
     @JsonProperty
     public final TasksStats startDelayMillis;
     @JsonProperty
-    public final TasksStats execDuration;
+    public final TasksStats execDurationMillis;
 
     public TasksSummary(
             long attempts,
@@ -62,7 +62,7 @@ class TasksSummary
         this.totalErrorTasks = totalErrorTasks;
         this.mostDelayedTask = mostDelayedTask;
         this.startDelayMillis = startDelayMillis;
-        this.execDuration = execDurationMillis;
+        this.execDurationMillis = execDurationMillis;
     }
 
     static class Builder
@@ -211,7 +211,7 @@ class TasksSummary
                 ", totalSuccessTasks=" + totalSuccessTasks +
                 ", totalErrorTasks=" + totalErrorTasks +
                 ", startDelayMillis=" + startDelayMillis +
-                ", execDuration=" + execDuration +
+                ", execDurationMillis=" + execDurationMillis +
                 '}';
     }
 
