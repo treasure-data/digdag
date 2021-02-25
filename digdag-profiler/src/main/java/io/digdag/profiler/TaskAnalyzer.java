@@ -2,10 +2,7 @@ package io.digdag.profiler;
 
 import com.google.inject.Injector;
 import io.digdag.core.database.TransactionManager;
-import io.digdag.core.repository.ProjectStoreManager;
-import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
-import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import org.slf4j.Logger;
