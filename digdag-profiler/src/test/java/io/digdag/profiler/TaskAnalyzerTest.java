@@ -28,7 +28,6 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskType;
 import io.digdag.core.workflow.TaskConfig;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,11 +42,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.digdag.client.DigdagClient.objectMapper;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TaskAnalyzerTest
@@ -179,7 +181,8 @@ public class TaskAnalyzerTest
                 .updatedAt(startedAt.plusSeconds(5))
                 .build();
 
-        // Child task which started with 1 second delay
+        // Child task which started with 1 second delay.
+        // This means the child task itself takes 4 seconds.
         ArchivedTask childTask = ImmutableArchivedTask.builder()
                 .attemptId(attemptId)
                 .id(childTaskId)
@@ -244,7 +247,6 @@ public class TaskAnalyzerTest
 
     @Before
     public void setUp()
-            throws Exception
     {
         doAnswer((invocation) -> {
             @SuppressWarnings("unchecked")
@@ -253,30 +255,26 @@ public class TaskAnalyzerTest
             return func.get();
         }).when(transactionManager).begin(any());
 
+        // Fetch the first 4 attempts
         doReturn(ImmutableList.of(
                 attempt_1_p10_s100_a1000,
+                attempt_1_p11_s110_a1100,
                 attempt_2_p20_s200_a2000,
-                attempt_3_p30_s300_a3000,
-                attempt_1_p11_s110_a1100
+                attempt_3_p30_s300_a3000
         )).when(sessionStoreManager).findFinishedAttemptsWithSessions(
                 eq(TIME_FROM), eq(TIME_TO), eq(0L), eq(FETCH_ATTEMPTS));
 
+        // Fetch the rest of attempts
         doReturn(ImmutableList.of(
                 attempt_3_p30_s301_a3010,
                 attempt_1_p10_s100_a1001,
                 attempt_1_p10_s100_a1002
         )).when(sessionStoreManager).findFinishedAttemptsWithSessions(
-                eq(TIME_FROM), eq(TIME_TO), eq(attempt_1_p11_s110_a1100.getId()), eq(FETCH_ATTEMPTS));
+                eq(TIME_FROM), eq(TIME_TO), eq(attempt_3_p30_s300_a3000.getId()), eq(FETCH_ATTEMPTS));
 
         doReturn(SESSION_STORE_S1).when(sessionStoreManager).getSessionStore(eq(SITE_1));
         doReturn(SESSION_STORE_S2).when(sessionStoreManager).getSessionStore(eq(SITE_2));
         doReturn(SESSION_STORE_S3).when(sessionStoreManager).getSessionStore(eq(SITE_3));
-    }
-
-    @After
-    public void tearDown()
-            throws Exception
-    {
     }
 
     public class MockDatabaseModule
@@ -290,7 +288,9 @@ public class TaskAnalyzerTest
     }
 
     @Test
-    public void run() throws IOException {
+    public void run()
+            throws IOException
+    {
         ConfigElement configElement = ConfigElement.empty();
 
         Injector injector = Guice.createInjector(
@@ -306,12 +306,30 @@ public class TaskAnalyzerTest
         );
         TaskAnalyzer taskAnalyzer = new TaskAnalyzer(injector);
 
-        taskAnalyzer.run(
-                System.out,
+        TasksSummary tasksSummary = taskAnalyzer.run(
                 TIME_FROM,
                 TIME_TO,
                 FETCH_ATTEMPTS,
                 PARTITION_SIZE,
                 10);
+
+        assertEquals(7, tasksSummary.attempts);
+        // these counts doesn't contain root tasks
+        assertEquals(7, tasksSummary.totalTasks);
+        assertEquals(7, tasksSummary.totalRunTasks);
+        assertEquals(7, tasksSummary.totalSuccessTasks);
+        assertEquals(0, tasksSummary.totalErrorTasks);
+
+        assertNotNull(tasksSummary.mostDelayedTask);
+
+        assertEquals(1000, tasksSummary.startDelayMillis.min().longValue());
+        assertEquals(1000, tasksSummary.startDelayMillis.max().longValue());
+        assertEquals(1000, tasksSummary.startDelayMillis.mean().longValue());
+        assertEquals(0, tasksSummary.startDelayMillis.stdDev().longValue());
+
+        assertEquals(4000, tasksSummary.execDuration.min().longValue());
+        assertEquals(4000, tasksSummary.execDuration.max().longValue());
+        assertEquals(4000, tasksSummary.execDuration.mean().longValue());
+        assertEquals(0, tasksSummary.execDuration.stdDev().longValue());
     }
 }

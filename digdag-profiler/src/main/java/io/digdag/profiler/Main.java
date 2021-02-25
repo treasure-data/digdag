@@ -25,6 +25,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+import static io.digdag.client.DigdagClient.objectMapper;
+
 
 public class Main
 {
@@ -113,15 +115,15 @@ public class Main
                     binder.bind(Config.class).toProvider(DigdagEmbed.SystemConfigProvider.class);
                 }
         );
-        new TaskAnalyzer(injector)
+        TasksSummary tasksSummary = new TaskAnalyzer(injector)
                 .run(
-                        System.out,
                         args.timeRangeFrom,
                         args.timeRangeTo,
                         args.fetchedAttempts,
                         args.partitionSize,
                         args.databaseWaitMillis
                 );
+        objectMapper().writeValue(System.out, tasksSummary);
     }
 
     public static void main(final String[] args)

@@ -8,16 +8,12 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-
-import static io.digdag.client.DigdagClient.objectMapper;
 
 public class TaskAnalyzer
 {
@@ -40,13 +36,11 @@ public class TaskAnalyzer
         }
     }
 
-    public void run(PrintStream printStream,
-                    Instant createdFrom,
-                    Instant createdTo,
-                    int fetchedAttempts,
-                    int partitionSize,
-                    int databaseWaitMillis)
-            throws IOException
+    public TasksSummary run(Instant createdFrom,
+                            Instant createdTo,
+                            int fetchedAttempts,
+                            int partitionSize,
+                            int databaseWaitMillis)
     {
         TransactionManager tm = injector.getInstance(TransactionManager.class);
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
@@ -63,6 +57,7 @@ public class TaskAnalyzer
             Map<Long, List<StoredSessionAttemptWithSession>> partitionedAttemptIds = tm.begin(() -> {
                 List<StoredSessionAttemptWithSession> attempts =
                         sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, lastId.get(), fetchedAttempts);
+                // Update `lastId` to the max ID
                 attempts.stream().mapToLong(StoredSessionAttemptWithSession::getId).max().ifPresent((id) ->
                         lastId.set(Math.max(lastId.get(), id))
                 );
@@ -97,6 +92,6 @@ public class TaskAnalyzer
 
         logger.info("Task analysis finished");
 
-        objectMapper().writeValue(printStream, tasksSummaryBuilder.build());
+        return tasksSummaryBuilder.build();
     }
 }
