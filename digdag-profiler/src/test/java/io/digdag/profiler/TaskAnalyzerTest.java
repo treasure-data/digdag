@@ -64,16 +64,16 @@ public class TaskAnalyzerTest
     private static final int SITE_2 = 2;
     private static final int SITE_3 = 3;
 
-    private static final long PROJECT_S1_P10 = 10;
-    private static final long PROJECT_S1_P11 = 11;
-    private static final long PROJECT_S2_P20 = 20;
-    private static final long PROJECT_S3_P30 = 30;
+    private static final int PROJECT_S1_P10 = 10;
+    private static final int PROJECT_S1_P11 = 11;
+    private static final int PROJECT_S2_P20 = 20;
+    private static final int PROJECT_S3_P30 = 30;
 
-    private static final long SESSION_S1_P10_S100 = 100;
-    private static final long SESSION_S1_P11_S110 = 110;
-    private static final long SESSION_S2_P20_S200 = 200;
-    private static final long SESSION_S3_P30_S300 = 300;
-    private static final long SESSION_S3_P30_S301 = 301;
+    private static final int SESSION_S1_P10_S100 = 100;
+    private static final int SESSION_S1_P11_S110 = 110;
+    private static final int SESSION_S2_P20_S200 = 200;
+    private static final int SESSION_S3_P30_S300 = 300;
+    private static final int SESSION_S3_P30_S301 = 301;
 
     private static final long ATTEMPT_S1_P10_S100_A1000 = 1000;
     private static final long ATTEMPT_S1_P10_S100_A1001 = 1001;
@@ -83,26 +83,52 @@ public class TaskAnalyzerTest
     private static final long ATTEMPT_S3_P30_S300_A3000 = 3000;
     private static final long ATTEMPT_S3_P30_S301_A3010 = 3010;
 
+    private static final long TASK_S1_P10_S100_A1000_T10000 = 10000;
+    private static final long TASK_S1_P10_S100_A1000_T10001 = 10001;
+    private static final long TASK_S1_P10_S100_A1001_T10010 = 10010;
+    private static final long TASK_S1_P10_S100_A1001_T10011 = 10011;
+    private static final long TASK_S1_P10_S100_A1002_T10020 = 10020;
+    private static final long TASK_S1_P10_S100_A1002_T10021 = 10021;
+    private static final long TASK_S1_P11_S110_A1100_T11000 = 11000;
+    private static final long TASK_S1_P11_S110_A1100_T11001 = 11001;
+    private static final long TASK_S2_P20_S200_A2000_T20000 = 20000;
+    private static final long TASK_S2_P20_S200_A2000_T20001 = 20001;
+    private static final long TASK_S3_P30_S300_A3000_T30000 = 30000;
+    private static final long TASK_S3_P30_S300_A3000_T30001 = 30001;
+    private static final long TASK_S3_P30_S301_A3010_T30100 = 30100;
+    private static final long TASK_S3_P30_S301_A3010_T30101 = 30101;
+
     private static final SessionStore SESSION_STORE_S1 =
             createSessionStore(
                     ImmutableMap.of(
-                            ATTEMPT_S1_P10_S100_A1000, createTasks(ATTEMPT_S1_P10_S100_A1000, "wf_s1_p10_s100", 10000, 10001),
-                            ATTEMPT_S1_P10_S100_A1001, createTasks(ATTEMPT_S1_P10_S100_A1001, "wf_s1_p10_s100", 10010, 10011),
-                            ATTEMPT_S1_P10_S100_A1002, createTasks(ATTEMPT_S1_P10_S100_A1002, "wf_s1_p10_s100", 10020, 10021),
-                            ATTEMPT_S1_P11_S110_A1100, createTasks(ATTEMPT_S1_P11_S110_A1100, "wf_s1_p11_s110", 11000, 11001)
+                            ATTEMPT_S1_P10_S100_A1000,
+                            createTasks(ATTEMPT_S1_P10_S100_A1000, "wf_s1_p10_s100", TASK_S1_P10_S100_A1000_T10000, TASK_S1_P10_S100_A1000_T10001),
+
+                            ATTEMPT_S1_P10_S100_A1001,
+                            createTasks(ATTEMPT_S1_P10_S100_A1001, "wf_s1_p10_s100", TASK_S1_P10_S100_A1001_T10010, TASK_S1_P10_S100_A1001_T10011),
+
+                            ATTEMPT_S1_P10_S100_A1002,
+                            createTasks(ATTEMPT_S1_P10_S100_A1002, "wf_s1_p10_s100", TASK_S1_P10_S100_A1002_T10020, TASK_S1_P10_S100_A1002_T10021),
+
+                            ATTEMPT_S1_P11_S110_A1100,
+                            createTasks(ATTEMPT_S1_P11_S110_A1100, "wf_s1_p11_s110", TASK_S1_P11_S110_A1100_T11000, TASK_S1_P11_S110_A1100_T11001)
                     )
             );
     private static final SessionStore SESSION_STORE_S2 =
             createSessionStore(
                     ImmutableMap.of(
-                            ATTEMPT_S2_P20_S200_A2000, createTasks(ATTEMPT_S2_P20_S200_A2000, "wf_s2_p20_s200", 20000, 20001)
+                            ATTEMPT_S2_P20_S200_A2000,
+                            createTasks(ATTEMPT_S2_P20_S200_A2000, "wf_s2_p20_s200", TASK_S2_P20_S200_A2000_T20000, TASK_S2_P20_S200_A2000_T20001)
                     )
             );
     private static final SessionStore SESSION_STORE_S3 =
             createSessionStore(
                     ImmutableMap.of(
-                            ATTEMPT_S3_P30_S300_A3000, createTasks(ATTEMPT_S3_P30_S300_A3000, "wf_s3_p30_s300", 30000, 30001),
-                            ATTEMPT_S3_P30_S301_A3010, createTasks(ATTEMPT_S3_P30_S301_A3010, "wf_s3_p30_s301", 30100, 30101)
+                            ATTEMPT_S3_P30_S300_A3000,
+                            createTasks(ATTEMPT_S3_P30_S300_A3000, "wf_s3_p30_s300", TASK_S3_P30_S300_A3000_T30000, TASK_S3_P30_S300_A3000_T30001),
+
+                            ATTEMPT_S3_P30_S301_A3010,
+                            createTasks(ATTEMPT_S3_P30_S301_A3010, "wf_s3_p30_s301", TASK_S3_P30_S301_A3010_T30100, TASK_S3_P30_S301_A3010_T30101)
                     )
             );
 
@@ -110,19 +136,25 @@ public class TaskAnalyzerTest
     @Mock SessionStoreManager sessionStoreManager;
 
     StoredSessionAttemptWithSession attempt_1_p10_s100_a1000 =
-            createAttempt(1, 10, "wf_s1_p10", 100, 1000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+            createAttempt(SITE_1, PROJECT_S1_P10, "wf_s1_p10", SESSION_S1_P10_S100, ATTEMPT_S1_P10_S100_A1000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+
     StoredSessionAttemptWithSession attempt_2_p20_s200_a2000 =
-            createAttempt(2, 20, "wf_s2_p20", 200, 2000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+            createAttempt(SITE_2, PROJECT_S2_P20, "wf_s2_p20", SESSION_S2_P20_S200, ATTEMPT_S2_P20_S200_A2000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+
     StoredSessionAttemptWithSession attempt_3_p30_s300_a3000 =
-            createAttempt(3, 30, "wf_s3_p30", 300, 3000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE));
+            createAttempt(SITE_3, PROJECT_S2_P20, "wf_s3_p30", SESSION_S3_P30_S300, ATTEMPT_S3_P30_S300_A3000, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE));
+
     StoredSessionAttemptWithSession attempt_1_p11_s110_a1100 =
-            createAttempt(1, 11, "wf_s1_p11", 110, 1100, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+            createAttempt(SITE_1, PROJECT_S1_P11, "wf_s1_p11", SESSION_S1_P11_S110, ATTEMPT_S1_P11_S110_A1100, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+
     StoredSessionAttemptWithSession attempt_3_p30_s301_a3010 =
-            createAttempt(3, 30, "wf_s3_p30", 301, 3010, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+            createAttempt(SITE_3, PROJECT_S3_P30, "wf_s3_p30", SESSION_S3_P30_S301, ATTEMPT_S3_P30_S301_A3010, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+
     StoredSessionAttemptWithSession attempt_1_p10_s100_a1001 =
-            createAttempt(1, 10, "wf_s1_p10", 100, 1001, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+            createAttempt(SITE_1, PROJECT_S1_P10, "wf_s1_p10", SESSION_S1_P10_S100, ATTEMPT_S1_P10_S100_A1001, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+
     StoredSessionAttemptWithSession attempt_1_p10_s100_a1002 =
-            createAttempt(1, 10, "wf_s1_p10", 100, 1002, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
+            createAttempt(SITE_1, PROJECT_S1_P10, "wf_s1_p10", SESSION_S1_P10_S100, ATTEMPT_S1_P10_S100_A1002, AttemptStateFlags.of(AttemptStateFlags.DONE_CODE | AttemptStateFlags.SUCCESS_CODE));
 
     private static List<ArchivedTask> createTasks(long attemptId, String rootTaskName, long rootTaskId, long childTaskId)
     {
@@ -185,7 +217,7 @@ public class TaskAnalyzerTest
             int projectId,
             String workflowName,
             int sessionId,
-            int attemptId,
+            long attemptId,
             AttemptStateFlags stateFlags)
     {
         ImmutableSession session = ImmutableSession.builder()
@@ -202,7 +234,7 @@ public class TaskAnalyzerTest
                 .id(attemptId)
                 .createdAt(Instant.now().minusSeconds(1200))
                 .finishedAt(Instant.now().minusSeconds(600))
-                .index(attemptId)
+                .index((int) attemptId)
                 .params(EMPTY_CONFIG)
                 .stateFlags(stateFlags)
                 .timeZone(ZoneId.systemDefault())
