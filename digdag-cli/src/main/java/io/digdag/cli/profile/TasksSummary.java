@@ -1,4 +1,4 @@
-package io.digdag.profiler;
+package io.digdag.cli.profile;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -68,7 +68,7 @@ import static io.digdag.client.DigdagClient.objectMapper;
  * This limitation won't be removed for a while...
  *
  */
-class TasksSummary
+public class TasksSummary
 {
     private static final Logger logger = LoggerFactory.getLogger(TasksSummary.class);
 

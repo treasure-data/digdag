@@ -1,4 +1,4 @@
-package io.digdag.profiler;
+package io.digdag.cli.profile;
 
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
@@ -42,14 +42,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.digdag.client.DigdagClient.objectMapper;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-
-import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TaskAnalyzerTest

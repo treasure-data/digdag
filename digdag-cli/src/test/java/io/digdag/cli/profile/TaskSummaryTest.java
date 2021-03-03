@@ -1,4 +1,4 @@
-package io.digdag.profiler;
+package io.digdag.cli.profile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;

@@ -1,4 +1,4 @@
-package io.digdag.profiler;
+package io.digdag.cli.profile;
 
 import com.google.common.collect.ImmutableMap;
 import io.digdag.cli.Command;

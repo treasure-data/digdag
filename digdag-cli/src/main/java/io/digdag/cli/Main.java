@@ -119,6 +119,7 @@ public class Main
         jc.addCommand("secrets", injector.getInstance(Secrets.class), "secret");
         jc.addCommand("version", injector.getInstance(Version.class), "version");
         jc.addCommand("migrate", injector.getInstance(Migrate.class));
+        jc.addCommand("profile", injector.getInstance(Profile.class));
 
         jc.addCommand("selfupdate", injector.getInstance(SelfUpdate.class));
     }
@@ -306,6 +307,7 @@ public class Main
         err.println("    c[heck]                            show workflow definitions");
         err.println("    sched[uler]                        run a scheduler server");
         err.println("    migrate (run|check)                migrate database");
+        err.println("    profile                            profile archived information");
         err.println("    selfupdate                         update cli to the latest version");
         err.println("");
         err.println("  Server-mode commands:");
