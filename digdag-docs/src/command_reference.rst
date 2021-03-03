@@ -978,3 +978,53 @@ Common options
 :command:`-X KEY=VALUE`
   Add a performance system configuration. This option is for experimental use.
 
+profile
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag profile [options...]
+
+Profile the performance by analyzing archived information (experimental). The result is output in JSON format. Examples:
+
+.. code-block:: console
+
+    $ digdag profile -c digdag.properties --from '2020-12-30 00:00:00'
+
+:command:`-c, --config PATH`
+
+  Configuration file to load. You can use the same configuration file as `digdag server` command uses although only `database.*` properties are necessary in the profiler
+
+  Example: ``-c digdag.properties``
+
+:command:`--from TIMESTAMP`
+
+  The beginning of time range that the profiler scans. The timestamp format is `yyyy-MM-dd HH:mm:ss`.
+
+  Example: ``--from '2020-12-30 00:00:00'``
+
+:command:`--to TIMESTAMP`
+
+  The end of time range that the profiler scans. The timestamp format is `yyyy-MM-dd HH:mm:ss`. Current time is used if it's not set.
+
+  Example: ``--to '2020-12-31 00:00:00'``
+
+:command:`--fetched-attempts N`
+
+  A parameter for performance tuning. The number of fetched attempt records at once (default: 1000)
+
+  Example: ``--fetched-attempts 2000``
+
+:command:`--partition-size N`
+
+  A parameter for performance tuning. The number of internal partition size (default: 100)
+
+  Example: ``--partition-size 200``
+
+:command:`--database-wait-millis N`
+
+  A parameter for performance tuning.  The internal wait (milliseconds) between database transactions (default: 100)
+
+  Example: ``--database-wait-millis 500``
+
+

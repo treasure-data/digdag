@@ -114,7 +114,7 @@ public class Profile
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " profile archived task information (experimental)");
+        err.println("Usage: " + programName + " profile the performance by analyzing archived task information (experimental)");
         err.println("  Options:");
         err.println("    -c, --config       <path>           configuration file (required)");
         err.println("        --from             <timestamp>      start of profile time range (\"yyyy-MM-dd HH:mm:ss\", required)");
