@@ -6,7 +6,6 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.digdag.cli.profile.ConfigElementLoader;
 import io.digdag.cli.profile.TaskAnalyzer;
 import io.digdag.cli.profile.TasksSummary;
 import io.digdag.client.api.JacksonTimeModule;
@@ -14,12 +13,11 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigModule;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.database.DatabaseModule;
 
-import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -80,7 +78,7 @@ public class Profile
     {
         checkArgs();
 
-        ConfigElement configElement = new ConfigElementLoader(new File(configPath)).load();
+        ConfigElement configElement = PropertyUtils.toConfigElement(loadSystemProperties());
 
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
