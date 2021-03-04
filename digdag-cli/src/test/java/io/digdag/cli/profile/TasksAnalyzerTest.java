@@ -51,7 +51,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TaskAnalyzerTest
+public class TasksAnalyzerTest
 {
     private static Instant TIME_FROM = Instant.now().minusSeconds(3600);
     private static Instant TIME_TO = Instant.now();
