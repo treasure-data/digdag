@@ -19,7 +19,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Instant;
 
-import static io.digdag.client.DigdagClient.objectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -178,31 +177,43 @@ public class TasksSummaryTest
     }
 
     @Test
-    public void attemptContainsErrorTask()
+    public void attemptContainsErrorTaskAndFailureAlert()
     {
         /*
             (root task: +wf)
             # id:1
             # started_at: 00:00:00
-            # updated_at: 00:00:03
+            # updated_at: 00:00:12
 
-            # id:2 (error)
+            # id:2
             # started_at: 00:00:01 (delay: 1 sec)
-            # updated_at: 00:00:03
+            # updated_at: 00:00:02
+            +start:
+              echo>: Start
+
+            # id:3 (error)
+            # started_at: 00:00:04 (delay: 3 sec)
+            # updated_at: 00:00:06
             +fail:
               fail>: Ahhhhhhhhhhhh
 
-            # id:3
+            # id:4
             # started_at: null
             # updated_at: null
             +finish:
               echo>: Finish
 
-            # id:4
-            # started_at: 00:00:05
+            # id:5 (This task's start delay should be ignored)
+            # started_at: 00:00:07
             # updated_at: 00:00:09
-            (^failure-alert)
+            +error_handling
               echo>: Error handling now...
+
+            # id:6 (This task's start delay should be ignored)
+            # started_at: 00:00:10
+            # updated_at: 00:00:12
+            (^failure-alert)
+              notify: Workflow session attempt failed
          */
 
         TasksSummary.Builder builder = new TasksSummary.Builder();
@@ -214,47 +225,66 @@ public class TasksSummaryTest
                         .withState(TaskStateCode.GROUP_ERROR)
                         .withTaskType(TaskType.of(TaskType.GROUPING_ONLY))
                         .withStartedAt(Instant.parse("2000-01-01T00:00:00Z"))
-                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:09Z")),
-                // Non-group task (failed)
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:13Z")),
+                // Non-group task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
                         .withId(2)
+                        .withFullName("+wf+start")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(1)
+                        // Delay: 1 sec
+                        // Duration: 1 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:01Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:02Z")),
+                // Non-group task (failed)
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(3)
                         .withFullName("+wf+fail")
                         .withState(TaskStateCode.ERROR)
                         .withParentId(1)
-                        // Delay: 1 sec
+                        .withUpstreams(2)
+                        // Delay: 2 sec
                         // Duration: 2 sec
-                        .withStartedAt(Instant.parse("2000-01-01T00:00:01Z"))
-                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:03Z")),
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:04Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:06Z")),
                 // Non-group task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
-                        .withId(3)
+                        .withId(4)
                         .withFullName("+wf+finish")
                         .withState(TaskStateCode.BLOCKED)
                         .withParentId(1)
-                        .withUpstreams(2)
+                        .withUpstreams(3)
                         // Not executed
                         .withStartedAt(Optional.absent())
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:03Z")),
                 // Dynamically generated task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
-                        .withId(4)
+                        .withId(5)
+                        .withFullName("+wf^error")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(1)
+                        // Delay looks 7 seconds, but it's not actual delay and should be ignored
+                        // Duration: 2 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:07Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:09Z")),
+                // Dynamically generated task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(6)
                         .withFullName("+wf^failure-alert")
                         .withState(TaskStateCode.SUCCESS)
                         .withParentId(1)
-                        .withUpstreams(3)
-                        // Delay looks 5 seconds, but it's not actual delay
-                        // Duration: 4 sec
-                        .withStartedAt(Instant.parse("2000-01-01T00:00:05Z"))
-                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:09Z"))
+                        // Delay looks 10 seconds, but it's not actual delay and should be ignored
+                        // Duration: 3 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:10Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:13Z"))
         ));
         TasksSummary summary = builder.build();
-        assertEquals(3, summary.totalTasks);
-        assertEquals(2, summary.totalRunTasks);
-        assertEquals(1, summary.totalSuccessTasks);
+        assertEquals(5, summary.totalTasks);
+        assertEquals(4, summary.totalRunTasks);
+        assertEquals(3, summary.totalSuccessTasks);
         assertEquals(1, summary.totalErrorTasks);
-        // startDelayMillis should be null since this attempt contains error task
-        assertNull(summary.startDelayMillis.mean());
-        assertEquals(3000, summary.execDurationMillis.mean().longValue());
+        assertEquals(1500, summary.startDelayMillis.mean().longValue());
+        assertEquals(2000, summary.execDurationMillis.mean().longValue());
     }
 
     @Test
@@ -283,7 +313,7 @@ public class TasksSummaryTest
                 echo>: Done!
 
             # id:4
-            # started_at: 00:00:12 (delay: 1 sec)
+            # started_at: 00:00:14 (delay: 3 sec)
             # updated_at: 00:00:14
             +finish:
               echo>: Finish
@@ -325,8 +355,8 @@ public class TasksSummaryTest
                         .withId(4)
                         .withFullName("+wf+parent^check")
                         .withState(TaskStateCode.SUCCESS)
-                        .withParentId(3)
-                        // Delay: N/A
+                        .withParentId(2)
+                        // Delay looks 5 seconds, but it's not actual delay and should be ignored
                         // Duration: 1 sec
                         .withStartedAt(Instant.parse("2000-01-01T00:00:08Z"))
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:09Z")),
@@ -339,16 +369,15 @@ public class TasksSummaryTest
                         .withUpstreams(2)
                         // Delay: 1 sec
                         // Duration: 2 sec
-                        .withStartedAt(Instant.parse("2000-01-01T00:00:12Z"))
-                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:14Z"))
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:14Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:16Z"))
         ));
         TasksSummary summary = builder.build();
         assertEquals(4, summary.totalTasks);
         assertEquals(4, summary.totalRunTasks);
         assertEquals(4, summary.totalSuccessTasks);
         assertEquals(0, summary.totalErrorTasks);
-        // startDelayMillis should be null since this attempt contains error task
-        assertNull(summary.startDelayMillis.mean());
+        assertEquals(2000, summary.startDelayMillis.mean().longValue());
         assertEquals(4000, summary.execDurationMillis.mean().longValue());
     }
 }
