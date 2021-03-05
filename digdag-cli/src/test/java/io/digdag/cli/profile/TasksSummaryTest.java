@@ -380,4 +380,122 @@ public class TasksSummaryTest
         assertEquals(2000, summary.startDelayMillis.mean().longValue());
         assertEquals(4000, summary.execDurationMillis.mean().longValue());
     }
+
+    @Test
+    public void attemptContainsRetriedTasks()
+    {
+        /*
+            (root task: +wf)
+            # id:1
+            # started_at: 00:00:00
+            # updated_at: 00:00:12
+
+            ##### 1st try
+
+            # id:2
+            # started_at: 00:00:01 (delay: 1 sec)
+            # updated_at: 00:00:02
+            +start:
+              echo>: Start
+
+            # id:3 (error)
+            # started_at: 00:00:04 (delay: 3 sec)
+            # updated_at: 00:00:06
+            +fail:
+              fail>: Ahhhhhhhhhhhh
+
+            ##### 2nd try
+
+            # id:4
+            # started_at: 00:00:08 (delay: 2 sec)
+            # updated_at: 00:00:09
+            +start:
+              echo>: Start
+
+            # id:5 (error)
+            # started_at: 00:00:14 (delay: 5 sec)
+            # updated_at: 00:00:18
+            +fail:
+              fail>: Ahhhhhhhhhhhh
+
+            # id:6 (This task's start delay should be ignored)
+            # started_at: 00:00:20
+            # updated_at: 00:00:23
+            (^failure-alert)
+              notify: Workflow session attempt failed
+         */
+
+        TasksSummary.Builder builder = new TasksSummary.Builder();
+        TasksSummary.updateBuilderWithTasks(builder, ImmutableList.of(
+                // Root task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(1)
+                        .withFullName("+wf")
+                        .withState(TaskStateCode.GROUP_ERROR)
+                        .withTaskType(TaskType.of(TaskType.GROUPING_ONLY))
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:00Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:23Z")),
+                // 1st try
+                // Non-group task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(2)
+                        .withFullName("+wf+start")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(1)
+                        // Delay: 1 sec
+                        // Duration: 1 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:01Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:02Z")),
+                // Non-group task (failed)
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(3)
+                        .withFullName("+wf+fail")
+                        .withState(TaskStateCode.ERROR)
+                        .withParentId(1)
+                        .withUpstreams(2)
+                        // Delay: 2 sec
+                        // Duration: 2 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:04Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:06Z")),
+                // 2nd try
+                // Non-group task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(4)
+                        .withFullName("+wf+start")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(1)
+                        // Delay looks 2 seconds, but it's not actual delay and should be ignored
+                        // Duration: 1 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:08Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:09Z")),
+                // Non-group task (failed)
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(5)
+                        .withFullName("+wf+fail")
+                        .withState(TaskStateCode.ERROR)
+                        .withParentId(1)
+                        .withUpstreams(4)
+                        // Delay looks 5 seconds, but it's not actual delay and should be ignored
+                        // Duration: 4 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:14Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:18Z")),
+                // Dynamically generated task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(6)
+                        .withFullName("+wf^failure-alert")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(1)
+                        // Delay looks 10 seconds, but it's not actual delay and should be ignored
+                        // Duration: 2 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:20Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:22Z"))
+        ));
+        TasksSummary summary = builder.build();
+        assertEquals(5, summary.totalTasks);
+        assertEquals(5, summary.totalRunTasks);
+        assertEquals(3, summary.totalSuccessTasks);
+        assertEquals(2, summary.totalErrorTasks);
+        assertEquals(1500, summary.startDelayMillis.mean().longValue());
+        assertEquals(2000, summary.execDurationMillis.mean().longValue());
+    }
 }
