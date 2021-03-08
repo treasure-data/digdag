@@ -20,7 +20,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TasksSummaryTest

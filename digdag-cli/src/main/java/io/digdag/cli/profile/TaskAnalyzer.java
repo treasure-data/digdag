@@ -47,7 +47,7 @@ public class TaskAnalyzer
 
         AtomicLong lastId = new AtomicLong();
         TasksSummary.Builder tasksSummaryBuilder = new TasksSummary.Builder();
-        logger.info("Task analysis started");
+        logger.debug("Task analysis started");
 
         while (true) {
             logger.debug("Collecting attempts");
@@ -90,7 +90,7 @@ public class TaskAnalyzer
             }
         }
 
-        logger.info("Task analysis finished");
+        logger.debug("Task analysis finished");
 
         return tasksSummaryBuilder.build();
     }
