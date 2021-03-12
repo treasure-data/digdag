@@ -102,7 +102,7 @@ subprojects {
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile group: 'io.micrometer', name: 'micrometer-core', version: '1.2.0'
         compile group: 'io.micrometer', name: 'micrometer-registry-jmx', version: '1.2.0'
-        compile(group: 'io.github.yoyama', name: 'fluency-meter-registory_2.12', version: '0.5.0') {
+        compile(group: 'io.github.yoyama', name: 'fluency-meter-registory_2.12', version: '0.5.1') {
             exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
             exclude group: 'org.slf4j', module: 'slf4j-api'
             exclude group: 'org.msgpack', module: 'msgpack-core'
