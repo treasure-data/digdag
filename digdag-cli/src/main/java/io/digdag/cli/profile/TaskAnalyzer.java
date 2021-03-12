@@ -1,16 +1,15 @@
 package io.digdag.cli.profile;
 
+import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.StoredSessionAttemptWithSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -20,6 +19,18 @@ public class TaskAnalyzer
     private static final Logger logger = LoggerFactory.getLogger(TaskAnalyzer.class);
 
     private final Injector injector;
+
+    private static class AttemptIdWithSiteId
+    {
+        public final int siteId;
+        public final long attemptId;
+
+        public AttemptIdWithSiteId(int siteId, long attemptId)
+        {
+            this.siteId = siteId;
+            this.attemptId = attemptId;
+        }
+    }
 
     public TaskAnalyzer(Injector injector)
     {
@@ -52,38 +63,33 @@ public class TaskAnalyzer
         while (true) {
             logger.debug("Collecting attempts");
 
-            // Paginate to avoid too long transaction
-            AtomicLong counter = new AtomicLong();
-            Map<Long, List<StoredSessionAttemptWithSession>> partitionedAttemptIds = tm.begin(() -> {
-                List<StoredSessionAttemptWithSession> attempts =
-                        sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, lastId.get(), fetchedAttempts);
-                // Update `lastId` to the max ID
-                attempts.stream().mapToLong(StoredSessionAttemptWithSession::getId).max().ifPresent((id) ->
-                        lastId.set(Math.max(lastId.get(), id))
-                );
-                // Divide many StoredSessionAttemptWithSession instances into some partitions for the following procedures
-                // which may hold resources for a while
-                return attempts.stream()
-                        .collect(Collectors.groupingBy((attempt) -> counter.getAndIncrement() / partitionSize));
-            });
-            logger.debug("Collected {} attempts", counter.get());
+            // Partition target attempts to avoid a too long transaction later
+            List<List<AttemptIdWithSiteId>> attemptIdsList = tm.begin(() ->
+                    Lists.partition(
+                            sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, lastId.get(), fetchedAttempts).stream()
+                                    .map(attempt -> {
+                                        lastId.set(Math.max(lastId.get(), attempt.getId()));
+                                        return new AttemptIdWithSiteId(attempt.getSiteId(), attempt.getId());
+                                    })
+                                    .collect(Collectors.toList()),
+                            partitionSize));
+
+            logger.debug("Collected {} attempts", attemptIdsList.stream().mapToInt(List::size).sum());
             waitAfterDatabaseAccess(databaseWaitMillis);
 
-            if (partitionedAttemptIds.isEmpty()) {
+            if (attemptIdsList.isEmpty()) {
                 break;
             }
 
             // Process partitioned attemptIds list from the beginning
-            for (long attemptIdsGroup : partitionedAttemptIds.keySet().stream().sorted().collect(Collectors.toList())) {
-                List<StoredSessionAttemptWithSession> attemptsWithSessions = partitionedAttemptIds.get(attemptIdsGroup);
-                logger.debug("Processing {} attempts", attemptsWithSessions.size());
+            for (List<AttemptIdWithSiteId> attemptIds : attemptIdsList) {
+                logger.debug("Processing {} attempts", attemptIds.size());
                 tm.begin(() -> {
-                    for (StoredSessionAttemptWithSession attemptWithSession : attemptsWithSessions) {
-                        int siteId = attemptWithSession.getSiteId();
-                        List<ArchivedTask> tasks = sm.getSessionStore(siteId).getTasksOfAttempt(attemptWithSession.getId());
+                    for (AttemptIdWithSiteId attemptIdWithSiteId : attemptIds) {
+                        List<ArchivedTask> tasks = sm.getSessionStore(attemptIdWithSiteId.siteId).getTasksOfAttempt(attemptIdWithSiteId.attemptId);
                         TasksSummary.updateBuilderWithTasks(tasksSummaryBuilder, tasks);
                     }
-                    logger.debug("Processed {} attempts", attemptsWithSessions.size());
+                    logger.debug("Processed {} attempts", attemptIds.size());
                     return null;
                 });
                 waitAfterDatabaseAccess(databaseWaitMillis);
