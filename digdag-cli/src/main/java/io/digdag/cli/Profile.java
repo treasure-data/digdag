@@ -41,20 +41,17 @@ public class Profile
     Instant timeRangeTo = Instant.now();
 
     @Parameter(
-            names = {"--fetched-attempts"},
-            description = "The number of fetched attempt records at once (default: 1000)"
+            names = {"--fetched-attempts"}
     )
     int fetchedAttempts = 1000;
 
     @Parameter(
-            names = {"--partition-size"},
-            description = "The number of internal partition size (default: 100)"
+            names = {"--partition-size"}
     )
     int partitionSize = 100;
 
     @Parameter(
-            names = {"--database-wait-millis"},
-            description = "The internal wait (milliseconds) between database transactions (default: 100)"
+            names = {"--database-wait-millis"}
     )
     int databaseWaitMillis = 100;
 
@@ -116,12 +113,12 @@ public class Profile
     {
         err.println("Usage: " + programName + " profile the performance by analyzing archived task information (experimental)");
         err.println("  Options:");
-        err.println("    -c, --config       <path>           configuration file (required)");
-        err.println("        --from             <timestamp>      start of profile time range (\"yyyy-MM-dd HH:mm:ss\", required)");
-        err.println("        --to               <timestamp>      end of profile time range (\"yyyy-MM-dd HH:mm:ss\", default: current timestamp)");
-        err.println("        --fetched-attempts <attempts-count> number of fetched attempt records at once (default: 1000)");
-        err.println("        --partition-size   <partition-size> number of internal partition size (default: 100)");
-        err.println("        --database-wait-millis <milliseconds> internal wait (milliseconds) between database transactions (default: 100)");
+        err.println("    -c, --config               <path>           configuration file (required)");
+        err.println("        --from                 <timestamp>      start of profile time range (\"yyyy-MM-dd HH:mm:ss\", required)");
+        err.println("        --to                   <timestamp>      end of profile time range (\"yyyy-MM-dd HH:mm:ss\", default: current timestamp)");
+        err.println("        --fetched-attempts     <attempts-count> number of fetched attempt records at once (default: 1000)");
+        err.println("        --partition-size       <partition-size> number of internal partition size (default: 100)");
+        err.println("        --database-wait-millis <milliseconds>   internal wait (milliseconds) between database transactions (default: 100)");
         return systemExit(error);
     }
 }
