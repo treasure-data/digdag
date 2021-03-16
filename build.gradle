@@ -462,12 +462,10 @@ task release() {
 
 // Publish to ~/.m2
 task releaseLocal() {
-    // This is necessary to upload the executable jar to bintray as well.
-    // It makes to run _bintrayRecordingCopy task after cli task.
     release.mustRunAfter cli
     dependsOn subprojects.publishToMavenLocal
     doLast {
-        println "Released ${project.version}."
+        println "Released ${project.version} to local repository."
     }
 }
 
