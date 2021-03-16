@@ -460,6 +460,18 @@ task release() {
     }
 }
 
+// Publish to ~/.m2
+task releaseLocal() {
+    // This is necessary to upload the executable jar to bintray as well.
+    // It makes to run _bintrayRecordingCopy task after cli task.
+    release.mustRunAfter cli
+    dependsOn subprojects.publishToMavenLocal
+    doLast {
+        println "Released ${project.version}."
+    }
+}
+
+
 check.dependsOn('releaseCheck')
 
 task setVersion {
@@ -547,10 +559,9 @@ task releaseSnapshot(type: Exec) {
     commandLine "bash", "-c", "./gradlew -PsnapshotVersion=$snapshotVersion release"
 }
 
-// Publish to ~/.m2
 task releaseLocalSnapshot(type: Exec) {
     def snapshotVersion = getSnapshotVersion()
-    commandLine "bash", "-c", "./gradlew -PsnapshotVersion=$snapshotVersion publishToMavenLocal"
+    commandLine "bash", "-c", "./gradlew -PsnapshotVersion=$snapshotVersion releaseLocal"
     doLast {
         println "VERSION: $snapshotVersion"
     }
