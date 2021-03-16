@@ -460,6 +460,16 @@ task release() {
     }
 }
 
+// Publish to ~/.m2
+task releaseLocal() {
+    release.mustRunAfter cli
+    dependsOn subprojects.publishToMavenLocal
+    doLast {
+        println "Released ${project.version} to local repository."
+    }
+}
+
+
 check.dependsOn('releaseCheck')
 
 task setVersion {
@@ -543,7 +553,26 @@ task releaseCheck {
 // Utility task to release a snapshot version with a fixed version number.
 // Bintray doesn't allow releasing -SNAPSHOT version.
 task releaseSnapshot(type: Exec) {
-    commandLine "bash", "-c", "./gradlew -PsnapshotVersion=\$(TZ=UTC git log -n 1 --pretty='format:%ad-%H' --date 'format-local:%Y%m%dT%H%M%S') release"
+    def snapshotVersion = getSnapshotVersion()
+    commandLine "bash", "-c", "./gradlew -PsnapshotVersion=$snapshotVersion release"
+}
+
+task releaseLocalSnapshot(type: Exec) {
+    def snapshotVersion = getSnapshotVersion()
+    commandLine "bash", "-c", "./gradlew -PsnapshotVersion=$snapshotVersion releaseLocal"
+    doLast {
+        println "VERSION: $snapshotVersion"
+    }
+}
+
+def getSnapshotVersion() {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine "bash", "-c", "git log -n 1 --pretty=format:%ad-%H --date format-local:%Y%m%dT%H%M%S"
+        standardOutput = stdout
+        environment("TZ", "UTC")
+    }
+    return stdout.toString()
 }
 
 // Generate parent maven manifest
