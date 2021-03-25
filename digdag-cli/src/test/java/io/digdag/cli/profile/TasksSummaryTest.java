@@ -91,7 +91,7 @@ public class TasksSummaryTest
          */
 
         TasksSummary.Builder builder = new TasksSummary.Builder();
-        TasksSummary.updateBuilderWithTasks(builder, ImmutableList.of(
+        builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
                         .withId(1)
@@ -216,7 +216,7 @@ public class TasksSummaryTest
          */
 
         TasksSummary.Builder builder = new TasksSummary.Builder();
-        TasksSummary.updateBuilderWithTasks(builder, ImmutableList.of(
+        builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
                         .withId(1)
@@ -319,7 +319,7 @@ public class TasksSummaryTest
          */
 
         TasksSummary.Builder builder = new TasksSummary.Builder();
-        TasksSummary.updateBuilderWithTasks(builder, ImmutableList.of(
+        builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
                         .withId(1)
@@ -425,7 +425,7 @@ public class TasksSummaryTest
          */
 
         TasksSummary.Builder builder = new TasksSummary.Builder();
-        TasksSummary.updateBuilderWithTasks(builder, ImmutableList.of(
+        builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
                         .withId(1)

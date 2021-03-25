@@ -87,7 +87,7 @@ public class TaskAnalyzer
                 tm.begin(() -> {
                     for (AttemptIdWithSiteId attemptIdWithSiteId : attemptIds) {
                         List<ArchivedTask> tasks = sm.getSessionStore(attemptIdWithSiteId.siteId).getTasksOfAttempt(attemptIdWithSiteId.attemptId);
-                        TasksSummary.updateBuilderWithTasks(tasksSummaryBuilder, tasks);
+                        tasksSummaryBuilder.updateWithTasks(tasks);
                     }
                     logger.debug("Processed {} attempts", attemptIds.size());
                     return null;
