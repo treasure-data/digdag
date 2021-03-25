@@ -23,7 +23,6 @@
         schema: myschema
         table: access_logs
         from: s3://my-app-bucket/access_logs/today
-        column_list: host, path, referer, code, agent, size, method
         manifest: true
         encrypted: true
         region: us-east-1
@@ -195,16 +194,6 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
   ```
   from: s3://my-app-bucket/access_logs/today
-  ```
-
-* **column_list**: CSV
-
-  Parameter mapped to `COLUMN_LIST` parameter of Redshift's `COPY` statement
-
-  Examples:
-
-  ```
-  column_list: host, path, referer, code, agent, size, method
   ```
 
 * **manifest**: BOOLEAN
