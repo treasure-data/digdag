@@ -41,6 +41,9 @@ public interface SessionStoreManager
     // for AttemptTimeoutEnforcer.enforceAttemptTTLs
     List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit);
 
+    // for profiling
+    List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant createdFrom, Instant createdTo, long lastId, int limit);
+
     // for AttemptTimeoutEnforcer.enforceTaskTTLs
     List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit);
 

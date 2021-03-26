@@ -159,6 +159,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    // TODO: These functions should be moved into the DAOs since they directly handle SQL dialects
     private String bitAnd(String op1, String op2)
     {
         switch (databaseType) {
@@ -303,6 +304,14 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
+    public List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant createdFrom, Instant createdTo, long lastId, int limit)
+    {
+        return autoCommit((handle, dao) ->
+                dao.findFinishedAttemptsWithSessionsInternal(sqlTimestampOf(createdFrom), sqlTimestampOf(createdTo), lastId, limit));
+    }
+
+    @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
+    @Override
     public List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
     {
         return autoCommit((handle, dao) ->
@@ -326,7 +335,6 @@ public class DatabaseSessionStoreManager
                     .list()
         );
     }
-
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
@@ -1682,6 +1690,22 @@ public class DatabaseSessionStoreManager
                 @Bind("lastId") long lastId,
                 @Define("acFilter") String acFilter);
 
+        String SQL_FIND_FINISHED_ATTEMPTS_WITH_SESSIONS_INTERNAL =
+                "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " where bitand(state_flags, " + AttemptStateFlags.DONE_CODE + ") != 0" +
+                " and sa.created_at between :createdFrom and :createdTo" +
+                " and sa.id \\> :lastId" +
+                " order by sa.id asc" +
+                " limit :limit";
+        @SqlQuery(SQL_FIND_FINISHED_ATTEMPTS_WITH_SESSIONS_INTERNAL)
+        List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessionsInternal(
+                @Bind("createdFrom") Timestamp createdFrom,
+                @Bind("createdTo") Timestamp createdTo,
+                @Bind("lastId") long lastId,
+                @Bind("limit") int limit);
+
         // h2's MERGE doesn't reutrn generated id when conflicting row already exists
         @SqlUpdate("merge into sessions" +
                 " (project_id, workflow_name, session_time)" +
@@ -1728,6 +1752,22 @@ public class DatabaseSessionStoreManager
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
                 @Define("acFilter") String acFilter);
+
+        String SQL_FIND_FINISHED_ATTEMPTS_WITH_SESSIONS_INTERNAL =
+                "select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                        " from session_attempts sa" +
+                        " join sessions s on s.id = sa.session_id" +
+                        " where state_flags & " + AttemptStateFlags.DONE_CODE + " != 0" +
+                        " and sa.created_at between :createdFrom and :createdTo" +
+                        " and sa.id \\> :lastId" +
+                        " order by sa.id asc" +
+                        " limit :limit";
+        @SqlQuery(SQL_FIND_FINISHED_ATTEMPTS_WITH_SESSIONS_INTERNAL)
+        List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessionsInternal(
+                @Bind("createdFrom") Timestamp createdFrom,
+                @Bind("createdTo") Timestamp createdTo,
+                @Bind("lastId") long lastId,
+                @Bind("limit") int limit);
 
         @SqlQuery("insert into sessions" +
                 " (project_id, workflow_name, session_time)" +
@@ -1999,6 +2039,12 @@ public class DatabaseSessionStoreManager
                 " order by id asc" +
                 " limit :limit")
         List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
+
+        List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessionsInternal(
+                @Bind("createdFrom") Timestamp createdFrom,
+                @Bind("createdTo") Timestamp createdTo,
+                @Bind("lastId") long lastId,
+                @Bind("limit") int limit);
 
         @SqlQuery("select site_id from tasks" +
                 " join session_attempts sa on sa.id = tasks.attempt_id" +
