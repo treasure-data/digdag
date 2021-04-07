@@ -225,7 +225,7 @@ public class TdIT
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
-        assertWorkflowRunsSuccessfully("td.use_ssl=false");
+        assertWorkflowRunsSuccessfully("td.use_ssl=true");
         assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
@@ -301,7 +301,7 @@ public class TdIT
 
         Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
                 "outfile", outfile.toString(),
-                "td.use_ssl", "false"));
+                "td.use_ssl", "true"));
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 
@@ -421,7 +421,7 @@ public class TdIT
         Files.write(config, asList(
                 "config.td.min_retry_interval = 1s",
                 "config.td.max_retry_interval = 1s",
-                "params.td.use_ssl = false",
+                "params.td.use_ssl = true",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
@@ -519,7 +519,7 @@ public class TdIT
                 }).start();
 
         Files.write(config, asList(
-                "params.td.use_ssl = false",
+                "params.td.use_ssl = true",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
