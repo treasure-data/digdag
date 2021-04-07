@@ -83,7 +83,8 @@ workflows:
 
   test_and_docs_deployment:
     jobs:
-      - test: # master and v0_10 branches only
+      - test
+#     - test: # master and v0_10 branches only
 #         filters:
 #           branches:
 #             only:
