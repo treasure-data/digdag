@@ -374,6 +374,7 @@ public class Main
         err.println("    -H, --header  KEY=VALUE          Additional headers");
         err.println("    --disable-version-check          Disable server version check");
         err.println("    --disable-cert-validation        Disable certificate verification");
+        err.println("    --basic-auth <user:pass>         Add an Authorization header with the provided username and password");
         err.println("");
     }
 

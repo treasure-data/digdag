@@ -14,7 +14,6 @@ import io.digdag.guice.rs.server.undertow.UndertowListenAddress;
 import io.digdag.server.metrics.DigdagMetricsConfig;
 import io.digdag.server.rs.AdminRestricted;
 import org.immutables.value.Value;
-
 import java.util.Map;
 import java.util.List;
 import java.util.Set;

@@ -114,16 +114,16 @@ Extension needs least code to make some extension possible. But it's the hardest
 
 A typical use case is for system integrators to customize digdag for their internal use.
 
-Many of customization points in digdag are assuming Extension to override (e.g. `io.digdag.server.Authenticator`) because it needs less code. But for ease of use, they should also accept system plugins, eventually.
+Many of customization points in digdag are assuming Extension to override (i.e. most of what's bound using guice) because it needs less code. But for ease of use, they should also accept system plugins, eventually.
 
 
 ### System plugins
 
-System plugins are plugins loaded when digdag starts. System plugins are used to customize global behavior of digdag. Adding a scheduler is one of the intended use cases (although this is not implemented yet).
+System plugins are plugins loaded when digdag starts. System plugins are used to customize global behavior of digdag. Adding an authenticator is one of the use cases.
 
 If `io.digdag.spi.Plugin` implementations are available using Java's ServiceLoader mechanism in classpath, digdag uses them automatically.
 
-If plugin dependencies are written in config file, digdag downloads them from remote maven repositories, and loads `io.digdag.spi.Plugin` implementations using ServiceLoader. These plugins are loaded using isolated classloaders.
+If plugins are written in config file (``system-plugin.repositories`` and ``system-plugin.dependencies``), digdag downloads them from remote maven repositories, and loads `io.digdag.spi.Plugin` implementations using ServiceLoader. These plugins are loaded using isolated classloaders.
 
 Plugins share the same Guice instance with digdag core. Thus plugins can get any internal resources as long as an instance is available through `io.digdag.spi` interface which are shared even with isolated classloaders.
 
