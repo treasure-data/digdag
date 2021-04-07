@@ -332,7 +332,7 @@ public class TdIT
 
         Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
                 "outfile", outfile.toString(),
-                "td.use_ssl", "false"));
+                "td.use_ssl", "true"));
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
     }
