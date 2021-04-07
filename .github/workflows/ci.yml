@@ -10,10 +10,11 @@ on:
     - v0_10
     - v0_11
   pull_request:
-    branches:
-    - master
-    - v0_10
-    - v0_11
+    branches: []
+#   branches:
+#   - master
+#   - v0_10
+#   - v0_11
 
 jobs:
   build:

@@ -84,21 +84,21 @@ workflows:
   test_and_docs_deployment:
     jobs:
       - test: # master and v0_10 branches only
-          filters:
-            branches:
-              only:
-                - master
-                - v0_10
-                - v0_11
-      - docs_deployment: # master branch only
-          filters:
-            branches:
-              only:
-                - master
-      - release_snapshot: # v0_10 branch only
-          requires:
-            - test
-          filters:
-            branches:
-              only:
-                - v0_11
+#         filters:
+#           branches:
+#             only:
+#               - master
+#               - v0_10
+#               - v0_11
+#     - docs_deployment: # master branch only
+#         filters:
+#           branches:
+#             only:
+#               - master
+#     - release_snapshot: # v0_10 branch only
+#         requires:
+#           - test
+#         filters:
+#           branches:
+#             only:
+#               - v0_11
