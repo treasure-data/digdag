@@ -425,10 +425,10 @@ public class TdIT
         Files.write(config, asList(
                 "config.td.min_retry_interval = 1s",
                 "config.td.max_retry_interval = 1s",
-                "params.td.use_ssl = true"
-//                "params.td.proxy.enabled = true",
-//                "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
-//                "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
+                "params.td.use_ssl = true",
+                "params.td.proxy.enabled = true",
+                "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
+                "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
