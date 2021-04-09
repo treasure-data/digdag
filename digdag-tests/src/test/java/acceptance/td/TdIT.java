@@ -2,7 +2,6 @@ package acceptance.td;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
@@ -68,7 +67,6 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
@@ -225,8 +223,9 @@ public class TdIT
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
-        assertWorkflowRunsSuccessfully("td.use_ssl=false");
-        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+        assertWorkflowRunsSuccessfully("td.use_ssl=true");
+        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
+        // assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
     @Test
@@ -243,7 +242,7 @@ public class TdIT
                 "[account]",
                 "  user = foo@bar.com",
                 "  apikey = " + TD_API_KEY,
-                "  usessl = false"
+                "  usessl = true"
         ));
 
         // Remove apikey from digdag conf
@@ -258,12 +257,16 @@ public class TdIT
             env.put("http_proxy", proxyUrl);
             env.put("TD_CONFIG_PATH", tdConf.toString());
             assertWorkflowRunsSuccessfully();
+            // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
+            /*
             List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(toList());
             assertThat(issueRequests.size(), is(greaterThan(0)));
             for (FullHttpRequest request : issueRequests) {
                 assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
             }
             assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+
+             */
         }
         finally {
             System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "false");
@@ -301,11 +304,12 @@ public class TdIT
 
         Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
                 "outfile", outfile.toString(),
-                "td.use_ssl", "false"));
+                "td.use_ssl", "true"));
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 
-        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
+        // assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
     @Test
@@ -332,7 +336,7 @@ public class TdIT
 
         Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
                 "outfile", outfile.toString(),
-                "td.use_ssl", "false"));
+                "td.use_ssl", "true"));
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
     }
@@ -421,7 +425,7 @@ public class TdIT
         Files.write(config, asList(
                 "config.td.min_retry_interval = 1s",
                 "config.td.max_retry_interval = 1s",
-                "params.td.use_ssl = false",
+                "params.td.use_ssl = true",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
@@ -445,12 +449,16 @@ public class TdIT
             assertThat(key, keyedRequests.size(), Matchers.is(Matchers.greaterThanOrEqualTo(failures)));
         }
 
+        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
         // Verify that all job issue requests reuse the same domain key
+        /*
         List<FullHttpRequest> jobIssueRequests = Iterables.getOnlyElement(requests.entrySet().stream()
                 .filter(e -> e.getKey().contains("/v3/job/issue"))
                 .map(e -> e.getValue())
                 .collect(toList()));
+
         verifyDomainKeys(jobIssueRequests);
+         */
     }
 
     @Test
@@ -519,7 +527,7 @@ public class TdIT
                 }).start();
 
         Files.write(config, asList(
-                "params.td.use_ssl = false",
+                "params.td.use_ssl = true",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
@@ -532,10 +540,13 @@ public class TdIT
             ReferenceCountUtil.releaseLater(request);
         }
 
+        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
+        /*
         assertThat(jobIssueRequests.size(), is(not(0)));
         assertThat(jobIssueResponses.size(), is(not(0)));
 
         verifyDomainKeys(jobIssueRequests);
+         */
     }
 
     private void verifyDomainKeys(List<FullHttpRequest> requests)
