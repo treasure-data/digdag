@@ -235,7 +235,7 @@ public class TdDdlIT
                 }).start();
 
         Files.write(config, asList(
-                "params.td.use_ssl = false",
+                "params.td.use_ssl = true",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
