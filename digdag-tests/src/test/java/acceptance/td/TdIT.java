@@ -422,6 +422,8 @@ public class TdIT
 
         proxyServer = TestUtils.startRequestFailingProxy(failures, requests);
 
+        // In this test, the http proxy basically passes all requests to real TD API.
+        // So `td` operator needs to use HTTPS not HTTP.
         Files.write(config, asList(
                 "config.td.min_retry_interval = 1s",
                 "config.td.max_retry_interval = 1s",
