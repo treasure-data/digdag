@@ -165,7 +165,7 @@ public class TdDdlIT
     public void testRetries()
             throws Exception
     {
-        int failures = 7;
+        int failures = 3;
 
         Map<String, AtomicInteger> requests = new ConcurrentHashMap<>();
 
@@ -234,7 +234,11 @@ public class TdDdlIT
                     }
                 }).start();
 
+        // In this test, the http proxy doesn't pass any request from `td` operator to TD API.
+        // So `td` operator needs to talk with the proxy over HTTP not HTTPS.
         Files.write(config, asList(
+                "config.td.min_retry_interval = 1s",
+                "config.td.max_retry_interval = 1s",
                 "params.td.use_ssl = false",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.use_ssl = true",
