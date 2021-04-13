@@ -7,8 +7,10 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Function;
@@ -18,14 +20,30 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Scopes;
+import com.treasuredata.client.TDApiRequest;
+import com.treasuredata.client.TDClient;
+import com.treasuredata.client.TDClientBuilder;
+import com.treasuredata.client.TDClientConfig;
+import com.treasuredata.client.TDHttpClient;
 import io.digdag.cli.Main;
+import io.digdag.cli.Run;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.Version;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.agent.OperatorManager;
+import io.digdag.spi.SecretProvider;
+import io.digdag.standards.operator.td.BaseTDClientFactory;
+import io.digdag.standards.operator.td.TDClientFactory;
+import io.digdag.standards.operator.td.TDOperator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -170,13 +188,174 @@ public class TestUtils
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
+    public static class TDHttpClientRecorder
+    {
+        private final List<TDApiRequest> requests = new ArrayList<>();
+
+        public void record(TDApiRequest request)
+        {
+            requests.add(request);
+        }
+
+        public List<TDApiRequest> requests()
+        {
+            return requests;
+        }
+    }
+
+    static class RecordableTDHttpClient
+            extends TDHttpClient
+    {
+        private final TDHttpClientRecorder recorder;
+
+        public RecordableTDHttpClient(TDClientConfig config, TDHttpClientRecorder recorder)
+        {
+            super(config);
+            this.recorder = recorder;
+        }
+
+        @Override
+        public <Result> Result call(TDApiRequest apiRequest, Optional<String> apiKeyCache, final JavaType resultType)
+        {
+            // FIXME: Looks POST content isn't saved
+            recorder.record(apiRequest);
+            return super.call(apiRequest, apiKeyCache, resultType);
+        }
+    }
+
+    static class RecordableTDClient
+            extends TDClient
+    {
+        public RecordableTDClient(TDClientConfig config, TDHttpClientRecorder recorder)
+        {
+            super(config, new RecordableTDHttpClient(config, recorder), Optional.absent());
+        }
+    }
+
+    static class RecordableTDClientFactory
+        extends TDClientFactory
+    {
+        private final TDHttpClientRecorder recorder;
+
+        public RecordableTDClientFactory(TDHttpClientRecorder recorder)
+        {
+            this.recorder = recorder;
+        }
+
+        @Override
+        public TDClient createClient(TDOperator.SystemDefaultConfig systemDefaultConfig, Map<String, String> env, Config params, SecretProvider secrets)
+        {
+            TDClientConfig clientConfig = clientBuilderFromConfig(systemDefaultConfig, env, params, secrets).buildConfig();
+            return new RecordableTDClient(clientConfig, recorder);
+        }
+    }
+
+    static class RecordableRun
+        extends Run
+    {
+        private TDHttpClientRecorder recorder;
+
+        public void setRecorder(TDHttpClientRecorder recorder)
+        {
+            this.recorder = recorder;
+        }
+
+        @Override
+        protected DigdagEmbed.Bootstrap setupBootstrap(Properties systemProps)
+        {
+            return super.setupBootstrap(systemProps)
+                .overrideModulesWith((binder) ->
+                    binder.bind(BaseTDClientFactory.class).toInstance(new RecordableTDClientFactory(recorder)));
+        }
+    }
+
+    static class CustomMain
+        extends Main
+    {
+        interface CommandAdder
+        {
+            void addCommand(JCommander jc, Injector injector);
+        }
+
+        private final CommandAdder commandAdder;
+
+        public CustomMain(
+                Version version,
+                Map<String, String> env,
+                PrintStream out,
+                PrintStream err,
+                InputStream in,
+                CommandAdder commandAdder)
+        {
+            super(version, env, out, err, in);
+            this.commandAdder = commandAdder;
+        }
+
+        @Override
+        protected void addCommands(JCommander jc, Injector injector)
+        {
+            super.addCommands(jc, injector);
+            commandAdder.addCommand(jc, injector);
+        }
+    }
+
+    public static class CommandStatusAndRecordedApiCalls
+    {
+        public final CommandStatus commandStatus;
+        public final List<TDApiRequest> recordedApiCalls;
+
+        public CommandStatusAndRecordedApiCalls(CommandStatus commandStatus, List<TDApiRequest> recordedApiCalls)
+        {
+            this.commandStatus = commandStatus;
+            this.recordedApiCalls = recordedApiCalls;
+        }
+    }
+
+    public static CommandStatusAndRecordedApiCalls mainWithRecordableRun(Map<String, String> env, Collection<String> args)
+    {
+        InputStream in = new ByteArrayInputStream(new byte[0]);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        TDHttpClientRecorder recorder = new TDHttpClientRecorder();
+        CustomMain.CommandAdder commandAdder = (jc, injector) -> {
+            RecordableRun instance = injector.getInstance(RecordableRun.class);
+            instance.setRecorder(recorder);
+            jc.addCommand("recordable_run", instance);
+        };
+
+        int code = main(env, LocalVersion.of(), args, out, err, in, commandAdder);
+
+        return new CommandStatusAndRecordedApiCalls(
+                CommandStatus.of(code, out.toByteArray(), err.toByteArray()),
+                recorder.requests());
+    }
+
     public static int main(Map<String, String> env, LocalVersion localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
+    {
+        return main(env, localVersion, args, out, err, in, null);
+    }
+
+    public static int main(
+            Map<String, String> env,
+            LocalVersion localVersion,
+            Collection<String> args,
+            OutputStream out,
+            OutputStream err,
+            InputStream in,
+            CustomMain.CommandAdder commandAdder)
     {
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            Main main = new Main(localVersion.getVersion(), env, outp, errp, in);
+            Main main;
+            if (commandAdder != null) {
+                main = new CustomMain(localVersion.getVersion(), env, outp, errp, in, commandAdder);
+            }
+            else {
+                main = new Main(localVersion.getVersion(), env, outp, errp, in);
+            }
             System.setProperty("io.digdag.cli.versionCheckMode", localVersion.isBatchModeCheck() ? "batch" : "interactive");
             return main.cli(args.stream().toArray(String[]::new));
         }

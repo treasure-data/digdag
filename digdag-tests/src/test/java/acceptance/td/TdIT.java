@@ -1,7 +1,10 @@
 package acceptance.td;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.treasuredata.client.TDApiRequest;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
@@ -65,13 +68,13 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.expect;
-import static utils.TestUtils.main;
+import static utils.TestUtils.mainWithRecordableRun;
 import static utils.TestUtils.objectMapper;
 import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.startRequestTrackingProxy;
@@ -223,19 +226,14 @@ public class TdIT
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
-        assertWorkflowRunsSuccessfully("td.use_ssl=true");
-        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
-        // assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+        TestUtils.CommandStatusAndRecordedApiCalls result = assertWorkflowRunsSuccessfullyAndReturnApiCalls("td.use_ssl=true");
+        assertThat(result.recordedApiCalls.stream().filter(req -> req.getPath().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
     @Test
     public void testRunQueryAndPickUpApiKeyFromTdConf()
             throws Exception
     {
-        List<FullHttpRequest> requests = Collections.synchronizedList(new ArrayList<>());
-
-        proxyServer = startRequestTrackingProxy(requests);
-
         // Write apikey to td.conf
         Path tdConf = folder.newFolder().toPath().resolve("td.conf");
         Files.write(tdConf, asList(
@@ -253,20 +251,14 @@ public class TdIT
         try {
             copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
             copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
-            String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
-            env.put("http_proxy", proxyUrl);
-            env.put("TD_CONFIG_PATH", tdConf.toString());
-            assertWorkflowRunsSuccessfully();
-            // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
-            /*
-            List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(toList());
-            assertThat(issueRequests.size(), is(greaterThan(0)));
-            for (FullHttpRequest request : issueRequests) {
-                assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
-            }
-            assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
 
-             */
+            List<TDApiRequest> recordedApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().recordedApiCalls;
+            List<TDApiRequest> issueRequests = recordedApiCalls.stream().filter(req -> req.getPath().contains("/v3/job/issue")).collect(toList());
+            assertThat(issueRequests.size(), is(greaterThan(0)));
+            for (TDApiRequest request : issueRequests) {
+                assertThat(request.getHeaderParams().get(HttpHeaders.Names.AUTHORIZATION).toString(), is(startsWith("TD1 ")));
+            }
+            assertThat(issueRequests.size(), is(greaterThan(0)));
         }
         finally {
             System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "false");
@@ -310,6 +302,8 @@ public class TdIT
 
         // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
         // assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+
+        // TODO: This test should be verified by checking the output file
     }
 
     @Test
@@ -369,7 +363,7 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
 
-        CommandStatus status = runWorkflow();
+        CommandStatus status = runWorkflow().commandStatus;
 
         assertThat(status.errUtf8(), Matchers.containsString("The 'td.apikey' secret is missing"));
     }
@@ -434,7 +428,7 @@ public class TdIT
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        assertWorkflowRunsSuccessfully();
+        List<TDApiRequest> recordedApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().recordedApiCalls;
 
         for (Map.Entry<String, List<FullHttpRequest>> entry : requests.entrySet()) {
             System.err.println(entry.getKey() + ": " + entry.getValue().size());
@@ -451,16 +445,11 @@ public class TdIT
             assertThat(key, keyedRequests.size(), Matchers.is(Matchers.greaterThanOrEqualTo(failures)));
         }
 
-        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
-        // Verify that all job issue requests reuse the same domain key
-        /*
-        List<FullHttpRequest> jobIssueRequests = Iterables.getOnlyElement(requests.entrySet().stream()
-                .filter(e -> e.getKey().contains("/v3/job/issue"))
-                .map(e -> e.getValue())
-                .collect(toList()));
+        List<TDApiRequest> jobIssueRequests = recordedApiCalls.stream()
+                .filter(e -> e.getPath().contains("/v3/job/issue"))
+                .collect(toList());
 
         verifyDomainKeys(jobIssueRequests);
-         */
     }
 
     @Test
@@ -536,61 +525,64 @@ public class TdIT
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        assertWorkflowRunsSuccessfully();
+        List<TDApiRequest> recordedIssueApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().recordedApiCalls.stream()
+                .filter(req -> req.getPath().contains("/v3/job/issue")).collect(toList());
 
         for (FullHttpRequest request : jobIssueRequests) {
             ReferenceCountUtil.releaseLater(request);
         }
 
-        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
-        /*
-        assertThat(jobIssueRequests.size(), is(not(0)));
-        assertThat(jobIssueResponses.size(), is(not(0)));
+        assertThat(recordedIssueApiCalls.size(), is(not(0)));
+        assertThat(recordedIssueApiCalls.size(), is(not(0)));
 
-        verifyDomainKeys(jobIssueRequests);
-         */
+        verifyDomainKeys(recordedIssueApiCalls);
     }
 
-    private void verifyDomainKeys(List<FullHttpRequest> requests)
+    private void verifyDomainKeys(List<TDApiRequest> requests)
             throws IOException
     {
         // Verify that all job issue requests reuse the same domain key
-        FullHttpRequest firstRequest = requests.get(0);
+        TDApiRequest firstRequest = requests.get(0);
         String domainKey = domainKey(firstRequest);
 
         for (int i = 0; i < requests.size(); i++) {
-            FullHttpRequest request = requests.get(i);
+            TDApiRequest request = requests.get(i);
             String requestDomainKey = domainKey(request);
             assertThat(requestDomainKey, is(domainKey));
         }
     }
 
-    private String domainKey(FullHttpRequest request)
+    private String domainKey(TDApiRequest request)
             throws IOException
     {
-        FullHttpRequest copy = request.copy();
-        ReferenceCountUtil.releaseLater(copy);
-        HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(copy);
-        List<InterfaceHttpData> keyDatas = decoder.getBodyHttpDatas("domain_key");
-        assertThat(keyDatas, is(not(nullValue())));
-        assertThat(keyDatas.size(), is(1));
-        InterfaceHttpData domainKeyData = keyDatas.get(0);
-        assertThat(domainKeyData.getHttpDataType(), is(HttpDataType.Attribute));
-        return ((Attribute) domainKeyData).getValue();
+        Map<String, Object> content = objectMapper().readValue(
+                request.getContent().get(), new TypeReference<Map<String, Object>>() {});
+        return content.get("domain_key").toString();
     }
 
     private CommandStatus assertWorkflowRunsSuccessfully(String... params)
     {
-        CommandStatus runStatus = runWorkflow(params);
+        CommandStatus runStatus = runWorkflow(params).commandStatus;
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
         assertThat(Files.exists(outfile), is(true));
         return runStatus;
     }
 
-    private CommandStatus runWorkflow(String... params)
+    private TestUtils.CommandStatusAndRecordedApiCalls assertWorkflowRunsSuccessfullyAndReturnApiCalls(String... params)
+    {
+        TestUtils.CommandStatusAndRecordedApiCalls result = runWorkflow(params);
+        CommandStatus runStatus = result.commandStatus;
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
+        assertThat(Files.exists(outfile), is(true));
+        return result;
+    }
+
+    private TestUtils.CommandStatusAndRecordedApiCalls runWorkflow(String... params)
     {
         List<String> args = new ArrayList<>();
-        args.addAll(asList("run",
+        // `mainWithRecordableRun()` below introduces `recordable_run` command
+        // which is extended `run` command and records all TD API calls
+        args.addAll(asList("recordable_run",
                 "-o", projectDir.toString(),
                 "--log-level", "debug",
                 "--config", config.toString(),
@@ -604,6 +596,8 @@ public class TdIT
 
         args.add("workflow.dig");
 
-        return main(env, args);
+        TestUtils.CommandStatusAndRecordedApiCalls commandStatusAndRecords = mainWithRecordableRun(env, args);
+
+        return commandStatusAndRecords;
     }
 }
