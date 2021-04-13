@@ -127,7 +127,7 @@ public class EcsCommandExecutor
             }
         }
         catch (ConfigException e) {
-            logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
+            logger.info("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
             return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
         }
     }
