@@ -4,9 +4,9 @@ import com.amazonaws.services.ecs.model.Tag;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class EcsClientConfigBuilder
 {
@@ -146,14 +146,10 @@ public class EcsClientConfigBuilder
     {
         if (tags.isPresent()) {
             final Config tagConfig = tags.get();
-            final List<Tag> tagList = new ArrayList<>();
-            for (String key : tagConfig.getKeys()) {
-                final Tag t = new Tag()
-                        .withKey(key)
-                        .withValue(tagConfig.get(key, String.class));
-                tagList.add(t);
-            }
-            this.tags = Optional.of(tagList);
+            this.tags = Optional.of(
+                    tagConfig.getKeys().stream()
+                            .map(key -> new Tag().withKey(key).withValue(tagConfig.get(key, String.class)))
+                            .collect(Collectors.toList()));
         }
         else {
             this.tags = Optional.absent();
