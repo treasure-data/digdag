@@ -3,7 +3,6 @@ package acceptance.td;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.treasuredata.client.TDApiRequest;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
@@ -16,10 +15,6 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.multipart.Attribute;
-import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
-import io.netty.handler.codec.http.multipart.InterfaceHttpData;
-import io.netty.handler.codec.http.multipart.InterfaceHttpData.HttpDataType;
 import io.netty.util.ReferenceCountUtil;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -37,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
+import utils.TestUtils.RecordableWorkflow.CommandStatusAndRecordedApiCalls;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -74,7 +70,7 @@ import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.expect;
-import static utils.TestUtils.mainWithRecordableRun;
+import static utils.TestUtils.RecordableWorkflow.mainWithRecordableRun;
 import static utils.TestUtils.objectMapper;
 import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.startRequestTrackingProxy;
@@ -226,7 +222,7 @@ public class TdIT
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
-        TestUtils.CommandStatusAndRecordedApiCalls result = assertWorkflowRunsSuccessfullyAndReturnApiCalls("td.use_ssl=true");
+        CommandStatusAndRecordedApiCalls result = assertWorkflowRunsSuccessfullyAndReturnApiCalls("td.use_ssl=true");
         assertThat(result.recordedApiCalls.stream().filter(req -> req.getPath().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
@@ -568,16 +564,16 @@ public class TdIT
         return runStatus;
     }
 
-    private TestUtils.CommandStatusAndRecordedApiCalls assertWorkflowRunsSuccessfullyAndReturnApiCalls(String... params)
+    private CommandStatusAndRecordedApiCalls assertWorkflowRunsSuccessfullyAndReturnApiCalls(String... params)
     {
-        TestUtils.CommandStatusAndRecordedApiCalls result = runWorkflow(params);
+        CommandStatusAndRecordedApiCalls result = runWorkflow(params);
         CommandStatus runStatus = result.commandStatus;
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
         assertThat(Files.exists(outfile), is(true));
         return result;
     }
 
-    private TestUtils.CommandStatusAndRecordedApiCalls runWorkflow(String... params)
+    private CommandStatusAndRecordedApiCalls runWorkflow(String... params)
     {
         List<String> args = new ArrayList<>();
         // `mainWithRecordableRun()` below introduces `recordable_run` command
@@ -596,7 +592,7 @@ public class TdIT
 
         args.add("workflow.dig");
 
-        TestUtils.CommandStatusAndRecordedApiCalls commandStatusAndRecords = mainWithRecordableRun(env, args);
+        CommandStatusAndRecordedApiCalls commandStatusAndRecords = mainWithRecordableRun(env, args);
 
         return commandStatusAndRecords;
     }
