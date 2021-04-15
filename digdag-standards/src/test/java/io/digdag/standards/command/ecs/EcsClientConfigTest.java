@@ -1,5 +1,6 @@
 package io.digdag.standards.command.ecs;
 
+import com.amazonaws.services.ecs.model.Tag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
@@ -8,6 +9,9 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -110,12 +114,49 @@ public class EcsClientConfigTest
     }
 
     @Test
-    public void testCreateFromSystemConfigWithFargatePlatformVersion() {
+    public void testCreateFromSystemConfigWithFargatePlatformVersion()
+    {
         Config sys = systemConfig.deepCopy();
         sys.set("agent.command_executor.ecs.name", "cluster01");
         sys.set("agent.command_executor.ecs.cluster01.fargate_platform_version", "1.4.0");
         sys.set("agent.command_executor.ecs.cluster01.region", "us-east-1");
         EcsClientConfig ecsConfig = EcsClientConfig.createFromSystemConfig(Optional.absent(), sys);
         assertEquals("1.4.0", ecsConfig.getFargatePlatformVersion().get());
+    }
+
+    @Test
+    public void testCreateFromTaskConfigWithTags()
+    {
+        final Config taskConfig = cf.create()
+                .set("agent.command_executor.ecs",
+                        cf.create()
+                                .set("region", "us-east-1")
+                                .set("cluster_name", "cluster01")
+                                .set("tags", cf.create()
+                                        .set("key1", "value1")
+                                        .set("key2", "value2")
+                                ));
+        final EcsClientConfig ecsConfig = EcsClientConfig.createFromTaskConfig(Optional.absent(), taskConfig, systemConfig);
+        final Tag t1 = new Tag().withKey("key1").withValue("value1");
+        final Tag t2 = new Tag().withKey("key2").withValue("value2");
+        final List<Tag> expected = Arrays.asList(t1, t2);
+        final List<Tag> actual = ecsConfig.getTags().get();
+        assertTrue(actual.size() == expected.size());
+        assertTrue(actual.containsAll(expected));
+        assertTrue(expected.containsAll(actual));
+    }
+
+    @Test
+    public void testCreateFromTaskConfigWithOutTags()
+    {
+        final Config taskConfig = cf.create()
+                .set("agent.command_executor.ecs",
+                        cf.create()
+                                .set("region", "us-east-1")
+                                .set("cluster_name", "cluster01")
+                );
+        final EcsClientConfig ecsConfig = EcsClientConfig.createFromTaskConfig(Optional.absent(), taskConfig, systemConfig);
+        final Optional<List<Tag>> actual = ecsConfig.getTags();
+        assertEquals(Optional.absent(), actual);
     }
 }

@@ -1,9 +1,12 @@
 package io.digdag.standards.command.ecs;
 
+import com.amazonaws.services.ecs.model.Tag;
 import com.google.common.base.Optional;
+import io.digdag.client.config.Config;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class EcsClientConfigBuilder
 {
@@ -24,6 +27,7 @@ public class EcsClientConfigBuilder
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
     private Optional<String> fargatePlatformVersion;
+    private Optional<List<Tag>> tags;
 
     public EcsClientConfig build()
     {
@@ -138,6 +142,22 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withTags(Optional<Config> tags)
+    {
+        if (tags.isPresent()) {
+            final Config tagConfig = tags.get();
+            this.tags = Optional.of(
+                    tagConfig.getKeys().stream()
+                            .map(key -> new Tag().withKey(key).withValue(tagConfig.get(key, String.class)))
+                            .collect(Collectors.toList()));
+        }
+        else {
+            this.tags = Optional.absent();
+        }
+
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -221,5 +241,10 @@ public class EcsClientConfigBuilder
     public Optional<String> getFargatePlatformVersion()
     {
         return fargatePlatformVersion;
+    }
+
+    public Optional<List<Tag>> getTags()
+    {
+        return tags;
     }
 }
