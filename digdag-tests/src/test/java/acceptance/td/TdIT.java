@@ -1,6 +1,5 @@
 package acceptance.td;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDApiRequest;
@@ -11,7 +10,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
@@ -32,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
+import utils.TestUtils.RecordableWorkflow.ApiCallRecord;
 import utils.TestUtils.RecordableWorkflow.CommandStatusAndRecordedApiCalls;
 
 import java.io.ByteArrayOutputStream;
@@ -64,7 +63,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.attemptSuccess;
@@ -223,7 +221,7 @@ public class TdIT
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
         CommandStatusAndRecordedApiCalls result = assertWorkflowRunsSuccessfullyAndReturnApiCalls("td.use_ssl=true");
-        assertThat(result.recordedApiCalls.stream().filter(req -> req.getPath().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+        assertThat(result.apiCallRecords.stream().filter(req -> req.request.getPath().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
     @Test
@@ -243,18 +241,20 @@ public class TdIT
         Files.write(config, emptyList());
 
         System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "true");
+        env.put("TD_CONFIG_PATH", tdConf.toString());
 
         try {
             copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
             copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
 
-            List<TDApiRequest> recordedApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().recordedApiCalls;
-            List<TDApiRequest> issueRequests = recordedApiCalls.stream().filter(req -> req.getPath().contains("/v3/job/issue")).collect(toList());
-            assertThat(issueRequests.size(), is(greaterThan(0)));
-            for (TDApiRequest request : issueRequests) {
-                assertThat(request.getHeaderParams().get(HttpHeaders.Names.AUTHORIZATION).toString(), is(startsWith("TD1 ")));
+            List<ApiCallRecord> issueRequestCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().apiCallRecords.stream()
+                    .filter(req -> req.request.getPath().contains("/v3/job/issue"))
+                    .collect(toList());
+            assertThat(issueRequestCalls.size(), is(greaterThan(0)));
+            for (ApiCallRecord requestCall : issueRequestCalls) {
+                assertThat(requestCall.apikeyCache.get(), is(TD_API_KEY));
             }
-            assertThat(issueRequests.size(), is(greaterThan(0)));
+            assertThat(issueRequestCalls.size(), is(greaterThan(0)));
         }
         finally {
             System.setProperty(TD_SECRETS_ENABLED_PROP_KEY, "false");
@@ -424,7 +424,7 @@ public class TdIT
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        List<TDApiRequest> recordedApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().recordedApiCalls;
+        List<ApiCallRecord> apiCallRecords = assertWorkflowRunsSuccessfullyAndReturnApiCalls().apiCallRecords;
 
         for (Map.Entry<String, List<FullHttpRequest>> entry : requests.entrySet()) {
             System.err.println(entry.getKey() + ": " + entry.getValue().size());
@@ -441,8 +441,9 @@ public class TdIT
             assertThat(key, keyedRequests.size(), Matchers.is(Matchers.greaterThanOrEqualTo(failures)));
         }
 
-        List<TDApiRequest> jobIssueRequests = recordedApiCalls.stream()
-                .filter(e -> e.getPath().contains("/v3/job/issue"))
+        List<TDApiRequest> jobIssueRequests = apiCallRecords.stream()
+                .filter(e -> e.request.getPath().contains("/v3/job/issue"))
+                .map(record -> record.request)
                 .collect(toList());
 
         verifyDomainKeys(jobIssueRequests);
@@ -521,8 +522,10 @@ public class TdIT
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        List<TDApiRequest> recordedIssueApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().recordedApiCalls.stream()
-                .filter(req -> req.getPath().contains("/v3/job/issue")).collect(toList());
+        List<TDApiRequest> recordedIssueApiCalls = assertWorkflowRunsSuccessfullyAndReturnApiCalls().apiCallRecords.stream()
+                .filter(req -> req.request.getPath().contains("/v3/job/issue"))
+                .map(record -> record.request)
+                .collect(toList());
 
         for (FullHttpRequest request : jobIssueRequests) {
             ReferenceCountUtil.releaseLater(request);

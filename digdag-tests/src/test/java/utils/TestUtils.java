@@ -221,23 +221,35 @@ public class TestUtils
 
     public static class RecordableWorkflow
     {
+        public static class ApiCallRecord
+        {
+            public final TDApiRequest request;
+            public final Optional<String> apikeyCache;
+
+            public ApiCallRecord(TDApiRequest request, Optional<String> apikeyCache)
+            {
+                this.request = request;
+                this.apikeyCache = apikeyCache;
+            }
+        }
+
         public static class TDHttpClientRecorder
         {
-            private final List<TDApiRequest> requests = new ArrayList<>();
+            private final List<ApiCallRecord> apiCallRecords = new ArrayList<>();
 
-            public void record(TDApiRequest request)
+            public void record(ApiCallRecord apiCallRecord)
             {
-                requests.add(request);
+                apiCallRecords.add(apiCallRecord);
             }
 
-            public List<TDApiRequest> requests()
+            public List<ApiCallRecord> apiCallRecords()
             {
-                return requests;
+                return apiCallRecords;
             }
         }
 
         static class RecordableTDHttpClient
-            extends TDHttpClient
+                extends TDHttpClient
         {
             private final TDHttpClientRecorder recorder;
 
@@ -250,13 +262,13 @@ public class TestUtils
             @Override
             public <Result> Result call(TDApiRequest apiRequest, Optional<String> apiKeyCache, final JavaType resultType)
             {
-                recorder.record(apiRequest);
+                recorder.record(new ApiCallRecord(apiRequest, apiKeyCache.or(config.apiKey)));
                 return super.call(apiRequest, apiKeyCache, resultType);
             }
         }
 
         static class RecordableTDClient
-            extends TDClient
+                extends TDClient
         {
             public RecordableTDClient(TDClientConfig config, TDHttpClientRecorder recorder)
             {
@@ -265,7 +277,7 @@ public class TestUtils
         }
 
         static class RecordableTDClientFactory
-            extends TDClientFactory
+                extends TDClientFactory
         {
             private final TDHttpClientRecorder recorder;
 
@@ -287,7 +299,7 @@ public class TestUtils
         }
 
         static class RecordableRun
-            extends Run
+                extends Run
         {
             private TDHttpClientRecorder recorder;
 
@@ -306,7 +318,7 @@ public class TestUtils
         }
 
         static class CustomMain
-            extends Main
+                extends Main
         {
             interface CommandAdder
             {
@@ -338,12 +350,12 @@ public class TestUtils
         public static class CommandStatusAndRecordedApiCalls
         {
             public final CommandStatus commandStatus;
-            public final List<TDApiRequest> recordedApiCalls;
+            public final List<ApiCallRecord> apiCallRecords;
 
-            public CommandStatusAndRecordedApiCalls(CommandStatus commandStatus, List<TDApiRequest> recordedApiCalls)
+            public CommandStatusAndRecordedApiCalls(CommandStatus commandStatus, List<ApiCallRecord> apiCallRecords)
             {
                 this.commandStatus = commandStatus;
-                this.recordedApiCalls = recordedApiCalls;
+                this.apiCallRecords = apiCallRecords;
             }
         }
 
@@ -364,7 +376,7 @@ public class TestUtils
 
             return new CommandStatusAndRecordedApiCalls(
                     CommandStatus.of(code, out.toByteArray(), err.toByteArray()),
-                    recorder.requests());
+                    recorder.apiCallRecords());
         }
     }
 
