@@ -250,7 +250,6 @@ public class TestUtils
             @Override
             public <Result> Result call(TDApiRequest apiRequest, Optional<String> apiKeyCache, final JavaType resultType)
             {
-                // FIXME: Looks POST content isn't saved
                 recorder.record(apiRequest);
                 return super.call(apiRequest, apiKeyCache, resultType);
             }

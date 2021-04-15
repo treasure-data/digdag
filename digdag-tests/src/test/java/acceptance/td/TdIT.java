@@ -549,11 +549,8 @@ public class TdIT
     }
 
     private String domainKey(TDApiRequest request)
-            throws IOException
     {
-        Map<String, Object> content = objectMapper().readValue(
-                request.getContent().get(), new TypeReference<Map<String, Object>>() {});
-        return content.get("domain_key").toString();
+        return request.getQueryParams().get("domain_key");
     }
 
     private CommandStatus assertWorkflowRunsSuccessfully(String... params)
