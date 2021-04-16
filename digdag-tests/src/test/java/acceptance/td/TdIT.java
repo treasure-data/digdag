@@ -164,12 +164,9 @@ public class TdIT
         assertWorkflowRunsSuccessfully();
     }
 
-    @Test
-    public void testStoreLastResult()
+    private void assertOutputOfTdStoreLastResult()
             throws Exception
     {
-        copyResource("acceptance/td/td/td_store_last_result.dig", projectDir.resolve("workflow.dig"));
-        assertWorkflowRunsSuccessfully();
         JsonNode result = objectMapper().readTree(outfile.toFile());
         assertThat(result.get("last_job_id").asInt(), is(not(0)));
         assertThat(result.get("last_job").get("id").asInt(), is(not(0)));
@@ -178,6 +175,15 @@ public class TdIT
         assertThat(result.get("last_results").isEmpty(objectMapper().getSerializerProvider()), is(false));
         assertThat(result.get("last_results").get("a").asInt(), is(1));
         assertThat(result.get("last_results").get("b").asInt(), is(2));
+    }
+
+    @Test
+    public void testStoreLastResult()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_store_last_result.dig", projectDir.resolve("workflow.dig"));
+        assertWorkflowRunsSuccessfully();
+        assertOutputOfTdStoreLastResult();
     }
 
     @Test
@@ -278,8 +284,12 @@ public class TdIT
 
         server.start();
 
-        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
-        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        // This test needs to be done via `server` mode and we can't inject recordable TDClient to Digdag
+        // through utils.TestUtils.RecordableWorkflow for now.
+        //
+        // So this test should use `td_store_last_result.dig` instead
+        // so that we can check the output file and confirm `td` operator worked fine.
+        copyResource("acceptance/td/td/td_store_last_result.dig", projectDir.resolve("workflow.dig"));
 
         Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
@@ -296,10 +306,7 @@ public class TdIT
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 
-        // FIXME: org.littleshoot.proxy can't interrupt HTTPS requests, so utils.TestUtils.startRequestFailingProxy() can't check requests from workflow
-        // assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
-
-        // TODO: This test should be verified by checking the output file
+        assertOutputOfTdStoreLastResult();
     }
 
     @Test
