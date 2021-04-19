@@ -49,8 +49,8 @@ public class PgIT
     private static final String RESTRICTED_USER_PASSWORD = "not_admin_password";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
-    private static final String DATA_SECHEMA = "data_schema";
-    private static final String STATUS_TABLE_SECHEMA = "status_table_schema";
+    private static final String DATA_SCHEMA = "data_schema";
+    private static final String STATUS_TABLE_SCHEMA = "status_table_schema";
 
     private static final Config EMPTY_CONFIG = configFactory().create();
 
@@ -416,13 +416,13 @@ public class PgIT
         copyResource("acceptance/pg/insert_into_with_schema.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
-        dataSchemaName = DATA_SECHEMA;
+        dataSchemaName = DATA_SCHEMA;
         setupSchema(dataSchemaName);
         setupSourceTable();
         setupDestTable();
         grantRestrictedUserOnTheSchema(dataSchemaName);
 
-        String statusTableSchema = STATUS_TABLE_SECHEMA;
+        String statusTableSchema = STATUS_TABLE_SCHEMA;
         setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
