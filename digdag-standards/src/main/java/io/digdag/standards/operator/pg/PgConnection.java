@@ -118,7 +118,7 @@ public class PgConnection
                             + "1. add 'strict_transaction: false' option to disable "
                             + "exactly-once transaction control that depends on this table.\n"
                             + "2. ask system administrator to create this table using the following command "
-                            + "and grant INSERT privilege to this user: " + sql + ";\n"
+                            + "and grant SELECT/INSERT/UPDATE/DELETE or ALL privileges to this user: " + sql + ";\n"
                             + "3. ask system administrator to create a schema that this user can create a table "
                             + "and set 'status_table_schema' option to it\n"
                             , sql);
