@@ -50,7 +50,8 @@ public class PgIT
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
     private static final String DATA_SCHEMA = "data_schema";
-    private static final String STATUS_TABLE_SCHEMA = "status_table_schema";
+    private static final String CUSTOM_STATUS_TABLE_SCHEMA = "status_table_schema";
+    private static final String CUSTOM_STATUS_TABLE = "status_table";
 
     private static final Config EMPTY_CONFIG = configFactory().create();
 
@@ -160,6 +161,25 @@ public class PgIT
         }
     }
 
+    private void grantRestrictedUserOnStatusTable(String statusTableSchema, String statusTable)
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate(
+                    String.format(
+                            "GRANT USAGE ON SCHEMA %s TO %s", statusTableSchema, RESTRICTED_USER));
+            conn.executeUpdate(
+                    String.format(
+                            "CREATE TABLE %s.%s (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
+                            statusTableSchema, statusTable));
+            conn.executeUpdate(
+                    String.format(
+                            "GRANT ALL ON %s.%s TO %s", statusTableSchema, statusTable, RESTRICTED_USER));
+        }
+    }
+
+    // FIXME `schemaName` isn't used
     private void grantRestrictedUserOnTheSchema(String schemaName)
     {
         SecretProvider secrets = getDatabaseSecrets();
@@ -410,7 +430,7 @@ public class PgIT
     }
 
     @Test
-    public void insertIntoWithRestrictionOnPublicSchema()
+    public void insertIntoWithRestrictionOnNonPublicSchemaWithCreatePrivilege()
             throws Exception
     {
         copyResource("acceptance/pg/insert_into_with_schema.dig", root().resolve("pg.dig"));
@@ -422,7 +442,9 @@ public class PgIT
         setupDestTable();
         grantRestrictedUserOnTheSchema(dataSchemaName);
 
-        String statusTableSchema = STATUS_TABLE_SCHEMA;
+        String statusTableSchema = CUSTOM_STATUS_TABLE_SCHEMA;
+        String statusTable = CUSTOM_STATUS_TABLE;
+        // The user will have a privilege to create a status table
         setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
@@ -431,6 +453,46 @@ public class PgIT
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-p", "status_table_in_config=" + statusTable,
+                "-c", configFileWithRestrictedUser.toString(),
+                "pg.dig");
+        assertCommandStatus(status);
+
+        assertTableContents(DEST_TABLE, Arrays.asList(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
+                ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
+        ));
+    }
+
+    @Test
+    public void insertIntoWithRestrictionOnNonPublicSchemaWithoutCreatePrivilege()
+            throws Exception
+    {
+        copyResource("acceptance/pg/insert_into_with_schema.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        dataSchemaName = DATA_SCHEMA;
+        setupSchema(dataSchemaName);
+        setupSourceTable();
+        setupDestTable();
+        grantRestrictedUserOnTheSchema(dataSchemaName);
+
+        String statusTableSchema = CUSTOM_STATUS_TABLE_SCHEMA;
+        String statusTable = CUSTOM_STATUS_TABLE;
+        // The user won't have a privilege to create a status table
+        // but the status table will be created on the schema in advance and the user will have proper privileges on it instead
+        setupSchema(statusTableSchema, false);
+        grantRestrictedUserOnStatusTable(statusTableSchema, statusTable);
+
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + RESTRICTED_USER,
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "schema_in_config=" + dataSchemaName,
+                "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-p", "status_table_in_config=" + statusTable,
                 "-c", configFileWithRestrictedUser.toString(),
                 "pg.dig");
         assertCommandStatus(status);
