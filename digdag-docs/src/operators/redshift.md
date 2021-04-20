@@ -210,7 +210,7 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   ```
   connect_timeout: 30s
   ```
-  
+
 * **socket_timeout**: NAME
 
   The timeout value used for socket read operations. If reading from the server takes longer than this value, the connection is closed. *Default*: `1800s`(1800 seconds).
@@ -231,3 +231,12 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   password_override: another_password
   ```
 
+* **status_table_cleanup**: TIME VALUES
+
+  Specifies the period of time to clean up the status_table." When "strict_transaction: true" (default), the status_table will be created. status_table will be deleted when the status_table_cleanup period expires and the redshift operator is executed. *Default*: `24h`(24 hours).
+
+  Examples:
+
+  ```
+  status_table_cleanup: 5s
+  ```
