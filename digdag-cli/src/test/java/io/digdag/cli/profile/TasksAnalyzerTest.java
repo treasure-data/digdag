@@ -305,7 +305,7 @@ public class TasksAnalyzerTest
         );
         TaskAnalyzer taskAnalyzer = new TaskAnalyzer(injector);
 
-        TasksSummary tasksSummary = taskAnalyzer.run(
+        WholeTasksSummary tasksSummary = taskAnalyzer.run(
                 TIME_FROM,
                 TIME_TO,
                 FETCH_ATTEMPTS,

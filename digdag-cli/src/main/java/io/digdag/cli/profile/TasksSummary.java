@@ -3,10 +3,8 @@ package io.digdag.cli.profile;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Optional;
-import com.google.common.math.Stats;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.session.ArchivedTask;
@@ -17,14 +15,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -101,35 +98,25 @@ public class TasksSummary
         this.execDurationMillis = execDurationMillis;
     }
 
-    static class Builder
+    interface Builder
     {
-        long attempts;
-        long totalTasks;
-        long totalRunTasks;
-        long totalSuccessTasks;
-        long totalErrorTasks;
+        void incrementAttempts();
 
-        long maxDelayMillis;
-        ArchivedTask mostDelayedTask;
+        void incrementTotalTasks(long value);
 
-        final TasksStats.Builder startDelayMillis = new TasksStats.Builder();
-        final TasksStats.Builder execDurationMillis = new TasksStats.Builder();
+        void incrementTotalRunTasks();
 
-        TasksSummary build()
-        {
-            return new TasksSummary(
-                    attempts,
-                    totalTasks,
-                    totalRunTasks,
-                    totalSuccessTasks,
-                    totalErrorTasks,
-                    mostDelayedTask,
-                    startDelayMillis.build(),
-                    execDurationMillis.build()
-            );
-        }
+        void incrementTotalSuccessTasks();
 
-        private void updateWithTask(
+        void incrementTotalErrorTasks();
+
+        void addStartDelayMillis(long duration);
+
+        void addExecDurationMillis(long duration);
+
+        void updateMaxDelayMillisIfNeeded(long delayMillis, Supplier<ArchivedTask> task);
+
+        default void updateWithTask(
                 boolean isRoot,
                 Map<Long, ArchivedTask> taskMap,
                 Set<String> evaluatedTaskNames,
@@ -139,10 +126,10 @@ public class TasksSummary
             // so skip if it doesn't exists
             // (This case corresponds to #2 in the comment above)
             if (!isRoot && task.getStartedAt().isPresent()) {
-                totalRunTasks++;
+                incrementTotalRunTasks();
                 // The stats of exec durations handle both group and non-group tasks for now.
                 // There may be room to discuss about it.
-                execDurationMillis.add(
+                addExecDurationMillis(
                         Duration.between(task.getStartedAt().get(), task.getUpdatedAt()).toMillis());
 
                 // To know the delay of a task, it's needed to choose the correct previous task
@@ -204,39 +191,37 @@ public class TasksSummary
                         // (This case corresponds to #5 in the comment above)
                         && !evaluatedTaskNames.contains(task.getFullName())) {
                     long delayMillis = Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis();
-                    startDelayMillis.add(delayMillis);
-                    if (delayMillis > maxDelayMillis) {
-                        // Mask some unnecessary fields
-                        mostDelayedTask = ImmutableArchivedTask.builder()
-                                .attemptId(task.getAttemptId())
-                                .id(task.getId())
-                                .fullName(task.getFullName())
-                                .taskType(task.getTaskType())
-                                .parentId(task.getParentId())
-                                .error(task.getError())
-                                .report(task.getReport())
-                                .state(task.getState())
-                                .stateFlags(task.getStateFlags())
-                                .upstreams(task.getUpstreams())
-                                .resumingTaskId(task.getResumingTaskId())
-                                .config(task.getConfig())
-                                .retryCount(task.getRetryCount())
-                                .retryAt(task.getRetryAt())
-                                .startedAt(task.getStartedAt())
-                                .updatedAt(task.getUpdatedAt())
-                                .subtaskConfig(EMPTY_CONFIG)
-                                .exportParams(EMPTY_CONFIG)
-                                .storeParams(EMPTY_CONFIG)
-                                .stateParams(EMPTY_CONFIG)
-                                .build();
-                        maxDelayMillis = delayMillis;
-                    }
+                    addStartDelayMillis(delayMillis);
+                    updateMaxDelayMillisIfNeeded(delayMillis, () ->
+                            ImmutableArchivedTask.builder()
+                                    .attemptId(task.getAttemptId())
+                                    .id(task.getId())
+                                    .fullName(task.getFullName())
+                                    .taskType(task.getTaskType())
+                                    .parentId(task.getParentId())
+                                    .error(task.getError())
+                                    .report(task.getReport())
+                                    .state(task.getState())
+                                    .stateFlags(task.getStateFlags())
+                                    .upstreams(task.getUpstreams())
+                                    .resumingTaskId(task.getResumingTaskId())
+                                    .config(task.getConfig())
+                                    .retryCount(task.getRetryCount())
+                                    .retryAt(task.getRetryAt())
+                                    .startedAt(task.getStartedAt())
+                                    .updatedAt(task.getUpdatedAt())
+                                    .subtaskConfig(EMPTY_CONFIG)
+                                    .exportParams(EMPTY_CONFIG)
+                                    .storeParams(EMPTY_CONFIG)
+                                    .stateParams(EMPTY_CONFIG)
+                                    .build()
+                    );
                 }
 
                 if (task.getState().isError()) {
-                    totalErrorTasks++;
+                    incrementTotalErrorTasks();
                 } else {
-                    totalSuccessTasks++;
+                    incrementTotalSuccessTasks();
                 }
                 evaluatedTaskNames.add(task.getFullName());
             }
@@ -244,9 +229,9 @@ public class TasksSummary
 
         // This method is called for each attempt and
         // accumulates stats in `builder`.
-        void updateWithTasks(List<ArchivedTask> originalTasks)
+        default void updateWithTasks(List<ArchivedTask> originalTasks)
         {
-            attempts++;
+            incrementAttempts();
 
             // Sort tasks by `id` just in case
             List<ArchivedTask> tasks = originalTasks.stream()
@@ -260,7 +245,7 @@ public class TasksSummary
                 taskMap.put(task.getId(), task);
             }
 
-            totalTasks += tasks.size() - 1; // Remove a root task
+            incrementTotalTasks(tasks.size() - 1); // Remove a root task
 
             // Calculate the delays of task invocations
             boolean isRoot = true;
@@ -272,6 +257,86 @@ public class TasksSummary
         }
     }
 
+    static class DefaultBuilder
+        implements Builder
+    {
+        long attempts;
+        long totalTasks;
+        long totalRunTasks;
+        long totalSuccessTasks;
+        long totalErrorTasks;
+
+        long maxDelayMillis;
+        ArchivedTask mostDelayedTask;
+
+        final TasksStats.Builder startDelayMillis = new TasksStats.Builder();
+        final TasksStats.Builder execDurationMillis = new TasksStats.Builder();
+
+        @Override
+        public void incrementAttempts()
+        {
+            attempts++;
+        }
+
+        @Override
+        public void incrementTotalTasks(long value)
+        {
+            totalTasks += value;
+        }
+
+        @Override
+        public void incrementTotalRunTasks()
+        {
+            totalRunTasks++;
+        }
+
+        @Override
+        public void incrementTotalSuccessTasks()
+        {
+            totalSuccessTasks++;
+        }
+
+        @Override
+        public void incrementTotalErrorTasks()
+        {
+            totalErrorTasks++;
+        }
+
+        @Override
+        public void addStartDelayMillis(long duration)
+        {
+            startDelayMillis.add(duration);
+        }
+
+        @Override
+        public void addExecDurationMillis(long duration)
+        {
+            execDurationMillis.add(duration);
+        }
+
+        @Override
+        public void updateMaxDelayMillisIfNeeded(long delayMillis, Supplier<ArchivedTask> task)
+        {
+            if (delayMillis > maxDelayMillis) {
+                maxDelayMillis = delayMillis;
+                mostDelayedTask = task.get();
+            }
+        }
+
+        TasksSummary build()
+        {
+            return new TasksSummary(
+                    attempts,
+                    totalTasks,
+                    totalRunTasks,
+                    totalSuccessTasks,
+                    totalErrorTasks,
+                    mostDelayedTask,
+                    startDelayMillis.build(),
+                    execDurationMillis.build()
+            );
+        }
+    }
 
     @Override
     public String toString()
@@ -285,95 +350,5 @@ public class TasksSummary
                 ", startDelayMillis=" + startDelayMillis +
                 ", execDurationMillis=" + execDurationMillis +
                 '}';
-    }
-
-    @JsonSerialize(using = TasksStatsSerializer.class)
-    static class TasksStats
-    {
-        final Optional<Stats> stats;
-
-        TasksStats(Optional<Stats> stats)
-        {
-            this.stats = stats;
-        }
-
-        static TasksStats of(Collection<Long> values)
-        {
-            if (values.isEmpty()) {
-                return new TasksStats(Optional.absent());
-            } else {
-                return new TasksStats(Optional.of(Stats.of(values)));
-            }
-        }
-
-        Long count()
-        {
-            return stats.transform(x -> Double.valueOf(x.count()).longValue()).orNull();
-        }
-
-        Long min()
-        {
-            return stats.transform(x -> Double.valueOf(x.min()).longValue()).orNull();
-        }
-
-        Long max()
-        {
-            return stats.transform(x -> Double.valueOf(x.max()).longValue()).orNull();
-        }
-
-        Long mean()
-        {
-            return stats.transform(x -> Double.valueOf(x.mean()).longValue()).orNull();
-        }
-
-        Long stdDev()
-        {
-            return stats.transform(x -> Double.valueOf(x.populationStandardDeviation()).longValue()).orNull();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "TasksStats{" +
-                    "stats=" + stats +
-                    '}';
-        }
-
-        static class Builder
-        {
-            private final List<Long> items = new ArrayList<>();
-
-            void add(long item)
-            {
-                items.add(item);
-            }
-
-            TasksStats build()
-            {
-                return TasksStats.of(items);
-            }
-        }
-    }
-
-    static class TasksStatsSerializer
-            extends StdSerializer<TasksStats>
-    {
-        protected TasksStatsSerializer()
-        {
-            super(TasksStats.class);
-        }
-
-        @Override
-        public void serialize(TasksStats tasksStats, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                throws IOException
-        {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeObjectField("count", tasksStats.count());
-            jsonGenerator.writeObjectField("min", tasksStats.min());
-            jsonGenerator.writeObjectField("max", tasksStats.max());
-            jsonGenerator.writeObjectField("average", tasksStats.mean());
-            jsonGenerator.writeObjectField("stddev", tasksStats.stdDev());
-            jsonGenerator.writeEndObject();
-        }
     }
 }
