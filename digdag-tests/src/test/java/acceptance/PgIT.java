@@ -128,20 +128,18 @@ public class PgIT
     @After
     public void tearDown()
     {
-        if (user != null) {
-            try {
-                removeTempDatabase();
-            }
-            catch (Throwable e) {
-                logger.error("Failed to remove resources", e);
-            }
+        try {
+            removeTempDatabase();
+        }
+        catch (Throwable e) {
+            logger.error("Failed to remove resources", e);
+        }
 
-            try {
-                removeRestrictedUser();
-            }
-            catch (Throwable e) {
-                logger.error("Failed to remove resources", e);
-            }
+        try {
+            removeRestrictedUser();
+        }
+        catch (Throwable e) {
+            logger.error("Failed to remove resources", e);
         }
     }
 
@@ -651,16 +649,6 @@ public class PgIT
                 "password", password,
                 "database", database
         ).get(key));
-    }
-
-    private void removeCustomStatusTable()
-    {
-        SecretProvider secrets = getDatabaseSecrets();
-
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
-            conn.executeUpdate(
-                    String.format("DROP TABLE IF EXISTS %s.%s", CUSTOM_STATUS_TABLE_SCHEMA, CUSTOM_STATUS_TABLE));
-        }
     }
 
     private void createTempDatabase()
