@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.pg;
 
+import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.ImmutableTableReference;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
 import io.digdag.standards.operator.jdbc.LockConflictException;
@@ -22,7 +23,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -111,9 +116,10 @@ public class PgConnectionTest
 
     @Test
     public void txHelperPrepare()
-            throws SQLException
+            throws SQLException, NotReadOnlyException
     {
         TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
+        doThrow(DatabaseException.class).when(pgConnection).executeReadOnlyQuery(eq("SELECT count(*) FROM \"__digdag_status\""), any());
         UUID queryId = UUID.randomUUID();
         txHelper.prepare(queryId);
         verify(pgConnection).execute(eq(
