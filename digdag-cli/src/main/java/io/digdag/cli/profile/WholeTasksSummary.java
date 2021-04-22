@@ -1,34 +1,15 @@
 package io.digdag.cli.profile;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.google.common.base.Optional;
-import com.google.common.math.Stats;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
+import com.google.common.collect.ImmutableList;
 import io.digdag.core.session.ArchivedTask;
-import io.digdag.core.session.ImmutableArchivedTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static io.digdag.client.DigdagClient.objectMapper;
 
 /**
  * Represents the summary of task analysis and has capability of calculating task start delays and execution durations.
@@ -62,8 +43,6 @@ public class WholeTasksSummary
 {
     private static final Logger logger = LoggerFactory.getLogger(WholeTasksSummary.class);
 
-    private static final Config EMPTY_CONFIG = new ConfigFactory(objectMapper()).create();
-
     @JsonProperty
     public final TasksSummary overall;
 
@@ -77,7 +56,7 @@ public class WholeTasksSummary
     }
 
     private static class PropagatableTasksSummaryBuilder
-        extends TasksSummary.Builder
+        implements TasksSummary.Builder
     {
         private final List<TasksSummary.DefaultBuilder> builders;
 
@@ -93,21 +72,9 @@ public class WholeTasksSummary
         }
 
         @Override
-        public long attempts()
-        {
-            return 0;
-        }
-
-        @Override
         public void incrementTotalTasks(long value)
         {
             builders.forEach(builder -> builder.incrementTotalTasks(value));
-        }
-
-        @Override
-        public long totalTasks()
-        {
-            return 0;
         }
 
         @Override
@@ -117,21 +84,9 @@ public class WholeTasksSummary
         }
 
         @Override
-        public long totalRunTasks()
-        {
-            return 0;
-        }
-
-        @Override
         public void incrementTotalSuccessTasks()
         {
             builders.forEach(builder -> builder.incrementTotalSuccessTasks());
-        }
-
-        @Override
-        public long totalSuccessTasks()
-        {
-            return 0;
         }
 
         @Override
@@ -141,21 +96,9 @@ public class WholeTasksSummary
         }
 
         @Override
-        public long totalErrorTasks()
-        {
-            return 0;
-        }
-
-        @Override
         public void addStartDelayMillis(long duration)
         {
             builders.forEach(builder -> builder.addStartDelayMillis(duration));
-        }
-
-        @Override
-        public TasksStats.Builder startDelayMillis()
-        {
-            return null;
         }
 
         @Override
@@ -165,60 +108,43 @@ public class WholeTasksSummary
         }
 
         @Override
-        public TasksStats.Builder execDurationMillis()
+        public void updateMaxDelayMillisIfNeeded(long delayMillis, Supplier<ArchivedTask> task)
         {
-            return null;
-        }
-
-        @Override
-        public void updateMaxDelayMillis(long delayMillis, Supplier<ArchivedTask> task)
-        {
-            builders.forEach(builder -> builder.updateMaxDelayMillis(delayMillis, task));
-        }
-
-        @Override
-        public long maxDelayMillis()
-        {
-            return 0;
-        }
-
-        @Override
-        public void updateMostDelayedTask(ArchivedTask task)
-        {
-            builders.forEach(builder -> builder.updateMostDelayedTask(task));
-        }
-
-        @Override
-        public ArchivedTask mostDelayedTask()
-        {
-            return null;
+            builders.forEach(builder -> builder.updateMaxDelayMillisIfNeeded(delayMillis, task));
         }
     }
 
     static class Builder
     {
-        TasksSummary.Builder overallBuilder = new TasksSummary.Builder();
+        TasksSummary.DefaultBuilder totalBuilder = new TasksSummary.DefaultBuilder();
 
-        Map<Integer, TasksSummary.Builder> sites = new HashMap<>();
+        Map<Integer, TasksSummary.DefaultBuilder> sites = new HashMap<>();
 
         WholeTasksSummary build()
         {
-            return new WholeTasksSummary(overallBuilder.build(), buildSites());
+            return new WholeTasksSummary(totalBuilder.build(), buildSites());
         }
 
         private Map<Integer, TasksSummary> buildSites()
         {
             Map<Integer, TasksSummary> sites = new HashMap<>(this.sites.size());
-            for (Map.Entry<Integer, TasksSummary.Builder> entry : this.sites.entrySet()) {
+            for (Map.Entry<Integer, TasksSummary.DefaultBuilder> entry : this.sites.entrySet()) {
                 sites.put(entry.getKey(), entry.getValue().build());
             }
             return sites;
         }
 
         // This method is called for each attempt and
-        // accumulates stats in `builder`.
+        // accumulates stats in `builder`s both of total and per-account.
         void updateWithTasks(int siteId, List<ArchivedTask> originalTasks)
         {
+            TasksSummary.DefaultBuilder perSiteBuilder =
+                    sites.computeIfAbsent(siteId, (k) -> new TasksSummary.DefaultBuilder());
+
+            PropagatableTasksSummaryBuilder propagatableTasksSummaryBuilder =
+                    new PropagatableTasksSummaryBuilder(ImmutableList.of(totalBuilder, perSiteBuilder));
+
+            propagatableTasksSummaryBuilder.updateWithTasks(originalTasks);
         }
     }
 }

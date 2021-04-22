@@ -312,23 +312,23 @@ public class TasksAnalyzerTest
                 PARTITION_SIZE,
                 10);
 
-        assertEquals(7, tasksSummary.attempts);
+        assertEquals(7, tasksSummary.overall.attempts);
         // these counts doesn't contain root tasks
-        assertEquals(7, tasksSummary.totalTasks);
-        assertEquals(7, tasksSummary.totalRunTasks);
-        assertEquals(7, tasksSummary.totalSuccessTasks);
-        assertEquals(0, tasksSummary.totalErrorTasks);
+        assertEquals(7, tasksSummary.overall.totalTasks);
+        assertEquals(7, tasksSummary.overall.totalRunTasks);
+        assertEquals(7, tasksSummary.overall.totalSuccessTasks);
+        assertEquals(0, tasksSummary.overall.totalErrorTasks);
 
-        assertNotNull(tasksSummary.mostDelayedTask);
+        assertNotNull(tasksSummary.overall.mostDelayedTask);
 
-        assertEquals(1000, tasksSummary.startDelayMillis.min().longValue());
-        assertEquals(1000, tasksSummary.startDelayMillis.max().longValue());
-        assertEquals(1000, tasksSummary.startDelayMillis.mean().longValue());
-        assertEquals(0, tasksSummary.startDelayMillis.stdDev().longValue());
+        assertEquals(1000, tasksSummary.overall.startDelayMillis.min().longValue());
+        assertEquals(1000, tasksSummary.overall.startDelayMillis.max().longValue());
+        assertEquals(1000, tasksSummary.overall.startDelayMillis.mean().longValue());
+        assertEquals(0, tasksSummary.overall.startDelayMillis.stdDev().longValue());
 
-        assertEquals(4000, tasksSummary.execDurationMillis.min().longValue());
-        assertEquals(4000, tasksSummary.execDurationMillis.max().longValue());
-        assertEquals(4000, tasksSummary.execDurationMillis.mean().longValue());
-        assertEquals(0, tasksSummary.execDurationMillis.stdDev().longValue());
+        assertEquals(4000, tasksSummary.overall.execDurationMillis.min().longValue());
+        assertEquals(4000, tasksSummary.overall.execDurationMillis.max().longValue());
+        assertEquals(4000, tasksSummary.overall.execDurationMillis.mean().longValue());
+        assertEquals(0, tasksSummary.overall.execDurationMillis.stdDev().longValue());
     }
 }
