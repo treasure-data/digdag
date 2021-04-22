@@ -22,7 +22,7 @@ import java.time.Instant;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
-public class WholeTasksSummaryTest
+public class TasksSummaryTest
 {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
         .registerModule(new JacksonTimeModule())
@@ -90,7 +90,7 @@ public class WholeTasksSummaryTest
               echo>: Finish
          */
 
-        WholeTasksSummary.Builder builder = new WholeTasksSummary.Builder();
+        TasksSummary.DefaultBuilder builder = new TasksSummary.DefaultBuilder();
         builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
@@ -166,7 +166,7 @@ public class WholeTasksSummaryTest
                         .withStartedAt(Instant.parse("2000-01-01T00:00:24Z"))
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:28Z"))
         ));
-        WholeTasksSummary summary = builder.build();
+        TasksSummary summary = builder.build();
         assertEquals(6, summary.totalTasks);
         assertEquals(6, summary.totalRunTasks);
         assertEquals(6, summary.totalSuccessTasks);
@@ -215,7 +215,7 @@ public class WholeTasksSummaryTest
               notify: Workflow session attempt failed
          */
 
-        WholeTasksSummary.Builder builder = new WholeTasksSummary.Builder();
+        TasksSummary.DefaultBuilder builder = new TasksSummary.DefaultBuilder();
         builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
@@ -277,7 +277,7 @@ public class WholeTasksSummaryTest
                         .withStartedAt(Instant.parse("2000-01-01T00:00:10Z"))
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:13Z"))
         ));
-        WholeTasksSummary summary = builder.build();
+        TasksSummary summary = builder.build();
         assertEquals(5, summary.totalTasks);
         assertEquals(4, summary.totalRunTasks);
         assertEquals(3, summary.totalSuccessTasks);
@@ -318,7 +318,7 @@ public class WholeTasksSummaryTest
               echo>: Finish
          */
 
-        WholeTasksSummary.Builder builder = new WholeTasksSummary.Builder();
+        TasksSummary.DefaultBuilder builder = new TasksSummary.DefaultBuilder();
         builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
@@ -371,7 +371,7 @@ public class WholeTasksSummaryTest
                         .withStartedAt(Instant.parse("2000-01-01T00:00:14Z"))
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:16Z"))
         ));
-        WholeTasksSummary summary = builder.build();
+        TasksSummary summary = builder.build();
         assertEquals(4, summary.totalTasks);
         assertEquals(4, summary.totalRunTasks);
         assertEquals(4, summary.totalSuccessTasks);
@@ -424,7 +424,7 @@ public class WholeTasksSummaryTest
               notify: Workflow session attempt failed
          */
 
-        WholeTasksSummary.Builder builder = new WholeTasksSummary.Builder();
+        TasksSummary.DefaultBuilder builder = new TasksSummary.DefaultBuilder();
         builder.updateWithTasks(ImmutableList.of(
                 // Root task
                 ImmutableArchivedTask.copyOf(BASE_TASK)
@@ -489,7 +489,7 @@ public class WholeTasksSummaryTest
                         .withStartedAt(Instant.parse("2000-01-01T00:00:20Z"))
                         .withUpdatedAt(Instant.parse("2000-01-01T00:00:22Z"))
         ));
-        WholeTasksSummary summary = builder.build();
+        TasksSummary summary = builder.build();
         assertEquals(5, summary.totalTasks);
         assertEquals(5, summary.totalRunTasks);
         assertEquals(3, summary.totalSuccessTasks);
