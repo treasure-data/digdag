@@ -590,6 +590,7 @@ public class TasksSummaryTest
             assertEquals(3, summary.attempts);
             assertEquals(9, summary.totalTasks);
             assertEquals(8, summary.totalRunTasks);
+            assertEquals(6, summary.totalSuccessTasks);
             assertEquals(2, summary.totalErrorTasks);
             // (750 + 1000 + 1250 + 1000 + 1500 + 250 + 1250 + 1000) / 8
             assertEquals(1000, summary.execDurationMillis.mean().longValue());
@@ -600,6 +601,42 @@ public class TasksSummaryTest
             assertEquals(100, summary.startDelayMillis.min().longValue());
             assertEquals(800, summary.startDelayMillis.max().longValue());
             assertEquals(task0_1, summary.mostDelayedTask);
+        }
+
+        {
+            TasksSummary summary = site0.build();
+            assertEquals(1, summary.attempts);
+            assertEquals(4, summary.totalTasks);
+            assertEquals(3, summary.totalRunTasks);
+            assertEquals(2, summary.totalSuccessTasks);
+            assertEquals(1, summary.totalErrorTasks);
+            // (750 + 1000 + 1250) / 3
+            assertEquals(1000, summary.execDurationMillis.mean().longValue());
+            assertEquals(750, summary.execDurationMillis.min().longValue());
+            assertEquals(1250, summary.execDurationMillis.max().longValue());
+            // (400 + 800 + 600) / 3
+            assertEquals(600, summary.startDelayMillis.mean().longValue());
+            assertEquals(400, summary.startDelayMillis.min().longValue());
+            assertEquals(800, summary.startDelayMillis.max().longValue());
+            assertEquals(task0_1, summary.mostDelayedTask);
+        }
+
+        {
+            TasksSummary summary = site1.build();
+            assertEquals(2, summary.attempts);
+            assertEquals(5, summary.totalTasks);
+            assertEquals(5, summary.totalRunTasks);
+            assertEquals(4, summary.totalSuccessTasks);
+            assertEquals(1, summary.totalErrorTasks);
+            // (1000 + 1500 + 250 + 1250 + 1000) / 5
+            assertEquals(1000, summary.execDurationMillis.mean().longValue());
+            assertEquals(250, summary.execDurationMillis.min().longValue());
+            assertEquals(1500, summary.execDurationMillis.max().longValue());
+            // (400 + 250 + 300 + 100 + 350) / 5
+            assertEquals(280, summary.startDelayMillis.mean().longValue());
+            assertEquals(100, summary.startDelayMillis.min().longValue());
+            assertEquals(400, summary.startDelayMillis.max().longValue());
+            assertEquals(task1_0, summary.mostDelayedTask);
         }
     }
 }
