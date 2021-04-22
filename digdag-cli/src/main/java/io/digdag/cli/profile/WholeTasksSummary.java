@@ -1,6 +1,7 @@
 package io.digdag.cli.profile;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import io.digdag.core.session.ArchivedTask;
 import org.slf4j.Logger;
@@ -55,7 +56,8 @@ public class WholeTasksSummary
         this.sites = sites;
     }
 
-    private static class PropagatableTasksSummaryBuilder
+    @VisibleForTesting
+    static class PropagatableTasksSummaryBuilder
         implements TasksSummary.Builder
     {
         private final List<TasksSummary.DefaultBuilder> builders;
@@ -96,21 +98,15 @@ public class WholeTasksSummary
         }
 
         @Override
-        public void addStartDelayMillis(long duration)
+        public void addStartDelayMillis(long duration, Supplier<ArchivedTask> task)
         {
-            builders.forEach(builder -> builder.addStartDelayMillis(duration));
+            builders.forEach(builder -> builder.addStartDelayMillis(duration, task));
         }
 
         @Override
         public void addExecDurationMillis(long duration)
         {
             builders.forEach(builder -> builder.addExecDurationMillis(duration));
-        }
-
-        @Override
-        public void updateMaxDelayMillisIfNeeded(long delayMillis, Supplier<ArchivedTask> task)
-        {
-            builders.forEach(builder -> builder.updateMaxDelayMillisIfNeeded(delayMillis, task));
         }
     }
 

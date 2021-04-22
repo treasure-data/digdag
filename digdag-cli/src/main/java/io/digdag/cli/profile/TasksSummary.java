@@ -110,11 +110,9 @@ public class TasksSummary
 
         void incrementTotalErrorTasks();
 
-        void addStartDelayMillis(long duration);
+        void addStartDelayMillis(long duration, Supplier<ArchivedTask> task);
 
         void addExecDurationMillis(long duration);
-
-        void updateMaxDelayMillisIfNeeded(long delayMillis, Supplier<ArchivedTask> task);
 
         default void updateWithTask(
                 boolean isRoot,
@@ -191,8 +189,7 @@ public class TasksSummary
                         // (This case corresponds to #5 in the comment above)
                         && !evaluatedTaskNames.contains(task.getFullName())) {
                     long delayMillis = Duration.between(timestampWhenTaskIsReady.get(), task.getStartedAt().get()).toMillis();
-                    addStartDelayMillis(delayMillis);
-                    updateMaxDelayMillisIfNeeded(delayMillis, () ->
+                    addStartDelayMillis(delayMillis, () ->
                             ImmutableArchivedTask.builder()
                                     .attemptId(task.getAttemptId())
                                     .id(task.getId())
@@ -303,24 +300,19 @@ public class TasksSummary
         }
 
         @Override
-        public void addStartDelayMillis(long duration)
+        public void addStartDelayMillis(long duration, Supplier<ArchivedTask> task)
         {
             startDelayMillis.add(duration);
+            if (duration > maxDelayMillis) {
+                maxDelayMillis = duration;
+                mostDelayedTask = task.get();
+            }
         }
 
         @Override
         public void addExecDurationMillis(long duration)
         {
             execDurationMillis.add(duration);
-        }
-
-        @Override
-        public void updateMaxDelayMillisIfNeeded(long delayMillis, Supplier<ArchivedTask> task)
-        {
-            if (delayMillis > maxDelayMillis) {
-                maxDelayMillis = delayMillis;
-                mostDelayedTask = task.get();
-            }
         }
 
         TasksSummary build()

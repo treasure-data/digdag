@@ -20,6 +20,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TasksSummaryTest
@@ -496,5 +497,109 @@ public class TasksSummaryTest
         assertEquals(2, summary.totalErrorTasks);
         assertEquals(1500, summary.startDelayMillis.mean().longValue());
         assertEquals(2000, summary.execDurationMillis.mean().longValue());
+    }
+
+    @Test
+    public void propagatableTasksSummary()
+    {
+        TasksSummary.DefaultBuilder overall = new TasksSummary.DefaultBuilder();
+        TasksSummary.DefaultBuilder site0 = new TasksSummary.DefaultBuilder();
+        TasksSummary.DefaultBuilder site1 = new TasksSummary.DefaultBuilder();
+
+        ArchivedTask task0_0 = mock(ArchivedTask.class);
+        ArchivedTask task0_1 = mock(ArchivedTask.class);
+        ArchivedTask task0_2 = mock(ArchivedTask.class);
+
+        {
+            // Update overall and site:0's TasksSummary.Builder
+            WholeTasksSummary.PropagatableTasksSummaryBuilder builder =
+                    new WholeTasksSummary.PropagatableTasksSummaryBuilder(ImmutableList.of(overall, site0));
+
+            // 1st attempt
+            //   total tasks: 4
+            //   total run tasks: 3
+            //   total success tasks: 2
+            //   total error tasks: 1
+            //   (skipped tasks: 1)
+            builder.incrementAttempts();
+            builder.incrementTotalTasks(4);
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalSuccessTasks();
+            builder.incrementTotalSuccessTasks();
+            builder.incrementTotalErrorTasks();
+            builder.addExecDurationMillis(750);
+            builder.addExecDurationMillis(1000);
+            builder.addExecDurationMillis(1250);
+            builder.addStartDelayMillis(400, () -> task0_0);
+            builder.addStartDelayMillis(800, () -> task0_1);
+            builder.addStartDelayMillis(600, () -> task0_2);
+        }
+
+        ArchivedTask task1_0 = mock(ArchivedTask.class);
+        ArchivedTask task1_1 = mock(ArchivedTask.class);
+        ArchivedTask task1_2 = mock(ArchivedTask.class);
+        ArchivedTask task1_3 = mock(ArchivedTask.class);
+        ArchivedTask task1_4 = mock(ArchivedTask.class);
+
+        {
+            // Update overall and site:1's TasksSummary.Builder
+            WholeTasksSummary.PropagatableTasksSummaryBuilder builder =
+                    new WholeTasksSummary.PropagatableTasksSummaryBuilder(ImmutableList.of(overall, site1));
+
+            // 1st attempt
+            //   total tasks: 2
+            //   total run tasks: 2
+            //   total success tasks: 2
+            builder.incrementAttempts();
+            builder.incrementTotalTasks(2);
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalSuccessTasks();
+            builder.incrementTotalSuccessTasks();
+            builder.addExecDurationMillis(1000);
+            builder.addExecDurationMillis(1500);
+            builder.addStartDelayMillis(400, () -> task1_0);
+            builder.addStartDelayMillis(250, () -> task1_1);
+
+            // 2nd attempt
+            //   total tasks: 3
+            //   total run tasks: 3
+            //   total success tasks: 2
+            //   total error tasks: 1
+            //   (skipped tasks: 0)
+            builder.incrementAttempts();
+            builder.incrementTotalTasks(3);
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalRunTasks();
+            builder.incrementTotalSuccessTasks();
+            builder.incrementTotalSuccessTasks();
+            builder.incrementTotalErrorTasks();
+            builder.addExecDurationMillis(250);
+            builder.addExecDurationMillis(1250);
+            builder.addExecDurationMillis(1000);
+            builder.addStartDelayMillis(300, () -> task1_2);
+            builder.addStartDelayMillis(100, () -> task1_3);
+            builder.addStartDelayMillis(350, () -> task1_4);
+        }
+
+        {
+            TasksSummary summary = overall.build();
+            assertEquals(3, summary.attempts);
+            assertEquals(9, summary.totalTasks);
+            assertEquals(8, summary.totalRunTasks);
+            assertEquals(2, summary.totalErrorTasks);
+            // (750 + 1000 + 1250 + 1000 + 1500 + 250 + 1250 + 1000) / 8
+            assertEquals(1000, summary.execDurationMillis.mean().longValue());
+            assertEquals(250, summary.execDurationMillis.min().longValue());
+            assertEquals(1500, summary.execDurationMillis.max().longValue());
+            // (400 + 800 + 600 + 400 + 250 + 300 + 100 + 350) / 8
+            assertEquals(400, summary.startDelayMillis.mean().longValue());
+            assertEquals(100, summary.startDelayMillis.min().longValue());
+            assertEquals(800, summary.startDelayMillis.max().longValue());
+            assertEquals(task0_1, summary.mostDelayedTask);
+        }
     }
 }
