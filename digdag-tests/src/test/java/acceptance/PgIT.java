@@ -16,6 +16,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TestUtils;
 
@@ -43,14 +45,17 @@ import static utils.TestUtils.copyResource;
 
 public class PgIT
 {
+    private static final Logger logger = LoggerFactory.getLogger(PgIT.class);
+
     private static final String PG_PROPERTIES = System.getenv("DIGDAG_TEST_POSTGRESQL");
     private static final String PG_IT_CONFIG = System.getenv("PG_IT_CONFIG");
     private static final String RESTRICTED_USER = "not_admin";
     private static final String RESTRICTED_USER_PASSWORD = "not_admin_password";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
-    private static final String DATA_SECHEMA = "data_schema";
-    private static final String STATUS_TABLE_SECHEMA = "status_table_schema";
+    private static final String DATA_SCHEMA = "data_schema";
+    private static final String CUSTOM_STATUS_TABLE_SCHEMA = "status_table_schema";
+    private static final String CUSTOM_STATUS_TABLE = "status_table";
 
     private static final Config EMPTY_CONFIG = configFactory().create();
 
@@ -123,15 +128,18 @@ public class PgIT
     @After
     public void tearDown()
     {
-        if (user != null) {
-            try {
-                if (tempDatabase != null) {
-                    removeTempDatabase();
-                }
-            }
-            finally {
-                removeRestrictedUser();
-            }
+        try {
+            removeTempDatabase();
+        }
+        catch (Throwable e) {
+            logger.error("Failed to remove resources", e);
+        }
+
+        try {
+            removeRestrictedUser();
+        }
+        catch (Throwable e) {
+            logger.error("Failed to remove resources", e);
         }
     }
 
@@ -160,7 +168,26 @@ public class PgIT
         }
     }
 
-    private void grantRestrictedUserOnTheSchema(String schemaName)
+    private void prepareCustomStatusTableForRestrictedUser()
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeUpdate(
+                    String.format(
+                            "GRANT USAGE ON SCHEMA %s TO %s", CUSTOM_STATUS_TABLE_SCHEMA, RESTRICTED_USER));
+            conn.executeUpdate(
+                    String.format(
+                            "CREATE TABLE %s.%s (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
+                            CUSTOM_STATUS_TABLE_SCHEMA, CUSTOM_STATUS_TABLE));
+            conn.executeUpdate(
+                    String.format(
+                            "GRANT SELECT, INSERT, UPDATE, DELETE ON %s.%s TO %s",
+                            CUSTOM_STATUS_TABLE_SCHEMA, CUSTOM_STATUS_TABLE, RESTRICTED_USER));
+        }
+    }
+
+    private void grantRestrictedUserOnDataSchema()
     {
         SecretProvider secrets = getDatabaseSecrets();
 
@@ -410,19 +437,21 @@ public class PgIT
     }
 
     @Test
-    public void insertIntoWithRestrictionOnPublicSchema()
+    public void insertIntoWithRestrictionOnNonPublicSchemaWithCreatePrivilege()
             throws Exception
     {
         copyResource("acceptance/pg/insert_into_with_schema.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
-        dataSchemaName = DATA_SECHEMA;
+        dataSchemaName = DATA_SCHEMA;
         setupSchema(dataSchemaName);
         setupSourceTable();
         setupDestTable();
-        grantRestrictedUserOnTheSchema(dataSchemaName);
+        grantRestrictedUserOnDataSchema();
 
-        String statusTableSchema = STATUS_TABLE_SECHEMA;
+        String statusTableSchema = CUSTOM_STATUS_TABLE_SCHEMA;
+        String statusTable = CUSTOM_STATUS_TABLE;
+        // The user will have a privilege to create a status table
         setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
@@ -431,6 +460,44 @@ public class PgIT
                 "-p", "pg_database=" + tempDatabase,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-p", "status_table_in_config=" + statusTable,
+                "-c", configFileWithRestrictedUser.toString(),
+                "pg.dig");
+        assertCommandStatus(status);
+
+        assertTableContents(DEST_TABLE, Arrays.asList(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
+                ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
+        ));
+    }
+
+    @Test
+    public void insertIntoWithRestrictionOnNonPublicSchemaWithoutCreatePrivilege()
+            throws Exception
+    {
+        copyResource("acceptance/pg/insert_into_with_schema.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        dataSchemaName = DATA_SCHEMA;
+        setupSchema(dataSchemaName);
+        setupSourceTable();
+        setupDestTable();
+        grantRestrictedUserOnDataSchema();
+
+        // The user won't have a privilege to create a status table
+        // but the status table will be created on the schema in advance and the user will have proper privileges on it instead
+        setupSchema(CUSTOM_STATUS_TABLE_SCHEMA, false);
+        prepareCustomStatusTableForRestrictedUser();
+
+        CommandStatus status = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(),
+                "-p", "pg_host=" + host,
+                "-p", "pg_user=" + RESTRICTED_USER,
+                "-p", "pg_database=" + tempDatabase,
+                "-p", "schema_in_config=" + dataSchemaName,
+                "-p", "status_table_schema_in_config=" + CUSTOM_STATUS_TABLE_SCHEMA,
+                "-p", "status_table_in_config=" + CUSTOM_STATUS_TABLE,
                 "-c", configFileWithRestrictedUser.toString(),
                 "pg.dig");
         assertCommandStatus(status);
@@ -601,6 +668,7 @@ public class PgIT
             conn.executeUpdate("DROP DATABASE IF EXISTS " + tempDatabase);
         }
     }
+
     private void removeRestrictedUser()
     {
         SecretProvider secrets = getAdminDatabaseSecrets();

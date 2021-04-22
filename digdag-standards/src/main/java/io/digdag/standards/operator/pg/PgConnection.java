@@ -44,6 +44,7 @@ public class PgConnection
                 ResultSet rs = stmt.executeQuery(sql);  // executeQuery throws exception if given query includes multiple statements
                 resultHandler.accept(new PgResultSet(rs));
             }
+            // TODO: This should be moved into `finally`?
             execute("SET TRANSACTION READ WRITE");
         }
         catch (SQLException ex) {
@@ -111,17 +112,30 @@ public class PgConnection
         @Override
         public void prepare(UUID queryId)
         {
-            String sql = buildCreateTable();
-            executeStatement("create a status table " + escapeTableReference(statusTableReference()) + ".\n"
-                            + "hint: if you don't have permission to create tables, "
-                            + "please try one of these options:\n"
-                            + "1. add 'strict_transaction: false' option to disable "
-                            + "exactly-once transaction control that depends on this table.\n"
-                            + "2. ask system administrator to create this table using the following command "
-                            + "and grant INSERT privilege to this user: " + sql + ";\n"
-                            + "3. ask system administrator to create a schema that this user can create a table "
-                            + "and set 'status_table_schema' option to it\n"
-                            , sql);
+            try {
+                executeReadOnlyQuery(
+                        String.format("SELECT count(*) FROM %s", escapeTableReference(statusTableReference())),
+                        // Nothing to do for result rows
+                        (result) -> {}
+                );
+            }
+            catch (NotReadOnlyException e) {
+                throw new DatabaseException(
+                        String.format("Unexpected readonly exception occurred: %s", e.getMessage()));
+            }
+            catch (DatabaseException ex) {
+                String sql = buildCreateTable();
+                executeStatement("create a status table " + escapeTableReference(statusTableReference()) + ".\n"
+                                + "hint: if you don't have permission to create tables, "
+                                + "please try one of these options:\n"
+                                + "1. add 'strict_transaction: false' option to disable "
+                                + "exactly-once transaction control that depends on this table.\n"
+                                + "2. ask system administrator to create this table using the following command "
+                                + "and grant SELECT/INSERT/UPDATE/DELETE or ALL privileges to this user: " + sql + ";\n"
+                                + "3. ask system administrator to create a schema that this user can create a table "
+                                + "and set 'status_table_schema' option to it\n"
+                        , sql);
+            }
         }
 
         @Override

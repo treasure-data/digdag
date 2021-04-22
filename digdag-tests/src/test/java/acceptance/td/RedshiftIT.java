@@ -58,8 +58,9 @@ public class RedshiftIT
     private static final String REDSHIFT_CONFIG = System.getenv("REDSHIFT_IT_CONFIG");
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
-    private static final String DATA_SECHEMA = "data_schema";
-    private static final String STATUS_TABLE_SECHEMA = "status_table_schema";
+    private static final String DATA_SCHEMA = "data_schema";
+    private static final String CUSTOM_STATUS_TABLE_SCHEMA = "status_table_schema";
+    private static final String CUSTOM_STATUS_TABLE = "status_table";
 
     private static final Config EMPTY_CONFIG = configFactory().create();
 
@@ -108,7 +109,8 @@ public class RedshiftIT
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws Exception
+    {
         assumeThat(REDSHIFT_CONFIG, not(isEmptyOrNullString()));
 
         ObjectMapper objectMapper = DigdagClient.objectMapper();
@@ -178,15 +180,20 @@ public class RedshiftIT
     @After
     public void tearDown()
     {
-        if (config != null) {
+        if (database != null) {
             try {
-                if (database != null) {
-                    removeTempDatabase();
-                }
+                removeTempDatabase();
             }
-            finally {
-                removeRestrictedUser();
+            catch (Throwable e) {
+                logger.error("Failed to remove resources", e);
             }
+        }
+
+        try {
+            removeRestrictedUser();
+        }
+        catch (Throwable e) {
+            logger.error("Failed to remove resources", e);
         }
     }
 
@@ -366,19 +373,21 @@ public class RedshiftIT
     }
 
     @Test
-    public void insertIntoWithRestrictionOnPublicSchema()
+    public void insertIntoWithRestrictionOnNonPublicSchemaWithCreatePrivilege()
             throws Exception
     {
         copyResource("acceptance/redshift/insert_into_with_schema.dig", projectDir.resolve("redshift.dig"));
         copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
 
-        dataSchemaName = DATA_SECHEMA;
+        dataSchemaName = DATA_SCHEMA;
         setupSchema(dataSchemaName);
         setupSourceTable();
         setupDestTable();
-        grantRestrictedUserOnTheSchema(dataSchemaName);
+        grantRestrictedUserOnTheSchema();
 
-        String statusTableSchema = STATUS_TABLE_SECHEMA;
+        String statusTableSchema = CUSTOM_STATUS_TABLE_SCHEMA;
+        String statusTable = CUSTOM_STATUS_TABLE;
+        // The user will have a privilege to create a status table
         setupSchema(statusTableSchema, true);
 
         CommandStatus status = TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
@@ -387,6 +396,7 @@ public class RedshiftIT
                 "-p", "redshift_user=" + restrictedUser,
                 "-p", "schema_in_config=" + dataSchemaName,
                 "-p", "status_table_schema_in_config=" + statusTableSchema,
+                "-p", "status_table_in_config=" + statusTable,
                 "-c", configFileWithRestrictedUser.toString(),
                 "redshift.dig");
         assertCommandStatus(status);
@@ -398,6 +408,9 @@ public class RedshiftIT
                 ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
         ));
     }
+
+    // Redshift doesn't support row-level locks, so we don't execute a test
+    // similar to acceptance.PgIT.insertIntoWithRestrictionOnNonPublicSchemaWithoutCreatePrivilege.
 
     private void setupSchema(String schemaName)
     {
@@ -417,7 +430,7 @@ public class RedshiftIT
         }
     }
 
-    private void grantRestrictedUserOnTheSchema(String schemaName)
+    private void grantRestrictedUserOnTheSchema()
     {
         SecretProvider secrets = getDatabaseSecrets();
 
@@ -872,13 +885,13 @@ public class RedshiftIT
                         ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
                 ),
                 Optional.of(() -> {
-                    dataSchemaName = DATA_SECHEMA;
+                    dataSchemaName = DATA_SCHEMA;
                     setupSchema(dataSchemaName);
                     setupSourceTable();
                     setupDestTable();
-                    grantRestrictedUserOnTheSchema(dataSchemaName);
+                    grantRestrictedUserOnTheSchema();
 
-                    String statusTableSchema = STATUS_TABLE_SECHEMA;
+                    String statusTableSchema = CUSTOM_STATUS_TABLE_SCHEMA;
                     setupSchema(statusTableSchema, true);
                 })
         );
@@ -1278,8 +1291,9 @@ public class RedshiftIT
                 "-p", "from_in_config=" + fromUri,
                 // Most diddag configs don't use the followings
                 "-p", "role_arn_in_config=" + s3RoleArn,
-                "-p", "schema_in_config=" + DATA_SECHEMA,
-                "-p", "status_table_schema_in_config=" + STATUS_TABLE_SECHEMA,
+                "-p", "schema_in_config=" + DATA_SCHEMA,
+                "-p", "status_table_schema_in_config=" + CUSTOM_STATUS_TABLE_SCHEMA,
+                "-p", "status_table_in_config=" + CUSTOM_STATUS_TABLE,
                 "-c", configFilePath.toString(),
                 "redshift.dig");
         assertCommandStatus(status);

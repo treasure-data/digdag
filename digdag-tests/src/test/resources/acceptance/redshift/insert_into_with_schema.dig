@@ -7,4 +7,5 @@ timezone: UTC
   user: ${redshift_user}
   schema: ${schema_in_config}
   status_table_schema: ${status_table_schema_in_config}
+  status_table: ${status_table_in_config}
   insert_into: dest_tbl
