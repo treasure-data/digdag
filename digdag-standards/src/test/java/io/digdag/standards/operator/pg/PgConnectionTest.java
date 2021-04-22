@@ -26,10 +26,10 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -115,16 +115,29 @@ public class PgConnectionTest
     }
 
     @Test
-    public void txHelperPrepare()
+    public void txHelperPrepareWhenStatusTableDoesNotExist()
             throws SQLException, NotReadOnlyException
     {
         TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
+        // Simulate the behaviour of PgConnection.PgPersistentTransactionHelper#prepare in case the status table doesn't exist
         doThrow(DatabaseException.class).when(pgConnection).executeReadOnlyQuery(eq("SELECT count(*) FROM \"__digdag_status\""), any());
         UUID queryId = UUID.randomUUID();
         txHelper.prepare(queryId);
         verify(pgConnection).execute(eq(
                 "CREATE TABLE IF NOT EXISTS \"__digdag_status\"" +
                         " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)"));
+    }
+
+    @Test
+    public void txHelperPrepareWhenStatusTableExists()
+            throws SQLException, NotReadOnlyException
+    {
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper(null, "__digdag_status", Duration.ofDays(1));
+        // Simulate the behaviour of PgConnection.PgPersistentTransactionHelper#prepare in case the status table already exists
+        doNothing().when(pgConnection).executeReadOnlyQuery(eq("SELECT count(*) FROM \"__digdag_status\""), any());
+        UUID queryId = UUID.randomUUID();
+        txHelper.prepare(queryId);
+        verify(pgConnection, times(0)).execute(any());
     }
 
     private ResultSet setupMockSelectResultSet(UUID queryId)
