@@ -312,23 +312,49 @@ public class TasksAnalyzerTest
                 PARTITION_SIZE,
                 10);
 
-        assertEquals(7, tasksSummary.overall.attempts);
-        // these counts doesn't contain root tasks
-        assertEquals(7, tasksSummary.overall.totalTasks);
-        assertEquals(7, tasksSummary.overall.totalRunTasks);
-        assertEquals(7, tasksSummary.overall.totalSuccessTasks);
-        assertEquals(0, tasksSummary.overall.totalErrorTasks);
+        // Verify `overall` summary
+        {
+            TasksSummary summary = tasksSummary.overall;
 
-        assertNotNull(tasksSummary.overall.mostDelayedTask);
+            assertEquals(7, summary.attempts);
+            // these counts doesn't contain root tasks
+            assertEquals(7, summary.totalTasks);
+            assertEquals(7, summary.totalRunTasks);
+            assertEquals(7, summary.totalSuccessTasks);
+            assertEquals(0, summary.totalErrorTasks);
 
-        assertEquals(1000, tasksSummary.overall.startDelayMillis.min().longValue());
-        assertEquals(1000, tasksSummary.overall.startDelayMillis.max().longValue());
-        assertEquals(1000, tasksSummary.overall.startDelayMillis.mean().longValue());
-        assertEquals(0, tasksSummary.overall.startDelayMillis.stdDev().longValue());
+            assertNotNull(summary.mostDelayedTask);
 
-        assertEquals(4000, tasksSummary.overall.execDurationMillis.min().longValue());
-        assertEquals(4000, tasksSummary.overall.execDurationMillis.max().longValue());
-        assertEquals(4000, tasksSummary.overall.execDurationMillis.mean().longValue());
-        assertEquals(0, tasksSummary.overall.execDurationMillis.stdDev().longValue());
+            assertEquals(1000, summary.startDelayMillis.min().longValue());
+            assertEquals(1000, summary.startDelayMillis.max().longValue());
+            assertEquals(1000, summary.startDelayMillis.mean().longValue());
+            assertEquals(0, summary.startDelayMillis.stdDev().longValue());
+
+            assertEquals(4000, summary.execDurationMillis.min().longValue());
+            assertEquals(4000, summary.execDurationMillis.max().longValue());
+            assertEquals(4000, summary.execDurationMillis.mean().longValue());
+            assertEquals(0, summary.execDurationMillis.stdDev().longValue());
+        }
+
+        // Verify SITE_1's summary
+        {
+            TasksSummary summary = tasksSummary.sites.get(SITE_1);
+            assertEquals(4, summary.attempts);
+            // Other detailed verifications are done in TasksSummaryTest
+        }
+
+        // Verify SITE_2's summary
+        {
+            TasksSummary summary = tasksSummary.sites.get(SITE_2);
+            assertEquals(1, summary.attempts);
+            // Other detailed verifications are done in TasksSummaryTest
+        }
+
+        // Verify SITE_3's summary
+        {
+            TasksSummary summary = tasksSummary.sites.get(SITE_3);
+            assertEquals(2, summary.attempts);
+            // Other detailed verifications are done in TasksSummaryTest
+        }
     }
 }
