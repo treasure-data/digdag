@@ -304,10 +304,10 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant createdFrom, Instant createdTo, long lastId, int limit)
+    public List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant finishedFrom, Instant finishedTo, long lastId, int limit)
     {
         return autoCommit((handle, dao) ->
-                dao.findFinishedAttemptsWithSessionsInternal(sqlTimestampOf(createdFrom), sqlTimestampOf(createdTo), lastId, limit));
+                dao.findFinishedAttemptsWithSessionsInternal(sqlTimestampOf(finishedFrom), sqlTimestampOf(finishedTo), lastId, limit));
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
@@ -1695,14 +1695,14 @@ public class DatabaseSessionStoreManager
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where bitand(state_flags, " + AttemptStateFlags.DONE_CODE + ") != 0" +
-                " and sa.created_at between :createdFrom and :createdTo" +
+                " and sa.finished_at >= :finishedFrom and sa.finished_at < :finishedTo" +
                 " and sa.id \\> :lastId" +
                 " order by sa.id asc" +
                 " limit :limit";
         @SqlQuery(SQL_FIND_FINISHED_ATTEMPTS_WITH_SESSIONS_INTERNAL)
         List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessionsInternal(
-                @Bind("createdFrom") Timestamp createdFrom,
-                @Bind("createdTo") Timestamp createdTo,
+                @Bind("finishedFrom") Timestamp finishedFrom,
+                @Bind("finishedTo") Timestamp finishedTo,
                 @Bind("lastId") long lastId,
                 @Bind("limit") int limit);
 
@@ -1758,14 +1758,14 @@ public class DatabaseSessionStoreManager
                         " from session_attempts sa" +
                         " join sessions s on s.id = sa.session_id" +
                         " where state_flags & " + AttemptStateFlags.DONE_CODE + " != 0" +
-                        " and sa.created_at between :createdFrom and :createdTo" +
+                        " and sa.finished_at >= :finishedFrom and sa.finished_at < :finishedTo" +
                         " and sa.id \\> :lastId" +
                         " order by sa.id asc" +
                         " limit :limit";
         @SqlQuery(SQL_FIND_FINISHED_ATTEMPTS_WITH_SESSIONS_INTERNAL)
         List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessionsInternal(
-                @Bind("createdFrom") Timestamp createdFrom,
-                @Bind("createdTo") Timestamp createdTo,
+                @Bind("finishedFrom") Timestamp finishedFrom,
+                @Bind("finishedTo") Timestamp finishedTo,
                 @Bind("lastId") long lastId,
                 @Bind("limit") int limit);
 
@@ -2041,10 +2041,10 @@ public class DatabaseSessionStoreManager
         List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
         List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessionsInternal(
-                @Bind("createdFrom") Timestamp createdFrom,
-                @Bind("createdTo") Timestamp createdTo,
-                @Bind("lastId") long lastId,
-                @Bind("limit") int limit);
+                Timestamp finishedFrom,
+                Timestamp finishedTo,
+                long lastId,
+                int limit);
 
         @SqlQuery("select site_id from tasks" +
                 " join session_attempts sa on sa.id = tasks.attempt_id" +
