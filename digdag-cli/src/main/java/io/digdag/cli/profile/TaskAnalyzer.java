@@ -47,11 +47,12 @@ public class TaskAnalyzer
         }
     }
 
-    public WholeTasksSummary run(Instant createdFrom,
-                            Instant createdTo,
-                            int fetchedAttempts,
-                            int partitionSize,
-                            int databaseWaitMillis)
+    public WholeTasksSummary run(
+            Instant finishedFrom,
+            Instant finishedTo,
+            int fetchedAttempts,
+            int partitionSize,
+            int databaseWaitMillis)
     {
         TransactionManager tm = injector.getInstance(TransactionManager.class);
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
@@ -66,7 +67,7 @@ public class TaskAnalyzer
             // Partition target attempts to avoid a too long transaction later
             List<List<AttemptIdWithSiteId>> attemptIdsList = tm.begin(() ->
                     Lists.partition(
-                            sm.findFinishedAttemptsWithSessions(createdFrom, createdTo, lastId.get(), fetchedAttempts).stream()
+                            sm.findFinishedAttemptsWithSessions(finishedFrom, finishedTo, lastId.get(), fetchedAttempts).stream()
                                     .map(attempt -> {
                                         lastId.set(Math.max(lastId.get(), attempt.getId()));
                                         return new AttemptIdWithSiteId(attempt.getSiteId(), attempt.getId());
