@@ -1695,7 +1695,7 @@ public class DatabaseSessionStoreManager
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where bitand(state_flags, " + AttemptStateFlags.DONE_CODE + ") != 0" +
-                " and sa.finished_at >= :finishedFrom and sa.finished_at < :finishedTo" +
+                " and sa.finished_at \\>= :finishedFrom and sa.finished_at \\< :finishedTo" +
                 " and sa.id \\> :lastId" +
                 " order by sa.id asc" +
                 " limit :limit";
@@ -1758,7 +1758,7 @@ public class DatabaseSessionStoreManager
                         " from session_attempts sa" +
                         " join sessions s on s.id = sa.session_id" +
                         " where state_flags & " + AttemptStateFlags.DONE_CODE + " != 0" +
-                        " and sa.finished_at >= :finishedFrom and sa.finished_at < :finishedTo" +
+                        " and sa.finished_at \\>= :finishedFrom and sa.finished_at \\< :finishedTo" +
                         " and sa.id \\> :lastId" +
                         " order by sa.id asc" +
                         " limit :limit";
