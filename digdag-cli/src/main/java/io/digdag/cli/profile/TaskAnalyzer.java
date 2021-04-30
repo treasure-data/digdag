@@ -47,7 +47,7 @@ public class TaskAnalyzer
         }
     }
 
-    public TasksSummary run(Instant createdFrom,
+    public WholeTasksSummary run(Instant createdFrom,
                             Instant createdTo,
                             int fetchedAttempts,
                             int partitionSize,
@@ -57,7 +57,7 @@ public class TaskAnalyzer
         SessionStoreManager sm = injector.getInstance(SessionStoreManager.class);
 
         AtomicLong lastId = new AtomicLong();
-        TasksSummary.Builder tasksSummaryBuilder = new TasksSummary.Builder();
+        WholeTasksSummary.Builder tasksSummaryBuilder = new WholeTasksSummary.Builder();
         logger.debug("Task analysis started");
 
         while (true) {
@@ -87,7 +87,7 @@ public class TaskAnalyzer
                 tm.begin(() -> {
                     for (AttemptIdWithSiteId attemptIdWithSiteId : attemptIds) {
                         List<ArchivedTask> tasks = sm.getSessionStore(attemptIdWithSiteId.siteId).getTasksOfAttempt(attemptIdWithSiteId.attemptId);
-                        tasksSummaryBuilder.updateWithTasks(tasks);
+                        tasksSummaryBuilder.updateWithTasks(attemptIdWithSiteId.siteId, tasks);
                     }
                     logger.debug("Processed {} attempts", attemptIds.size());
                     return null;

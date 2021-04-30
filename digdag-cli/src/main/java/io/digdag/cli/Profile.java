@@ -7,7 +7,7 @@ import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.digdag.cli.profile.TaskAnalyzer;
-import io.digdag.cli.profile.TasksSummary;
+import io.digdag.cli.profile.WholeTasksSummary;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
@@ -89,7 +89,7 @@ public class Profile
                 }
         );
 
-        TasksSummary tasksSummary = new TaskAnalyzer(injector)
+        WholeTasksSummary tasksSummary = new TaskAnalyzer(injector)
                 .run(
                         timeRangeFrom,
                         timeRangeTo,
