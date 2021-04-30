@@ -42,7 +42,7 @@ public interface SessionStoreManager
     List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit);
 
     // for profiling
-    List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant createdFrom, Instant createdTo, long lastId, int limit);
+    List<StoredSessionAttemptWithSession> findFinishedAttemptsWithSessions(Instant finishedFrom, Instant finishedTo, long lastId, int limit);
 
     // for AttemptTimeoutEnforcer.enforceTaskTTLs
     List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit);
