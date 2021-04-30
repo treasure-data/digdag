@@ -1017,13 +1017,13 @@ Profile the performance by analyzing archived information (experimental). The re
 
 :command:`--from TIMESTAMP`
 
-  The beginning of time range that the profiler scans based on attempts' finish timestamp. The timestamp format is `yyyy-MM-dd HH:mm:ss`.
+  The beginning of time range that the profiler scans. The timestamp format is `yyyy-MM-dd HH:mm:ss`.
 
   Example: ``--from '2020-12-30 00:00:00'``
 
 :command:`--to TIMESTAMP`
 
-  The end of time range that the profiler scans based on attempts' finish timestamp. The timestamp format is `yyyy-MM-dd HH:mm:ss`. Current time is used if it's not set.
+  The end of time range that the profiler scans. The timestamp format is `yyyy-MM-dd HH:mm:ss`. Current time is used if it's not set.
 
   Example: ``--to '2020-12-31 00:00:00'``
 
