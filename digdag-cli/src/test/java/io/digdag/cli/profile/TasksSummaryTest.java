@@ -19,7 +19,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Instant;
 
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -300,19 +303,19 @@ public class TasksSummaryTest
             # started_at: 00:00:02 (delay: 0 sec)
             # updated_at: 00:00:11
             +parent:
-              # id:2
+              # id:3
               # started_at: 00:00:03 (delay: 1 sec)
               # updated_at: 00:00:07
               +child_wait:
                 sh>: sleep 3
 
-              # id:3 (dynamically generated)
+              # id:4 (dynamically generated)
               # started_at: 00:00:08
               # updated_at: 00:00:09
               _check:
                 echo>: Done!
 
-            # id:4
+            # id:5
             # started_at: 00:00:14 (delay: 3 sec)
             # updated_at: 00:00:14
             +finish:
@@ -379,6 +382,107 @@ public class TasksSummaryTest
         assertEquals(0, summary.totalErrorTasks);
         assertEquals(2000, summary.startDelayMillis.mean().longValue());
         assertEquals(4000, summary.execDurationMillis.mean().longValue());
+    }
+
+    @Test
+    public void attemptContainsSla()
+    {
+        /*
+            -----------------------
+            sla:
+              duration: 01:00:00
+              +notice:
+                echo>: Timeout!
+            -----------------------
+
+            (root task: +wf)
+            # id:1
+            # started_at: 00:00:00
+            # updated_at: 00:00:14
+
+            # id:2
+            # started_at: 00:00:02 (delay: 0 sec)
+            # updated_at: 00:00:11
+            +parent:
+              # id:3
+              # started_at: 00:00:03 (delay: 1 sec)
+              # updated_at: 00:01:07
+              +child_wait:
+                sh>: sleep 999999
+
+            # id:4 (dynamically generated)
+            # started_at: 00:01:12
+            # updated_at: 00:01:17
+            ^sla:
+              # id:5 (dynamically generated)
+              # started_at: 00:01:13
+              # updated_at: 00:01:19
+              +notice
+                echo>: Timeout!
+         */
+
+        TasksSummary.DefaultBuilder builder = new TasksSummary.DefaultBuilder();
+        builder.updateWithTasks(ImmutableList.of(
+                // Root task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(1)
+                        .withFullName("+wf")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withTaskType(TaskType.of(TaskType.GROUPING_ONLY))
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:00Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:14Z")),
+                // Group task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(2)
+                        .withFullName("+wf+parent")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withTaskType(TaskType.of(TaskType.GROUPING_ONLY))
+                        .withParentId(1)
+                        // Delay: 2 sec
+                        // Duration: 9 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:02Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T00:00:11Z")),
+                // Non-group task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(3)
+                        .withFullName("+wf+parent+child_wait")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(2)
+                        // Delay: 1 sec
+                        // Duration: 3604 sec
+                        .withStartedAt(Instant.parse("2000-01-01T00:00:03Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T01:00:07Z")),
+                // Non-group task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(4)
+                        .withFullName("+wf^sla")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(1)
+                        // Delay looks 3612 seconds, but it's not actual delay and should be ignored
+                        // Duration: 7 sec
+                        .withStartedAt(Instant.parse("2000-01-01T01:00:12Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T01:00:19Z")),
+                // Non-group task
+                ImmutableArchivedTask.copyOf(BASE_TASK)
+                        .withId(5)
+                        .withFullName("+wf^sla+notice")
+                        .withState(TaskStateCode.SUCCESS)
+                        .withParentId(4)
+                        // Delay: 1 sec
+                        // Duration: 4 sec
+                        .withStartedAt(Instant.parse("2000-01-01T01:00:15Z"))
+                        .withUpdatedAt(Instant.parse("2000-01-01T01:00:19Z"))
+        ));
+        TasksSummary summary = builder.build();
+        assertEquals(4, summary.totalTasks);
+        assertEquals(4, summary.totalRunTasks);
+        assertEquals(4, summary.totalSuccessTasks);
+        assertEquals(0, summary.totalErrorTasks);
+        // (2 + 1 + 3) / 3
+        assertEquals(2000, summary.startDelayMillis.mean().longValue());
+        // (9 + 3604 + 7 + 4) / 4
+        // com.google.common.math.Stats.mean() returns a bit fuzzy value...
+        assertThat(summary.execDurationMillis.mean().doubleValue(), is(closeTo(906000, 1)));
     }
 
     @Test

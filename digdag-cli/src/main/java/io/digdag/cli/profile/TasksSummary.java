@@ -148,6 +148,7 @@ class TasksSummary
                 // (This case corresponds to #1 in the comment above)
                 if (task.getFullName().endsWith("^check")
                         || task.getFullName().endsWith("^error")
+                        || task.getFullName().endsWith("^sla")
                         || task.getFullName().endsWith("^failure-alert")) {
                     timestampWhenTaskIsReady = Optional.absent();
                 }
