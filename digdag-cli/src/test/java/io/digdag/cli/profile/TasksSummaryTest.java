@@ -22,7 +22,9 @@ import java.time.Instant;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -468,7 +470,7 @@ public class TasksSummaryTest
                         .withFullName("+wf^sla+notice")
                         .withState(TaskStateCode.SUCCESS)
                         .withParentId(4)
-                        // Delay: 1 sec
+                        // To make it simple, all tasks that contain ^sla are ignored
                         // Duration: 4 sec
                         .withStartedAt(Instant.parse("2000-01-01T01:00:15Z"))
                         .withUpdatedAt(Instant.parse("2000-01-01T01:00:19Z"))
@@ -478,8 +480,8 @@ public class TasksSummaryTest
         assertEquals(4, summary.totalRunTasks);
         assertEquals(4, summary.totalSuccessTasks);
         assertEquals(0, summary.totalErrorTasks);
-        // (2 + 1 + 3) / 3
-        assertEquals(2000, summary.startDelayMillis.mean().longValue());
+        // (2 + 1) / 2
+        assertEquals(1500, summary.startDelayMillis.mean().longValue());
         // (9 + 3604 + 7 + 4) / 4
         // com.google.common.math.Stats.mean() returns a bit fuzzy value...
         assertThat(summary.execDurationMillis.mean().doubleValue(), is(closeTo(906000, 1)));
@@ -742,5 +744,26 @@ public class TasksSummaryTest
             assertEquals(400, summary.startDelayMillis.max().longValue());
             assertEquals(task1_0, summary.mostDelayedTask);
         }
+    }
+
+    @Test
+    public void isIgnorableDynamicTask()
+    {
+        assertFalse(TasksSummary.Builder.isIgnorableDynamicTask("+task0+task1+task2"));
+
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0+task1^error"));
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0^error+task1"));
+
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0+task1^check"));
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0^check+task1"));
+
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0+task1^failure-alert"));
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0^failure-alert+task1"));
+
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0+task1^sla"));
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0^sla+task1"));
+
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0+task1^sla^alert"));
+        assertTrue(TasksSummary.Builder.isIgnorableDynamicTask("+task0^sla^alert+task1"));
     }
 }

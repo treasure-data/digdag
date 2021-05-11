@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,6 +83,13 @@ class TasksSummary
 
         void addExecDurationMillis(long duration);
 
+        static boolean isIgnorableDynamicTask(String taskName)
+        {
+            return Arrays.stream(taskName.split("(?=[\\^+])")).anyMatch(
+                    x -> x.equals("^check") || x.equals("^error") || x.equals("^sla") || x.equals("^failure-alert")
+            );
+        }
+
         default void updateWithTask(
                 boolean isRoot,
                 Map<Long, ArchivedTask> taskMap,
@@ -146,10 +154,7 @@ class TasksSummary
 
                 // Task start delay analysis for this task should be skipped if it was dynamically generated.
                 // (This case corresponds to #1 in the comment above)
-                if (task.getFullName().endsWith("^check")
-                        || task.getFullName().endsWith("^error")
-                        || task.getFullName().endsWith("^sla")
-                        || task.getFullName().endsWith("^failure-alert")) {
+                if (isIgnorableDynamicTask(task.getFullName())) {
                     timestampWhenTaskIsReady = Optional.absent();
                 }
 
