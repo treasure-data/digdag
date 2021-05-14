@@ -233,7 +233,7 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
 * **status_table_cleanup**: TIME VALUES
 
-  Specifies the period of time to clean up the status_table." When "strict_transaction: true" (default), the status_table will be created. status_table will be deleted when the status_table_cleanup period expires and the redshift operator is executed. *Default*: `24h`(24 hours).
+  Specifies the period of time to clean up the status_table. When "strict_transaction: true" (default), the status_table will be created. status_table will be deleted when the status_table_cleanup period expires and the redshift operator is executed. *Default*: `24h`(24 hours).
 
   Examples:
 
