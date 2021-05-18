@@ -28,6 +28,11 @@ allprojects {
     apply plugin: 'java'
     apply plugin: 'jacoco'
     apply plugin: 'net.ltgt.apt-idea'
+    // 'maven' plugin is deprecated and replaced by 'maven-publish'.
+    // But it is required for task 'pom' which generates pom.xml in root and subproject root.
+    // ci/validate.sh call the task and run some mvn commands like 'enforcer'.
+    // But there is no enforcer rule definition. So it might be better to remove the task and the plugin.
+    apply plugin: 'maven'
 
     repositories {
         mavenCentral()
