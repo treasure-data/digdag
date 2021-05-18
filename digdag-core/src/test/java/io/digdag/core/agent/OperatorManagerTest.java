@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
@@ -21,9 +22,14 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import static io.digdag.client.DigdagClient.objectMapper;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -40,7 +46,7 @@ public class OperatorManagerTest
     private AgentConfig agentConfig = AgentConfig.defaultBuilder().build();
     private AgentId agentId = AgentId.of("dummy");
     @Mock TaskCallbackApi callback;
-    private ConfigFactory cf = new ConfigFactory(DigdagClient.objectMapper());
+    private ConfigFactory cf = new ConfigFactory(objectMapper());
     @Mock OperatorRegistry registry;
     @Mock SecretStoreManager secretStoreManager;
     private Limits limits = new Limits(cf.create());
@@ -51,7 +57,11 @@ public class OperatorManagerTest
     @Before
     public void setUp()
     {
-        ConfigEvalEngine evalEngine = new ConfigEvalEngine(ConfigUtils.newConfig());
+        ConfigEvalEngine evalEngine = new ConfigEvalEngine(
+                ConfigUtils.newConfig()
+                        .set("eval.js-engine-type", "graal")
+                        .set("eval.extended-syntax", "false")
+        );
         WorkspaceManager workspaceManager = new LocalWorkspaceManager();
 
         operatorManager = new OperatorManager(
@@ -175,5 +185,59 @@ public class OperatorManagerTest
         verify(callback, times(0)).taskSucceeded(any(), any(), any());
         verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
         verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
+
+    @Test
+    public void evalConfigInMultiThreads()
+            throws InterruptedException
+    {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        Config taskConfig = ConfigUtils.configFactory.fromJsonString("{\n" +
+                "  \"subtaskConfig\": {},\n" +
+                "  \"exportParams\": {},\n" +
+                "  \"resetStoreParams\": [],\n" +
+                "  \"storeParams\": {},\n" +
+                "  \"report\": {\n" +
+                "    \"inputs\": [],\n" +
+                "    \"outputs\": []\n" +
+                "    },\n" +
+                "  \"error\": {},\n" +
+                "  \"resumingTaskId\": null,\n" +
+                "  \"id\": 543210987,\n" +
+                "  \"attemptId\": 234567890,\n" +
+                "  \"upstreams\": [],\n" +
+                "  \"updatedAt\": \"2021-05-17T10:06:24Z\",\n" +
+                "  \"retryAt\": null,\n" +
+                "  \"startedAt\": \"2021-05-17T06:11:34Z\",\n" +
+                "  \"stateParams\": {\n" +
+                "    \"job\": {\n" +
+                "      \"jobId\": \"1234567890\",\n" +
+                "      \"domainKey\": \"1234abcd-7654-bcde-ab98-0987fedcba21\",\n" +
+                "      \"pollIteration\": null,\n" +
+                "      \"errorPollIteration\": null\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"retryCount\": 2,\n" +
+                "  \"parentId\": 543210980,\n" +
+                "  \"fullName\": \"+parent+mail^sub+create_data^sub+prepare1+step42\",\n" +
+                "  \"config\": {\n" +
+                "    \"local\": {\n" +
+                "      \"td>\": \"create_data.sql\",\n" +
+                "      \"create_table\": \"data_temp\"\n" +
+                "    },\n" +
+                "    \"export\": {}\n" +
+                "  },\n" +
+                "  \"taskType\": 0,\n" +
+                "  \"state\": \"canceled\",\n" +
+                "  \"stateFlags\": 9\n" +
+                "},");
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(taskConfig);
+        for (int i = 0; i < 10000; i++) {
+            executorService.execute(() -> operatorManager.evalConfig(taskRequest));
+        }
+        executorService.shutdownNow();
+        if (!executorService.awaitTermination(20, TimeUnit.SECONDS)) {
+            fail("Timeout");
+        }
     }
 }
