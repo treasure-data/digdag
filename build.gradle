@@ -7,7 +7,6 @@ plugins {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'idea'
-apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
@@ -45,7 +44,6 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'maven'
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
     apply plugin: 'com.github.spotbugs'
@@ -175,15 +173,15 @@ subprojects {
     }
 
     task testsJar(type: Jar) {
-        classifier = 'tests'
+        archiveClassifier = 'tests'
         from sourceSets.test.output
     }
     task sourcesJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
     task javadocJar(type: Jar) {
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from javadoc
     }
 
@@ -281,7 +279,6 @@ subprojects {
                 }
             }
         }
-
         signing {
             useGpgCmd()
             sign publishing.publications.mavenJava

@@ -11,6 +11,11 @@ Please check [digdag.io](https://digdag.io) and [docs.digdag.io](https://docs.di
 
 REST API document is available at [docs.digdag.io/api](http://docs.digdag.io/api/).
 
+## Release Notes
+
+The list of release note is [here](https://github.com/treasure-data/digdag/tree/master/digdag-docs/src/releases).
+
+
 ## Development
 
 ### Prerequirements
@@ -63,7 +68,7 @@ Test uses in-memory H2 database by default. To use PostgreSQL, set following env
 $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 ```
 
-## Building CLI executables
+### Building CLI executables
 
 ```
 $ ./gradlew cli
@@ -73,42 +78,6 @@ $ ./gradlew cli -PwithoutUi  # build without integrated UI
 (If the command fails during building UI due to errors from `node` command, you can try to add `-PwithoutUi` argument to exclude the UI from the package).
 
 It makes an executable in `pkg/`, e.g. `pkg/digdag-$VERSION.jar`.
-
-### Releasing a new version
-
-You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY` environment variables.
-In the following instructions, assumed that `upstream` is set to `treasure-data/digdag` and `origin` is set to your private repository.
-
-1. run `git pull upstream master --tags`.
-1. run `./gradlew setVersion -Pto=<version>` command.
-1. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
-1. run `./gradlew clean cli site check releaseCheck`.
-1. make a release branch. `git checkout -b release_v<version>` and commit.
-1. push the release branch to origin and create a PR.
-1. after the PR is merged to master, checkout master and pull latest upstream/master.
-1. run `./gradlew clean cli site check releaseCheck` again.
-1. if it succeeded, run `./gradlew release`.
-1. a few minutes later, run `digdag selfupdate` and confirm the version.
-
-If major version is incremented, also update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
-
-If you are expert, skip 5. to 7. and directly update master branch.
-
-### Post-process of new release
-
-You also need following steps after new version has been released.
-
-1. create a tag `git tag -a v<version>` and push `git push upstream v<version>`
-1. create a release in [GitHub releases](https://github.com/treasure-data/digdag/releases).
-1. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
-1. push to master.
-
-
-### Releasing a SNAPSHOT version
-
-```
-./gradlew releaseSnapshot
-```
 
 ### Develop digdag-ui
 
@@ -176,10 +145,6 @@ This might not always update all necessary files (Sphinx doesn't manage update d
 
 It builds index.html at digdag-docs/build/html/index.html.
 
-### Release Notes
-
-The list of release note is [here](https://github.com/treasure-data/digdag/tree/master/digdag-docs/src/releases).
-
 ### Development on IDEs
 
 #### IntelliJ IDEA
@@ -190,4 +155,55 @@ So we'd recommend the followings to avoid those compile errors if you want to de
 1. There's an important configuration option to be enabled to fully have IntelliJ be fully integrated with an existing gradle build configuration: `Delegate IDE build/run actions to gradle` needs to be enabled.
 
 ![](https://user-images.githubusercontent.com/17990895/48221255-9706be80-e35f-11e8-8283-1ca6d713e31c.png)
+
+## Releasing a new version
+This is for committers only.
+### Prerequisite: Sonatype OSSRH
+You need an account in Sonatype OSSRH, and configure it in your `~/.gradle/gradle.properties`.
+
+ossrhUsername=(your Sonatype OSSRH username)
+ossrhPassword=(your Sonatype OSSRH password)
+
+### Prerequisite: PGP signatures
+You need your PGP signatures to release artifacts into Maven Central, and configure Gradle to use your key to sign.
+Configure it in your `~/.gradle/gradle.properties`.
+
+```
+signing.gnupg.executable=gpg
+signing.gnupg.useLegacyGpg=false
+signing.gnupg.keyName=(the last 8 symbols of your keyId)
+signing.gnupg.passphrase=(the passphrase used to protect your private key)
+```
+
+### Release procedure
+1. run `git pull upstream master --tags`.
+1. run `./gradlew setVersion -Pto=<version>` command.
+1. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
+1. run `./gradlew clean cli site check releaseCheck`.
+1. make a release branch. `git checkout -b release_v<version>` and commit.
+1. push the release branch to origin and create a PR.
+1. after the PR is merged to master, checkout master and pull latest upstream/master.
+1. run `./gradlew clean cli site check releaseCheck` again.
+1. if it succeeded, run `./gradlew release`.
+1. create a tag `git tag -a v<version>` and push `git push upstream v<version>`
+1. create a release in [GitHub releases](https://github.com/treasure-data/digdag/releases).
+1. upload `pkg/digdag-<version>.jar` to the release
+1. a few minutes later, run `digdag selfupdate` and confirm the version.
+
+If major version is incremented, also update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
+
+If you are expert, skip 5. to 7. and directly update master branch.
+
+### Post-process of new release
+
+You also need following steps after new version has been released.
+
+1. create next snapshot version, run `./gradlew setVersion -Pto=<next-version>-SNAPSHOT`.
+1. push to master.
+
+### Releasing a SNAPSHOT version
+
+```
+./gradlew releaseSnapshot
+```
 
