@@ -1,6 +1,5 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '5.2.0'
-    id 'com.jfrog.bintray' version '1.8.4'
     id 'com.github.kt3k.coveralls' version '2.10.1'
     id 'com.github.spotbugs' version '4.0.5'
     id 'net.ltgt.apt-idea' version '0.21'
@@ -11,6 +10,7 @@ apply plugin: 'idea'
 apply plugin: 'maven'
 
 allprojects {
+
     group = 'io.digdag'
     version = '0.10.0'
 
@@ -29,24 +29,13 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'java'
     apply plugin: 'jacoco'
-    apply plugin: 'com.jfrog.bintray'
-    apply plugin: 'maven-publish'
     apply plugin: 'net.ltgt.apt-idea'
 
     repositories {
         mavenCentral()
         jcenter()
         maven {
-            url  "https://dl.bintray.com/digdag/maven"
-        }
-        maven {
-            url  "https://dl.bintray.com/digdag/maven-snapshots"
-        }
-        maven {
             url "https://oss.sonatype.org/content/repositories/snapshots"
-        }
-        maven {
-            url "https://dl.bintray.com/yoyama/maven"
         }
     }
 
@@ -54,46 +43,13 @@ allprojects {
         toolVersion = '0.8.5'
     }
 
-    bintray {
-        user = System.getenv('BINTRAY_USER')
-        key = System.getenv('BINTRAY_KEY')
-
-        publications = ['mavenJava']
-
-        filesSpec {
-            // include digdag-<version>.jar built by 'cli' task
-            from "pkg/digdag-${project.version}.jar"
-            into "."
-        }
-
-        dryRun = false
-        publish = true
-
-        pkg {
-            userOrg = 'digdag'
-            if (project.ext.isSnapshotRelease) {
-                repo = 'maven-snapshots'
-                name = 'digdag-snapshots'
-            }
-            else {
-                repo = 'maven'
-                name = 'digdag'
-            }
-            licenses = ['Apache-2.0']
-            publicDownloadNumbers = true
-
-            version {
-                name = project.version
-                released = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-                vcsTag = "v${project.version}"
-                attributes = ['isCI': System.getenv('CI') ?: false]
-            }
-        }
-    }
 }
+
 
 subprojects {
     apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'com.github.spotbugs'
 
     sourceCompatibility = 1.8
@@ -298,23 +254,45 @@ subprojects {
         }
     }
 
-    publishing {
-        publications {
-            if (![project(":digdag-docs")].contains(project)) {
+    // digdag-docs is out of target on publish
+    if (![project(":digdag-docs")].contains(project)) {
+        publishing {
+            publications {
                 mavenJava(MavenPublication) {
                     from components.java
                     afterEvaluate {
                         artifact testsJar
                         artifact sourcesJar
                         artifact javadocJar
-
                         pom.withXml(pomXmlModifier)
                     }
                 }
             }
+            repositories {
+                maven {  // publishMavenJavaPublicationToMavenCentralRepository
+                    name = "mavenCentral"
+                    if (project.version.endsWith("-SNAPSHOT")) {
+                        url "https://oss.sonatype.org/content/repositories/snapshots"
+                    } else {
+                        url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                    }
+                    credentials {
+                        username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
+                        password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
+                    }
+                }
+            }
+        }
+
+        signing {
+            useGpgCmd()
+            sign publishing.publications.mavenJava
         }
     }
+
+
 }
+
 
 jacocoTestReport {
     dependsOn = subprojects.jacocoTestReport
@@ -429,7 +407,6 @@ task cli(dependsOn: ':digdag-cli:shadowJar') {
     }
 }
 
-bintrayUpload.dependsOn('cli')
 
 task classpath(dependsOn: [':digdag-cli:classpath']){
     doLast {
@@ -454,11 +431,9 @@ clean {
 }
 
 task release() {
-    // This is necessary to upload the executable jar to bintray as well.
-    // It makes to run _bintrayRecordingCopy task after cli task.
     release.mustRunAfter cli
-    dependsOn subprojects.publish
-    dependsOn bintrayUpload
+    dependsOn subprojects.findAll{it.name != "digdag-docs" }.publishMavenJavaPublicationToMavenCentralRepository
+    //ToDo upload executable to GitHub
     doLast {
         println "Released ${project.version}."
     }
@@ -545,7 +520,6 @@ task releaseCheck {
 }
 
 // Utility task to release a snapshot version with a fixed version number.
-// Bintray doesn't allow releasing -SNAPSHOT version.
 task releaseSnapshot(type: Exec) {
     commandLine "bash", "-c", "./gradlew -PsnapshotVersion=\$(TZ=UTC git log -n 1 --pretty='format:%ad-%H' --date 'format-local:%Y%m%dT%H%M%S') release"
 }
@@ -564,13 +538,6 @@ task pom {
                     }
                 }
                 repositories {
-                    repository {
-                        id 'jcenter'
-                        url 'https://jcenter.bintray.com'
-                        releases {
-                            enabled 'true'
-                        }
-                    }
                 }
                 modules {
                     subprojects.each {
