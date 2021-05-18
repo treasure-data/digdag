@@ -10,7 +10,6 @@ apply plugin: 'idea'
 apply plugin: 'maven'
 
 allprojects {
-
     group = 'io.digdag'
     version = '0.10.0'
 
@@ -44,7 +43,6 @@ allprojects {
     }
 
 }
-
 
 subprojects {
     apply plugin: 'maven'
@@ -289,10 +287,7 @@ subprojects {
             sign publishing.publications.mavenJava
         }
     }
-
-
 }
-
 
 jacocoTestReport {
     dependsOn = subprojects.jacocoTestReport
@@ -536,8 +531,6 @@ task pom {
                             sourceEncoding 'UTF-8'
                         }
                     }
-                }
-                repositories {
                 }
                 modules {
                     subprojects.each {
