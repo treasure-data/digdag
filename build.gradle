@@ -272,7 +272,7 @@ subprojects {
             repositories {
                 maven {  // publishMavenJavaPublicationToMavenCentralRepository
                     name = "mavenCentral"
-                    if (project.version.endsWith("-SNAPSHOT")) {
+                    if (project.ext.isSnapshotRelease) {
                         url "https://oss.sonatype.org/content/repositories/snapshots"
                     } else {
                         url "https://oss.sonatype.org/service/local/staging/deploy/maven2"

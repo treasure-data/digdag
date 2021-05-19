@@ -206,4 +206,5 @@ You also need following steps after new version has been released.
 ```
 ./gradlew releaseSnapshot
 ```
-
+**Note**
+Snapshot release is not supported currently.
