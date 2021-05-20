@@ -284,9 +284,11 @@ subprojects {
                 }
             }
         }
-        signing {
-            useGpgCmd()
-            sign publishing.publications.mavenJava
+        if (project.hasProperty('signing.gnupg.keyName')) {
+            signing {
+                useGpgCmd()
+                sign publishing.publications.mavenJava
+            }
         }
     }
 }
