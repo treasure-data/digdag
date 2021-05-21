@@ -23,3 +23,8 @@ install:
   - npm --version
 
 test: off
+
+branches:
+  only:
+    - master
+    - v0_11
