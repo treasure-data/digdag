@@ -62,7 +62,7 @@ public class TdForEachIT
                 .configuration(secretsServerConfiguration())
                 .configuration("config.td.wait.min_poll_interval = 5s")
                 .configuration(
-                        "params.td.use_ssl = false",
+                        "params.td.use_ssl = true",
                         "params.td.proxy.enabled = true",
                         "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
                         "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()

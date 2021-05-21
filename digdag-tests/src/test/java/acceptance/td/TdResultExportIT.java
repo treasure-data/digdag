@@ -145,7 +145,7 @@ public class TdResultExportIT
                 "test_job_id", sampleJobId,
                 "test_result_settings", "{\"user_database_name\":\""+database+"\",\"user_table_name\":\""+table+"\",\"mode\":\"replace\"}",
                 "test_result_connection", resultConnectorName,
-                "td.use_ssl", "false")
+                "td.use_ssl", "true")
         );
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
