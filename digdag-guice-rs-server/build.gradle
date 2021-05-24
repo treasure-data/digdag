@@ -1,5 +1,5 @@
 dependencies {
-    compile 'org.embulk:guice-bootstrap:0.2.1'
+    compile 'org.embulk:guice-bootstrap:0.3.2'
     compile 'org.weakref:jmxutils:1.19'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
 }

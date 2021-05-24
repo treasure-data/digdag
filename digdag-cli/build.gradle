@@ -9,7 +9,7 @@ dependencies {
     compile project(':digdag-standards')
     compile 'ch.qos.logback:logback-classic:1.1.5'
     compile 'org.fusesource.jansi:jansi:1.11'
-    compile 'com.beust:jcommander:1.55'
+    compile 'com.beust:jcommander:1.58'
 
     // This line is for including digdag-storage-s3 in CLI (shadow jar) used through
     // dynamic class loading. digdag-cli itself doesn't depend on digdag-storage-s3.
