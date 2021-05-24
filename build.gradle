@@ -306,7 +306,6 @@ subprojects {
                             developerConnection = "scm:git:git@github.com:treasure-data/digdag.git"
                             url = "https://github.com/treasure-data/digdag"
                         }
-
                     }
                 }
             }
