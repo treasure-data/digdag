@@ -1,6 +1,5 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '5.2.0'
-    id 'com.jfrog.bintray' version '1.8.4'
     id 'com.github.kt3k.coveralls' version '2.10.1'
     id 'com.github.spotbugs' version '4.0.5'
     id 'net.ltgt.apt-idea' version '0.21'
@@ -8,7 +7,6 @@ plugins {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'idea'
-apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
@@ -29,18 +27,15 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'java'
     apply plugin: 'jacoco'
-    apply plugin: 'com.jfrog.bintray'
-    apply plugin: 'maven-publish'
     apply plugin: 'net.ltgt.apt-idea'
+    // 'maven' plugin is deprecated and replaced by 'maven-publish'.
+    // But it is required for task 'pom' which generates pom.xml in root and subproject root.
+    // ci/validate.sh call the task and run some mvn commands like 'enforcer'.
+    // But there is no enforcer rule definition. So it might be better to remove the task and the plugin.
+    apply plugin: 'maven'
 
     repositories {
         mavenCentral()
-        maven {
-            url  "https://dl.bintray.com/digdag/maven"
-        }
-        maven {
-            url  "https://dl.bintray.com/digdag/maven-snapshots"
-        }
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots"
         }
@@ -50,46 +45,11 @@ allprojects {
         toolVersion = '0.8.5'
     }
 
-    bintray {
-        user = System.getenv('BINTRAY_USER')
-        key = System.getenv('BINTRAY_KEY')
-
-        publications = ['mavenJava']
-
-        filesSpec {
-            // include digdag-<version>.jar built by 'cli' task
-            from "pkg/digdag-${project.version}.jar"
-            into "."
-        }
-
-        dryRun = false
-        publish = true
-
-        pkg {
-            userOrg = 'digdag'
-            if (project.ext.isSnapshotRelease) {
-                repo = 'maven-snapshots'
-                name = 'digdag-snapshots'
-            }
-            else {
-                repo = 'maven'
-                name = 'digdag'
-            }
-            licenses = ['Apache-2.0']
-            publicDownloadNumbers = true
-
-            version {
-                name = project.version
-                released = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-                vcsTag = "v${project.version}"
-                attributes = ['isCI': System.getenv('CI') ?: false]
-            }
-        }
-    }
 }
 
 subprojects {
-    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'com.github.spotbugs'
 
     sourceCompatibility = 1.8
@@ -217,15 +177,15 @@ subprojects {
     }
 
     task testsJar(type: Jar) {
-        classifier = 'tests'
+        archiveClassifier = 'tests'
         from sourceSets.test.output
     }
     task sourcesJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
     task javadocJar(type: Jar) {
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from javadoc
     }
 
@@ -294,19 +254,80 @@ subprojects {
         }
     }
 
-    publishing {
-        publications {
-            if (![project(":digdag-docs")].contains(project)) {
+    // digdag-docs is out of target on publish
+    if (![project(":digdag-docs")].contains(project)) {
+        publishing {
+            publications {
                 mavenJava(MavenPublication) {
                     from components.java
                     afterEvaluate {
                         artifact testsJar
                         artifact sourcesJar
                         artifact javadocJar
-
                         pom.withXml(pomXmlModifier)
                     }
+                    pom {  // https://central.sonatype.org/pages/requirements.html
+                        name = "${project.name}"
+                        afterEvaluate { project ->
+                            description = "Digdag"
+                        }
+                        url = "https://www.digdag.io/"
+                        licenses {
+                            license {
+                                // http://central.sonatype.org/pages/requirements.html#license-information
+                                name = "The Apache License, Version 2.0"
+                                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                            }
+                        }
+                        developers {
+                            developer {
+                                name = "Sadayuki Furuhashi"
+                                email = "frsyuki@gmail.com"
+                            }
+                            developer {
+                                name = "Muga Nishizawa"
+                                email = "muga.nishizawa@gmail.com"
+                            }
+                            developer {
+                                name = "Mitsunori Komatsu"
+                                email = "komamitsu@gmail.com"
+                            }
+                            developer {
+                                name = "You Yamagata"
+                                email = "youy.bg8@gmail.com"
+                            }
+                            developer {
+                                name = "Shota Suzuki"
+                                email = "aqr.aqua@gmail.com"
+                            }
+                        }
+                        scm {
+                            connection = "scm:git:git://github.com/treasure-data/digdag.git"
+                            developerConnection = "scm:git:git@github.com:treasure-data/digdag.git"
+                            url = "https://github.com/treasure-data/digdag"
+                        }
+                    }
                 }
+            }
+            repositories {
+                maven {  // publishMavenJavaPublicationToMavenCentralRepository
+                    name = "mavenCentral"
+                    if (project.ext.isSnapshotRelease) {
+                        url "https://oss.sonatype.org/content/repositories/snapshots"
+                    } else {
+                        url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                    }
+                    credentials {
+                        username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
+                        password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
+                    }
+                }
+            }
+        }
+        if (project.hasProperty('signing.gnupg.keyName')) {
+            signing {
+                useGpgCmd()
+                sign publishing.publications.mavenJava
             }
         }
     }
@@ -425,7 +446,6 @@ task cli(dependsOn: ':digdag-cli:shadowJar') {
     }
 }
 
-bintrayUpload.dependsOn('cli')
 
 task classpath(dependsOn: [':digdag-cli:classpath']){
     doLast {
@@ -450,11 +470,9 @@ clean {
 }
 
 task release() {
-    // This is necessary to upload the executable jar to bintray as well.
-    // It makes to run _bintrayRecordingCopy task after cli task.
     release.mustRunAfter cli
-    dependsOn subprojects.publish
-    dependsOn bintrayUpload
+    dependsOn subprojects.findAll{it.name != "digdag-docs" }.publishMavenJavaPublicationToMavenCentralRepository
+    //ToDo upload executable to GitHub
     doLast {
         println "Released ${project.version}."
     }
@@ -551,7 +569,6 @@ task releaseCheck {
 }
 
 // Utility task to release a snapshot version with a fixed version number.
-// Bintray doesn't allow releasing -SNAPSHOT version.
 task releaseSnapshot(type: Exec) {
     def snapshotVersion = getSnapshotVersion()
     commandLine "bash", "-c", "./gradlew -PsnapshotVersion=$snapshotVersion release"
@@ -585,15 +602,6 @@ task pom {
                     project {
                         build {
                             sourceEncoding 'UTF-8'
-                        }
-                    }
-                }
-                repositories {
-                    repository {
-                        id 'jcenter'
-                        url 'https://jcenter.bintray.com'
-                        releases {
-                            enabled 'true'
                         }
                     }
                 }
