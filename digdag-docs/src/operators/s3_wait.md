@@ -129,5 +129,5 @@ For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws
           }
         }
 
-Note: The **s3_wait>** operator makes use of polling with *exponential backoff*. As such there might be some time interval between a file being created and the **s3_wait>** operator detecting it.
+Note: The **s3_wait>** operator makes use of polling with *exponential backoff*. As such there might be some time interval between a file being created and the **s3_wait>** operator detecting it. This interval start at 5 seconds and increase to double each cycle, with a maximum interval of 5 minutes.
 

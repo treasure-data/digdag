@@ -25,7 +25,7 @@ from recommonmark.transform import AutoStructify
 project = 'Digdag'
 copyright = '2016-' + datetime.now().strftime("%Y") + ', Digdag Project'
 author = '2016, Digdag Project'
-version = '0.11.0-SNAPSHOT'
+version = '0.10'
 release = subprocess.check_output(['git', 'describe', '--abbrev=0', '--tags'])[1:].strip().decode("utf-8")
 
 
@@ -34,7 +34,7 @@ release = subprocess.check_output(['git', 'describe', '--abbrev=0', '--tags'])[1
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['recommonmark']
+extensions = ['recommonmark', 'sphinx_markdown_tables']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

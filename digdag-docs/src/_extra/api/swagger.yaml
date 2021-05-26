@@ -2,22 +2,24 @@
 swagger: "2.0"
 info:
   description: "Digdag server API"
-  version: "0.9.41-SNAPSHOT"
+  version: "0.10.0"
   title: "Digdag"
 tags:
-- name: "Schedule"
-- name: "Project"
+- name: "Workflow"
+- name: "Session"
 - name: "Attempt"
 - name: "Admin"
-- name: "Workflow"
-- name: "Log"
-- name: "Session"
 - name: "Version"
+- name: "Log"
+- name: "Project"
+- name: "Schedule"
 paths:
   /api/admin/attempts/{id}/userinfo:
     get:
       tags:
       - "Admin"
+      summary: "(deprecated)"
+      description: ""
       operationId: "getUserInfo"
       produces:
       - "application/json"
@@ -32,7 +34,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/Config"
-          headers: {}
+      deprecated: true
   /api/attempts:
     get:
       tags:
@@ -200,49 +202,16 @@ paths:
         description: "partial prefix match filter on task name"
         required: false
         type: "string"
+      - name: "direct_download"
+        in: "query"
+        description: "enable returning direct download handle"
+        required: false
+        type: "boolean"
       responses:
         200:
           description: "successful operation"
           schema:
             $ref: "#/definitions/RestLogFileHandleCollection"
-    put:
-      tags:
-      - "Log"
-      operationId: "putFile"
-      consumes:
-      - "application/gzip"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "attempt_id"
-        in: "path"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "task"
-        in: "query"
-        required: false
-        type: "string"
-      - name: "file_time"
-        in: "query"
-        required: false
-        type: "integer"
-        format: "int64"
-      - name: "node_id"
-        in: "query"
-        required: false
-        type: "string"
-      - in: "body"
-        name: "body"
-        required: false
-        schema:
-          $ref: "#/definitions/InputStream"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/RestLogFilePutResult"
-          headers: {}
   /api/logs/{attempt_id}/files/{file_name}:
     get:
       tags:
@@ -272,42 +241,12 @@ paths:
             items:
               type: "string"
               format: "byte"
-  /api/logs/{attempt_id}/upload_handle:
-    get:
-      tags:
-      - "Log"
-      operationId: "getFileHandles"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "attempt_id"
-        in: "path"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "task"
-        in: "query"
-        required: false
-        type: "string"
-      - name: "file_time"
-        in: "query"
-        required: false
-        type: "integer"
-        format: "int64"
-      - name: "node_id"
-        in: "query"
-        required: false
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/DirectUploadHandle"
-          headers: {}
   /api/project:
     get:
       tags:
       - "Project"
+      summary: "(deprecated)"
+      description: ""
       operationId: "getProject"
       produces:
       - "application/json"
@@ -321,7 +260,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/RestProject"
-          headers: {}
+      deprecated: true
   /api/projects:
     get:
       tags:
@@ -446,6 +385,11 @@ paths:
         description: "use a given revision of a project instead of the latest revision"
         required: true
         type: "string"
+      - name: "direct_download"
+        in: "query"
+        description: "enable returning direct download handle"
+        required: false
+        type: "boolean"
       responses:
         default:
           description: "successful operation"
@@ -470,6 +414,11 @@ paths:
         required: false
         type: "integer"
         format: "int32"
+      - name: "name"
+        in: "query"
+        description: "revision name"
+        required: false
+        type: "string"
       responses:
         200:
           description: "successful operation"
@@ -557,8 +506,10 @@ paths:
         schema:
           $ref: "#/definitions/RestSetSecretRequest"
       responses:
-        default:
+        200:
           description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSecret"
     delete:
       tags:
       - "Project"
@@ -580,8 +531,10 @@ paths:
         required: true
         type: "string"
       responses:
-        default:
+        200:
           description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestSecret"
   /api/projects/{id}/sessions:
     get:
       tags:
@@ -624,6 +577,8 @@ paths:
     get:
       tags:
       - "Project"
+      summary: "(deprecated)"
+      description: ""
       operationId: "getWorkflow"
       produces:
       - "application/json"
@@ -646,7 +601,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/RestWorkflowDefinition"
-          headers: {}
+      deprecated: true
   /api/projects/{id}/workflows:
     get:
       tags:
@@ -774,7 +729,7 @@ paths:
         200:
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestSessionAttemptCollection"
+            $ref: "#/definitions/RestScheduleAttemptCollection"
   /api/schedules/{id}/disable:
     post:
       tags:
@@ -812,6 +767,11 @@ paths:
         required: true
         type: "integer"
         format: "int32"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          $ref: "#/definitions/RestScheduleEnableRequest"
       responses:
         200:
           description: "successful operation"
@@ -967,6 +927,8 @@ paths:
     get:
       tags:
       - "Workflow"
+      summary: "(deprecated)"
+      description: ""
       operationId: "getWorkflowDefinition"
       produces:
       - "application/json"
@@ -988,7 +950,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/RestWorkflowDefinition"
-          headers: {}
+      deprecated: true
   /api/workflows:
     get:
       tags:
@@ -1084,8 +1046,6 @@ definitions:
         from:
           type: "string"
           readOnly: true
-  DirectUploadHandle:
-    type: "object"
   Config:
     type: "object"
     properties:
@@ -1101,26 +1061,26 @@ definitions:
   RestSession:
     type: "object"
     properties:
-      project:
-        $ref: "#/definitions/IdAndName"
       id:
         $ref: "#/definitions/Id"
-      sessionUuid:
-        type: "string"
-        format: "uuid"
       sessionTime:
         $ref: "#/definitions/OffsetDateTime"
       workflow:
         $ref: "#/definitions/NameOptionalId"
       lastAttempt:
         $ref: "#/definitions/Attempt"
+      sessionUuid:
+        type: "string"
+        format: "uuid"
+      project:
+        $ref: "#/definitions/IdAndName"
   RestSchedule:
     type: "object"
     properties:
-      project:
-        $ref: "#/definitions/IdAndName"
       id:
         $ref: "#/definitions/Id"
+      workflow:
+        $ref: "#/definitions/IdAndName"
       disabledAt:
         type: "integer"
         format: "int64"
@@ -1129,8 +1089,33 @@ definitions:
       nextRunTime:
         type: "integer"
         format: "int64"
-      workflow:
+      project:
         $ref: "#/definitions/IdAndName"
+  RestScheduleEnableRequest:
+    type: "object"
+    properties:
+      skipSchedule:
+        type: "boolean"
+        default: false
+      nextTime:
+        type: "string"
+  RestLogFileHandle:
+    type: "object"
+    properties:
+      fileName:
+        type: "string"
+      taskName:
+        type: "string"
+      fileTime:
+        type: "integer"
+        format: "int64"
+      fileSize:
+        type: "integer"
+        format: "int64"
+      agentId:
+        type: "string"
+      direct:
+        $ref: "#/definitions/RestDirectDownloadHandle"
   RestProject:
     type: "object"
     properties:
@@ -1138,6 +1123,12 @@ definitions:
         type: "string"
       id:
         $ref: "#/definitions/Id"
+      deletedAt:
+        type: "integer"
+        format: "int64"
+      updatedAt:
+        type: "integer"
+        format: "int64"
       revision:
         type: "string"
       archiveType:
@@ -1148,29 +1139,6 @@ definitions:
           type: "string"
           format: "byte"
       createdAt:
-        type: "integer"
-        format: "int64"
-      deletedAt:
-        type: "integer"
-        format: "int64"
-      updatedAt:
-        type: "integer"
-        format: "int64"
-  RestLogFileHandle:
-    type: "object"
-    properties:
-      fileSize:
-        type: "integer"
-        format: "int64"
-      agentId:
-        type: "string"
-      direct:
-        $ref: "#/definitions/RestDirectDownloadHandle"
-      fileName:
-        type: "string"
-      taskName:
-        type: "string"
-      fileTime:
         type: "integer"
         format: "int64"
   IdAndName:
@@ -1220,16 +1188,6 @@ definitions:
     properties:
       id:
         $ref: "#/definitions/Id"
-      createdAt:
-        type: "integer"
-        format: "int64"
-      retryAttemptName:
-        type: "string"
-      params:
-        $ref: "#/definitions/Config"
-      finishedAt:
-        type: "integer"
-        format: "int64"
       success:
         type: "boolean"
         default: false
@@ -1239,27 +1197,25 @@ definitions:
       cancelRequested:
         type: "boolean"
         default: false
-      status:
+      retryAttemptName:
         type: "string"
-        enum:
-        - "success"
-        - "error"
-        - "killed"
-        - "running"
-  RestLogFilePutResult:
-    type: "object"
-    properties:
-      fileName:
-        type: "string"
+      params:
+        $ref: "#/definitions/Config"
+      finishedAt:
+        type: "integer"
+        format: "int64"
+      createdAt:
+        type: "integer"
+        format: "int64"
   RestWorkflowDefinition:
     type: "object"
     properties:
-      project:
-        $ref: "#/definitions/IdAndName"
       name:
         type: "string"
       id:
         $ref: "#/definitions/Id"
+      project:
+        $ref: "#/definitions/IdAndName"
       config:
         $ref: "#/definitions/Config"
       revision:
@@ -1270,12 +1226,12 @@ definitions:
   RestWorkflowSessionTime:
     type: "object"
     properties:
+      sessionTime:
+        $ref: "#/definitions/OffsetDateTime"
       project:
         $ref: "#/definitions/IdAndName"
       revision:
         type: "string"
-      sessionTime:
-        $ref: "#/definitions/OffsetDateTime"
       timezone:
         readOnly: true
         $ref: "#/definitions/ZoneId"
@@ -1300,14 +1256,6 @@ definitions:
         $ref: "#/definitions/ZoneOffset"
       offsetAfter:
         $ref: "#/definitions/ZoneOffset"
-      overlap:
-        type: "boolean"
-        default: false
-      instant:
-        type: "integer"
-        format: "int64"
-      duration:
-        $ref: "#/definitions/Duration"
       gap:
         type: "boolean"
         default: false
@@ -1317,6 +1265,28 @@ definitions:
       dateTimeAfter:
         type: "string"
         format: "date-time"
+      duration:
+        $ref: "#/definitions/Duration"
+      instant:
+        type: "integer"
+        format: "int64"
+      overlap:
+        type: "boolean"
+        default: false
+  RestSessionCollection:
+    type: "object"
+    properties:
+      sessions:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestSession"
+  RestTaskCollection:
+    type: "object"
+    properties:
+      tasks:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestTask"
   RestRevision:
     type: "object"
     properties:
@@ -1334,20 +1304,6 @@ definitions:
       createdAt:
         type: "integer"
         format: "int64"
-  RestSessionCollection:
-    type: "object"
-    properties:
-      sessions:
-        type: "array"
-        items:
-          $ref: "#/definitions/RestSession"
-  RestTaskCollection:
-    type: "object"
-    properties:
-      tasks:
-        type: "array"
-        items:
-          $ref: "#/definitions/RestTask"
   ZoneOffsetTransitionRule:
     type: "object"
     properties:
@@ -1416,23 +1372,29 @@ definitions:
   ZoneId:
     type: "object"
     properties:
-      rules:
-        $ref: "#/definitions/ZoneRules"
       id:
         type: "string"
+      rules:
+        $ref: "#/definitions/ZoneRules"
   RestTask:
     type: "object"
     properties:
-      group:
-        type: "boolean"
-        default: false
       id:
         $ref: "#/definitions/Id"
       state:
         type: "string"
+      cancelRequested:
+        type: "boolean"
+        default: false
+      updatedAt:
+        type: "integer"
+        format: "int64"
       startedAt:
         type: "integer"
         format: "int64"
+      group:
+        type: "boolean"
+        default: false
       fullName:
         type: "string"
       parentId:
@@ -1454,12 +1416,8 @@ definitions:
         $ref: "#/definitions/Config"
       error:
         $ref: "#/definitions/Config"
-      updatedAt:
-        type: "integer"
-        format: "int64"
-      cancelRequested:
-        type: "boolean"
-        default: false
+  RestSecret:
+    type: "object"
   TemporalUnit:
     type: "object"
     properties:
@@ -1474,11 +1432,18 @@ definitions:
       timeBased:
         type: "boolean"
         default: false
+  InputStream:
+    type: "object"
   RestScheduleSummary:
     type: "object"
     properties:
       id:
         $ref: "#/definitions/Id"
+      workflow:
+        $ref: "#/definitions/IdAndName"
+      updatedAt:
+        type: "integer"
+        format: "int64"
       disabledAt:
         type: "integer"
         format: "int64"
@@ -1487,15 +1452,12 @@ definitions:
       nextRunTime:
         type: "integer"
         format: "int64"
+      project:
+        $ref: "#/definitions/IdAndName"
       createdAt:
         type: "integer"
         format: "int64"
-      updatedAt:
-        type: "integer"
-        format: "int64"
-      workflow:
-        $ref: "#/definitions/IdAndName"
-  InputStream:
+  RestDirectDownloadHandle:
     type: "object"
   RestScheduleSkipRequest:
     type: "object"
@@ -1503,28 +1465,23 @@ definitions:
       nextRunTime:
         type: "integer"
         format: "int64"
+      nextTime:
+        $ref: "#/definitions/LocalTimeOrInstant"
       fromTime:
         type: "integer"
         format: "int64"
       dryRun:
         type: "boolean"
         default: false
-      nextTime:
-        $ref: "#/definitions/LocalTimeOrInstant"
       count:
         type: "integer"
         format: "int32"
-  RestDirectDownloadHandle:
-    type: "object"
   Duration:
     type: "object"
     properties:
       seconds:
         type: "integer"
         format: "int64"
-      nano:
-        type: "integer"
-        format: "int32"
       zero:
         type: "boolean"
         default: false
@@ -1535,6 +1492,9 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/TemporalUnit"
+      nano:
+        type: "integer"
+        format: "int32"
   NameOptionalId:
     type: "object"
     properties:
@@ -1554,25 +1514,8 @@ definitions:
   RestSessionAttempt:
     type: "object"
     properties:
-      project:
-        $ref: "#/definitions/IdAndName"
       id:
         $ref: "#/definitions/Id"
-      createdAt:
-        type: "integer"
-        format: "int64"
-      sessionUuid:
-        type: "string"
-        format: "uuid"
-      retryAttemptName:
-        type: "string"
-      params:
-        $ref: "#/definitions/Config"
-      sessionId:
-        $ref: "#/definitions/Id"
-      finishedAt:
-        type: "integer"
-        format: "int64"
       sessionTime:
         $ref: "#/definitions/OffsetDateTime"
       workflow:
@@ -1586,28 +1529,43 @@ definitions:
       cancelRequested:
         type: "boolean"
         default: false
+      sessionUuid:
+        type: "string"
+        format: "uuid"
+      retryAttemptName:
+        type: "string"
+      params:
+        $ref: "#/definitions/Config"
+      sessionId:
+        $ref: "#/definitions/Id"
+      finishedAt:
+        type: "integer"
+        format: "int64"
+      status:
+        type: "string"
+      project:
+        $ref: "#/definitions/IdAndName"
+      createdAt:
+        type: "integer"
+        format: "int64"
       index:
         type: "integer"
         format: "int32"
-      status:
-        type: "string"
-        enum:
-        - "success"
-        - "error"
-        - "killed"
-        - "running"
   OffsetDateTime:
     type: "object"
     properties:
       offset:
         $ref: "#/definitions/ZoneOffset"
-      nano:
-        type: "integer"
-        format: "int32"
       hour:
         type: "integer"
         format: "int32"
       minute:
+        type: "integer"
+        format: "int32"
+      nano:
+        type: "integer"
+        format: "int32"
+      second:
         type: "integer"
         format: "int32"
       dayOfYear:
@@ -1644,13 +1602,12 @@ definitions:
       year:
         type: "integer"
         format: "int32"
-      second:
-        type: "integer"
-        format: "int32"
       monthValue:
         type: "integer"
         format: "int32"
   LocalTimeOrInstant:
+    type: "object"
+  RestSecretList:
     type: "object"
   RestScheduleCollection:
     type: "object"
@@ -1659,14 +1616,22 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/RestSchedule"
-  RestSecretList:
+  RestScheduleAttemptCollection:
     type: "object"
+    properties:
+      id:
+        $ref: "#/definitions/Id"
+      workflow:
+        $ref: "#/definitions/IdAndName"
+      attempts:
+        type: "array"
+        items:
+          $ref: "#/definitions/RestSessionAttempt"
+      project:
+        $ref: "#/definitions/IdAndName"
   ZoneRules:
     type: "object"
     properties:
-      fixedOffset:
-        type: "boolean"
-        default: false
       transitions:
         type: "array"
         items:
@@ -1675,6 +1640,9 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/ZoneOffsetTransitionRule"
+      fixedOffset:
+        type: "boolean"
+        default: false
   RestSessionAttemptCollection:
     type: "object"
     properties:
@@ -1699,10 +1667,6 @@ definitions:
   RestSessionAttemptRequest:
     type: "object"
     properties:
-      retryAttemptName:
-        type: "string"
-      params:
-        $ref: "#/definitions/Config"
       sessionTime:
         type: "integer"
         format: "int64"
@@ -1710,6 +1674,10 @@ definitions:
         $ref: "#/definitions/Id"
       resume:
         $ref: "#/definitions/Resume"
+      retryAttemptName:
+        type: "string"
+      params:
+        $ref: "#/definitions/Config"
   Resume:
     type: "object"
     discriminator: "mode"

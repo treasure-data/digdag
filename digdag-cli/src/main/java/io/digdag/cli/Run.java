@@ -222,6 +222,25 @@ public class Run
 
     private static final List<Long> USE_ALL = null;
 
+    protected DigdagEmbed.Bootstrap setupBootstrap(Properties systemProps)
+    {
+        return new DigdagEmbed.Bootstrap()
+                .setEnvironment(env)
+                .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
+                .setSystemPlugins(loadSystemPlugins(systemProps))
+                .addModules(binder -> {
+                    Multibinder.newSetBinder(binder, SecretStore.class);
+                    binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
+                    binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
+                    binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
+                    binder.bind(LogModule.class).in(Scopes.SINGLETON);
+                    binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
+                    binder.bind(AccessController.class).to(DefaultAccessController.class);
+                })
+                .overrideModulesWith((binder) ->
+                        binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON));
+    }
+
     public void run(String workflowNameArg, String matchPattern)
             throws Exception
     {
@@ -236,24 +255,7 @@ public class Run
             systemProps.setProperty("log-server.local.path", taskLogPath);
         }
 
-        try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
-                .setEnvironment(env)
-                .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
-                .setSystemPlugins(loadSystemPlugins(systemProps))
-                .addModules(binder -> {
-                    Multibinder.newSetBinder(binder, SecretStore.class);
-                    binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
-                    binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
-                    binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
-                    binder.bind(LogModule.class).in(Scopes.SINGLETON);
-                    binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
-                    binder.bind(AccessController.class).to(DefaultAccessController.class);
-                })
-                .overrideModulesWith((binder) -> {
-                    binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
-                })
-                .initializeWithoutShutdownHook()) {
-
+        try (DigdagEmbed digdag = setupBootstrap(systemProps).initializeWithoutShutdownHook()) {
             run(systemProps, digdag.getInjector(), workflowNameArg, matchPattern);
         }
     }

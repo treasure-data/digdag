@@ -6,7 +6,7 @@ jobs:
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-      - image: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
+      - image: digdag/digdag-build:20210121T160201-c21ea363746ab5ef7f7503a1a6212a37b79a9943
         # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
         environment:
           TERM: dumb
@@ -54,7 +54,7 @@ jobs:
   docs_deployment:
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-      - image: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
+      - image: digdag/digdag-build:20210121T160201-c21ea363746ab5ef7f7503a1a6212a37b79a9943
         # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
         environment:
           TERM: dumb
@@ -69,7 +69,7 @@ jobs:
   release_snapshot:
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-      - image: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
+      - image: digdag/digdag-build:20210121T160201-c21ea363746ab5ef7f7503a1a6212a37b79a9943
         # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
         environment:
           TERM: dumb
@@ -83,13 +83,7 @@ workflows:
 
   test_and_docs_deployment:
     jobs:
-      - test: # master and v0_10 branches only
-          filters:
-            branches:
-              only:
-                - master
-                - v0_10
-                - v0_11
+      - test # will be executed for topic branch not only default branches so that we can safely merge it
       - docs_deployment: # master branch only
           filters:
             branches:
