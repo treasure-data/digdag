@@ -110,4 +110,10 @@ abstract class BaseTdJobOperator
     {
         return TaskResult.empty(request);
     }
+
+    @Override
+    public boolean isBlocking()
+    {
+        return false;
+    }
 }

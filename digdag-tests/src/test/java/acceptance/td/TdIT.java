@@ -8,11 +8,16 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.ReferenceCountUtil;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -47,6 +52,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static acceptance.td.Secrets.ENCRYPTION_KEY;
 import static acceptance.td.Secrets.TD_API_ENDPOINT;
@@ -64,6 +73,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
@@ -542,6 +552,67 @@ public class TdIT
         assertThat(recordedIssueApiCalls.size(), is(not(0)));
 
         verifyDomainKeys(recordedIssueApiCalls);
+    }
+
+    @Test
+    public void detectStuckTask()
+            throws Exception
+    {
+        AtomicInteger counter = new AtomicInteger();
+        proxyServer = DefaultHttpProxyServer
+                .bootstrap()
+                .withPort(0)
+                .withFiltersSource(new HttpFiltersSourceAdapter()
+                {
+                    @Override
+                    public int getMaximumRequestBufferSizeInBytes()
+                    {
+                        return 1024 * 1024;
+                    }
+
+                    @Override
+                    public int getMaximumResponseBufferSizeInBytes()
+                    {
+                        return 1024 * 1024;
+                    }
+
+                    @Override
+                    public HttpFilters filterRequest(HttpRequest httpRequest, ChannelHandlerContext channelHandlerContext)
+                    {
+                        return new HttpFiltersAdapter(httpRequest)
+                        {
+                            @Override
+                            public HttpResponse clientToProxyRequest(HttpObject httpObject)
+                            {
+                                if (counter.getAndIncrement() > 0) {
+                                    return null;
+                                }
+
+                                try {
+                                    // To make Digdag detect stuck non-blocking operator
+                                    TimeUnit.SECONDS.sleep(10);
+                                }
+                                catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                }
+                                return null;
+                            }
+                        };
+                    }
+                }).start();
+
+        Files.write(config, asList(
+                "agent.heartbeat-interval = 1", // 1 second
+                "agent.stuck-task-detect-time = 5", // 5 seconds
+                "params.td.use_ssl = true",
+                "params.td.proxy.enabled = true",
+                "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
+                "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
+        ), APPEND);
+
+        copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
+        List<ApiCallRecord> apiCallRecords = assertWorkflowRunsSuccessfullyAndReturnApiCalls().apiCallRecords;
+        assertTrue(apiCallRecords.size() > 0);
     }
 
     private void verifyDomainKeys(List<TDApiRequest> requests)

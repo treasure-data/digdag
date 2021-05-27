@@ -36,6 +36,8 @@ import javax.annotation.PreDestroy;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +69,10 @@ public class OperatorManager
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
+
+    // This might be merged into `runningTaskMap`, but let's go with a simple way
+    // {taskId => if blockingOperator then None else Some(started timestamp in millis)}
+    private final ConcurrentHashMap<Long, Optional<Instant>> runningNonBlockingOperatorStartMap = new ConcurrentHashMap<>();
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
@@ -351,7 +357,6 @@ public class OperatorManager
                 projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
         Operator operator = factory.newOperator(context);
-
         if (mergedRequest.isCancelRequested()) {
             // NOTE: In the case of failure to perform cleanup,
             // target resources continue to remain
@@ -362,7 +367,35 @@ public class OperatorManager
                     mergedRequest.getAttemptId(), mergedRequest.getTaskId()));
         }
 
-        return operator.run();
+        try {
+            if (operator.isBlocking()) {
+                runningNonBlockingOperatorStartMap.put(mergedRequest.getTaskId(), Optional.absent());
+            }
+            else {
+                runningNonBlockingOperatorStartMap.put(mergedRequest.getTaskId(), Optional.of(Instant.now()));
+            }
+            return operator.run();
+        }
+        finally {
+            runningNonBlockingOperatorStartMap.remove(mergedRequest.getTaskId());
+        }
+    }
+
+    private void checkStuckNonblockingOperators()
+    {
+        logger.debug("Checking stuck non-blocking operators: size={}", runningNonBlockingOperatorStartMap.size());
+
+        for (Map.Entry<Long, Optional<Instant>> entry : runningNonBlockingOperatorStartMap.entrySet()) {
+            if (!entry.getValue().isPresent()) {
+                continue;
+            }
+            Instant nonBlockingOpStart = entry.getValue().get();
+            Instant now = Instant.now();
+            if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
+                logger.warn("Found a non-blocking task that looks stuck: taskId={}, duration={}",
+                        entry.getKey(), now.minusMillis(nonBlockingOpStart.toEpochMilli()));
+            }
+        }
     }
 
     private void heartbeat()
@@ -386,6 +419,8 @@ public class OperatorManager
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.AGENT, "uncaughtErrors");
         }
+        // TODO: Maybe this should be outside of this method.
+        checkStuckNonblockingOperators();
     }
 
     public static String formatExceptionMessage(Throwable ex)
