@@ -385,16 +385,25 @@ public class OperatorManager
     {
         logger.debug("Checking stuck non-blocking operators: size={}", runningNonBlockingOperatorStartMap.size());
 
-        for (Map.Entry<Long, Optional<Instant>> entry : runningNonBlockingOperatorStartMap.entrySet()) {
-            if (!entry.getValue().isPresent()) {
-                continue;
+        try {
+            for (Map.Entry<Long, Optional<Instant>> entry : runningNonBlockingOperatorStartMap.entrySet()) {
+                if (!entry.getValue().isPresent()) {
+                    continue;
+                }
+                Instant nonBlockingOpStart = entry.getValue().get();
+                Instant now = Instant.now();
+                if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
+                    logger.warn("Found a non-blocking task that looks stuck: taskId={}, duration={}",
+                            entry.getKey(), now.minusMillis(nonBlockingOpStart.toEpochMilli()));
+                }
             }
-            Instant nonBlockingOpStart = entry.getValue().get();
-            Instant now = Instant.now();
-            if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
-                logger.warn("Found a non-blocking task that looks stuck: taskId={}, duration={}",
-                        entry.getKey(), now.minusMillis(nonBlockingOpStart.toEpochMilli()));
-            }
+        }
+        catch (Throwable t) {
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception while checking stuck non-blocking tasks. Ignoring. This check will be retried.", t);
+            errorReporter.reportUncaughtError(t);
+            metrics.increment(Category.AGENT, "uncaughtErrors");
         }
     }
 
