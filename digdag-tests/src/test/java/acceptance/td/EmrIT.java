@@ -29,6 +29,7 @@ import io.digdag.core.config.YamlConfigLoader;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -254,6 +255,10 @@ public class EmrIT
         }
     }
 
+    //
+    //Skip all tests until fix http access to TD API
+    //
+    @Ignore
     public static class EmrWithExistingClusterTest
             extends EmrIT
     {
@@ -314,6 +319,10 @@ public class EmrIT
         }
     }
 
+    //
+    //Skip all tests until fix http access to TD API
+    //
+    @Ignore
     public static class EmrWithNewClusterTest
             extends EmrIT
     {
