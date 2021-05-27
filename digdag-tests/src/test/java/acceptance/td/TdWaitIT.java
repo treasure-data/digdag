@@ -9,6 +9,7 @@ import junitparams.Parameters;
 import junitparams.custom.combined.CombinedParameters;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -42,6 +43,10 @@ import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.pushProject;
 import static utils.TestUtils.runWorkflow;
 
+//
+//Skip all tests until fix http access to TD API
+// 
+@Ignore
 @RunWith(JUnitParamsRunner.class)
 public class TdWaitIT
 {
