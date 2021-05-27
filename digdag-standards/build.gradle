@@ -40,7 +40,6 @@ dependencies {
     // gcs
     compile ('com.google.apis:google-api-services-storage:v1-rev20190910-1.30.3') {
         exclude group: 'com.google.guava', module: 'guava-jdk5'
-        exclude group: 'com.google.api-client', module: 'google-api-client'
     }
 
     // kubernetes
