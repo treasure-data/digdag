@@ -110,7 +110,7 @@ public class OperatorManager
     @PostConstruct
     public void start()
     {
-        heartbeatScheduler.scheduleAtFixedRate(() -> heartbeat(),
+        heartbeatScheduler.scheduleAtFixedRate(this::maintainRunningTasks,
                 agentConfig.getHeartbeatInterval(), agentConfig.getHeartbeatInterval(),
                 TimeUnit.SECONDS);
     }
@@ -383,9 +383,9 @@ public class OperatorManager
 
     private void checkStuckNonblockingOperators()
     {
-        logger.debug("Checking stuck non-blocking operators: size={}", runningNonBlockingOperatorStartMap.size());
-
         try {
+            logger.debug("Checking stuck non-blocking operators: size={}", runningNonBlockingOperatorStartMap.size());
+
             for (Map.Entry<Long, Optional<Instant>> entry : runningNonBlockingOperatorStartMap.entrySet()) {
                 if (!entry.getValue().isPresent()) {
                     continue;
@@ -393,8 +393,9 @@ public class OperatorManager
                 Instant nonBlockingOpStart = entry.getValue().get();
                 Instant now = Instant.now();
                 if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
-                    logger.warn("Found a non-blocking task that looks stuck: taskId={}, duration={}",
-                            entry.getKey(), now.minusMillis(nonBlockingOpStart.toEpochMilli()));
+                    // TODO: Further actions like interrupting the thread
+                    logger.error("Found a non-blocking task that looks stuck: taskId={}, duration={}s",
+                            entry.getKey(), now.minusMillis(nonBlockingOpStart.toEpochMilli()).getEpochSecond());
                 }
             }
         }
@@ -428,7 +429,11 @@ public class OperatorManager
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.AGENT, "uncaughtErrors");
         }
-        // TODO: Maybe this should be outside of this method.
+    }
+
+    private void maintainRunningTasks()
+    {
+        heartbeat();
         checkStuckNonblockingOperators();
     }
 
