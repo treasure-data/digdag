@@ -41,4 +41,10 @@ abstract class BaseBqJobOperator
     }
 
     protected abstract JobConfiguration jobConfiguration(String projectId);
+
+    @Override
+    public boolean isBlocking()
+    {
+        return false;
+    }
 }

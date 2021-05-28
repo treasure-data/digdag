@@ -107,5 +107,11 @@ class GcsWaitOperatorFactory
             object.set("metadata", metadata);
             return params;
         }
+
+        @Override
+        public boolean isBlocking()
+        {
+            return false;
+        }
     }
 }

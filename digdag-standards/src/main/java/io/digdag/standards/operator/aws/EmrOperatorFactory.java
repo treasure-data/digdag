@@ -831,6 +831,12 @@ public class EmrOperatorFactory
                 throw new ConfigException("Invalid EMR configuration: '" + node + "'");
             }
         }
+
+        @Override
+        public boolean isBlocking()
+        {
+            return false;
+        }
     }
 
     private static class Filer

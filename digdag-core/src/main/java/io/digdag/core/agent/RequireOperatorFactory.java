@@ -195,6 +195,12 @@ public class RequireOperatorFactory
             }
             return projectIdentifier;
         }
+
+        @Override
+        public boolean isBlocking()
+        {
+            return false;
+        }
     }
 
     enum OptionRerunOn
