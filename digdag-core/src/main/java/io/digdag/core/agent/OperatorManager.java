@@ -70,9 +70,8 @@ public class OperatorManager
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
 
-    // This might be merged into `runningTaskMap`, but let's go with a simple way
-    // {taskId => if blockingOperator then None else Some(started timestamp in millis)}
-    private final ConcurrentHashMap<Long, Optional<Instant>> runningNonBlockingOperatorStartMap = new ConcurrentHashMap<>();
+    // {taskId (only non-blocking) => started timestamp in millis}
+    private final ConcurrentHashMap<Long, Instant> runningNonBlockingOperatorStartMap = new ConcurrentHashMap<>();
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
@@ -368,11 +367,8 @@ public class OperatorManager
         }
 
         try {
-            if (operator.isBlocking()) {
-                runningNonBlockingOperatorStartMap.put(mergedRequest.getTaskId(), Optional.absent());
-            }
-            else {
-                runningNonBlockingOperatorStartMap.put(mergedRequest.getTaskId(), Optional.of(Instant.now()));
+            if (!operator.isBlocking()) {
+                runningNonBlockingOperatorStartMap.put(mergedRequest.getTaskId(), Instant.now());
             }
             return operator.run();
         }
@@ -386,11 +382,8 @@ public class OperatorManager
         try {
             logger.debug("Checking stuck non-blocking operators: size={}", runningNonBlockingOperatorStartMap.size());
 
-            for (Map.Entry<Long, Optional<Instant>> entry : runningNonBlockingOperatorStartMap.entrySet()) {
-                if (!entry.getValue().isPresent()) {
-                    continue;
-                }
-                Instant nonBlockingOpStart = entry.getValue().get();
+            for (Map.Entry<Long, Instant> entry : runningNonBlockingOperatorStartMap.entrySet()) {
+                Instant nonBlockingOpStart = entry.getValue();
                 Instant now = Instant.now();
                 if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
                     // TODO: Further actions like interrupting the thread
