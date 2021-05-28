@@ -32,6 +32,7 @@ import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xnio.streams.Streams;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
@@ -40,6 +41,7 @@ import utils.TestUtils.RecordableWorkflow.CommandStatusAndRecordedApiCalls;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,6 +58,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static acceptance.td.Secrets.ENCRYPTION_KEY;
 import static acceptance.td.Secrets.TD_API_ENDPOINT;
@@ -558,6 +561,17 @@ public class TdIT
     public void detectStuckTask()
             throws Exception
     {
+        // This test scenario does:
+        // - Launch HTTPS proxy that suspends the first request for 10 seconds
+        // - Start a Digdag server that has the following configurations:
+        //   - Communicates with TD through the HTTPS proxy, this means the first request will be suspended
+        //   - Uses a shorter interval (1s) of task heartbeat to shorten test duration
+        //   - Uses a shorter threshold (5s) of stuck non-blocking task detection to shorten test duration
+        // - Assert as follows
+        //   - Digdag process should detect stuck non-blocking tasks 5 seconds after the `td` operator starts
+        //     and then it should keep after another 5 seconds
+        //   - The check of stuck non-blocking operator is done at 1 second interval, so the log messages about
+        //     stuck operator should be output about 5 times
         AtomicInteger counter = new AtomicInteger();
         proxyServer = DefaultHttpProxyServer
                 .bootstrap()
@@ -610,9 +624,24 @@ public class TdIT
                 "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
         ), APPEND);
 
+        Path logFile = Files.createTempFile("td-test-", ".log");
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        List<ApiCallRecord> apiCallRecords = assertWorkflowRunsSuccessfullyAndReturnApiCalls().apiCallRecords;
-        assertTrue(apiCallRecords.size() > 0);
+        try {
+            List<ApiCallRecord> apiCallRecords = assertWorkflowRunsSuccessfullyAndReturnApiCalls(logFile).apiCallRecords;
+            assertTrue(apiCallRecords.size() > 0);
+            try (Stream<String> lines = Files.lines(logFile)) {
+                // Check if certain amount of error messages are output in the log file that indicates there were stuck non-blocking operators
+
+                // TODO: io.digdag.core.agent.OperatorManager.checkStuckNonblockingOperators is just logging this kind of issue for now as the first step.
+                //       It will change the way to handle stuck operators and this check will need to be changed later.
+                long count = lines.filter(line -> line.contains("Found a non-blocking task that looks stuck"))
+                        .count();
+                assertTrue(3 <= count && count <= 7);
+            }
+        }
+        finally {
+            Files.deleteIfExists(logFile);
+        }
     }
 
     private void verifyDomainKeys(List<TDApiRequest> requests)
@@ -644,7 +673,12 @@ public class TdIT
 
     private CommandStatusAndRecordedApiCalls assertWorkflowRunsSuccessfullyAndReturnApiCalls(String... params)
     {
-        CommandStatusAndRecordedApiCalls result = runWorkflow(params);
+        return assertWorkflowRunsSuccessfullyAndReturnApiCalls(null, params);
+    }
+
+    private CommandStatusAndRecordedApiCalls assertWorkflowRunsSuccessfullyAndReturnApiCalls(Path logFile, String... params)
+    {
+        CommandStatusAndRecordedApiCalls result = runWorkflow(logFile, params);
         CommandStatus runStatus = result.commandStatus;
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
         assertThat(Files.exists(outfile), is(true));
@@ -652,6 +686,15 @@ public class TdIT
     }
 
     private CommandStatusAndRecordedApiCalls runWorkflow(String... params)
+    {
+        return runWorkflow(null, params);
+    }
+
+    /**
+     *
+     * @param logFile an output log file. A caller should remove this file on its end
+     */
+    private CommandStatusAndRecordedApiCalls runWorkflow(Path logFile, String... params)
     {
         List<String> args = new ArrayList<>();
         // `mainWithRecordableRun()` below introduces `recordable_run` command
@@ -663,6 +706,12 @@ public class TdIT
                 "--project", projectDir.toString(),
                 "-p", "outfile=" + outfile));
 
+        if (logFile != null) {
+            args.addAll(
+                asList("--log", logFile.toAbsolutePath().toString())
+            );
+        }
+
         for (String param : params) {
             args.add("-p");
             args.add(param);
@@ -671,6 +720,14 @@ public class TdIT
         args.add("workflow.dig");
 
         CommandStatusAndRecordedApiCalls commandStatusAndRecords = mainWithRecordableRun(env, args);
+        if (logFile != null) {
+            try (InputStream in = Files.newInputStream(logFile)) {
+                Streams.copyStream(in, System.out);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         return commandStatusAndRecords;
     }
