@@ -760,7 +760,7 @@ class SessionsView extends React.Component {
     model().fetchSessions(SessionsView.pageSize, this.state.lastId).then(({ sessions }) => {
       this.setState({ sessions })
       const last = _.last(sessions)
-      if (!last) return [];
+      if (!last) return []
       return model().fetchSessions(1, last.id).then(olderOne => olderOne.sessions)
     }).then((olderOne) => {
       this.setState({ isOldest: olderOne.length === 0 })
