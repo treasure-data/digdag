@@ -718,86 +718,21 @@ class StatusFilter extends React.Component {
 
 class SessionsPagination extends React.Component {
   props: {
-    current: number,
-    max: number,
-    onSelect: (number) => void,
+    isOldest: boolean,
+    onClickLatest: () => void,
+    onClickOlder: () => void,
   };
 
-  pages (): Array<Array<number>> {
-    // [1, 2, ..., 10, 11, 12, 13, 14, ..., 20, 21]
-    //  ^  ^                                 ^   ^ <- edgeN
-    //              ^   ^       ^   ^              <- sideN
-    const edgeN = 2
-    const sideN = 2
-
-    const inclusiveRange = (start, end) => _.range(start, end + 1)
-    const leftRange = inclusiveRange(1, edgeN)
-    const rightRange = inclusiveRange(this.props.max - edgeN + 1, this.props.max)
-    const centerRange = inclusiveRange(
-      this.props.current - sideN,
-      this.props.current + sideN
-    )
-
-    if (this.props.max <= edgeN * 2 + sideN * 2 + 1) {
-      return [inclusiveRange(1, this.props.max)]
-    }
-
-    // [1, 2, 3, 4, 5, 6, 7, 8, ..., 20, 21]
-    //                       ^ jointLeftEnd
-    const jointLeftEnd = leftRange.length + centerRange.length + 1
-    if (this.props.current + sideN <= jointLeftEnd) {
-      return [
-        inclusiveRange(1, jointLeftEnd),
-        rightRange
-      ]
-    }
-
-    // [1, 2, ..., 14, 15, 16, 17, 18, 19, 20, 21]
-    //              ^ jointRightStart
-    const jointRightStart = this.props.max - rightRange.length - centerRange.length
-    if (this.props.current - sideN >= jointRightStart) {
-      return [
-        leftRange,
-        inclusiveRange(jointRightStart, this.props.max)
-      ]
-    }
-
-    return [
-      leftRange,
-      centerRange,
-      rightRange
-    ]
-  }
-
   render () {
-    const pages = this.pages()
     return (
-      <nav className='d-flex justify-content-center'>
-        <ul className='pagination'>
-          {pages.map((ps, i) => (
-            <React.Fragment>
-              {i > 0 && (
-                <li className='page-item disabled'>
-                  <span className='page-link'>...</span>
-                </li>
-              )}
-              {ps.map((p) => (
-                <li
-                  className={
-                    p === this.props.current ? 'page-item active' : 'page-item'
-                  }
-                  key={p}
-                  onClick={() => this.props.onSelect(p)}
-                >
-                  <button className='page-link' type='button'>
-                    {p}
-                  </button>
-                </li>
-              ))}
-            </React.Fragment>
-          ))}
-        </ul>
-      </nav>
+      <div className='d-flex justify-content-center'>
+        <button type='button' className='btn btn-outline-secondary' onClick={this.props.onClickLatest}>
+          Latest
+        </button>
+        <button type='button' className='btn btn-outline-secondary ml-2' onClick={this.props.onClickOlder} disabled={this.props.isOldest}>
+          Older
+        </button>
+      </div>
     )
   }
 }
@@ -807,8 +742,8 @@ class SessionsView extends React.Component {
 
   state = {
     sessions: [],
-    totalCount: 0,
-    page: 1
+    lastId: null,
+    isOldest: false
   };
 
   componentDidMount () {
@@ -816,23 +751,33 @@ class SessionsView extends React.Component {
   }
 
   componentDidUpdate (_, prevState) {
-    if (this.state.page !== prevState.page) {
+    if (this.state.lastId !== prevState.lastId) {
       this.fetch()
     }
   }
 
   fetch () {
-    model().fetchSessions(SessionsView.pageSize, this.state.page).then(({ sessions, totalCount }) => {
-      this.setState({ sessions, totalCount })
+    model().fetchSessions(SessionsView.pageSize, this.state.lastId).then(({ sessions }) => {
+      this.setState({ sessions })
+      const last = _.last(sessions)
+      if (!last) return [];
+      return model().fetchSessions(1, last.id).then(olderOne => olderOne.sessions)
+    }).then((olderOne) => {
+      this.setState({ isOldest: olderOne.length === 0 })
     })
   }
 
-  switchPage (page: number) {
-    this.setState({ page })
+  showLatest () {
+    this.setState({ lastId: null })
   }
 
-  maxPage (): number {
-    return Math.floor((this.state.totalCount - 1) / SessionsView.pageSize) + 1
+  showOlder () {
+    this.setState((prevState) => {
+      if (prevState.isOldest || prevState.sessions.length < 1) return
+      return {
+        lastId: _.last(prevState.sessions).id
+      }
+    })
   }
 
   render () {
@@ -842,7 +787,7 @@ class SessionsView extends React.Component {
         <StatusFilter sessions={this.state.sessions} >
           <SessionListView />
         </StatusFilter>
-        {this.maxPage() > 1 && <SessionsPagination onSelect={(page) => this.switchPage(page)} current={this.state.page} max={this.maxPage()} />}
+        <SessionsPagination isOldest={this.state.isOldest} onClickLatest={(page) => this.showLatest()} onClickOlder={() => this.showOlder()} />
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
