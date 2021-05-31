@@ -466,11 +466,24 @@ public class TestUtils
     }
 
     public static String getAttemptLogs(DigdagClient client, Id attemptId)
-            throws IOException
+            throws IOException, InterruptedException
     {
         List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId).getFiles();
         StringBuilder logs = new StringBuilder();
         for (RestLogFileHandle handle : handles) {
+            if (handle.getDirect().isPresent()) {
+                System.out.println("===");
+//                System.out.println(handle.getFileName());
+//                System.out.println("getDirect.isPresent():" + handle.getDirect().isPresent());
+                System.out.println("getFileSize():" + handle.getFileSize());
+                System.out.println("===");
+//                for (int i = 0; i < 300; i++) {
+//                    if (handle.getFileSize() > 0) {
+//                        break;
+//                    }
+//                    Thread.sleep(1000);
+//                }
+            }
             try (InputStream s = new GZIPInputStream(client.getLogFile(attemptId, handle))) {
                 logs.append(new String(ByteStreams.toByteArray(s), UTF_8));
             }
