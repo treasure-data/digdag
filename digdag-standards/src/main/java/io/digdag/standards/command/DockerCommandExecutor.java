@@ -46,6 +46,12 @@ public class DockerCommandExecutor
     }
 
     @Override
+    public boolean isBlocking()
+    {
+        return true;
+    }
+
+    @Override
     public CommandStatus run(final CommandContext context, final CommandRequest request)
             throws IOException
     {

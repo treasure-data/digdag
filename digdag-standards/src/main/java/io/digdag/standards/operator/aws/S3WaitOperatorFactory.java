@@ -221,12 +221,6 @@ public class S3WaitOperatorFactory
             }
             return params;
         }
-
-        @Override
-        public boolean isBlocking()
-        {
-            return false;
-        }
     }
 
     interface AmazonS3ClientFactory

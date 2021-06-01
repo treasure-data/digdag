@@ -16,6 +16,6 @@ public interface Operator
 
     default boolean isBlocking()
     {
-        return true;
+        return false;
     }
 }

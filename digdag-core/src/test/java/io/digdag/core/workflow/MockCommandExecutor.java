@@ -17,6 +17,12 @@ public class MockCommandExecutor
     { }
 
     @Override
+    public boolean isBlocking()
+    {
+        return true;
+    }
+
+    @Override
     public CommandStatus run(CommandContext context, CommandRequest request)
             throws IOException
     {

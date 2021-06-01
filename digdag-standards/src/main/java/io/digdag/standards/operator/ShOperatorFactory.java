@@ -81,6 +81,12 @@ public class ShOperatorFactory
         }
 
         @Override
+        public boolean isBlocking()
+        {
+            return exec.isBlocking();
+        }
+
+        @Override
         public TaskResult runTask()
         {
             final Config state = TaskState.of(request).params();

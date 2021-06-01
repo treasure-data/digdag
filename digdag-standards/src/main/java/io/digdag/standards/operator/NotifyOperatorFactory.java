@@ -83,5 +83,11 @@ public class NotifyOperatorFactory
 
             return TaskResult.empty(request);
         }
+
+        @Override
+        public boolean isBlocking()
+        {
+            return true;
+        }
     }
 }

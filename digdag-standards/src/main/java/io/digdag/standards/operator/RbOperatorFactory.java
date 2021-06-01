@@ -94,6 +94,12 @@ public class RbOperatorFactory
         }
 
         @Override
+        public boolean isBlocking()
+        {
+            return exec.isBlocking();
+        }
+
+        @Override
         public TaskResult runTask()
         {
             Config data;
