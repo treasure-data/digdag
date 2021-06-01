@@ -255,10 +255,6 @@ public class EmrIT
         }
     }
 
-    //
-    //Skip all tests until fix http access to TD API
-    //
-    @Ignore
     public static class EmrWithExistingClusterTest
             extends EmrIT
     {
@@ -319,10 +315,6 @@ public class EmrIT
         }
     }
 
-    //
-    //Skip all tests until fix http access to TD API
-    //
-    @Ignore
     public static class EmrWithNewClusterTest
             extends EmrIT
     {
