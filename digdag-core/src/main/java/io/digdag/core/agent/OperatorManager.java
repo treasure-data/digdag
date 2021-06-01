@@ -70,6 +70,8 @@ public class OperatorManager
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
 
+    // {taskId in config eval => started timestamp in millis}
+    private final ConcurrentHashMap<Long, Instant> runningConfigEvalMap = new ConcurrentHashMap<>();
     // {taskId (only non-blocking) => started timestamp in millis}
     private final ConcurrentHashMap<Long, Instant> runningNonBlockingOperatorStartMap = new ConcurrentHashMap<>();
 
@@ -241,6 +243,7 @@ public class OperatorManager
         // evaluate config and creates the complete merged config.
         Config config;
         try {
+            runningConfigEvalMap.put(request.getTaskId(), Instant.now());
             config = evalConfig(request);
         }
         catch (ConfigException ex) {
@@ -251,6 +254,9 @@ public class OperatorManager
         }
         catch (AssertionError ex) { // Avoid infinite task retry cause of AssertionError by ConfigEvalEngine(nashorn)
             throw new RuntimeException("Unexpected error happened in ConfigEvalEngine: " + ex.getMessage(), ex);
+        }
+        finally {
+            runningConfigEvalMap.remove(request.getTaskId());
         }
         logger.debug("evaluated config: {}", filterConfigForLogging(config));
 
@@ -270,8 +276,6 @@ public class OperatorManager
             if (!operatorKey.isPresent()) {
                 // TODO warning
                 callback.taskSucceeded(request, agentId, TaskResult.empty(cf));
-
-
                 return;
             }
             type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
@@ -377,6 +381,30 @@ public class OperatorManager
         }
     }
 
+    private void checkStuckConfigEval()
+    {
+        try {
+            logger.debug("Checking stuck config eval: size={}", runningConfigEvalMap.size());
+
+            for (Map.Entry<Long, Instant> entry : runningConfigEvalMap.entrySet()) {
+                Instant configEvalStart = entry.getValue();
+                Instant now = Instant.now();
+                if (configEvalStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
+                    // TODO: Further actions like interrupting the thread
+                    logger.error("Found a config eval that looks stuck: taskId={}, duration={}s",
+                            entry.getKey(), now.minusMillis(configEvalStart.toEpochMilli()).getEpochSecond());
+                }
+            }
+        }
+        catch (Throwable t) {
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception while checking stuck config eval. Ignoring. This check will be retried.", t);
+            errorReporter.reportUncaughtError(t);
+            metrics.increment(Category.AGENT, "uncaughtErrors");
+        }
+    }
+
     private void checkStuckNonblockingOperators()
     {
         try {
@@ -427,6 +455,7 @@ public class OperatorManager
     private void maintainRunningTasks()
     {
         heartbeat();
+        checkStuckConfigEval();
         checkStuckNonblockingOperators();
     }
 
