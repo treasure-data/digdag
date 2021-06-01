@@ -12,6 +12,8 @@ import io.digdag.guice.rs.server.undertow.UndertowServerConfig.ListenAddress;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
+import io.undertow.conduits.GzipStreamSourceConduit;
+import io.undertow.conduits.InflatingStreamSourceConduit;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.OpenListener;
@@ -19,6 +21,11 @@ import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.AccessLogReceiver;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
+import io.undertow.server.handlers.encoding.ContentEncodingRepository;
+import io.undertow.server.handlers.encoding.DeflateEncodingProvider;
+import io.undertow.server.handlers.encoding.EncodingHandler;
+import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.encoding.RequestEncodingHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -185,7 +192,19 @@ public class UndertowServer
             if (config.getAccessLogPath().isPresent()) {
                 handler = buildAccessLogHandler(config, handler);
             }
-            appHandler = Handlers.trace(handler);
+            handler = Handlers.trace(handler);
+
+            // support "Content-Encoding: gzip | deflate" (request content encoding)
+            handler = new RequestEncodingHandler(handler)
+                .addEncoding("deflate", InflatingStreamSourceConduit.WRAPPER)
+                .addEncoding("gzip", GzipStreamSourceConduit.WRAPPER);
+            // support "Accept-Encoding: gzip | deflate" (response content encoding)
+            handler = new EncodingHandler(handler,
+                    new ContentEncodingRepository()
+                    .addEncodingHandler("deflate", new DeflateEncodingProvider(), 50)
+                    .addEncodingHandler("gzip", new GzipEncodingProvider(), 60));
+
+            appHandler = handler;
         }
 
         // wrap HttpHandler in GracefulShutdownHandler

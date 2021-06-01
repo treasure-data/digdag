@@ -2,7 +2,7 @@ dependencies {
     compile project(':digdag-guice-rs')
     compile project(':digdag-guice-rs-server')
 
-    compile 'io.undertow:undertow-servlet:1.4.0.Final'
+    compile 'io.undertow:undertow-servlet:1.4.18.Final'
 
     // for json log formatter
     compile "com.fasterxml.jackson.core:jackson-core:${project.ext.jacksonVersion}"

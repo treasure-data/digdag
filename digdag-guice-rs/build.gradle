@@ -6,6 +6,6 @@ dependencies {
     compile 'org.jboss.resteasy:async-http-servlet-3.0:3.0.13.Final'
 
     // this dependency is here only to override dependency of resteasy 3.0.13 -> jboss-logging 3.1.4.GA
-    // which conflicts with undertow 1.4.0.Final -> jboss-logging 3.2.1.Final
+    // which conflicts with undertow 1.4.18.Final -> jboss-logging 3.2.1.Final
     compile 'org.jboss.logging:jboss-logging:3.3.0.Final'
 }
