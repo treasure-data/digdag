@@ -21,12 +21,21 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -37,7 +46,10 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public class OperatorManagerTest
 {
-    private AgentConfig agentConfig = AgentConfig.defaultBuilder().build();
+    private AgentConfig agentConfig = AgentConfig.defaultBuilder()
+            .heartbeatInterval(1)   // 1 second
+            .stuckTaskDetectTime(1) // 1 second
+            .build();
     private AgentId agentId = AgentId.of("dummy");
     @Mock TaskCallbackApi callback;
     private ConfigFactory cf = new ConfigFactory(DigdagClient.objectMapper());
@@ -176,4 +188,40 @@ public class OperatorManagerTest
         verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
         verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
     }
+
+    @Test
+    public void checkStuckConfigEval()
+            throws InterruptedException
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        OperatorManager om = spy(operatorManager);
+        try {
+            om.start();
+
+            // The background task shouldn't detect any stuck
+            executorService.execute(() -> om.runWithHeartbeat(taskRequest));
+            TimeUnit.SECONDS.sleep(3);
+            verify(om, atMost(0)).handleStuckTask(anyString(), anyLong(), any());
+
+            // Test again with stuck config eval
+            doAnswer(answer -> {
+                // Simulate a stuck situation
+                TimeUnit.SECONDS.sleep(10);
+                throw new TimeoutException("Shouldn't reach here");
+            }).when(om).evalConfig(taskRequest);
+
+            // The background task should detect the stuck this time
+            executorService.execute(() -> om.runWithHeartbeat(taskRequest));
+            TimeUnit.SECONDS.sleep(3);
+            verify(om, atLeastOnce()).handleStuckTask(eq("config eval"), eq(taskRequest.getTaskId()), any());
+        }
+        finally {
+            executorService.shutdownNow();
+            om.shutdown();
+        }
+    }
+
+    // As for `checkStuckNonblockingOperators`, see acceptance.td.TdIT.detectStuckNonblockingTask
 }

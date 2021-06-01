@@ -381,6 +381,14 @@ public class OperatorManager
         }
     }
 
+    @VisibleForTesting
+    void handleStuckTask(String label, long taskId, Instant duration)
+    {
+        // TODO: Further actions like interrupting the thread
+        logger.error("Found {} that looks stuck: taskId={}, duration={}s",
+                label, taskId, duration.getEpochSecond());
+    }
+
     private void checkStuckConfigEval()
     {
         try {
@@ -390,9 +398,8 @@ public class OperatorManager
                 Instant configEvalStart = entry.getValue();
                 Instant now = Instant.now();
                 if (configEvalStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
-                    // TODO: Further actions like interrupting the thread
-                    logger.error("Found a config eval that looks stuck: taskId={}, duration={}s",
-                            entry.getKey(), now.minusMillis(configEvalStart.toEpochMilli()).getEpochSecond());
+                    handleStuckTask("config eval", entry.getKey(),
+                            now.minusMillis(configEvalStart.toEpochMilli()));
                 }
             }
         }
@@ -414,9 +421,8 @@ public class OperatorManager
                 Instant nonBlockingOpStart = entry.getValue();
                 Instant now = Instant.now();
                 if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
-                    // TODO: Further actions like interrupting the thread
-                    logger.error("Found a non-blocking task that looks stuck: taskId={}, duration={}s",
-                            entry.getKey(), now.minusMillis(nonBlockingOpStart.toEpochMilli()).getEpochSecond());
+                    handleStuckTask("non-blocking task", entry.getKey(),
+                            now.minusMillis(nonBlockingOpStart.toEpochMilli()));
                 }
             }
         }

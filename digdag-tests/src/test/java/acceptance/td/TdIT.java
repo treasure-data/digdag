@@ -558,7 +558,7 @@ public class TdIT
     }
 
     @Test
-    public void detectStuckTask()
+    public void detectStuckNonblockingTask()
             throws Exception
     {
         // This test scenario does:
