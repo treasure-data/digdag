@@ -13,6 +13,7 @@ import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;
 import io.digdag.server.ServerRuntimeInfo;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
