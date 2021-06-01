@@ -12,7 +12,7 @@ minimumPoolSize = 0
 "
 
 echo "---TARGET test ---"
-target_src=`circleci tests glob "digdag-tests/src/test/java/acceptance/td/**/*IT.java" | circleci tests split --split-by=timings`
+target_src=`circleci tests glob "digdag-tests/src/test/java/acceptance/td/**/PyIT.java" | circleci tests split --split-by=timings`
 echo $target_src | xargs -n 1 echo
 echo "------------------"
 
