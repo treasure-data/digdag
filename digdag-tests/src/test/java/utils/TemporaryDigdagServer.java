@@ -318,7 +318,7 @@ public class TemporaryDigdagServer
         ImmutableList.Builder<String> argsBuilder = ImmutableList.builder();
         argsBuilder.addAll(ImmutableList.of(
                 "server",
-                "-l", "debug",
+                "-l", "info",
                 "--port", "0",
                 "--bind", host,
                 "--admin-port", "0",

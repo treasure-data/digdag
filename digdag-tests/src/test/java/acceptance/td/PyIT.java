@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
@@ -148,6 +149,7 @@ public class PyIT
             for (int i = 0; i < 300; i++) { // TODO heuristics should be removed
                 attempt = client.getSessionAttempt(attemptId);
                 if (attempt.getDone()) {
+                    logger.info("DOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOONE!!!!");
                     break;
                 }
                 Thread.sleep(1000);
@@ -156,7 +158,10 @@ public class PyIT
         }
 
         String logs = getAttemptLogs(client, attemptId);
-        assertThat(logs, containsString("digdag params"));
+        logger.info("###############################################################################################################################");
+        logger.info(logs);
+        logger.info("###############################################################################################################################");
+        assertTrue(logs.contains("digdag params"));
         assertThat(logs, containsString("{'VAR_A': 'aaa'}")); // via _env in echo_params.dig
     }
 }
