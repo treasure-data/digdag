@@ -41,16 +41,6 @@ jobs:
             - ~/.m2
           key: dependency-cache-{{ .Branch }}-{{ .Revision }}
 
-
-      # Collect test reports
-      - run: ci/circle_gather_test_reports.sh
-
-      # Save artifacts and test results
-      - store_artifacts:
-          path: /tmp/circleci-artifacts/build
-      - store_test_results:
-          path: /tmp/circleci-test-results/build/tests
-
   docs_deployment:
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
