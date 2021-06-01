@@ -634,7 +634,7 @@ public class TdIT
 
                 // TODO: io.digdag.core.agent.OperatorManager.checkStuckNonblockingOperators is just logging this kind of issue for now as the first step.
                 //       It will change the way to handle stuck operators and this check will need to be changed later.
-                long count = lines.filter(line -> line.contains("Found a non-blocking task that looks stuck"))
+                long count = lines.filter(line -> line.contains("Found non-blocking task that looks stuck"))
                         .count();
                 assertTrue(3 <= count && count <= 7);
             }
