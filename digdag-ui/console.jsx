@@ -716,18 +716,67 @@ class StatusFilter extends React.Component {
   }
 }
 
+class SessionsPagination extends React.Component {
+  props: {
+    isOldest: boolean,
+    onClickLatest: () => void,
+    onClickOlder: () => void,
+  };
+
+  render () {
+    return (
+      <div className='d-flex justify-content-center'>
+        <button type='button' className='btn btn-outline-secondary' onClick={this.props.onClickLatest}>
+          Latest
+        </button>
+        <button type='button' className='btn btn-outline-secondary ml-2' onClick={this.props.onClickOlder} disabled={this.props.isOldest}>
+          Older
+        </button>
+      </div>
+    )
+  }
+}
+
 class SessionsView extends React.Component {
+  static pageSize = 100;
+
   state = {
-    sessions: []
+    sessions: [],
+    lastId: null,
+    isOldest: false
   };
 
   componentDidMount () {
     this.fetch()
   }
 
+  componentDidUpdate (_, prevState) {
+    if (this.state.lastId !== prevState.lastId) {
+      this.fetch()
+    }
+  }
+
   fetch () {
-    model().fetchSessions().then(({ sessions }) => {
+    model().fetchSessions(SessionsView.pageSize, this.state.lastId).then(({ sessions }) => {
       this.setState({ sessions })
+      const last = _.last(sessions)
+      if (!last) return []
+      return model().fetchSessions(1, last.id).then(olderOne => olderOne.sessions)
+    }).then((olderOne) => {
+      this.setState({ isOldest: olderOne.length === 0 })
+    })
+  }
+
+  showLatest () {
+    this.setState({ lastId: null })
+  }
+
+  showOlder () {
+    this.setState((prevState) => {
+      if (prevState.isOldest || prevState.sessions.length < 1) return
+      return {
+        lastId: _.last(prevState.sessions).id
+      }
     })
   }
 
@@ -738,6 +787,7 @@ class SessionsView extends React.Component {
         <StatusFilter sessions={this.state.sessions} >
           <SessionListView />
         </StatusFilter>
+        <SessionsPagination isOldest={this.state.isOldest} onClickLatest={(page) => this.showLatest()} onClickOlder={() => this.showOlder()} />
         <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
