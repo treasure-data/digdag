@@ -325,7 +325,9 @@ public class EcsCommandExecutor
         if (taskFinishedAt.isPresent()) {
             long timeout = taskFinishedAt.get() + 60;
             do {
+                logger.info("Calling fetchLogEvents. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
+                logger.info("Called fetchLogEvents. previousExecutorStatus:{}", previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
                 }
@@ -443,6 +445,7 @@ public class EcsCommandExecutor
 
         final ObjectNode nextExecutorStatus = previousExecutorStatus.deepCopy();
         if (!previousToken.isPresent() && nextForwardToken.equals(nextBackwardToken)) {
+            logger.info("!previousToken.isPresent() && nextForwardToken.equals(nextBackwardToken) == true");
             // just in case, we'd better to drop "next_token" key
             nextExecutorStatus.remove("next_token");
         }
