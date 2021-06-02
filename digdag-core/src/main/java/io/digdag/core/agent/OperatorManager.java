@@ -153,7 +153,7 @@ public class OperatorManager
                 catch (TaskExecutionException ex) {
                     if (ex.getRetryInterval().isPresent()) {
                         if (!ex.getError(cf).isPresent()) {
-                            logger.debug("Retrying task {}", ex.toString());
+                            logger.info("Retrying task {}", ex.toString());
                         }
                         else {
                             logger.error("Task failed, retrying", ex);
@@ -166,7 +166,7 @@ public class OperatorManager
                         }
                         else {
                             logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
-                            logger.debug("", ex);
+                            logger.info("", ex);
                         }
                         // TODO use debug to log stacktrace here
                         callback.taskFailed(request, agentId, ex.getError(cf).get());  // TODO is error set?

@@ -127,7 +127,7 @@ public class EcsCommandExecutor
             }
         }
         catch (ConfigException e) {
-            logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
+            logger.info("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
             return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
         }
     }
@@ -141,9 +141,9 @@ public class EcsCommandExecutor
     {
         final EcsClientConfig clientConfig = client.getConfig();
         final RunTaskRequest runTaskRequest = buildRunTaskRequest(commandContext, commandRequest, clientConfig, td); // RuntimeException,ConfigException
-        logger.debug("Submit task request:" + dumpTaskRequest(runTaskRequest));
+        logger.info("Submit task request:" + dumpTaskRequest(runTaskRequest));
         final RunTaskResult runTaskResult = client.submitTask(runTaskRequest); // RuntimeException, ConfigException
-        logger.debug("Submit task response:" + dumpTaskResult(runTaskResult));
+        logger.info("Submit task response:" + dumpTaskResult(runTaskResult));
         return findTask(td.getTaskDefinitionArn(), runTaskResult); // RuntimeException
     }
 
@@ -357,9 +357,7 @@ public class EcsCommandExecutor
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Get task: " + task);
-        }
+        logger.info("Get task: " + task);
 
         final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
         // If the container doesn't start yet, it cannot extract any log messages from the container.
@@ -376,7 +374,7 @@ public class EcsCommandExecutor
         else { // before running
             // Write task status to the command logger to avoid users confusing.
             // It sometimes takes long time to start task running on AWS ECS by several reasons.
-            log(s("Wait running a command task: status %s", taskStatus.getName()), clog);
+            logger.info(s("Wait running a command task: status %s", taskStatus.getName()));
             nextExecutorStatus = previousExecutorStatus.deepCopy();
         }
 
@@ -439,6 +437,7 @@ public class EcsCommandExecutor
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
         final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         final List<OutputLogEvent> logEvents = result.getEvents();
+        logger.info("$$ LOOOOOOOOOOOG $$ {}", logEvents);
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
 
@@ -452,9 +451,6 @@ public class EcsCommandExecutor
                 String log = logEvent.getMessage();
                 if (log.contains(ECS_END_OF_TASK_LOG_MARK)) {
                     nextExecutorStatus.put("logging_finished_at", Instant.now().getEpochSecond());
-                }
-                else {
-                    log(log + "\n", clog);
                 }
             }
             nextExecutorStatus.set("next_token", JsonNodeFactory.instance.textNode(nextForwardToken));
@@ -530,7 +526,9 @@ public class EcsCommandExecutor
     protected Task findTask(final String taskDefinitionArn, final RunTaskResult result)
     {
         for (final Task t : result.getTasks()) {
+            logger.info("Finding task: " + t);
             if (t.getTaskDefinitionArn().equals(taskDefinitionArn)) {
+                logger.info("Found task: " + t);
                 return t;
             }
         }
