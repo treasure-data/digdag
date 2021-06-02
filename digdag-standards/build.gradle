@@ -97,4 +97,9 @@ dependencies {
         exclude group: 'org.slf4j', module: 'slf4j-api'
 
     }
+
+    test {
+        // for BqDdlOperatorFactoryTest
+        environment "GOOGLE_APPLICATION_CREDENTIALS", System.getProperty("java.io.tmpdir") + "/dummy-service-account-key.json"
+    }
 }
