@@ -722,7 +722,9 @@ public class EcsCommandExecutor
         final String outputProjectArchiveStorageKey = createStorageKey(commandContext.getTaskRequest(), "archive-output.tar.gz");
         final String outputProjectArchiveDirectUploadUrl = temporalStorage.getDirectUploadUrl(outputProjectArchiveStorageKey);
 
-        // Build command line arguments that will be passed to Kubernetes API here
+        logger.info("S3 URL: {}", outputProjectArchiveDirectUploadUrl);
+
+                // Build command line arguments that will be passed to Kubernetes API here
         final ImmutableList.Builder<String> bashArguments = ImmutableList.builder();
         // TODO
         // Revisit we need it or not for debugging. If the command will be enabled, pods will show commands are executed
@@ -736,10 +738,12 @@ public class EcsCommandExecutor
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
         }
+        bashArguments.add(s("THE COMMAND IS STARTING"));
         bashArguments.addAll(setEcsContainerOverrideArgumentsBeforeCommand());
         // Add command passed from operator
         bashArguments.add(commandRequest.getCommandLine().stream().map(Object::toString).collect(Collectors.joining(" ")));
         bashArguments.add(s("exit_code=$?"));
+        bashArguments.add(s("THE COMMAND JUST FINISHED"));
         bashArguments.addAll(setEcsContainerOverrideArgumentsAfterCommand());
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("popd"));
