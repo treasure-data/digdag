@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class EcsCommandExecutor
@@ -328,6 +329,14 @@ public class EcsCommandExecutor
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
+                }
+                try {
+                    // Just to avoid DOS attack to ECS endpoint
+                    TimeUnit.SECONDS.sleep(2);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
                 }
             }
             while (Instant.now().getEpochSecond() < timeout);
