@@ -324,22 +324,45 @@ public class EcsCommandExecutor
         final Optional<Long> taskFinishedAt = !previousStatus.has("task_finished_at") ?
                 Optional.absent() : Optional.of(previousStatus.get("task_finished_at").asLong());
         if (taskFinishedAt.isPresent()) {
-            long timeout = taskFinishedAt.get() + 60;
-            do {
-                logger.info("Calling fetchLogEvents#1. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
-                previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
-                logger.info("Called fetchLogEvents. previousExecutorStatus:{}", previousExecutorStatus);
-                if (previousExecutorStatus.get("logging_finished_at") != null) {
-                    break;
+            logger.info("@@@@@@@@@@@@@@@ FIRST TRY @@@@@@@@@@@@@@@@@@@@@@");
+            {
+                long timeout = taskFinishedAt.get() + 300;
+                do {
+                    logger.info("Calling fetchLogEvents#1. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
+                    previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
+                    logger.info("Called fetchLogEvents. previousExecutorStatus:{}", previousExecutorStatus);
+                    if (previousExecutorStatus.get("logging_finished_at") != null) {
+                        break;
+                    }
+                    try {
+                        TimeUnit.SECONDS.sleep(5);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                while (Instant.now().getEpochSecond() < timeout);
             }
-            while (Instant.now().getEpochSecond() < timeout);
+
+            logger.info("@@@@@@@@@@@@@@@ SECOND TRY @@@@@@@@@@@@@@@@@@@@@@");
+            {
+                long timeout = taskFinishedAt.get() + 600;
+                do {
+                    logger.info("Calling fetchLogEvents#1. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
+                    previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
+                    logger.info("Called fetchLogEvents. previousExecutorStatus:{}", previousExecutorStatus);
+                    if (previousExecutorStatus.get("logging_finished_at") != null) {
+                        break;
+                    }
+                    try {
+                        TimeUnit.SECONDS.sleep(5);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                while (Instant.now().getEpochSecond() < timeout);
+            }
 
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
