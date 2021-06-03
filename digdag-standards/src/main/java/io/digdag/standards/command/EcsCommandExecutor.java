@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class EcsCommandExecutor
@@ -325,11 +326,17 @@ public class EcsCommandExecutor
         if (taskFinishedAt.isPresent()) {
             long timeout = taskFinishedAt.get() + 60;
             do {
-                logger.info("Calling fetchLogEvents. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
+                logger.info("Calling fetchLogEvents#1. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 logger.info("Called fetchLogEvents. previousExecutorStatus:{}", previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
                     break;
+                }
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             while (Instant.now().getEpochSecond() < timeout);
@@ -367,6 +374,7 @@ public class EcsCommandExecutor
             // if previous status has 'awslogs' log driver configuration, it tries to fetch log events by that.
             // Otherwise, it skips fetching logs.
             if (!previousStatus.get("awslogs").isNull()) { // awslogs?
+                logger.info("Calling fetchLogEvents#2. previousStatus:{}, previousExecutorStatus:{}", previousStatus, previousExecutorStatus);
                 nextExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
             }
             else {
@@ -439,7 +447,7 @@ public class EcsCommandExecutor
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
         final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         final List<OutputLogEvent> logEvents = result.getEvents();
-        logger.info("$$ LOOOOOOOOOOOG $$ {}", logEvents);
+        logger.info("$$ LOOOOOOOOOOOG $$ {}", result);
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
 
