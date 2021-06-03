@@ -147,7 +147,7 @@ public class PyIT
         // Wait for the attempt to complete
         {
             RestSessionAttempt attempt = null;
-            for (int i = 0; i < 300; i++) { // TODO heuristics should be removed
+            for (int i = 0; i < 600; i++) { // TODO heuristics should be removed
                 attempt = client.getSessionAttempt(attemptId);
                 if (attempt.getDone()) {
                     logger.info("DOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOONE!!!!");
