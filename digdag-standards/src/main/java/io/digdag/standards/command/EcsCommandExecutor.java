@@ -761,12 +761,12 @@ public class EcsCommandExecutor
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
         }
-        bashArguments.add(s("THE COMMAND IS STARTING"));
+        bashArguments.add(s("echo 'THE COMMAND IS STARTING'"));
         bashArguments.addAll(setEcsContainerOverrideArgumentsBeforeCommand());
         // Add command passed from operator
         bashArguments.add(commandRequest.getCommandLine().stream().map(Object::toString).collect(Collectors.joining(" ")));
         bashArguments.add(s("exit_code=$?"));
-        bashArguments.add(s("THE COMMAND JUST FINISHED"));
+        bashArguments.add(s("echo 'THE COMMAND JUST FINISHED'"));
         bashArguments.addAll(setEcsContainerOverrideArgumentsAfterCommand());
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("popd"));
