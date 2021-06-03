@@ -116,6 +116,12 @@ public class MailOperatorFactory
         }
 
         @Override
+        public boolean isBlocking()
+        {
+            return true;
+        }
+
+        @Override
         public TaskResult runTask()
         {
             SecretProvider secrets = context.getSecrets().getSecrets("mail");

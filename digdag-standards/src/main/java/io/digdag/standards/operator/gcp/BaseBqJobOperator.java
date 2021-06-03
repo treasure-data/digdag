@@ -8,8 +8,6 @@ import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskResult;
 
-import java.nio.file.Path;
-
 abstract class BaseBqJobOperator
         extends BaseBqOperator
 {

@@ -13,4 +13,9 @@ public interface Operator
     {
         logger.debug("cleanup is called: attempt_id={}, task_id={}", request.getAttemptId(), request.getTaskId());
     }
+
+    default boolean isBlocking()
+    {
+        return false;
+    }
 }

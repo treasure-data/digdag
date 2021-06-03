@@ -32,6 +32,12 @@ abstract class AbstractJdbcOperator<C>
         this.templateEngine = checkNotNull(templateEngine, "templateEngine");
     }
 
+    @Override
+    public boolean isBlocking()
+    {
+        return true;
+    }
+
     protected abstract C configure(SecretProvider secrets, Config params);
 
     protected abstract JdbcConnection connect(C connectionConfig);

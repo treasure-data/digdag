@@ -135,6 +135,12 @@ public class HttpOperatorFactory
         }
 
         @Override
+        public boolean isBlocking()
+        {
+            return true;
+        }
+
+        @Override
         public TaskResult runTask()
         {
             HttpClient client = client();

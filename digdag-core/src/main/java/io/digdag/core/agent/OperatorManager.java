@@ -36,6 +36,8 @@ import javax.annotation.PreDestroy;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +69,11 @@ public class OperatorManager
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
+
+    // {taskId in config eval => started timestamp in millis}
+    private final ConcurrentHashMap<Long, Instant> runningConfigEvalMap = new ConcurrentHashMap<>();
+    // {taskId (only non-blocking) => started timestamp in millis}
+    private final ConcurrentHashMap<Long, Instant> runningNonBlockingOperatorStartMap = new ConcurrentHashMap<>();
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
@@ -104,7 +111,7 @@ public class OperatorManager
     @PostConstruct
     public void start()
     {
-        heartbeatScheduler.scheduleAtFixedRate(() -> heartbeat(),
+        heartbeatScheduler.scheduleAtFixedRate(this::maintainRunningTasks,
                 agentConfig.getHeartbeatInterval(), agentConfig.getHeartbeatInterval(),
                 TimeUnit.SECONDS);
     }
@@ -236,6 +243,7 @@ public class OperatorManager
         // evaluate config and creates the complete merged config.
         Config config;
         try {
+            runningConfigEvalMap.put(request.getTaskId(), Instant.now());
             config = evalConfig(request);
         }
         catch (ConfigException ex) {
@@ -246,6 +254,9 @@ public class OperatorManager
         }
         catch (AssertionError ex) { // Avoid infinite task retry cause of AssertionError by ConfigEvalEngine(nashorn)
             throw new RuntimeException("Unexpected error happened in ConfigEvalEngine: " + ex.getMessage(), ex);
+        }
+        finally {
+            runningConfigEvalMap.remove(request.getTaskId());
         }
         logger.debug("evaluated config: {}", filterConfigForLogging(config));
 
@@ -265,8 +276,6 @@ public class OperatorManager
             if (!operatorKey.isPresent()) {
                 // TODO warning
                 callback.taskSucceeded(request, agentId, TaskResult.empty(cf));
-
-
                 return;
             }
             type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
@@ -351,7 +360,6 @@ public class OperatorManager
                 projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
         Operator operator = factory.newOperator(context);
-
         if (mergedRequest.isCancelRequested()) {
             // NOTE: In the case of failure to perform cleanup,
             // target resources continue to remain
@@ -362,7 +370,69 @@ public class OperatorManager
                     mergedRequest.getAttemptId(), mergedRequest.getTaskId()));
         }
 
-        return operator.run();
+        try {
+            if (!operator.isBlocking()) {
+                runningNonBlockingOperatorStartMap.put(mergedRequest.getTaskId(), Instant.now());
+            }
+            return operator.run();
+        }
+        finally {
+            runningNonBlockingOperatorStartMap.remove(mergedRequest.getTaskId());
+        }
+    }
+
+    @VisibleForTesting
+    void handleStuckTask(String label, long taskId, Instant duration)
+    {
+        // TODO: Further actions like interrupting the thread
+        logger.error("Found {} that looks stuck: taskId={}, duration={}s",
+                label, taskId, duration.getEpochSecond());
+    }
+
+    private void checkStuckConfigEval()
+    {
+        try {
+            logger.debug("Checking stuck config eval: size={}", runningConfigEvalMap.size());
+
+            for (Map.Entry<Long, Instant> entry : runningConfigEvalMap.entrySet()) {
+                Instant configEvalStart = entry.getValue();
+                Instant now = Instant.now();
+                if (configEvalStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
+                    handleStuckTask("config eval", entry.getKey(),
+                            now.minusMillis(configEvalStart.toEpochMilli()));
+                }
+            }
+        }
+        catch (Throwable t) {
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception while checking stuck config eval. Ignoring. This check will be retried.", t);
+            errorReporter.reportUncaughtError(t);
+            metrics.increment(Category.AGENT, "uncaughtErrors");
+        }
+    }
+
+    private void checkStuckNonblockingOperators()
+    {
+        try {
+            logger.debug("Checking stuck non-blocking operators: size={}", runningNonBlockingOperatorStartMap.size());
+
+            for (Map.Entry<Long, Instant> entry : runningNonBlockingOperatorStartMap.entrySet()) {
+                Instant nonBlockingOpStart = entry.getValue();
+                Instant now = Instant.now();
+                if (nonBlockingOpStart.isBefore(now.minus(agentConfig.getStuckTaskDetectTime(), ChronoUnit.SECONDS))) {
+                    handleStuckTask("non-blocking task", entry.getKey(),
+                            now.minusMillis(nonBlockingOpStart.toEpochMilli()));
+                }
+            }
+        }
+        catch (Throwable t) {
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Uncaught exception while checking stuck non-blocking tasks. Ignoring. This check will be retried.", t);
+            errorReporter.reportUncaughtError(t);
+            metrics.increment(Category.AGENT, "uncaughtErrors");
+        }
     }
 
     private void heartbeat()
@@ -386,6 +456,13 @@ public class OperatorManager
             errorReporter.reportUncaughtError(t);
             metrics.increment(Category.AGENT, "uncaughtErrors");
         }
+    }
+
+    private void maintainRunningTasks()
+    {
+        heartbeat();
+        checkStuckConfigEval();
+        checkStuckNonblockingOperators();
     }
 
     public static String formatExceptionMessage(Throwable ex)

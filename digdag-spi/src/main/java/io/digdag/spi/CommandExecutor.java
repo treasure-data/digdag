@@ -42,4 +42,14 @@ public interface CommandExecutor
     default void cleanup(CommandContext context, Config state)
             throws IOException
     { }
+
+    /**
+     * Returns if this CommandExecutor is blocking or not
+     *
+     * @return if this CommandExecutor is blocking or not
+     */
+    default boolean isBlocking()
+    {
+        return false;
+    }
 }

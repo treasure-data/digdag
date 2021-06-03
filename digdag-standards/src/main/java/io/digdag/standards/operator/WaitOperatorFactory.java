@@ -52,13 +52,14 @@ public class WaitOperatorFactory
         private final OperatorContext context;
         private final TaskRequest request;
         private final Workspace workspace;
-
+        private final boolean blocking;
 
         private WaitOperator(OperatorContext context)
         {
             this.context = context;
             this.request = context.getTaskRequest();
             this.workspace = Workspace.ofTaskRequest(context.getProjectPath(), request);
+            this.blocking = blocking(request.getConfig());
         }
 
         private Duration duration(Config config)
@@ -102,7 +103,6 @@ public class WaitOperatorFactory
             Config config = request.getConfig();
 
             Duration duration = duration(config);
-            boolean blocking = blocking(config);
             Optional<Duration> pollInterval = pollInterval(config);
             if (blocking && pollInterval.isPresent()) {
                 throw new ConfigException("poll_interval can't be specified with blocking:true");
@@ -149,6 +149,12 @@ public class WaitOperatorFactory
                         ConfigElement.copyOf(
                                 request.getLastStateParams().set(WAIT_START_TIME_PARAM, start.toEpochMilli())));
             }
+        }
+
+        @Override
+        public boolean isBlocking()
+        {
+            return blocking;
         }
     }
 }
