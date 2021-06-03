@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
@@ -164,12 +165,17 @@ public class PyIT
                 String logs = getAttemptLogs(client, attemptId);
                 assertTrue(logs.contains("digdag params"));
                 assertThat(logs, containsString("{'VAR_A': 'aaa'}")); // via _env in echo_params.dig
-                break;
+                logger.info("FINISH!!!!!!!!!!!!!!!!!!!!!!");
+                logger.info("=============================");
+                logger.info(logs);
+                logger.info("=============================");
+                return;
             }
             catch (Throwable e) {
                 logger.error(e.getMessage());
                 Thread.sleep(1000 * 20);
             }
         }
+        fail();
     }
 }
