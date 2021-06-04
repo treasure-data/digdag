@@ -270,6 +270,8 @@ public class DefaultEcsClient
             final Optional<String> nextToken)
     {
         final GetLogEventsRequest request = new GetLogEventsRequest()
+                // This should be true when using `nextToken`. See the doc for details.
+                .withStartFromHead(true)
                 .withLogGroupName(groupName)
                 .withLogStreamName(streamName);
         if (nextToken.isPresent()) {
