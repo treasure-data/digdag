@@ -6,6 +6,7 @@ import io.digdag.core.database.migrate.MigrationContext;
 import io.digdag.core.database.migrate.Migration_20151204221156_CreateTables;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -20,13 +21,8 @@ import static org.junit.Assume.assumeTrue;
 
 public class MigrationIT
 {
-    public TemporaryDigdagServer server = null;
-
-    @Before
-    public void setUp()
-    {
-        server = TemporaryDigdagServer.of();
-    }
+    @Rule
+    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
 
     @After
     public void tearDown()
