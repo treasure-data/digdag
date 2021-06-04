@@ -99,10 +99,13 @@ public class PyIT
 
         configFile = folder.newFile().toPath();
 
+        /*
         client = DigdagClient.builder()
                 .host(server.host())
                 .port(server.port())
                 .build();
+
+         */
     }
 
     @Test
@@ -160,7 +163,7 @@ public class PyIT
         }
 
         for (int i = 0; i < 10; i++) {
-            logger.info("CHECK LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOG!!!! {}", i);
+            logger.info(CHECK LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOG!!!! {}", i);
 
             try {
                 String logs = getAttemptLogs(client, attemptId);
