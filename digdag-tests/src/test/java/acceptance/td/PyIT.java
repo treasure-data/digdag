@@ -60,6 +60,8 @@ public class PyIT
     public void setUp()
             throws Exception
     {
+        logger.info("SEEEEEEEEEEEEEEEEEEEEEET UUUUUUUUUUUUUUUUUUUUUP");
+
         assumeThat(ECS_CONFIG, not(isEmptyOrNullString()));
 
         ObjectMapper objectMapper = DigdagClient.objectMapper();
@@ -112,6 +114,8 @@ public class PyIT
     public void testRunOnEcs()
             throws Exception
     {
+        logger.info("%%%%%%%%%%%%%%%%% testRunOnEcs %%%%%%%%%%%%%%%%%%%%");
+
         /*
         Path tempdir = folder.getRoot().toPath().toAbsolutePath();
         Path projectDir = tempdir.resolve("py");
