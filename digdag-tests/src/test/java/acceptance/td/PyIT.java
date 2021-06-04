@@ -39,7 +39,7 @@ public class PyIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    public TemporaryDigdagServer server;
 
     private String accessKeyId;
     private String secretAccessKey;
