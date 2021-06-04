@@ -180,6 +180,6 @@ public class PyIT
         fail();
 
          */
-        Thread.sleep(30 * 1000);
+        Thread.sleep(60 * 1000);
     }
 }

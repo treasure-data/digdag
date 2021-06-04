@@ -338,7 +338,7 @@ public class TemporaryDigdagServer
             executor.execute(() -> {
                 OutputStream out = fanout(this.out, System.out);
                 OutputStream err = fanout(this.err, System.err);
-                main(environment, LocalVersion.of(version.or(buildVersion())), args, out, err, in);
+//                main(environment, LocalVersion.of(version.or(buildVersion())), args, out, err, in);
             });
         }
         else {
@@ -379,6 +379,7 @@ public class TemporaryDigdagServer
             executor.execute(() -> copy(serverProcess.getInputStream(), out, System.out));
             executor.execute(() -> copy(serverProcess.getErrorStream(), err, System.err));
         }
+        if (true) return;
 
         // Wait for server to write the server info with the local address
         ServerRuntimeInfo serverRuntimeInfo = null;
