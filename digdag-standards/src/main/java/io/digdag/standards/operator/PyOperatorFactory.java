@@ -175,6 +175,7 @@ public class PyOperatorFactory
                     throw new RuntimeException(reason);
                 }
                 else {
+                    logger.info("&&&&&&&&&&&&&&&&& status: {}", status);
                     final Path outputPath = commandContext.getLocalProjectPath().resolve(status.getIoDirectory()).resolve(OUTPUT_FILE);
                     if (Files.exists(outputPath)) {
                         try (final InputStream in = Files.newInputStream(outputPath)) {
