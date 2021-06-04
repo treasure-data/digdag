@@ -70,6 +70,8 @@ import static utils.TestUtils.objectMapper;
 public class TemporaryDigdagServer
         implements TestRule, AutoCloseable
 {
+    private static final Logger logger = LoggerFactory.getLogger(TemporaryDigdagServer.class);
+
     private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "true"));
 
     private static final String POSTGRESQL = System.getenv("DIGDAG_TEST_POSTGRESQL");
@@ -295,11 +297,14 @@ public class TemporaryDigdagServer
     public void start(boolean skipSetupDatabase)
             throws Exception
     {
+        logger.info("START!!!!!!!!!!!!!!!");
+
         started = true;
 
         temporaryFolder.create();
 
         if (!skipSetupDatabase) {
+            logger.info("SETUPPPPPPPPPPPPPPPPPPPP DB");
             setupDatabase();
         }
 
@@ -314,6 +319,8 @@ public class TemporaryDigdagServer
         catch (IOException e) {
             throw Throwables.propagate(e);
         }
+
+        logger.info("SERVERRRRRRRRRRRRRRRRR!");
 
         ImmutableList.Builder<String> argsBuilder = ImmutableList.builder();
         argsBuilder.addAll(ImmutableList.of(
@@ -334,6 +341,7 @@ public class TemporaryDigdagServer
         List<String> args = argsBuilder.build();
 
         if (inProcess) {
+            logger.info("IN PROCESSSSSSSSSSSSSSSSSS!!");
             InputStream in = new ByteArrayInputStream(new byte[0]);
             executor.execute(() -> {
                 OutputStream out = fanout(this.out, System.out);
@@ -342,6 +350,7 @@ public class TemporaryDigdagServer
             });
         }
         else {
+            logger.info("ANOTHER PROCESSSSSSSSSSSSSSSSSS!!");
             File workdir = temporaryFolder.newFolder();
             String home = System.getProperty("java.home");
             String classPath = System.getProperty("java.class.path");
@@ -379,7 +388,9 @@ public class TemporaryDigdagServer
             executor.execute(() -> copy(serverProcess.getInputStream(), out, System.out));
             executor.execute(() -> copy(serverProcess.getErrorStream(), err, System.err));
         }
+        logger.info("RETURRRRRRRRRRRRRRRRRRRRRN!!");
         if (true) return;
+        logger.info("SHOULDN'T REACH HERE");
 
         // Wait for server to write the server info with the local address
         ServerRuntimeInfo serverRuntimeInfo = null;
