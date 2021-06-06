@@ -120,6 +120,46 @@ public class ProjectArchiveTest
     }
 
     @Test
+    public void listFilesConsidersDigdagIgnore()
+        throws IOException
+    {
+        Path d1 = Files.createDirectory(path("d1"));
+        Path d2 = Files.createDirectory(path("d1", "d2"));
+        Path d3 = Files.createDirectory(path("d1", "d2", "d3"));
+
+        Path f1 = path("d1", "f1");
+        Path f2 = path("d1", "d2", "f2");
+        Path f3 = path("d1", "d2", "f3");
+        Path f4 = path("d1", "d2", "d3", "f4");
+        Path f5 = path("d1", "d2", "d3", "f5");
+
+        Path digdagIgnore = path(".digdagignore");
+        Files.write(digdagIgnore, (
+                "/d1/d2/d3\n"
+                + "f2"
+        ).getBytes(UTF_8));
+
+        for (Path p : ImmutableList.of(f1, f2, f3, f4, f5)) {
+            Files.write(p, "".getBytes(UTF_8));
+        }
+
+        Map<String, Path> files = new HashMap<>();
+        projectArchive().listFiles((name, path) -> {
+            files.put(name, path);
+            return true;
+        });
+
+        // keys are normalized path names
+        ImmutableMap.Builder<String, Path> expected = ImmutableMap.builder();
+        expected.put("d1", d1);
+        expected.put("d1/d2", d2);
+        expected.put("d1/f1", f1);
+        expected.put("d1/d2/f3", f3);
+
+        assertThat(files, is(expected.build()));
+    }
+
+    @Test
     public void rejectsOutsideOfProjectPath()
         throws IOException
     {
