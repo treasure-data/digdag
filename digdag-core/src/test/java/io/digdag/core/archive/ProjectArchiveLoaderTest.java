@@ -1,13 +1,9 @@
 package io.digdag.core.archive;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import io.digdag.core.config.ConfigLoaderManager;
@@ -21,7 +17,6 @@ import java.util.Set;
 import static org.junit.Assert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import io.digdag.client.config.ConfigUtils;
 import static io.digdag.client.config.ConfigUtils.configFactory;
 import static io.digdag.client.config.ConfigUtils.newConfig;
 

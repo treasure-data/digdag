@@ -23,6 +23,7 @@ dependencies {
     compile 'org.yaml:snakeyaml:1.23'
     compile 'com.google.code.findbugs:annotations:3.0.1'
     compile 'org.weakref:jmxutils:1.19'
+    compile 'org.eclipse.jgit:org.eclipse.jgit:5.11.1.202105131744-r'
 
     // JavaScript engine
     compile 'org.graalvm.js:js:19.3.1'
