@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.nio.file.Path;
 import static java.util.Locale.ENGLISH;
@@ -59,9 +60,9 @@ public class ProjectArchive
     static void listFiles(Path projectPath, PathConsumer consumer)
         throws IOException
     {
+        Optional<DigdagIgnore> digdagIgnore = DigdagIgnore.ofProject(projectPath);
         DirectoryStream.Filter<Path> filter = (target) -> (
-                rejectDotFiles(target) &&
-                DigdagIgnore.ofProject(projectPath)
+                rejectDotFiles(target) && digdagIgnore
                         .map((ignore) -> ignore.accept(target))
                         .orElse(true)
         );
