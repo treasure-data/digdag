@@ -9,8 +9,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
@@ -32,12 +30,10 @@ public class PyIT
 {
     private static final String ECS_CONFIG = System.getenv("ECS_IT_CONFIG");
 
-    private static final Logger logger = LoggerFactory.getLogger(EmrIT.class);
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+
+    private TemporaryDigdagServer server;
 
     private String accessKeyId;
     private String secretAccessKey;

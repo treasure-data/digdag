@@ -20,7 +20,14 @@ import static org.junit.Assume.assumeTrue;
 
 public class MigrationIT
 {
-    public TemporaryDigdagServer server = null;
+    // Shouldn't setup TemporaryDigdagServer using @Rule in this test
+    // since the annotation implicitly calls `apply()` method, but this test
+    // expects the method hasn't been called
+    /*
+    @Rule
+    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    */
+    private TemporaryDigdagServer server = null;
 
     @Before
     public void setUp()
