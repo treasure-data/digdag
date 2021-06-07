@@ -34,6 +34,8 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptSuccess;
@@ -67,6 +69,8 @@ public class S3WaitIT
     public void setUp()
             throws Exception
     {
+        assertThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
+
         proxyServer = TestUtils.startRequestFailingProxy(10);
 
         server = TemporaryDigdagServer.builder()

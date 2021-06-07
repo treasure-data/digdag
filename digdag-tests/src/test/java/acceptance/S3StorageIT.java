@@ -27,6 +27,7 @@ import static utils.TestUtils.getSessionId;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
@@ -70,6 +71,8 @@ public class S3StorageIT
     public void setUp()
             throws Exception
     {
+        assertThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
+
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
 
