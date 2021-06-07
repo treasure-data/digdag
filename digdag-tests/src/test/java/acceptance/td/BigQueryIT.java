@@ -64,7 +64,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.createProject;
@@ -106,7 +105,7 @@ public class BigQueryIT
     public void setUp()
             throws Exception
     {
-        assumeThat(GCP_CREDENTIAL, not(isEmptyOrNullString()));
+        assertThat(GCP_CREDENTIAL, not(isEmptyOrNullString()));
 
         proxyServer = TestUtils.startRequestFailingProxy(2, new ConcurrentHashMap<>(), HttpResponseStatus.INTERNAL_SERVER_ERROR,
                 (req, reqCount) -> {
@@ -237,7 +236,7 @@ public class BigQueryIT
         public void testLoad()
                 throws Exception
         {
-            assumeThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
+            assertThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
 
             // Create source data object
             String objectName = GCS_PREFIX + "test.csv";
@@ -282,7 +281,7 @@ public class BigQueryIT
         public void testExtract()
                 throws Exception
         {
-            assumeThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
+            assertThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
 
             // Create source table
             String tableId = "data";
