@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +33,7 @@ public class ShIT
     public void setUp()
         throws Exception
     {
+        //This checks Windows environment and then skip
         assumeThat(runEcho(), is(true));
 
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();

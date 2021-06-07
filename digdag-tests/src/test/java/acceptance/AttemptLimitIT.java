@@ -21,7 +21,6 @@ import static utils.TestUtils.expect;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static java.time.temporal.ChronoUnit.HOURS;
 
 public class AttemptLimitIT
