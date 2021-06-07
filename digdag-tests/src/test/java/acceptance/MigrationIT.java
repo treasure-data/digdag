@@ -6,7 +6,6 @@ import io.digdag.core.database.migrate.MigrationContext;
 import io.digdag.core.database.migrate.Migration_20151204221156_CreateTables;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -21,8 +20,20 @@ import static org.junit.Assume.assumeTrue;
 
 public class MigrationIT
 {
+    // Shouldn't setup TemporaryDigdagServer using @Rule in this test
+    // since the annotation implicitly calls `apply()` method, but this test
+    // expects the method hasn't been called
+    /*
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    */
+    private TemporaryDigdagServer server = null;
+
+    @Before
+    public void setUp()
+    {
+        server = TemporaryDigdagServer.of();
+    }
 
     @After
     public void tearDown()
