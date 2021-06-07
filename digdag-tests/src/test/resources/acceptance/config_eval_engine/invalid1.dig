@@ -1,5 +1,5 @@
 +test:
-  if>: ${td.last_results.cnt => 3}
+  if>: ${td.last_results.cnt >= 3}
   _do:
     echo>: "A,B,C"
   _else_do:
