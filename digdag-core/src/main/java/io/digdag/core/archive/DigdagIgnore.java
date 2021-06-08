@@ -33,7 +33,8 @@ public class DigdagIgnore implements DirectoryStream.Filter<Path> {
     @Override
     public boolean accept(Path target) {
         Boolean ignored = this.ignoreNode.checkIgnored(
-                this.projectPath.relativize(target).toString(),
+                // checkIgnored assumes separator to be "/"
+                this.projectPath.relativize(target).toString().replace(File.separatorChar, '/'),
                 target.toFile().isDirectory()
         );
          return ignored == null || ignored == false;
