@@ -128,6 +128,11 @@ public class PgIT
     @After
     public void tearDown()
     {
+        if (host == null) {
+            // Do nothing since all the tests in this class are skipped
+            return;
+        }
+
         try {
             removeTempDatabase();
         }

@@ -180,13 +180,16 @@ public class RedshiftIT
     @After
     public void tearDown()
     {
-        if (database != null) {
-            try {
-                removeTempDatabase();
-            }
-            catch (Throwable e) {
-                logger.error("Failed to remove resources", e);
-            }
+        if (redshiftHost == null) {
+            // Do nothing since all the tests in this class are skipped
+            return;
+        }
+
+        try {
+            removeTempDatabase();
+        }
+        catch (Throwable e) {
+            logger.error("Failed to remove resources", e);
         }
 
         try {
