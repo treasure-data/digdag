@@ -19,6 +19,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.digdag.commons.guava.ThrowablesUtil;
+
 import static java.util.Locale.ENGLISH;
 
 public class Config
@@ -197,7 +199,7 @@ public class Config
             return mapper.readTree(value);
         }
         catch (Exception ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

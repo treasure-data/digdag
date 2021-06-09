@@ -3,7 +3,6 @@ package io.digdag.cli;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -13,6 +12,7 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Limits;
 import io.digdag.core.LocalSite;
@@ -633,7 +633,7 @@ public class Run
             return Optional.absent();
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
