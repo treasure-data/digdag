@@ -1,6 +1,5 @@
 package acceptance.td;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
@@ -12,12 +11,10 @@ import com.amazonaws.services.elasticmapreduce.model.TerminateJobFlowsRequest;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3URI;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -29,7 +26,6 @@ import io.digdag.core.config.YamlConfigLoader;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -112,12 +108,12 @@ public class EmrIT
     public void setUp()
             throws Exception
     {
-        assumeThat(S3_TEMP_BUCKET, not(isEmptyOrNullString()));
-        assumeThat(AWS_ACCESS_KEY_ID, not(isEmptyOrNullString()));
-        assumeThat(AWS_SECRET_ACCESS_KEY, not(isEmptyOrNullString()));
-        assumeThat(AWS_ROLE, not(isEmptyOrNullString()));
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
-        assumeThat(AWS_KMS_KEY_ID, not(isEmptyOrNullString()));
+        assertThat(S3_TEMP_BUCKET, not(isEmptyOrNullString()));
+        assertThat(AWS_ACCESS_KEY_ID, not(isEmptyOrNullString()));
+        assertThat(AWS_SECRET_ACCESS_KEY, not(isEmptyOrNullString()));
+        assertThat(AWS_ROLE, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(AWS_KMS_KEY_ID, not(isEmptyOrNullString()));
 
         AWSCredentials credentials = new BasicAWSCredentials(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY);
 
@@ -301,6 +297,7 @@ public class EmrIT
                 throws Exception
         {
             String clusterId = System.getenv("EMR_TEST_CLUSTER_ID");
+            // This test is expected to run by hand. So keep assumeThat.
             assumeThat(clusterId, not(Matchers.isEmptyOrNullString()));
 
             Id attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(

@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.*;
 
 public class RedshiftIT
@@ -109,7 +108,7 @@ public class RedshiftIT
 
     @Before
     public void setUp() throws Exception {
-        assumeThat(REDSHIFT_CONFIG, not(isEmptyOrNullString()));
+        assertThat(REDSHIFT_CONFIG, not(isEmptyOrNullString()));
 
         ObjectMapper objectMapper = DigdagClient.objectMapper();
         config = Config.deserializeFromJackson(objectMapper, objectMapper.readTree(REDSHIFT_CONFIG));

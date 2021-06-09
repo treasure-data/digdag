@@ -39,7 +39,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.createProject;
@@ -75,8 +74,8 @@ public class GcsWaitIT
     public void setUp()
             throws Exception
     {
-        assumeThat(GCP_CREDENTIAL, not(isEmptyOrNullString()));
-        assumeThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
+        assertThat(GCP_CREDENTIAL, not(isEmptyOrNullString()));
+        assertThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
 
         proxyServer = TestUtils.startRequestFailingProxy(1);
 

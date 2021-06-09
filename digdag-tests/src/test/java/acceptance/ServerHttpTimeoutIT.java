@@ -10,11 +10,6 @@ import java.time.Duration;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 
-import java.sql.Connection;
-
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static utils.TestUtils.expect;

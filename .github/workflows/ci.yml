@@ -32,6 +32,8 @@ jobs:
     - name: Run tests in Docker
       run: ci/run_test.sh
       env:
+        # Explicilty skip IT
+        CI_ACCEPTANCE_TEST: false
         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
         CI_NODE_TOTAL: 10
         BUILD_IMAGE: digdag/digdag-build:20210121T160201-c21ea363746ab5ef7f7503a1a6212a37b79a9943
