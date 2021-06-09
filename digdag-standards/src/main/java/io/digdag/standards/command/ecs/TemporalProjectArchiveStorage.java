@@ -46,13 +46,8 @@ public class TemporalProjectArchiveStorage
         return storage.getDirectUploadHandle(key).get().getUrl().toString();
     }
 
-    public InputStream getContentInputStream(final String key)
+    public InputStream getContentInputStream(final String key) throws StorageFileNotFoundException
     {
-        try {
-            return storage.open(key).getContentInputStream();
-        }
-        catch (StorageFileNotFoundException e) {
-            throw ThrowablesUtil.propagate(e);
-        }
+        return storage.open(key).getContentInputStream();
     }
 }

@@ -356,33 +356,24 @@ public class EcsCommandExecutor
             final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(commandContext.getTaskRequest().getConfig());
             try (final InputStream in = temporalStorage.getContentInputStream(outputArchiveKey)) {
                 ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
-            } catch (RuntimeException runtimeEx) {
-                // getContentInputStream could throw StorageFileNotFoundException wrapped with RuntimeException when archive-output.tar.gz is not existing.
-                Throwable rootCause = runtimeEx.getCause();
-                if(rootCause instanceof StorageFileNotFoundException) {
-                    if(statusCode == 0) {
-                        if(foundLoggingFinishedMark == false) {
-                            logger.warn(s("Scheduled to poll again because "
-                                    + "1) archive-output.tar.gz does not exist yet while container task normally exit 0, and "
-                                    + "2) no ECS_END_OF_TASK_LOG_MARK observed yet. "
-                                    + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), runtimeEx);
-                            return EcsCommandStatus.of(false, nextStatus); // poll again
-                        } else {
-                            logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
-                                    + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), runtimeEx);
-                            throw runtimeEx;
-                        }
+            } catch (StorageFileNotFoundException ex) {
+                if(statusCode == 0) {
+                    if(foundLoggingFinishedMark == false) {
+                        logger.warn(s("Scheduled to poll again because "
+                                + "1) archive-output.tar.gz does not exist yet while container task normally exit 0, and "
+                                + "2) no ECS_END_OF_TASK_LOG_MARK observed yet. "
+                                + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), ex);
+                        return EcsCommandStatus.of(false, nextStatus); // poll again
                     } else {
-                        // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
-                        logger.debug(s("Container task exit %d and thus archive-output.tar.gz does not exist. cluster=%s, taskArn=%s, errorMessage=%s",
-                            statusCode, cluster, taskArn, errorMessage.orNull()));
-                        // fall through
+                        logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                                + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), ex);
+                        throw new RuntimeException(ex);
                     }
                 } else {
-                    logger.error(s("Unexpected error happended when processing archive-output.tar.gz. "
-                            + "cluster=%s, taskArn=%s, statusCode=%d, errorMessage=%s",
-                        cluster, taskArn, statusCode, errorMessage.orNull()), runtimeEx);
-                    throw runtimeEx;
+                    // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
+                    logger.debug(s("Container task exit %d and thus archive-output.tar.gz does not exist. cluster=%s, taskArn=%s, errorMessage=%s",
+                        statusCode, cluster, taskArn, errorMessage.orNull()));
+                    // fall through
                 }
             }
 
