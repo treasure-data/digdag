@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.main;
 
 public class TdConfIT
@@ -57,7 +56,7 @@ public class TdConfIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
         tdConf = folder.newFolder().toPath().resolve("td.conf");
         digdagConf = folder.newFolder().toPath().resolve("digdag");
         Files.write(digdagConf, emptyList());

@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import org.littleshoot.proxy.HttpProxyServer;
-import utils.CommandStatus;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,16 +19,12 @@ import static acceptance.td.Secrets.TD_API_KEY;
 import static acceptance.td.Secrets.secretsServerConfiguration;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptSuccess;
-import static utils.TestUtils.copyResource;
 import static utils.TestUtils.createProject;
 import static utils.TestUtils.expect;
-import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.pushProject;
 
@@ -54,7 +49,7 @@ public class TdForEachIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
 
         proxyServer = TestUtils.startRequestFailingProxy(5);
 

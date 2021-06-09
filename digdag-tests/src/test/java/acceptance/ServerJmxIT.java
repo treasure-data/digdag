@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import java.sql.Connection;
 import java.sql.Statement;
 
 import javax.management.remote.JMXServiceURL;
@@ -81,6 +80,7 @@ public class ServerJmxIT
     public void verifyHikariCP()
             throws Exception
     {
+        //This test requires remote database
         assumeThat(server.isRemoteDatabase(), is(true));
         try (JMXConnector con = connectJmx(server)) {
             MBeanServerConnection beans = con.getMBeanServerConnection();
@@ -126,6 +126,7 @@ public class ServerJmxIT
     public void verifyUncaughtErrorCount()
             throws Exception
     {
+        //This test requires remote database
         assumeThat(server.isRemoteDatabase(), is(true));
 
         try (JMXConnector con = connectJmx(server)) {

@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.createProject;
@@ -70,7 +69,7 @@ public class S3WaitIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
+        assertThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
 
         proxyServer = TestUtils.startRequestFailingProxy(10);
 

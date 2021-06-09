@@ -9,7 +9,6 @@ import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +30,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 
 public class S3StorageIT
 {
@@ -73,7 +71,7 @@ public class S3StorageIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
+        assertThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
 
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();

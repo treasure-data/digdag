@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.main;
 
 public class TdRunIT
@@ -47,7 +46,7 @@ public class TdRunIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
         Files.write(config, ImmutableList.of("secrets.td.apikey = " + TD_API_KEY));
