@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static utils.TestUtils.s3DeleteRecursively;
@@ -56,10 +55,10 @@ public class TdLoadIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
-        assumeThat(S3_BUCKET, not(isEmptyOrNullString()));
-        assumeThat(S3_ACCESS_KEY_ID, not(isEmptyOrNullString()));
-        assumeThat(S3_SECRET_ACCESS_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(S3_BUCKET, not(isEmptyOrNullString()));
+        assertThat(S3_ACCESS_KEY_ID, not(isEmptyOrNullString()));
+        assertThat(S3_SECRET_ACCESS_KEY, not(isEmptyOrNullString()));
 
         AWSCredentials credentials = new BasicAWSCredentials(S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY);
         s3 = new AmazonS3Client(credentials);

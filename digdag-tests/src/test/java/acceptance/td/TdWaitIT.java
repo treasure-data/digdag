@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptFailure;
 import static utils.TestUtils.attemptSuccess;
@@ -72,7 +71,7 @@ public class TdWaitIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
 
         proxyServer = TestUtils.startRequestFailingProxy(5);
 

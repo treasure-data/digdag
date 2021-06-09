@@ -36,7 +36,6 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static utils.TestUtils.objectMapper;
@@ -59,7 +58,7 @@ public class TdPartialDeleteIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
         Files.write(config, asList("secrets.td.apikey = " + TD_API_KEY));

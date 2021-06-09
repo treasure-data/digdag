@@ -58,11 +58,8 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.main;
 
@@ -102,7 +99,7 @@ public class TdDdlIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assertThat(TD_API_KEY, not(isEmptyOrNullString()));
         noTdConf = folder.newFolder().toPath().resolve("non-existing-td.conf").toString();
         projectDir = folder.newFolder().toPath();
         config = folder.newFile().toPath();
