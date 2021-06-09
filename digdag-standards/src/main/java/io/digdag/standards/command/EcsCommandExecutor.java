@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -38,6 +39,7 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
+import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
@@ -321,13 +323,16 @@ public class EcsCommandExecutor
 
         // To fetch log until all logs is written in CloudWatch, it should wait until getting finish marker in end of task.
         // (finished previous poll once considering risk of crushing while running previous actual poll.)
-        final Optional<Long> taskFinishedAt = !previousStatus.has("task_finished_at") ?
-                Optional.absent() : Optional.of(previousStatus.get("task_finished_at").asLong());
-        if (taskFinishedAt.isPresent()) {
-            long timeout = taskFinishedAt.get() + 60;
+        if (previousStatus.has("task_finished_at")) {
+            final long taskFinishedAt = previousStatus.get("task_finished_at").asLong();
+            final int statusCode =  previousStatus.get("status_code").intValue();
+
+            boolean foundLoggingFinishedMark = false;
+            long timeout = taskFinishedAt + 60;
             do {
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
+                    foundLoggingFinishedMark = true;
                     break;
                 }
                 try {
@@ -341,18 +346,46 @@ public class EcsCommandExecutor
             }
             while (Instant.now().getEpochSecond() < timeout);
 
+            final ObjectNode nextStatus = previousStatus.deepCopy();
+            nextStatus.set("executor_state", previousExecutorStatus);
+            final Optional<String> errorMessage = getErrorMessageFromTask(cluster, taskArn, client);
+
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
             // Download output config archive
             final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(commandContext.getTaskRequest().getConfig());
             try (final InputStream in = temporalStorage.getContentInputStream(outputArchiveKey)) {
                 ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
+            } catch (RuntimeException runtimeEx) {
+                // getContentInputStream could throw StorageFileNotFoundException wrapped with RuntimeException when archive-output.tar.gz is not existing.
+                Throwable rootCause = runtimeEx.getCause();
+                if(rootCause instanceof StorageFileNotFoundException) {
+                    if(statusCode == 0) {
+                        if(foundLoggingFinishedMark == false) {
+                            logger.warn(s("Scheduled to poll again because "
+                                    + "1) archive-output.tar.gz does not exist yet while container task normally exit 0, and "
+                                    + "2) no ECS_END_OF_TASK_LOG_MARK observed yet. "
+                                    + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), runtimeEx);
+                            return EcsCommandStatus.of(false, nextStatus); // poll again
+                        } else {
+                            logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                                    + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), runtimeEx);
+                            throw runtimeEx;
+                        }
+                    } else {
+                        // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
+                        logger.debug(s("Container task exit %d and thus archive-output.tar.gz does not exist. cluster=%s, taskArn=%s, errorMessage=%s",
+                            statusCode, cluster, taskArn, errorMessage.orNull()));
+                        // fall through
+                    }
+                } else {
+                    logger.error(s("Unexpected error happended when processing archive-output.tar.gz. "
+                            + "cluster=%s, taskArn=%s, statusCode=%d, errorMessage=%s",
+                        cluster, taskArn, statusCode, errorMessage.orNull()), runtimeEx);
+                    throw runtimeEx;
+                }
             }
 
-            final ObjectNode nextStatus = previousStatus.deepCopy();
-            nextStatus.set("executor_state", previousExecutorStatus);
-
-            Optional<String> errorMessage = getErrorMessageFromTask(cluster, taskArn, client);
             return EcsCommandStatus.of(true, nextStatus, errorMessage);
         }
 
@@ -362,7 +395,7 @@ public class EcsCommandExecutor
         }
         catch (TaskSetNotFoundException e) {
             // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
-            logger.info("Cannot get the Ecs task status. Will be retried.");
+            logger.info(s("Cannot get the Ecs task status where cluster=%s, taskArn=%s. Will be retried.", cluster, taskArn));
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
         }
 
