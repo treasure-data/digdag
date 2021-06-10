@@ -58,7 +58,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
-import com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -71,6 +70,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.Environment;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
@@ -254,7 +254,7 @@ public class EmrOperatorFactory
                 boolean retry = t instanceof TaskExecutionException &&
                         ((TaskExecutionException) t).getRetryInterval().isPresent();
                 cleanup = !retry;
-                throw Throwables.propagate(t);
+                throw ThrowablesUtil.propagate(t);
             }
             finally {
                 if (cleanup) {

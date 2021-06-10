@@ -3,7 +3,6 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientHttpNotFoundException;
@@ -14,6 +13,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -417,7 +417,7 @@ public class TdOperatorFactory
                 td.set("last_results", new ObjectMapper().readTree(lastResults.toJson()));
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
 
             return cf.create().set("td", td);

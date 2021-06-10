@@ -3,7 +3,6 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
@@ -13,6 +12,7 @@ import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
@@ -120,7 +120,7 @@ public class TDOperator extends BaseTDOperator
                 try {
                     authenticatinRetryExecutor().run(() -> op.run());
                 } catch (RetryGiveupException ex) {
-                    throw Throwables.propagate(ex.getCause());
+                    throw ThrowablesUtil.propagate(ex.getCause());
                 }
             });
         }
@@ -129,7 +129,7 @@ public class TDOperator extends BaseTDOperator
                 // ignore
                 return;
             }
-            throw Throwables.propagate(ex.getCause());
+            throw ThrowablesUtil.propagate(ex.getCause());
         }
     }
 
@@ -313,7 +313,7 @@ public class TDOperator extends BaseTDOperator
             if (ex.getMessage().contains("HTTP request execution failed with code 401")) {
                 updateApikey(secrets);
             }
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
 
         // Reset error state

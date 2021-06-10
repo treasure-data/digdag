@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.ParamServerClient;
 import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
@@ -51,7 +51,7 @@ public class RedisParamServerClient
             json = objectMapper.readTree(rawResult);
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
         JsonNode value = json.get("value");
         int valueType = json.get("value_type").asInt();
@@ -76,7 +76,7 @@ public class RedisParamServerClient
             msetTarget.put(formattedKey(key, siteId), jsonizeBody(value));
         }
         catch (JsonProcessingException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 

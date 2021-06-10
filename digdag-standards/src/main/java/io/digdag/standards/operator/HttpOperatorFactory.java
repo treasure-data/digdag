@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.inject.Inject;
@@ -13,6 +12,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.Environment;
 import io.digdag.client.DigdagVersion;
 import io.digdag.spi.ImmutableTaskResult;
@@ -332,19 +332,19 @@ public class HttpOperatorFactory
             }
             catch (InterruptedException e) {
                 logger.debug("HTTP request interrupted: {}", req, e);
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
             catch (TimeoutException e) {
                 logger.debug("HTTP request timeout: {}", req, e);
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
             catch (ExecutionException e) {
                 logger.debug("HTTP request error: {}", req, e);
                 if (e.getCause() != null) {
-                    throw Throwables.propagate(e.getCause());
+                    throw ThrowablesUtil.propagate(e.getCause());
                 }
                 else {
-                    throw Throwables.propagate(e);
+                    throw ThrowablesUtil.propagate(e);
                 }
             }
             return res;
@@ -367,7 +367,7 @@ public class HttpOperatorFactory
                 safeUri = new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), uri.getRawPath(), uri.getRawQuery(), uri.getRawFragment());
             }
             catch (URISyntaxException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
             return safeUri.toString();
         }

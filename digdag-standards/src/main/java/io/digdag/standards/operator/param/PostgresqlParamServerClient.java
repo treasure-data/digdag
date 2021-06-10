@@ -3,7 +3,7 @@ package io.digdag.standards.operator.param;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.ParamServerClient;
 import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
@@ -66,7 +66,7 @@ public class PostgresqlParamServerClient
             jsonValue = jsonizeValue(value);
         }
         catch (JsonProcessingException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         handle.insert(

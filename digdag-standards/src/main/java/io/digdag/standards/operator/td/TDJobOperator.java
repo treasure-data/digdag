@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Function;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import org.msgpack.core.MessagePack;
@@ -129,12 +129,12 @@ class TDJobOperator extends BaseTDOperator
             }
             catch (Exception getJobInfoFailed) {
                 getJobInfoFailed.addSuppressed(ex);
-                throw Throwables.propagate(getJobInfoFailed);
+                throw ThrowablesUtil.propagate(getJobInfoFailed);
             }
         }
         catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 }

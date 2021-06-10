@@ -1,10 +1,10 @@
 package io.digdag.standards.operator.param;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Throwables;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.digdag.client.config.Config;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.spi.ParamServerClientConnection;
@@ -49,7 +49,7 @@ public class PostgresqlServerClientConnectionManager
                         .build();
             }
             catch (IOException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         }
     }
@@ -87,7 +87,7 @@ public class PostgresqlServerClientConnectionManager
             closer.close();
         }
         catch (Exception ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

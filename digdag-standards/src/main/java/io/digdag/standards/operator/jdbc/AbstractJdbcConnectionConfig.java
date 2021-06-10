@@ -1,13 +1,12 @@
 package io.digdag.standards.operator.jdbc;
 
 import java.util.Properties;
-import java.time.Duration;
 import java.sql.SQLException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.util.DurationParam;
 import static java.util.Locale.ENGLISH;
@@ -59,7 +58,7 @@ public abstract class AbstractJdbcConnectionConfig
             Class.forName(jdbcDriverName());
         }
         catch (ClassNotFoundException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         try {

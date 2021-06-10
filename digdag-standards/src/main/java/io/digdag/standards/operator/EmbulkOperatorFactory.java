@@ -12,6 +12,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
@@ -92,7 +93,7 @@ public class EmbulkOperatorFactory
                 return TaskResult.empty(request);
             }
             catch (IOException | TemplateException | InterruptedException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         }
 
