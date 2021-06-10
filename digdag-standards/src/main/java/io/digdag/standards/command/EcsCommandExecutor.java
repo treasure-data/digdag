@@ -363,8 +363,8 @@ public class EcsCommandExecutor
             try (final InputStream in = temporalStorage.getContentInputStream(outputArchiveKey)) {
                 ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
             } catch (StorageFileNotFoundException ex) {
-                if(statusCode == 0) {
-                    if(foundLoggingFinishedMark == false && previousStatus.has("retry_on_end_of_task_mark_missing") == false) {
+                if (statusCode == 0) {
+                    if (foundLoggingFinishedMark == false && previousStatus.has("retry_on_end_of_task_mark_missing") == false) {
                         logger.warn(s("Scheduled to poll again because "
                                 + "1) archive-output.tar.gz does not exist yet while container task normally exit 0, and "
                                 + "2) no ECS_END_OF_TASK_LOG_MARK observed yet. "
