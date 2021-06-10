@@ -3,6 +3,7 @@ plugins {
     id 'com.github.kt3k.coveralls' version '2.10.1'
     id 'com.github.spotbugs' version '4.0.5'
     id 'net.ltgt.apt-idea' version '0.21'
+    id 'net.ltgt.apt-eclipse' version '0.21'
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -26,9 +27,11 @@ allprojects {
     }
 
     apply plugin: 'idea'
+    apply plugin: 'eclipse'
     apply plugin: 'java'
     apply plugin: 'jacoco'
     apply plugin: 'net.ltgt.apt-idea'
+    apply plugin: 'net.ltgt.apt-eclipse'
     // 'maven' plugin is deprecated and replaced by 'maven-publish'.
     // But it is required for task 'pom' which generates pom.xml in root and subproject root.
     // ci/validate.sh call the task and run some mvn commands like 'enforcer'.
