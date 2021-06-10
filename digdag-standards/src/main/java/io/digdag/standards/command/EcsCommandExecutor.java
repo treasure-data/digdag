@@ -308,6 +308,13 @@ public class EcsCommandExecutor
         }
     }
 
+    private long maxWaitForFetchLogEventsInSec = 60L;
+
+    @VisibleForTesting
+    void setMaxWaitForFetchLogEvents(long sec) {
+        this.maxWaitForFetchLogEventsInSec = sec;
+    }
+
     CommandStatus createNextCommandStatus(
             final CommandContext commandContext,
             final EcsClient client,
@@ -327,7 +334,7 @@ public class EcsCommandExecutor
             final int statusCode =  previousStatus.get("status_code").intValue();
 
             boolean foundLoggingFinishedMark = false;
-            long timeout = taskFinishedAt + 60;
+            long timeout = taskFinishedAt + maxWaitForFetchLogEventsInSec;
             do {
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
@@ -367,7 +374,8 @@ public class EcsCommandExecutor
                     } else {
                         logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
                                 + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), ex);
-                        throw new RuntimeException(ex);
+                        throw new RuntimeException(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                                + "cluster=%s, taskArn=%s", cluster, taskArn), ex); // avoid errorMessage not to leak confidential information
                     }
                 } else {
                     // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
