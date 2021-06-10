@@ -2,13 +2,13 @@ package acceptance.td;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,7 +96,7 @@ public class TdPartialDeleteIT
                 return result;
             }
             catch (IOException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         });
     }

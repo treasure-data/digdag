@@ -1,7 +1,6 @@
 package acceptance;
 
-import com.google.common.base.Throwables;
-
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import io.digdag.core.database.DataSourceProvider;
@@ -57,7 +56,7 @@ public class ServerJmxIT
             return JMXConnectorFactory.connect(url, null);
         }
         catch (MalformedURLException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

@@ -15,13 +15,13 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-import com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.config.YamlConfigLoader;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -341,7 +341,7 @@ public class EmrIT
                 return CharStreams.readLines(new InputStreamReader(object.getObjectContent())).stream();
             }
             catch (IOException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         }).collect(toList());
         // FIXME

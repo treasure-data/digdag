@@ -14,6 +14,7 @@ import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.netty.handler.codec.http.FullHttpRequest;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -169,7 +170,7 @@ public class TdResultExportIT
                 return result;
             }
             catch (IOException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         });
     }

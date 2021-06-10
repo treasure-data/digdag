@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.util.RetryExecutor;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -337,7 +338,7 @@ public class BigQueryIT
                             .executeMediaAndDownloadTo(data);
                 }
                 catch (IOException e) {
-                    throw Throwables.propagate(e);
+                    throw ThrowablesUtil.propagate(e);
                 }
             });
         }

@@ -2,9 +2,9 @@ package acceptance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.google.common.base.Throwables;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.Notification;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,7 +41,7 @@ public class ShellNotificationIT
             notificationFile = Files.createTempDirectory("digdag-test").resolve("notification.json");
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 

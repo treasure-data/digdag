@@ -1,7 +1,7 @@
 package io.digdag.plugin.example;
 
-import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -56,7 +56,7 @@ public class ExampleOperatorFactory
                 Files.write(workspace.getPath(path), message.getBytes(UTF_8));
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
 
             return TaskResult.empty(request);
