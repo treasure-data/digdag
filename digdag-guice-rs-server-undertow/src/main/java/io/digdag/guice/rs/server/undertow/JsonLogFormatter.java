@@ -3,8 +3,7 @@ package io.digdag.guice.rs.server.undertow;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
-import com.google.common.base.Throwables;
-
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.guice.rs.server.ThreadLocalAccessLogs;
 
 import io.undertow.attribute.ExchangeAttribute;
@@ -87,7 +86,7 @@ public class JsonLogFormatter
                 gen.writeEndObject();
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
             return writer.toString();
         }

@@ -1,19 +1,18 @@
 package io.digdag.guice.rs.server.jmx;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.rmi.server.RemoteObject;
 import java.util.Properties;
 import java.util.stream.IntStream;
 import javax.annotation.PostConstruct;
 import javax.management.remote.JMXServiceURL;
 
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public class JmxAgent
                 return;
             }
             catch (Exception e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         }
         catch (ReflectiveOperationException e) {
@@ -90,7 +89,7 @@ public class JmxAgent
                 // VirtualMachine throws IOException
                 throw new RuntimeException("Failed to start JMX agent. Please make sure that you add '-Djdk.attach.allowAttachSelf=true' to the command line options of java or to JDK_JAVA_OPTIONS environment variable.", e.getCause());
             }
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         try {

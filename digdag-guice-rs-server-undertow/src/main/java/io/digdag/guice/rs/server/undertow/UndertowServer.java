@@ -1,9 +1,8 @@
 package io.digdag.guice.rs.server.undertow;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServerRuntimeInfo;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
@@ -238,7 +237,7 @@ public class UndertowServer
                         .getMap());
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         control.workerInitialized(worker);
 
@@ -316,7 +315,7 @@ public class UndertowServer
             Files.createDirectories(path);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
 
         Executor logWriterExecutor = Executors.newCachedThreadPool(

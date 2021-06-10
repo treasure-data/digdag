@@ -3,6 +3,7 @@ package io.digdag.guice.rs.server;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import io.digdag.commons.guava.ThrowablesUtil;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -190,7 +191,7 @@ public class ServerLifeCycleManager
                 Throwable cause = ex.getCause();
                 Throwables.propagateIfPossible(cause);
                 Throwables.propagateIfInstanceOf(cause, Exception.class);
-                throw Throwables.propagate(cause);
+                throw ThrowablesUtil.propagate(cause);
             }
         }
     }

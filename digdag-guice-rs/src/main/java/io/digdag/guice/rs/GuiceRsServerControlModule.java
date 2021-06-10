@@ -5,7 +5,7 @@ import javax.servlet.ServletContext;
 import com.google.inject.Module;
 import com.google.inject.Binder;
 import com.google.inject.Provider;
-import com.google.common.base.Throwables;
+import io.digdag.commons.guava.ThrowablesUtil;
 
 public class GuiceRsServerControlModule
         implements Module
@@ -33,7 +33,7 @@ public class GuiceRsServerControlModule
             return (Class<? extends Provider<GuiceRsServerControl>>) Class.forName(value);
         }
         catch (ClassNotFoundException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
