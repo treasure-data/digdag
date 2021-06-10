@@ -9,7 +9,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Callable;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.amazonaws.HttpMethod;
@@ -160,7 +159,7 @@ public class S3Storage
         }
         catch (RetryGiveupException ex) {
             Throwable cause = ex.getCause();
-            Throwables.propagateIfInstanceOf(cause, IOException.class);
+            ThrowablesUtil.propagateIfInstanceOf(cause, IOException.class);
             throw ThrowablesUtil.propagate(cause);
         }
     }

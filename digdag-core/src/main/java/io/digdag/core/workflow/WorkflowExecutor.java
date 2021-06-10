@@ -3,7 +3,6 @@ package io.digdag.core.workflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -238,9 +237,9 @@ public class WorkflowExecutor
             });
         }
         catch (Exception ex) {
-            Throwables.propagateIfInstanceOf(ex, ResourceNotFoundException.class);
-            Throwables.propagateIfInstanceOf(ex, AttemptLimitExceededException.class);
-            Throwables.propagateIfInstanceOf(ex, SessionAttemptConflictException.class);
+            ThrowablesUtil.propagateIfInstanceOf(ex, ResourceNotFoundException.class);
+            ThrowablesUtil.propagateIfInstanceOf(ex, AttemptLimitExceededException.class);
+            ThrowablesUtil.propagateIfInstanceOf(ex, SessionAttemptConflictException.class);
             throw ThrowablesUtil.propagate(ex);
         }
     }
@@ -479,7 +478,7 @@ public class WorkflowExecutor
             });
         }
         catch (RuntimeException ex) {
-            Throwables.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
+            ThrowablesUtil.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
             throw ex;
         }
 

@@ -10,6 +10,7 @@ import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -177,7 +178,7 @@ public class TdLoadOperatorFactory
                 embulkConfig = new YamlLoader().loadString(built);
             }
             catch (RuntimeException | IOException ex) {
-                Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+                ThrowablesUtil.propagateIfInstanceOf(ex, ConfigException.class);
                 throw new ConfigException("Failed to parse yaml file", ex);
             }
             return embulkConfig;

@@ -9,7 +9,6 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageException;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.DirectDownloadHandle;
@@ -114,7 +113,7 @@ public class GCSStorage
         }
         catch (RetryGiveupException ex) {
             Throwable cause = ex.getCause();
-            Throwables.propagateIfInstanceOf(cause, IOException.class);
+            ThrowablesUtil.propagateIfInstanceOf(cause, IOException.class);
             throw ThrowablesUtil.propagate(cause);
         }
     }

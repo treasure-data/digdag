@@ -1,6 +1,5 @@
 package io.digdag.core.database;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.commons.guava.ThrowablesUtil;
 import org.skife.jdbi.v2.DBI;
@@ -267,10 +266,10 @@ public class ThreadLocalTransactionManager
             return result;
         }
         catch (Exception e) {
-            Throwables.propagateIfInstanceOf(e, e1);
-            Throwables.propagateIfInstanceOf(e, e2);
-            Throwables.propagateIfInstanceOf(e, e3);
-            Throwables.propagateIfInstanceOf(e, e4);
+            ThrowablesUtil.propagateIfInstanceOf(e, e1);
+            ThrowablesUtil.propagateIfInstanceOf(e, e2);
+            ThrowablesUtil.propagateIfInstanceOf(e, e3);
+            ThrowablesUtil.propagateIfInstanceOf(e, e4);
             throw ThrowablesUtil.propagate(e);
         }
         finally {
@@ -329,9 +328,9 @@ public class ThreadLocalTransactionManager
             }
         }
         catch (Exception e) {
-            Throwables.propagateIfInstanceOf(e, e1);
-            Throwables.propagateIfInstanceOf(e, e2);
-            Throwables.propagateIfInstanceOf(e, e3);
+            ThrowablesUtil.propagateIfInstanceOf(e, e1);
+            ThrowablesUtil.propagateIfInstanceOf(e, e2);
+            ThrowablesUtil.propagateIfInstanceOf(e, e3);
             throw ThrowablesUtil.propagate(e);
         }
     }

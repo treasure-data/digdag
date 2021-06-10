@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.api.client.util.Maps;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -149,7 +148,7 @@ public class EmbulkOperatorFactory
                     embulkConfig = new YamlLoader().loadString(data);
                 }
                 catch (RuntimeException | IOException ex) {
-                    Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+                    ThrowablesUtil.propagateIfInstanceOf(ex, ConfigException.class);
                     throw new ConfigException("Failed to parse yaml file", ex);
                 }
 

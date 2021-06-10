@@ -7,7 +7,6 @@ import java.io.IOException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -499,7 +498,7 @@ public class Config
 
     private ConfigException propagateConvertException(Exception ex, String typeName, JsonNode value, String key)
     {
-        Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+        ThrowablesUtil.propagateIfInstanceOf(ex, ConfigException.class);
         String message = String.format(ENGLISH, "Expected %s for key '%s' but got %s (%s)",
                 typeName, key, jsonSample(value), typeNameOf(value));
         return new ConfigException(message, ex);

@@ -189,8 +189,8 @@ public class ServerLifeCycleManager
             }
             catch (InvocationTargetException ex) {
                 Throwable cause = ex.getCause();
-                Throwables.propagateIfPossible(cause);
-                Throwables.propagateIfInstanceOf(cause, Exception.class);
+                ThrowablesUtil.propagateIfPossible(cause);
+                ThrowablesUtil.propagateIfInstanceOf(cause, Exception.class);
                 throw ThrowablesUtil.propagate(cause);
             }
         }

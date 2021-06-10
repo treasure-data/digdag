@@ -9,7 +9,6 @@ import java.time.ZoneId;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import io.digdag.commons.guava.ThrowablesUtil;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
@@ -187,7 +186,7 @@ public class DatabaseTestingUtils
             r.run();
         }
         catch (Exception ex) {
-            Throwables.propagateIfInstanceOf((Throwable) ex, declaredType);
+            ThrowablesUtil.propagateIfInstanceOf((Throwable) ex, declaredType);
             throw ThrowablesUtil.propagate(ex);
         }
     }
