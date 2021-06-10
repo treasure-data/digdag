@@ -5,15 +5,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Injector;
 import com.google.inject.Guice;
 import com.google.inject.Stage;
-import io.digdag.spi.Plugin;
+import io.digdag.commons.guava.ThrowablesUtil;
 
 public class DynamicPluginLoader<R>
 {
@@ -54,10 +52,10 @@ public class DynamicPluginLoader<R>
             return cache.get(spec, () -> loadCache(spec));
         }
         catch (UncheckedExecutionException ex) {
-            throw Throwables.propagate(ex.getCause());
+            throw ThrowablesUtil.propagate(ex.getCause());
         }
         catch (ExecutionException ex) {
-            throw Throwables.propagate(ex.getCause());
+            throw ThrowablesUtil.propagate(ex.getCause());
         }
     }
 

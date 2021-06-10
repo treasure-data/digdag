@@ -1,16 +1,14 @@
 package io.digdag.core.database;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import io.digdag.client.config.ConfigKey;
+import io.digdag.commons.guava.ThrowablesUtil;
+
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 class ConfigKeyListMapper
 {
@@ -35,7 +33,7 @@ class ConfigKeyListMapper
             return (List<ConfigKey>) jsonTreeMapper.readValue(text, jsonTreeMapper.getTypeFactory().constructParametrizedType(List.class, List.class, ConfigKey.class));
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -45,7 +43,7 @@ class ConfigKeyListMapper
             return jsonTreeMapper.writeValueAsString(keys);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

@@ -1,7 +1,7 @@
 package io.digdag.core.database;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoException;
 
@@ -107,7 +107,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
             cipherText = cipher.doFinal(recordBytes);
         }
         catch (IllegalBlockSizeException | BadPaddingException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         byte[] opaque = new byte[WRAPPING_SIZE + cipherText.length];
@@ -161,7 +161,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
             throw new SecretCryptoException(e);
         }
         catch (IllegalBlockSizeException | BadPaddingException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         ByteBuffer decryptedBuffer = ByteBuffer.wrap(recordBytes);
@@ -188,7 +188,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
             result = Cipher.getInstance("AES/GCM/NoPadding");
         }
         catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
-            throw Throwables.propagate(e1);
+            throw ThrowablesUtil.propagate(e1);
         }
         Cipher cipher = result;
 
@@ -197,7 +197,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
             cipher.init(encryptMode, sharedSecret, spec);
         }
         catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
         return cipher;
     }

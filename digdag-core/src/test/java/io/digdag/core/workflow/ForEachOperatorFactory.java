@@ -1,13 +1,13 @@
 package io.digdag.core.workflow;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -180,7 +180,7 @@ public class ForEachOperatorFactory
                 return URLEncoder.encode(s, "UTF-8").replace("+", "%20");  // "+" is not allowed as a task name
             }
             catch (UnsupportedEncodingException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
     }

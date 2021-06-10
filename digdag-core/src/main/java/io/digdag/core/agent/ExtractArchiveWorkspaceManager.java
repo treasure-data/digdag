@@ -1,16 +1,14 @@
 package io.digdag.core.agent;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.archive.ProjectArchives;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.TaskRequest;
 import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
 
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
@@ -72,7 +70,7 @@ public class ExtractArchiveWorkspaceManager
                         });
             }
             catch (RetryExecutor.RetryGiveupException e) {
-                throw Throwables.propagate(e.getCause());
+                throw ThrowablesUtil.propagate(e.getCause());
             }
             return func.run(workspacePath.get());
         }

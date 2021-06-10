@@ -7,9 +7,9 @@ import java.io.File;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
@@ -149,7 +149,7 @@ public class RemotePluginLoader
                 url = artifactResult.getArtifact().getFile().toPath().toUri().toURL();
             }
             catch (MalformedURLException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
             urls.add(url);
         }
@@ -164,7 +164,7 @@ public class RemotePluginLoader
             return system.resolveDependencies(session, depRequest).getArtifactResults();
         }
         catch (DependencyResolutionException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

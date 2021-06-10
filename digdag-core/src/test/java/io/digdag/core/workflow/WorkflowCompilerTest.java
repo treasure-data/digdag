@@ -1,10 +1,10 @@
 package io.digdag.core.workflow;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.Resources;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.YamlConfigLoader;
 import org.junit.AfterClass;
@@ -56,7 +56,7 @@ public class WorkflowCompilerTest
                     .toConfig(embed.getInjector().getInstance(ConfigFactory.class));
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

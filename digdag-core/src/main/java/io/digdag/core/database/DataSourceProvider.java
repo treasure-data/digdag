@@ -3,14 +3,12 @@ package io.digdag.core.database;
 import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.h2.jdbcx.JdbcDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariConfig;
-import io.digdag.core.database.DatabaseMigrator;
-import io.digdag.core.database.DatabaseConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +65,7 @@ public class DataSourceProvider
             this.closer = ds.getConnection();
         }
         catch (SQLException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         this.ds = ds;
     }
@@ -108,7 +106,7 @@ public class DataSourceProvider
                 closer.close();
             }
             catch (Exception ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
             ds = null;
             closer = null;

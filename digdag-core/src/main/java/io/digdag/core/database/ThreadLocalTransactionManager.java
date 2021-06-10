@@ -2,6 +2,7 @@ package io.digdag.core.database;
 
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
@@ -270,7 +271,7 @@ public class ThreadLocalTransactionManager
             Throwables.propagateIfInstanceOf(e, e2);
             Throwables.propagateIfInstanceOf(e, e3);
             Throwables.propagateIfInstanceOf(e, e4);
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
         finally {
             threadLocalTransaction.set(null);
@@ -331,7 +332,7 @@ public class ThreadLocalTransactionManager
             Throwables.propagateIfInstanceOf(e, e1);
             Throwables.propagateIfInstanceOf(e, e2);
             Throwables.propagateIfInstanceOf(e, e3);
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 

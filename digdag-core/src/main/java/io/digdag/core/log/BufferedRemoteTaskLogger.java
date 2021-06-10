@@ -9,8 +9,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.TempFileManager;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -73,7 +73,7 @@ public class BufferedRemoteTaskLogger
         }
         catch (IOException ex) {
             // here can do almost nothing. adding logs to logger causes infinite loop
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -129,7 +129,7 @@ public class BufferedRemoteTaskLogger
             tryUpload(true);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

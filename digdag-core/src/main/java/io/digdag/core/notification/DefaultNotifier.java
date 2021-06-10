@@ -1,12 +1,12 @@
 package io.digdag.core.notification;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
 import io.digdag.client.config.Config;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
 import io.digdag.spi.NotificationSender;
@@ -76,7 +76,7 @@ public class DefaultNotifier
                     sender.sendNotification(notification);
                 }
                 catch (NotificationException e) {
-                    throw Throwables.propagate(e);
+                    throw ThrowablesUtil.propagate(e);
                 }
             });
         }

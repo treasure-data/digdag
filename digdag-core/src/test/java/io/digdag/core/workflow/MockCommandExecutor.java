@@ -1,8 +1,8 @@
 package io.digdag.core.workflow;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
@@ -34,7 +34,7 @@ public class MockCommandExecutor
             p.waitFor();
         }
         catch (InterruptedException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         return new CommandStatus() {

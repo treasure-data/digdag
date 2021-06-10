@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
@@ -35,7 +35,7 @@ public class DatabaseTestingUtils
                 props.load(reader);
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
 
             Config config = createConfig();
@@ -188,7 +188,7 @@ public class DatabaseTestingUtils
         }
         catch (Exception ex) {
             Throwables.propagateIfInstanceOf((Throwable) ex, declaredType);
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

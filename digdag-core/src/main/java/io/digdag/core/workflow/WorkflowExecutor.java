@@ -10,6 +10,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.commons.guava.ThrowablesUtil;
 import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.database.TransactionManager;
@@ -240,7 +241,7 @@ public class WorkflowExecutor
             Throwables.propagateIfInstanceOf(ex, ResourceNotFoundException.class);
             Throwables.propagateIfInstanceOf(ex, AttemptLimitExceededException.class);
             Throwables.propagateIfInstanceOf(ex, SessionAttemptConflictException.class);
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -473,7 +474,7 @@ public class WorkflowExecutor
                     return !sm.getAttemptStateFlags(attemptId).isDone();
                 }
                 catch (ResourceNotFoundException ex) {
-                    throw Throwables.propagate(ex);
+                    throw ThrowablesUtil.propagate(ex);
                 }
             });
         }
