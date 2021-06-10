@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.FilterInputStream;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.Callable;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -27,6 +26,7 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.model.UploadResult;
 import io.digdag.client.config.Config;
+import io.digdag.commons.guava.ThrowablesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.Storage;
@@ -156,12 +156,12 @@ public class S3Storage
                 });
         }
         catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         catch (RetryGiveupException ex) {
             Throwable cause = ex.getCause();
             Throwables.propagateIfInstanceOf(cause, IOException.class);
-            throw Throwables.propagate(cause);
+            throw ThrowablesUtil.propagate(cause);
         }
     }
 
@@ -182,7 +182,7 @@ public class S3Storage
                 listing = getWithRetry(errorMessage, () -> client.listObjects(req));
             }
             catch (StorageFileNotFoundException ex) {
-                throw Throwables.propagate(ex.getCause());
+                throw ThrowablesUtil.propagate(ex.getCause());
             }
             callback.accept(Lists.transform(
                         listing.getObjectSummaries(),
@@ -236,14 +236,14 @@ public class S3Storage
                 .runInterruptible(() -> callable.call());
         }
         catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         catch (RetryGiveupException ex) {
             Exception cause = ex.getCause();
             if (isNotFoundException(cause)) {
                 throw new StorageFileNotFoundException("S3 file not found", cause);
             }
-            throw Throwables.propagate(cause);
+            throw ThrowablesUtil.propagate(cause);
         }
     }
 
