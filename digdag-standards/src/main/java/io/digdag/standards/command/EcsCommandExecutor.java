@@ -357,11 +357,12 @@ public class EcsCommandExecutor
                 ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
             } catch (StorageFileNotFoundException ex) {
                 if(statusCode == 0) {
-                    if(foundLoggingFinishedMark == false) {
+                    if(foundLoggingFinishedMark == false && previousStatus.has("retry_on_end_of_task_mark_missing") == false) {
                         logger.warn(s("Scheduled to poll again because "
                                 + "1) archive-output.tar.gz does not exist yet while container task normally exit 0, and "
                                 + "2) no ECS_END_OF_TASK_LOG_MARK observed yet. "
                                 + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), ex);
+                        nextStatus.put("retry_on_end_of_task_mark_missing", true);
                         return EcsCommandStatus.of(false, nextStatus); // poll again
                     } else {
                         logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
