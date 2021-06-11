@@ -15,7 +15,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class ArchiveManagerTest

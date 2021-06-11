@@ -23,7 +23,7 @@ import java.util.Base64;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DatabaseSecretStoreTest
 {

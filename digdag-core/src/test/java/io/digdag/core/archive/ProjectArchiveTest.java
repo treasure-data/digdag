@@ -1,19 +1,13 @@
 package io.digdag.core.archive;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 
 import java.io.File;
@@ -22,15 +16,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-import io.digdag.client.config.ConfigUtils;
-import static io.digdag.client.config.ConfigUtils.configFactory;
 import static io.digdag.client.config.ConfigUtils.newConfig;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

@@ -8,7 +8,6 @@ import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -20,7 +19,7 @@ import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class StoreParameterTest
 {

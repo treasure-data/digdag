@@ -15,13 +15,11 @@ import io.digdag.core.workflow.*;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static io.digdag.client.config.ConfigUtils.newConfig;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DatabaseSessionStoreManagerTest
 {
