@@ -1,7 +1,6 @@
 
 dependencies {
     compile project(':digdag-client')
-    compile project(':digdag-commons')
     compile project(':digdag-guice-rs-server')
     compile project(':digdag-plugin-utils')
     compile project(':digdag-spi')
