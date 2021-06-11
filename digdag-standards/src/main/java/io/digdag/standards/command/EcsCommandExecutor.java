@@ -333,12 +333,10 @@ public class EcsCommandExecutor
             final long taskFinishedAt = previousStatus.get("task_finished_at").asLong();
             final int statusCode =  previousStatus.get("status_code").intValue();
 
-            boolean foundLoggingFinishedMark = false;
             long timeout = taskFinishedAt + maxWaitForFetchLogEventsInSec;
             do {
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
-                    foundLoggingFinishedMark = true;
                     break;
                 }
                 try {
@@ -364,19 +362,12 @@ public class EcsCommandExecutor
                 ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
             } catch (StorageFileNotFoundException ex) {
                 if (statusCode == 0) {
-                    if (foundLoggingFinishedMark == false && previousStatus.has("retry_on_end_of_task_mark_missing") == false) {
-                        logger.warn(s("Scheduled to poll again because "
-                                + "1) archive-output.tar.gz does not exist yet while container task normally exit 0, and "
-                                + "2) no ECS_END_OF_TASK_LOG_MARK observed yet. "
-                                + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), ex);
-                        nextStatus.put("retry_on_end_of_task_mark_missing", true);
-                        return EcsCommandStatus.of(false, nextStatus); // poll again
-                    } else {
-                        logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
-                                + "cluster=%s, taskArn=%s, errorMessage=%s", cluster, taskArn, errorMessage.orNull()), ex);
-                        throw new RuntimeException(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
-                                + "cluster=%s, taskArn=%s", cluster, taskArn), ex); // avoid errorMessage not to leak confidential information
-                    }
+                    String loggingFinishedAt = previousExecutorStatus.has("logging_finished_at") ? previousExecutorStatus.get("logging_finished_at").asText() : null;
+                    // The python script itself finished successful but the following command (e.g. tar zcf or curl -X PUT) failed ?
+                    logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                            + "cluster=%s, taskArn=%s, logging_finished_at=%s, errorMessage=%s", cluster, taskArn, loggingFinishedAt, errorMessage.orNull()), ex);
+                    throw new RuntimeException(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                            + "cluster=%s, taskArn=%s, logging_finished_at=%s", cluster, taskArn, loggingFinishedAt), ex); // avoid errorMessage not to leak confidential information
                 } else {
                     // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
                     logger.debug(s("Container task exit %d and thus archive-output.tar.gz does not exist. cluster=%s, taskArn=%s, errorMessage=%s",

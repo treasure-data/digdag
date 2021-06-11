@@ -147,10 +147,15 @@ public class EcsCommandExecutorTest2 {
                                           .put("status_code", 0);
 
         executor.setMaxWaitForFetchLogEvents(5);
-        CommandStatus cmdStatus = executor.poll(commandContext, previousStatusJson);
-        assertFalse(cmdStatus.isFinished());
-        assertEquals(0, cmdStatus.getStatusCode());
-        assertEquals(true, cmdStatus.toJson().get("retry_on_end_of_task_mark_missing").asBoolean());
+
+        try {
+            executor.poll(commandContext, previousStatusJson);
+            fail("should not reach here");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage(), containsString(
+                "archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed"));
+            assertThat(e.getMessage(), containsString("logging_finished_at=null"));
+        }
     }
 
     @Test
