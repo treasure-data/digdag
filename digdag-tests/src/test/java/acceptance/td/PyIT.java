@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.getAttemptLogs;
@@ -54,7 +53,7 @@ public class PyIT
     public void setUp()
             throws Exception
     {
-        assumeThat(ECS_CONFIG, not(isEmptyOrNullString()));
+        assertThat(ECS_CONFIG, not(isEmptyOrNullString()));
 
         ObjectMapper objectMapper = DigdagClient.objectMapper();
         config = Config.deserializeFromJackson(objectMapper, objectMapper.readTree(ECS_CONFIG));

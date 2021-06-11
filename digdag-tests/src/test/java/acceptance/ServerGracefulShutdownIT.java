@@ -59,6 +59,7 @@ public class ServerGracefulShutdownIT
     public void setUp()
             throws Exception
     {
+        //This checks Windows environment and then skip
         assumeThat(server.hasUnixProcess(), is(true));
 
         projectDir = root().resolve("foobar");

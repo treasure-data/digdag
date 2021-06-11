@@ -1,20 +1,21 @@
 package acceptance;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import utils.CommandStatus;
 
+// Disabled to avoid too long execution time. We should remove this whole test in the future.
+@Ignore
 public class AgentOverAcquireIT
 {
     @Rule
@@ -39,8 +40,6 @@ public class AgentOverAcquireIT
     public void testOverAcquire()
             throws Exception
     {
-        assumeThat(true, is(false));  // disabled by default to avoid too long execution time.
-
         copyResource("acceptance/over_acquire/over_acquire.dig", projectDir.resolve("over_acquire.dig"));
 
         CommandStatus runStatus = main("run",
