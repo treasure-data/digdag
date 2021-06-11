@@ -361,9 +361,9 @@ public class EcsCommandExecutor
                 if (statusCode == 0) {
                     String loggingFinishedAt = previousExecutorStatus.has("logging_finished_at") ? previousExecutorStatus.get("logging_finished_at").asText() : null;
                     // The python script itself finished successful but the following command (e.g. tar zcf or curl -X PUT) failed ?
-                    logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                    logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while container task exits 0. "
                             + "cluster=%s, taskArn=%s, logging_finished_at=%s, errorMessage=%s", cluster, taskArn, loggingFinishedAt, errorMessage.orNull()), ex);
-                    throw new RuntimeException(s("Unexpectedly, archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed. "
+                    throw new RuntimeException(s("Unexpectedly, archive-output.tar.gz does not exist while container task exits 0. "
                             + "cluster=%s, taskArn=%s, logging_finished_at=%s", cluster, taskArn, loggingFinishedAt), ex); // avoid errorMessage not to leak confidential information
                 } else {
                     // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
