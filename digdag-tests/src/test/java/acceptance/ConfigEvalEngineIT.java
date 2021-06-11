@@ -16,7 +16,7 @@ import java.time.Duration;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.*;
 
 public class ConfigEvalEngineIT

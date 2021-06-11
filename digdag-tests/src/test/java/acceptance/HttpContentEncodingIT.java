@@ -16,7 +16,7 @@ import org.junit.Test;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import utils.TemporaryDigdagServer;
 
 public class HttpContentEncodingIT

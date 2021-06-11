@@ -19,7 +19,7 @@ import static utils.TestUtils.main;
 import static utils.TestUtils.validUuid;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class BuiltInVariablesIT
 {

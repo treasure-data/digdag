@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import java.util.Base64;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static utils.TestUtils.startMailServer;

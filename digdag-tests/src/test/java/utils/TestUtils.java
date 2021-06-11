@@ -111,7 +111,7 @@ import static java.util.Arrays.asList;
 import static okhttp3.tls.internal.TlsUtil.localhost;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 public class TestUtils

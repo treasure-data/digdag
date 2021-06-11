@@ -23,7 +23,7 @@ import static utils.TestUtils.expectValue;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ShellNotificationIT
 {

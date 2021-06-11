@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 
 import static utils.TestUtils.copyResource;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PluginIT
