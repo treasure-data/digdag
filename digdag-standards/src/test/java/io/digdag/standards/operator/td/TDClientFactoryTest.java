@@ -16,7 +16,7 @@ import java.net.URI;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static io.digdag.standards.operator.td.TDOperatorTest.DEFAULT_DEFAULT_SYSTEM_CONFIG;
 
 public class TDClientFactoryTest

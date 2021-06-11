@@ -3,19 +3,15 @@ package io.digdag.standards.scheduler;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.Before;
-import org.junit.After;
 import static java.util.Locale.ENGLISH;
 import static io.digdag.client.DigdagClient.objectMapper;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DailySchedulerTest
 {
