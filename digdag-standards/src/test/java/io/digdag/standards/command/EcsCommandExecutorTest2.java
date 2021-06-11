@@ -116,6 +116,7 @@ public class EcsCommandExecutorTest2 {
     public void testPollNotLoggingFinishedAt() throws Exception {
         final EcsClient ecsClient = mock(EcsClient.class);
         final CommandContext commandContext = mock(CommandContext.class);
+        systemConfig.set(EcsCommandExecutor.CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS, 5L);
         final EcsCommandExecutor executor =
                 spy(new EcsCommandExecutor(systemConfig, ecsClientFactory, dockerCommandExecutor,
                     storageManager, projectArchiveLoader, commandLogger));
@@ -145,8 +146,6 @@ public class EcsCommandExecutorTest2 {
                                           .put("task_arn", "my_task_arn")
                                           .put("task_finished_at", Instant.now().getEpochSecond())
                                           .put("status_code", 0);
-
-        executor.setMaxWaitForFetchLogEvents(5);
 
         try {
             executor.poll(commandContext, previousStatusJson);

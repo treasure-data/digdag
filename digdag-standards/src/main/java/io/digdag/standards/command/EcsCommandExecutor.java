@@ -72,11 +72,13 @@ public class EcsCommandExecutor
     private static final String ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     private static final String ECS_END_OF_TASK_LOG_MARK = "--RWNzQ29tbWFuZEV4ZWN1dG9y--"; // base64("EcsCommandExecutor")
 
-    private static final String CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_scripts_downloads";
-    private static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
+    static final String CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_scripts_downloads";
+    static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
     private static final int DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS = 8;
     private static final int DEFAULT_RETRY_TASK_OUTPUT_UPLOADS = 7;
-    private static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
+    static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
+    static final String CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "max_wait_for_fetch_log_events";
+    private static final long DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC = 60L;
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -86,6 +88,7 @@ public class EcsCommandExecutor
     private final CommandLogger clog;
     private final int retryDownloads, retryUploads;
     private final boolean curlFailOptOnUploads; // false by the default
+    private final long maxWaitForFetchLogEventsInSec;
 
     @Inject
     public EcsCommandExecutor(
@@ -105,6 +108,7 @@ public class EcsCommandExecutor
         this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
         this.curlFailOptOnUploads = systemConfig.get(CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
+        this.maxWaitForFetchLogEventsInSec = systemConfig.get(CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS, long.class, DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC);
     }
 
     @Override
@@ -306,13 +310,6 @@ public class EcsCommandExecutor
             logger.debug(s("Stop command task: %s", task.getTaskArn()));
             client.stopTask(clusterName, task.getTaskArn());
         }
-    }
-
-    private long maxWaitForFetchLogEventsInSec = 60L;
-
-    @VisibleForTesting
-    void setMaxWaitForFetchLogEvents(long sec) {
-        this.maxWaitForFetchLogEventsInSec = sec;
     }
 
     CommandStatus createNextCommandStatus(
