@@ -108,7 +108,7 @@ public class EcsCommandExecutorTest2 {
             fail("should not reach here");
         } catch (RuntimeException e) {
             assertThat(e.getMessage(), containsString(
-                "archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed"));
+                "archive-output.tar.gz does not exist while container task exits 0"));
         }
     }
 
@@ -152,7 +152,7 @@ public class EcsCommandExecutorTest2 {
             fail("should not reach here");
         } catch (RuntimeException e) {
             assertThat(e.getMessage(), containsString(
-                "archive-output.tar.gz does not exist while ECS_END_OF_TASK_LOG_MARK observed"));
+                "archive-output.tar.gz does not exist while container task exits 0"));
             assertThat(e.getMessage(), containsString("logging_finished_at=null"));
         }
     }
@@ -195,6 +195,5 @@ public class EcsCommandExecutorTest2 {
         CommandStatus cmdStatus = executor.poll(commandContext, previousStatusJson);
         assertTrue(cmdStatus.isFinished());
         assertEquals(1, cmdStatus.getStatusCode());
-        assertFalse(cmdStatus.toJson().has("retry_on_end_of_task_mark_missing"));
     }
 }
