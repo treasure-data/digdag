@@ -48,6 +48,7 @@ import io.digdag.standards.command.ecs.TemporalProjectArchiveStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -133,9 +134,18 @@ public class EcsCommandExecutor
             }
         }
         catch (ConfigException e) {
-            logger.warn("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
-            return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
+            logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
+            return runWithLocalDocker(commandContext, commandRequest);
         }
+    }
+
+    @Nonnull
+    protected CommandStatus runWithLocalDocker(
+            @Nonnull final CommandContext commandContext,
+            @Nonnull final CommandRequest commandRequest)
+                    throws IOException
+    {
+        return docker.run(commandContext, commandRequest);
     }
 
     protected Task submitTask(
