@@ -13,7 +13,7 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import com.google.common.base.Throwables;
+import io.digdag.commons.ThrowablesUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 
@@ -65,7 +65,7 @@ public class GraphvizWorkflowVisualizer
             generate(dot, output);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -90,7 +90,7 @@ public class GraphvizWorkflowVisualizer
             }
             catch (RuntimeException | IOException ex) {
                 // TODO uncaught exception
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         });
         t.start();

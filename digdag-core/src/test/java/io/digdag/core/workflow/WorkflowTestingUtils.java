@@ -1,12 +1,12 @@
 package io.digdag.core.workflow;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigUtils;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;
@@ -118,7 +118,7 @@ public class WorkflowTestingUtils
                     ResourceNotFoundException.class);
         }
         catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -139,7 +139,7 @@ public class WorkflowTestingUtils
             return new YamlConfigLoader().loadString(content).toConfig(ConfigUtils.configFactory);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 }

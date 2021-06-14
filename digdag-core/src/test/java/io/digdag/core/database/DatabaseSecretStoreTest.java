@@ -2,8 +2,8 @@ package io.digdag.core.database;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.repository.Project;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.StoredProject;
@@ -23,7 +23,7 @@ import java.util.Base64;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DatabaseSecretStoreTest
 {
@@ -222,7 +222,7 @@ public class DatabaseSecretStoreTest
                     });
                 }
                 catch (Exception e) {
-                    throw Throwables.propagate(e);
+                    throw ThrowablesUtil.propagate(e);
                 }
             }));
         }

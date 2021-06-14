@@ -21,7 +21,7 @@ import java.util.Map;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeTrue;
 import static java.nio.charset.StandardCharsets.UTF_8;
 

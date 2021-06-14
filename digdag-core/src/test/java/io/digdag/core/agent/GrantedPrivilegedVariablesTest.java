@@ -7,9 +7,6 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretNotFoundException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
@@ -17,9 +14,8 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertNull;
 
 public class GrantedPrivilegedVariablesTest
 {

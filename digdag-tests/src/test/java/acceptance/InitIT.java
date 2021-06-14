@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.main;
 
 import static io.digdag.core.archive.ProjectArchive.WORKFLOW_FILE_SUFFIX;

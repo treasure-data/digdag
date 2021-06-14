@@ -8,10 +8,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Base64;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AESGCMSecretCryptoTest
 {

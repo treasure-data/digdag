@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
@@ -35,6 +34,7 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.td.BaseTDClientFactory;
@@ -111,7 +111,7 @@ import static java.util.Arrays.asList;
 import static okhttp3.tls.internal.TlsUtil.localhost;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 public class TestUtils
@@ -215,7 +215,7 @@ public class TestUtils
         catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();
             Assert.fail();
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 
@@ -442,7 +442,7 @@ public class TestUtils
             return socket.getLocalPort();
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 
@@ -852,7 +852,7 @@ public class TestUtils
             return server;
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 

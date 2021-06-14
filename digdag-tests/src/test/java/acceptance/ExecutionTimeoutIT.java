@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.pushProject;

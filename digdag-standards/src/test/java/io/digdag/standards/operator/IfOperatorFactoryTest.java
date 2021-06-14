@@ -24,7 +24,9 @@ import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
 import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class IfOperatorFactoryTest
 {

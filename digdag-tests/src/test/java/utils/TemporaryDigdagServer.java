@@ -1,13 +1,13 @@
 package utils;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.Version;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;
@@ -61,7 +61,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static utils.TestUtils.configFactory;
 import static utils.TestUtils.main;
@@ -163,7 +163,7 @@ public class TemporaryDigdagServer
             props.load(reader);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
 
         config = TestUtils.configFactory().create();
@@ -312,7 +312,7 @@ public class TemporaryDigdagServer
             this.config = Files.write(configDirectory.resolve("config"), configuration, UTF_8);
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         ImmutableList.Builder<String> argsBuilder = ImmutableList.builder();

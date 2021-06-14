@@ -8,7 +8,7 @@ import java.time.Instant;
 
 import static java.time.ZoneOffset.UTC;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SecondsIntervalSchedulerTest
 {

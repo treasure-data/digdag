@@ -1,7 +1,6 @@
 package acceptance;
 
-import com.google.common.base.Throwables;
-
+import io.digdag.commons.ThrowablesUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import io.digdag.core.database.DataSourceProvider;
@@ -24,7 +23,7 @@ import javax.management.ObjectName;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
@@ -57,7 +56,7 @@ public class ServerJmxIT
             return JMXConnectorFactory.connect(url, null);
         }
         catch (MalformedURLException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

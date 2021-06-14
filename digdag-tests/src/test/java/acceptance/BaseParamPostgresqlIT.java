@@ -2,10 +2,10 @@ package acceptance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.pg.PgConnection;
 import io.digdag.standards.operator.pg.PgConnectionConfig;
@@ -48,7 +48,7 @@ public class BaseParamPostgresqlIT
                 props.load(reader);
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
 
             host = (String) props.get("host");

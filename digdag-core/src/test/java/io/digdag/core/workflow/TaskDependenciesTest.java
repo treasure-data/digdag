@@ -22,7 +22,7 @@ import org.junit.rules.TemporaryFolder;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TaskDependenciesTest {
 

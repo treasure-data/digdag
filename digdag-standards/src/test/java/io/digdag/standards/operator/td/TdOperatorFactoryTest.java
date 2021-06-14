@@ -1,12 +1,8 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.treasuredata.client.model.TDJobRequest;
-import io.digdag.core.EnvironmentModule;
 import io.digdag.spi.TaskRequest;
-import io.digdag.standards.td.TdConfigurationModule;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
@@ -14,8 +10,6 @@ import org.junit.rules.ExpectedException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
 import io.digdag.client.config.Config;
 import org.junit.runner.RunWith;
@@ -27,8 +21,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
 import static io.digdag.standards.operator.td.TdOperatorFactory.wrapStmtWithComment;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;

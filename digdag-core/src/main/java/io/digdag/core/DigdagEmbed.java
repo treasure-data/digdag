@@ -9,20 +9,20 @@ import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.Map;
 
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.inject.Guice;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.inject.Provider;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
-import com.google.inject.multibindings.Multibinder;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.workflow.WorkflowModule;
 import io.digdag.core.workflow.WorkflowExecutorModule;
@@ -256,7 +256,7 @@ public class DigdagEmbed
                             return Files.createTempDirectory("digdag-tempdir");
                         }
                         catch (IOException ex) {
-                            throw Throwables.propagate(ex);
+                            throw ThrowablesUtil.propagate(ex);
                         }
                     });
             this.manager = new TempFileManager(dir);

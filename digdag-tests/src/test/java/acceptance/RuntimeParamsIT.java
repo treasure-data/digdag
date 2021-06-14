@@ -21,9 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
 

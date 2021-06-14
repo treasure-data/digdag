@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptFailure;
 import static utils.TestUtils.attemptSuccess;

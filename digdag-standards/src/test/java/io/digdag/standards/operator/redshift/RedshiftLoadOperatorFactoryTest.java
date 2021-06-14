@@ -19,7 +19,8 @@ import java.util.Map;
 import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

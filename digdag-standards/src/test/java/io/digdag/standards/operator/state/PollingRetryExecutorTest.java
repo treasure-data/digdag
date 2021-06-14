@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;

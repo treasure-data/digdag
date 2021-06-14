@@ -4,11 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.ImmutableNotification;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
@@ -27,7 +27,6 @@ import javax.mail.internet.MimeMessage;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -123,7 +122,7 @@ public class MailNotificationSender
             body(notification);
         }
         catch (Exception e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 
@@ -133,7 +132,7 @@ public class MailNotificationSender
             return new String(Files.readAllBytes(Paths.get(s)), "UTF-8");
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 
@@ -174,7 +173,7 @@ public class MailNotificationSender
             Transport.send(msg);
         }
         catch (MessagingException | IOException | TemplateException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
