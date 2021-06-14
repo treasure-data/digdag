@@ -5,7 +5,7 @@ import javax.servlet.ServletContext;
 import com.google.inject.Module;
 import com.google.inject.Binder;
 import com.google.inject.Provider;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 
 public class GuiceRsServerControlModule
         implements Module

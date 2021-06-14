@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.Notification;
 import org.junit.Before;
 import org.junit.Rule;

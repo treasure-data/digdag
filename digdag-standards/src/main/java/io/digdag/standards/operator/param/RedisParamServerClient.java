@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.ParamServerClient;
 import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;

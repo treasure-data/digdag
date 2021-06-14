@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.util.DurationParam;
 import static java.util.Locale.ENGLISH;

@@ -2,7 +2,7 @@ package io.digdag.core.workflow;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;

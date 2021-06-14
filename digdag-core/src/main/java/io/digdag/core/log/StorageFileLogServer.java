@@ -5,7 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageObject;

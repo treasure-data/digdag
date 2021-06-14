@@ -3,7 +3,7 @@ package io.digdag.guice.rs.server.undertow;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.guice.rs.server.ThreadLocalAccessLogs;
 
 import io.undertow.attribute.ExchangeAttribute;

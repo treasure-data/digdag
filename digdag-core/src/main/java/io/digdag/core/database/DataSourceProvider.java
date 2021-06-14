@@ -5,7 +5,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import org.h2.jdbcx.JdbcDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariConfig;

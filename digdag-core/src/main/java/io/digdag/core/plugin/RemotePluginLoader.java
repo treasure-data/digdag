@@ -9,7 +9,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import com.google.common.collect.ImmutableList;
 
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;

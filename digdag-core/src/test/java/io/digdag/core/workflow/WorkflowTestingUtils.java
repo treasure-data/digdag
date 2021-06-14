@@ -6,7 +6,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigUtils;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;

@@ -1,7 +1,7 @@
 package io.digdag.guice.rs.server.undertow;
 
 import com.google.inject.Injector;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.server.ServerLifeCycleManager;
 import io.undertow.Undertow;

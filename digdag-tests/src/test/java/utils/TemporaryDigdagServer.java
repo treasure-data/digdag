@@ -7,7 +7,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.client.Version;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;

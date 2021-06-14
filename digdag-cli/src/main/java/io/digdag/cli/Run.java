@@ -12,7 +12,7 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Limits;
 import io.digdag.core.LocalSite;

@@ -4,7 +4,7 @@ import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.workflow.TaskQueueDispatcher;

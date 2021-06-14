@@ -1,6 +1,6 @@
 package acceptance;
 
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import io.digdag.core.database.DataSourceProvider;

@@ -5,7 +5,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;

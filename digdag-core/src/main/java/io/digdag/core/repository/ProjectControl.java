@@ -4,7 +4,7 @@ import java.util.List;
 import java.time.Instant;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.spi.ScheduleTime;

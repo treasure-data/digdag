@@ -17,7 +17,7 @@ import com.google.inject.Inject;
 import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;

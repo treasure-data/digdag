@@ -2,7 +2,7 @@ package io.digdag.guice.rs.server.undertow;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServerRuntimeInfo;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
@@ -39,9 +39,7 @@ import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -57,11 +55,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
 import org.xnio.Options;
-import org.xnio.StreamConnection;
 import org.xnio.Xnio;
 import org.xnio.XnioWorker;
-import org.xnio.channels.AcceptingChannel;
-import static java.util.Locale.ENGLISH;
 
 public class UndertowServer
 {

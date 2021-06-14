@@ -3,7 +3,7 @@ package io.digdag.standards.command.kubernetes;
 import com.google.common.annotations.VisibleForTesting;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageFileNotFoundException;

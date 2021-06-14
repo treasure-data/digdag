@@ -70,7 +70,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.Environment;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;

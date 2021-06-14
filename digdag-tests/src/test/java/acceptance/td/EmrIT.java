@@ -21,7 +21,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.config.YamlConfigLoader;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -52,7 +52,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static acceptance.td.Secrets.TD_API_KEY;
-import static io.digdag.util.RetryExecutor.retryExecutor;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;

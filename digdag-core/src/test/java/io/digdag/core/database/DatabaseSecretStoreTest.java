@@ -3,7 +3,7 @@ package io.digdag.core.database;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.repository.Project;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.StoredProject;

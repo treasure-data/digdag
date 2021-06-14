@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 import javax.annotation.PostConstruct;
 import javax.management.remote.JMXServiceURL;
 
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

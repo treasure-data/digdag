@@ -2,7 +2,7 @@ package io.digdag.core.database;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.client.config.ConfigKey;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;

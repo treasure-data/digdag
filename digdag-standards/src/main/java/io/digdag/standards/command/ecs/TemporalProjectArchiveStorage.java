@@ -1,7 +1,7 @@
 package io.digdag.standards.command.ecs;
 
 import io.digdag.client.config.Config;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageFileNotFoundException;

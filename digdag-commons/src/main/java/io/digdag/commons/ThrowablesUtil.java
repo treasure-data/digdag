@@ -1,4 +1,4 @@
-package io.digdag.commons.guava;
+package io.digdag.commons;
 
 import com.google.common.base.Throwables;
 

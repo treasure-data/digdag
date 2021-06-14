@@ -1,6 +1,7 @@
-package io.digdag.commons.guava;
+package io.digdag.commons;
 
 import com.google.common.base.Throwables;
+import io.digdag.commons.ThrowablesUtil;
 import org.junit.Assert;
 import org.junit.Test;
 

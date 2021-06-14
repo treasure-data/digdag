@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
 import io.digdag.spi.NotificationSender;

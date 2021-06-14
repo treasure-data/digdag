@@ -1,7 +1,7 @@
 package io.digdag.client;
 
 import com.google.common.io.Resources;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 
 import java.io.IOException;
 import static java.nio.charset.StandardCharsets.UTF_8;

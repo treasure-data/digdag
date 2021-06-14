@@ -1,7 +1,7 @@
 package io.digdag.core.database;
 
 import com.google.inject.Inject;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;

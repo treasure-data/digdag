@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;

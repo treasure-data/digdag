@@ -6,7 +6,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
 import io.digdag.client.config.Config;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
 import io.digdag.spi.NotificationSender;

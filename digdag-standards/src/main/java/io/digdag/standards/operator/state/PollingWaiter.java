@@ -1,7 +1,7 @@
 package io.digdag.standards.operator.state;
 
 import com.google.common.base.Optional;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.util.Durations;
 import org.slf4j.Logger;

@@ -13,7 +13,7 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 

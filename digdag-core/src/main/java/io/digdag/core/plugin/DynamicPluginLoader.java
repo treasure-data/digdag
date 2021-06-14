@@ -11,7 +11,7 @@ import com.google.inject.Module;
 import com.google.inject.Injector;
 import com.google.inject.Guice;
 import com.google.inject.Stage;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 
 public class DynamicPluginLoader<R>
 {

@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.ImmutableNotification;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;

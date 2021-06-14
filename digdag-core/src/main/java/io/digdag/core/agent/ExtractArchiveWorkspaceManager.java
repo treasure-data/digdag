@@ -2,7 +2,7 @@ package io.digdag.core.agent;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.archive.ProjectArchives;

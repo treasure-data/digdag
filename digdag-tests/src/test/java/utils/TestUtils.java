@@ -34,7 +34,7 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.td.BaseTDClientFactory;

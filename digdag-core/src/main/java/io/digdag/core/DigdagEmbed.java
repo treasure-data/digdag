@@ -19,7 +19,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;

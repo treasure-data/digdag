@@ -10,7 +10,7 @@ import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageException;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.StorageObject;

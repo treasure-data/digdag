@@ -1,7 +1,7 @@
 package io.digdag.core.database;
 
 import com.google.common.base.Preconditions;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoException;
 

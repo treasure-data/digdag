@@ -13,7 +13,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
 
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -13,7 +13,7 @@ import java.nio.file.DirectoryStream;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.io.ByteStreams;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.agent.AgentId;
 import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;

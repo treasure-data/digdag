@@ -14,7 +14,7 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
 import io.digdag.client.DigdagClient;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.util.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
-import io.digdag.commons.guava.ThrowablesUtil;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
