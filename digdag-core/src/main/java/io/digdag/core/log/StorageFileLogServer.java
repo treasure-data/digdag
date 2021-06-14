@@ -3,11 +3,9 @@ package io.digdag.core.log;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
-import io.digdag.spi.DirectDownloadHandle;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageObject;
@@ -47,7 +45,7 @@ public class StorageFileLogServer
             storage.put(path, gzData.length, () -> new ByteArrayInputStream(gzData));
         }
         catch (Throwable ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -68,7 +66,7 @@ public class StorageFileLogServer
             }
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

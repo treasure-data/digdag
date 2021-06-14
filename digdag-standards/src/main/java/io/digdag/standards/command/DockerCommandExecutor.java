@@ -14,10 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
 import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
@@ -79,7 +79,7 @@ public class DockerCommandExecutor
             p.waitFor();
         }
         catch (InterruptedException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         return SimpleCommandStatus.of(p, request.getIoDirectory());
@@ -158,7 +158,7 @@ public class DockerCommandExecutor
             return pb.start();
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

@@ -1,31 +1,23 @@
 package io.digdag.core.database;
 
-import java.time.ZoneId;
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 import java.util.Arrays;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.TaskQueueData;
 import io.digdag.spi.TaskQueueRequest;
 import io.digdag.spi.TaskQueueLock;
-import io.digdag.spi.ImmutableTaskRequest;
 import io.digdag.spi.TaskConflictException;
 import io.digdag.spi.TaskNotFoundException;
-import io.digdag.core.repository.ResourceNotFoundException;
 import com.google.common.base.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.After;
-import org.junit.rules.TemporaryFolder;
 import org.junit.rules.ExpectedException;
 
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.core.database.DatabaseTestingUtils.createConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.setupDatabase;

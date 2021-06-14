@@ -1,7 +1,7 @@
 package io.digdag.core.database;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import io.digdag.commons.ThrowablesUtil;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
@@ -265,11 +265,11 @@ public class ThreadLocalTransactionManager
             return result;
         }
         catch (Exception e) {
-            Throwables.propagateIfInstanceOf(e, e1);
-            Throwables.propagateIfInstanceOf(e, e2);
-            Throwables.propagateIfInstanceOf(e, e3);
-            Throwables.propagateIfInstanceOf(e, e4);
-            throw Throwables.propagate(e);
+            ThrowablesUtil.propagateIfInstanceOf(e, e1);
+            ThrowablesUtil.propagateIfInstanceOf(e, e2);
+            ThrowablesUtil.propagateIfInstanceOf(e, e3);
+            ThrowablesUtil.propagateIfInstanceOf(e, e4);
+            throw ThrowablesUtil.propagate(e);
         }
         finally {
             threadLocalTransaction.set(null);
@@ -327,10 +327,10 @@ public class ThreadLocalTransactionManager
             }
         }
         catch (Exception e) {
-            Throwables.propagateIfInstanceOf(e, e1);
-            Throwables.propagateIfInstanceOf(e, e2);
-            Throwables.propagateIfInstanceOf(e, e3);
-            throw Throwables.propagate(e);
+            ThrowablesUtil.propagateIfInstanceOf(e, e1);
+            ThrowablesUtil.propagateIfInstanceOf(e, e2);
+            ThrowablesUtil.propagateIfInstanceOf(e, e3);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 

@@ -9,7 +9,7 @@ import java.net.URI;
 
 import static io.digdag.standards.Proxies.proxyConfigFromEnv;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProxiesTest
 {

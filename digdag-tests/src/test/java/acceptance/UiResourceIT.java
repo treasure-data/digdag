@@ -10,13 +10,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import utils.TemporaryDigdagServer;
 
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.NotFoundException;
-
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UiResourceIT
 {

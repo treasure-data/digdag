@@ -9,8 +9,8 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageException;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.StorageObject;
@@ -109,12 +109,12 @@ public class GCSStorage
                     });
         }
         catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         catch (RetryGiveupException ex) {
             Throwable cause = ex.getCause();
-            Throwables.propagateIfInstanceOf(cause, IOException.class);
-            throw Throwables.propagate(cause);
+            ThrowablesUtil.propagateIfInstanceOf(cause, IOException.class);
+            throw ThrowablesUtil.propagate(cause);
         }
     }
 
@@ -177,11 +177,11 @@ public class GCSStorage
                     .runInterruptible(() -> callable.call());
         }
         catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         catch (RetryGiveupException ex) {
             Exception cause = ex.getCause();
-            throw Throwables.propagate(cause);
+            throw ThrowablesUtil.propagate(cause);
         }
     }
 

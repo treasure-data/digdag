@@ -1,12 +1,11 @@
 package io.digdag.standards.operator.jdbc;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
@@ -15,7 +14,6 @@ import io.digdag.spi.TemplateEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -219,7 +217,7 @@ public abstract class AbstractJdbcJobOperator<C>
             }
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 

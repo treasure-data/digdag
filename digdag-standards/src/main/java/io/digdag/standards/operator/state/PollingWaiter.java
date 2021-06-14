@@ -1,7 +1,7 @@
 package io.digdag.standards.operator.state;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.util.Durations;
 import org.slf4j.Logger;
@@ -118,7 +118,7 @@ public class PollingWaiter
             result = f.perform(operationState);
         }
         catch (Throwable e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         // Check timeout

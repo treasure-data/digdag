@@ -1,7 +1,6 @@
 package io.digdag.cli;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,20 +13,18 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
 
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.database.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.Tasks;
-import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.ConfigFactory;
@@ -65,7 +62,7 @@ class ResumeStateManager
             return null;
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         if (resumeState.getState() == TaskStateCode.SUCCESS) {
             return resumeState.getResult();

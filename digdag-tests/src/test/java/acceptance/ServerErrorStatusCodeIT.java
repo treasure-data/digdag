@@ -1,7 +1,6 @@
 package acceptance;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,8 +16,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import utils.TemporaryDigdagServer;
 
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 
 public class ServerErrorStatusCodeIT
 {

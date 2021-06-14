@@ -1,22 +1,19 @@
 package io.digdag.guice.rs.server.undertow;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Injector;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.server.ServerLifeCycleManager;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.servlet.api.DeploymentManager;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.XnioWorker;
-import io.undertow.server.HttpServerExchange;
 
 public class UndertowServerControl
         implements GuiceRsServerControl
@@ -78,7 +75,7 @@ public class UndertowServerControl
                 lifeCycleManager.postStart();
             }
             catch (Exception ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
     }
@@ -102,7 +99,7 @@ public class UndertowServerControl
             }
             catch (Exception ex) {
                 // nothing we can do here excepting force killing this process
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
 
@@ -146,7 +143,7 @@ public class UndertowServerControl
             deployment.stop();
         }
         catch (ServletException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
         finally {
             // calls ServletContextListener.contextDestroyed that calls @PreDestroy hooks
