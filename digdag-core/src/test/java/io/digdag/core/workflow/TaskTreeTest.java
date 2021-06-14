@@ -1,14 +1,12 @@
 package io.digdag.core.workflow;
 
 import java.util.List;
-import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.junit.Before;
 import io.digdag.core.session.TaskRelation;
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TaskTreeTest
 {

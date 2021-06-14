@@ -1,6 +1,5 @@
 package io.digdag.core.log;
 
-import java.nio.file.FileAlreadyExistsException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,8 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.DirectoryStream;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.agent.AgentId;
 import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;
@@ -57,7 +56,7 @@ public class LocalFileLogServerFactory
             return new LocalFileLogServer(logPath);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -94,7 +93,7 @@ public class LocalFileLogServerFactory
                 }
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
 
@@ -115,7 +114,7 @@ public class LocalFileLogServerFactory
                 }
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
 
@@ -131,7 +130,7 @@ public class LocalFileLogServerFactory
                 throw new StorageFileNotFoundException(ex);
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
 
@@ -146,7 +145,7 @@ public class LocalFileLogServerFactory
                 return new LocalFileDirectTaskLogger(prefix, taskName, logSplitSize);
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw ThrowablesUtil.propagate(ex);
             }
         }
 
@@ -204,7 +203,7 @@ public class LocalFileLogServerFactory
                 }
                 catch (IOException ex) {
                     // here can do almost nothing. adding logs to logger causes infinite loop
-                    throw Throwables.propagate(ex);
+                    throw ThrowablesUtil.propagate(ex);
                 }
             }
 
@@ -215,7 +214,7 @@ public class LocalFileLogServerFactory
                     output.close();
                 }
                 catch (IOException ex) {
-                    throw Throwables.propagate(ex);
+                    throw ThrowablesUtil.propagate(ex);
                 }
             }
         }

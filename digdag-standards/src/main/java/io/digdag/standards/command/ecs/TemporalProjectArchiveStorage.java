@@ -1,7 +1,7 @@
 package io.digdag.standards.command.ecs;
 
-import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -52,7 +52,7 @@ public class TemporalProjectArchiveStorage
             return storage.open(key).getContentInputStream();
         }
         catch (StorageFileNotFoundException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 }

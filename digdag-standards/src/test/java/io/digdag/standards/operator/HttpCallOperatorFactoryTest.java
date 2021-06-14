@@ -20,7 +20,7 @@ import static io.digdag.core.workflow.OperatorTestingUtils.*;
 import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
 import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class HttpCallOperatorFactoryTest {

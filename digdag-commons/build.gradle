@@ -1,0 +1,4 @@
+
+dependencies {
+    compile "com.google.guava:guava:${project.ext.guavaVersion}"
+}

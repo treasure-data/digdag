@@ -2,10 +2,10 @@ package io.digdag.core.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
 import io.digdag.spi.NotificationSender;
@@ -48,7 +48,7 @@ public class ShellNotificationSender
             notificationJson = mapper.writeValueAsBytes(notification);
         }
         catch (JsonProcessingException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -72,7 +72,7 @@ public class ShellNotificationSender
                     stream.close();
                 }
                 catch (IOException e) {
-                    throw Throwables.propagate(e);
+                    throw ThrowablesUtil.propagate(e);
                 }
             });
 
@@ -90,7 +90,7 @@ public class ShellNotificationSender
             throw new NotificationException("Failed to execute notification shell command: " + command, e);
         }
         catch (InterruptedException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 }

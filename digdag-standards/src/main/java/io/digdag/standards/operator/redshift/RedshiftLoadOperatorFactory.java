@@ -7,11 +7,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
@@ -125,7 +125,7 @@ public class RedshiftLoadOperatorFactory
                                     value = objectMapper.readValue(in, new TypeReference<Map<String, Object>>() {});
                                 }
                                 catch (IOException e) {
-                                    throw Throwables.propagate(e);
+                                    throw ThrowablesUtil.propagate(e);
                                 }
                                 @SuppressWarnings("unchecked")
                                 List<Map<String, String>> entries = (List<Map<String, String>>) value.get("entries");

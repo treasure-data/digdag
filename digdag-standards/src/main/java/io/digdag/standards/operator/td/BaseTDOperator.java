@@ -1,9 +1,9 @@
 package io.digdag.standards.operator.td;
 
-import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpException;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.SecretProvider;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
@@ -58,12 +58,12 @@ public class BaseTDOperator
                 try {
                     return authenticatinRetryExecutor().run(() -> op.call());
                 } catch (RetryGiveupException ex) {
-                    throw Throwables.propagate(ex.getCause());
+                    throw ThrowablesUtil.propagate(ex.getCause());
                 }
             });
         }
         catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex.getCause());
+            throw ThrowablesUtil.propagate(ex.getCause());
         }
     }
 

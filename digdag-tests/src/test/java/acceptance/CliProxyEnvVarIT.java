@@ -27,7 +27,7 @@ import static io.digdag.client.DigdagVersion.buildVersion;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static okhttp3.tls.internal.TlsUtil.localhost;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.main;
 
 public class CliProxyEnvVarIT

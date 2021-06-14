@@ -1,7 +1,6 @@
 package io.digdag.core.database;
 
 import io.digdag.core.repository.Project;
-import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
@@ -15,7 +14,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ThreadLocalTransactionManagerTest

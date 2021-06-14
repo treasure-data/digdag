@@ -2,32 +2,21 @@ package io.digdag.storage.gcs;
 
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
-import com.google.auth.oauth2.AccessToken;
-import com.google.cloud.storage.BucketInfo;
-import com.google.cloud.storage.StorageClass;
-import com.google.cloud.storage.StorageOptions;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Storage;
-import io.digdag.spi.Storage.UploadStreamProvider;
 import io.digdag.spi.StorageObjectSummary;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.cloud.storage.Blob;
 import org.mockito.Mock;
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 import java.util.List;
 import java.util.UUID;
-import java.lang.Thread;
 import java.time.Instant;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -36,11 +25,8 @@ import static io.digdag.util.Md5CountInputStream.digestMd5;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.core.IsNull.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class GCSStorageTest
 {

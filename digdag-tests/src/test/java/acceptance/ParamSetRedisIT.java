@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.assertCommandStatus;
 import static utils.TestUtils.main;

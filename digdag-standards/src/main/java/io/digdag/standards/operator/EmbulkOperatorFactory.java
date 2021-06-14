@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.api.client.util.Maps;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
@@ -92,7 +92,7 @@ public class EmbulkOperatorFactory
                 return TaskResult.empty(request);
             }
             catch (IOException | TemplateException | InterruptedException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         }
 
@@ -148,7 +148,7 @@ public class EmbulkOperatorFactory
                     embulkConfig = new YamlLoader().loadString(data);
                 }
                 catch (RuntimeException | IOException ex) {
-                    Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+                    ThrowablesUtil.propagateIfInstanceOf(ex, ConfigException.class);
                     throw new ConfigException("Failed to parse yaml file", ex);
                 }
 

@@ -3,7 +3,6 @@ package acceptance.td;
 import com.amazonaws.util.StringInputStream;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
@@ -23,11 +22,11 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.util.RetryExecutor;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -63,7 +62,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.createProject;
@@ -337,7 +336,7 @@ public class BigQueryIT
                             .executeMediaAndDownloadTo(data);
                 }
                 catch (IOException e) {
-                    throw Throwables.propagate(e);
+                    throw ThrowablesUtil.propagate(e);
                 }
             });
         }

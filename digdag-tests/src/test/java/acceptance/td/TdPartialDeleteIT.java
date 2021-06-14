@@ -2,13 +2,13 @@ package acceptance.td;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
+import io.digdag.commons.ThrowablesUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,7 +34,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
@@ -96,7 +96,7 @@ public class TdPartialDeleteIT
                 return result;
             }
             catch (IOException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
         });
     }

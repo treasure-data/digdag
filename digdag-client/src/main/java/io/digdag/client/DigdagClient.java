@@ -13,7 +13,6 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
@@ -46,6 +45,7 @@ import io.digdag.client.api.SecretValidation;
 import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.commons.ThrowablesUtil;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.encoding.GZIPDecodingInterceptor;
@@ -665,7 +665,7 @@ public class DigdagClient implements AutoCloseable
 
             return doGet(RestLogFileHandleCollection.class, webTarget);
         } catch (UnsupportedEncodingException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -725,7 +725,7 @@ public class DigdagClient implements AutoCloseable
         }
         catch (ExecutionException | RetryException e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
-            throw Throwables.propagate(cause);
+            throw ThrowablesUtil.propagate(cause);
         }
     }
 

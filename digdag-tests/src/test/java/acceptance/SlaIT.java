@@ -39,7 +39,7 @@ import static utils.TestUtils.expect;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.startMockWebServer;
 
 public class SlaIT
