@@ -1,8 +1,8 @@
 package io.digdag.guice.rs.server;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import io.digdag.commons.ThrowablesUtil;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -188,9 +188,9 @@ public class ServerLifeCycleManager
             }
             catch (InvocationTargetException ex) {
                 Throwable cause = ex.getCause();
-                Throwables.propagateIfPossible(cause);
-                Throwables.propagateIfInstanceOf(cause, Exception.class);
-                throw Throwables.propagate(cause);
+                ThrowablesUtil.propagateIfPossible(cause);
+                ThrowablesUtil.propagateIfInstanceOf(cause, Exception.class);
+                throw ThrowablesUtil.propagate(cause);
             }
         }
     }

@@ -30,7 +30,7 @@ import static com.google.common.primitives.Bytes.concat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static utils.TestUtils.addResource;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.copyResource;

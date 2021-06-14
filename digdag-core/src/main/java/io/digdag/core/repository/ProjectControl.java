@@ -1,18 +1,12 @@
 package io.digdag.core.repository;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.time.Instant;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
-import io.digdag.client.config.Config;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.schedule.Schedule;
-import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.client.config.ConfigException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import java.util.stream.Collectors;
@@ -89,7 +83,7 @@ public class ProjectControl
                 .collect(Collectors.toList());
         }
         catch (IllegalStateException ex) {
-            Throwables.propagateIfInstanceOf(ex.getCause(), ResourceConflictException.class);
+            ThrowablesUtil.propagateIfInstanceOf(ex.getCause(), ResourceConflictException.class);
             throw ex;
         }
     }

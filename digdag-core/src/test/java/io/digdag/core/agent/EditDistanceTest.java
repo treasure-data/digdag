@@ -1,17 +1,7 @@
 package io.digdag.core.agent;
 
-import java.util.*;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
-import org.skife.jdbi.v2.IDBI;
-import org.junit.*;
-import com.google.common.base.Optional;
-import com.google.common.collect.*;
-import io.digdag.core.repository.*;
-import io.digdag.core.schedule.*;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.digdag.core.database.DatabaseTestingUtils.*;
-import static org.junit.Assert.*;
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class EditDistanceTest
 {

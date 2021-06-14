@@ -4,9 +4,7 @@ import java.time.Duration;
 import java.util.*;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
-import org.hamcrest.Matchers;
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -20,7 +18,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class DatabaseScheduleStoreManagerTest
 {

@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.Maps;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
@@ -23,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.commons.ThrowablesUtil;
 import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandExecutor;
@@ -57,7 +57,7 @@ public class RbOperatorFactory
             runnerScript = CharStreams.toString(reader);
         }
         catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw ThrowablesUtil.propagate(ex);
         }
     }
 
@@ -101,7 +101,7 @@ public class RbOperatorFactory
                 data = runCode();
             }
             catch (IOException | InterruptedException e) {
-                throw Throwables.propagate(e);
+                throw ThrowablesUtil.propagate(e);
             }
 
             return TaskResult.defaultBuilder(request)

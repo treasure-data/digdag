@@ -11,20 +11,19 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Storage;
 import io.digdag.spi.StorageObjectSummary;
-import io.digdag.spi.Storage.UploadStreamProvider;
 
-import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.util.Md5CountInputStream.digestMd5;

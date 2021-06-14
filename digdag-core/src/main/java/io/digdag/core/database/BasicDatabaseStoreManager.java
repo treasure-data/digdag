@@ -11,17 +11,15 @@ import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import io.digdag.commons.ThrowablesUtil;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.skife.jdbi.v2.exceptions.TransactionFailedException;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.util.RetryExecutor;
-import io.digdag.util.RetryExecutor.RetryGiveupException;
 
 public abstract class BasicDatabaseStoreManager <D>
 {
@@ -192,10 +190,10 @@ public abstract class BasicDatabaseStoreManager <D>
             return action.call(handle, handle.attach(daoIface));
         }
         catch (Exception ex) {
-            Throwables.propagateIfInstanceOf(ex, exClass1);
-            Throwables.propagateIfInstanceOf(ex, exClass2);
-            Throwables.propagateIfInstanceOf(ex, exClass3);
-            Throwables.propagateIfPossible(ex);
+            ThrowablesUtil.propagateIfInstanceOf(ex, exClass1);
+            ThrowablesUtil.propagateIfInstanceOf(ex, exClass2);
+            ThrowablesUtil.propagateIfInstanceOf(ex, exClass3);
+            ThrowablesUtil.propagateIfPossible(ex);
             throw new TransactionFailedException(
                     "Transaction failed due to exception being thrown " +
                             "from within the callback. See cause " +

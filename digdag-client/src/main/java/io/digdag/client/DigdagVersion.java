@@ -1,7 +1,8 @@
 package io.digdag.client;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.Resources;
+import io.digdag.commons.ThrowablesUtil;
+
 import java.io.IOException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -27,7 +28,7 @@ public class DigdagVersion
             return Resources.toString(Resources.getResource(Version.class, "version.txt"), UTF_8).trim();
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw ThrowablesUtil.propagate(e);
         }
     }
 }

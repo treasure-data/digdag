@@ -1,5 +1,7 @@
 
 dependencies {
+    compile project(':digdag-commons')
+
     compile 'javax.inject:javax.inject:1'
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-annotations:${project.ext.jacksonVersion}"
