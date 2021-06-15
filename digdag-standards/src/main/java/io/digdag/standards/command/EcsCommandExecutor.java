@@ -752,16 +752,16 @@ public class EcsCommandExecutor
         final String outputProjectArchiveStorageKey = createStorageKey(commandContext.getTaskRequest(), "archive-output.tar.gz");
         final String outputProjectArchiveDirectUploadUrl = temporalStorage.getDirectUploadUrl(outputProjectArchiveStorageKey);
 
-        // Build command line arguments that will be passed to Kubernetes API here
+        // Build command line arguments for a Container task
         final ImmutableList.Builder<String> bashArguments = ImmutableList.builder();
-        // TODO
-        // Revisit we need it or not for debugging. If the command will be enabled, pods will show commands are executed
-        // by the executor and will include pre-signed URLs in the commands.
+        // Revisit we need it or not for debugging. If set -eux will be enabled, it will show executing commands
+        // and will include pre-signed URLs in the commands.
         //bashArguments.add("set -eux");
         bashArguments.add(s("mkdir -p %s", ioDirectoryPath.toString()));
         // retry by exponential backoff 1+2+4+8+16+32+64+128=255 seconds by the default to avoid temporary network outage and/or S3 errors
         // exit 22 on non-transient http errors so that task can be retried
         bashArguments.add(s("curl --retry %d --retry-connrefused --fail -s \"%s\" --output %s", retryDownloads, projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
+        bashArguments.add("curl_download_exit_code=$?; if [ $curl_download_exit_code -ne 0 ]; then echo \"curl_download_exit_code=$curl_download_exit_code\"; fi");
         bashArguments.add(s("tar -zxf %s", relativeProjectArchivePath.toString()));
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
@@ -769,7 +769,7 @@ public class EcsCommandExecutor
         bashArguments.addAll(setEcsContainerOverrideArgumentsBeforeCommand());
         // Add command passed from operator
         bashArguments.add(commandRequest.getCommandLine().stream().map(Object::toString).collect(Collectors.joining(" ")));
-        bashArguments.add(s("exit_code=$?"));
+        bashArguments.add("python_exit_code=$?");
         bashArguments.addAll(setEcsContainerOverrideArgumentsAfterCommand());
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("popd"));
@@ -778,8 +778,9 @@ public class EcsCommandExecutor
         // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds by the default
         // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
         bashArguments.add(s("curl --retry %d --retry-connrefused%s -s -X PUT -T %s -L \"%s\"", retryUploads, curlFailOptOnUploads ? " --fail" : "", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        bashArguments.add("curl_upload_exit_code=$?; if [ $curl_upload_exit_code -ne 0 ]; then echo \"curl_upload_exit_code=$curl_upload_exit_code\"; fi");
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
-        bashArguments.add(s("exit $exit_code"));
+        bashArguments.add("exit $python_exit_code");
 
         final List<String> bashCommand = ImmutableList.<String>builder()
                 .add("/bin/bash")
