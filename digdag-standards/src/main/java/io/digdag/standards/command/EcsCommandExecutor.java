@@ -772,7 +772,7 @@ public class EcsCommandExecutor
         bashArguments.add("python_exit_code=$?");
         bashArguments.addAll(setEcsContainerOverrideArgumentsAfterCommand());
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
-            bashArguments.add(s("popd"));
+            bashArguments.add("popd");
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds by the default
