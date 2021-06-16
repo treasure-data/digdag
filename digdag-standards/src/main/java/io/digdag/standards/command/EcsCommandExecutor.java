@@ -38,6 +38,7 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
+import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
@@ -47,6 +48,7 @@ import io.digdag.standards.command.ecs.TemporalProjectArchiveStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -71,11 +73,13 @@ public class EcsCommandExecutor
     private static final String ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX = "agent.command_executor.ecs.";
     private static final String ECS_END_OF_TASK_LOG_MARK = "--RWNzQ29tbWFuZEV4ZWN1dG9y--"; // base64("EcsCommandExecutor")
 
-    private static final String CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_scripts_downloads";
-    private static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
+    static final String CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_scripts_downloads";
+    static final String CONFIG_RETRY_TASK_OUTPUT_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "retry_task_output_uploads";
     private static final int DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS = 8;
     private static final int DEFAULT_RETRY_TASK_OUTPUT_UPLOADS = 7;
-    private static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
+    static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
+    static final String CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "max_wait_for_fetch_log_events";
+    private static final long DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC = 60L;
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -85,6 +89,7 @@ public class EcsCommandExecutor
     private final CommandLogger clog;
     private final int retryDownloads, retryUploads;
     private final boolean curlFailOptOnUploads; // false by the default
+    private final long maxWaitForFetchLogEventsInSec;
 
     @Inject
     public EcsCommandExecutor(
@@ -104,6 +109,7 @@ public class EcsCommandExecutor
         this.retryDownloads = systemConfig.get(CONFIG_RETRY_TASK_SCRIPTS_DOWNLOADS, int.class, DEFAULT_RETRY_TASK_SCRIPTS_DOWNLOADS);
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
         this.curlFailOptOnUploads = systemConfig.get(CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
+        this.maxWaitForFetchLogEventsInSec = systemConfig.get(CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS, long.class, DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC);
     }
 
     @Override
@@ -129,8 +135,17 @@ public class EcsCommandExecutor
         }
         catch (ConfigException e) {
             logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
-            return docker.run(commandContext, commandRequest); // fall back to DockerCommandExecutor
+            return runWithLocalDocker(commandContext, commandRequest);
         }
+    }
+
+    @Nonnull
+    protected CommandStatus runWithLocalDocker(
+            @Nonnull final CommandContext commandContext,
+            @Nonnull final CommandRequest commandRequest)
+                    throws IOException
+    {
+        return docker.run(commandContext, commandRequest);
     }
 
     protected Task submitTask(
@@ -321,10 +336,11 @@ public class EcsCommandExecutor
 
         // To fetch log until all logs is written in CloudWatch, it should wait until getting finish marker in end of task.
         // (finished previous poll once considering risk of crushing while running previous actual poll.)
-        final Optional<Long> taskFinishedAt = !previousStatus.has("task_finished_at") ?
-                Optional.absent() : Optional.of(previousStatus.get("task_finished_at").asLong());
-        if (taskFinishedAt.isPresent()) {
-            long timeout = taskFinishedAt.get() + 60;
+        if (previousStatus.has("task_finished_at")) {
+            final long taskFinishedAt = previousStatus.get("task_finished_at").asLong();
+            final int statusCode =  previousStatus.get("status_code").intValue();
+
+            long timeout = taskFinishedAt + maxWaitForFetchLogEventsInSec;
             do {
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
@@ -341,18 +357,32 @@ public class EcsCommandExecutor
             }
             while (Instant.now().getEpochSecond() < timeout);
 
+            final ObjectNode nextStatus = previousStatus.deepCopy();
+            nextStatus.set("executor_state", previousExecutorStatus);
+            final Optional<String> errorMessage = getErrorMessageFromTask(cluster, taskArn, client);
+
             final String outputArchivePathName = "archive-output.tar.gz";
             final String outputArchiveKey = createStorageKey(commandContext.getTaskRequest(), outputArchivePathName); // url format
             // Download output config archive
             final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(commandContext.getTaskRequest().getConfig());
             try (final InputStream in = temporalStorage.getContentInputStream(outputArchiveKey)) {
                 ProjectArchives.extractTarArchive(commandContext.getLocalProjectPath(), in); // IOException
+            } catch (StorageFileNotFoundException ex) {
+                if (statusCode == 0) {
+                    String loggingFinishedAt = previousExecutorStatus.has("logging_finished_at") ? previousExecutorStatus.get("logging_finished_at").asText() : null;
+                    // The python script itself finished successful but the following command (e.g. tar zcf or curl -X PUT) failed ?
+                    logger.error(s("Unexpectedly, archive-output.tar.gz does not exist while container task exits 0. "
+                            + "cluster=%s, taskArn=%s, logging_finished_at=%s, errorMessage=%s", cluster, taskArn, loggingFinishedAt, errorMessage.orNull()), ex);
+                    throw new RuntimeException(s("Unexpectedly, archive-output.tar.gz does not exist while container task exits 0. "
+                            + "cluster=%s, taskArn=%s, logging_finished_at=%s", cluster, taskArn, loggingFinishedAt), ex); // avoid errorMessage not to leak confidential information
+                } else {
+                    // could be happen and can avoid processing outputs (see PythonOperatorFactory#runCode)
+                    logger.debug(s("Container task exit %d and thus archive-output.tar.gz does not exist. cluster=%s, taskArn=%s, errorMessage=%s",
+                        statusCode, cluster, taskArn, errorMessage.orNull()));
+                    // fall through
+                }
             }
 
-            final ObjectNode nextStatus = previousStatus.deepCopy();
-            nextStatus.set("executor_state", previousExecutorStatus);
-
-            Optional<String> errorMessage = getErrorMessageFromTask(cluster, taskArn, client);
             return EcsCommandStatus.of(true, nextStatus, errorMessage);
         }
 
@@ -362,7 +392,7 @@ public class EcsCommandExecutor
         }
         catch (TaskSetNotFoundException e) {
             // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
-            logger.info("Cannot get the Ecs task status. Will be retried.");
+            logger.info(s("Cannot get the Ecs task status where cluster=%s, taskArn=%s. Will be retried.", cluster, taskArn));
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
         }
 
@@ -722,16 +752,16 @@ public class EcsCommandExecutor
         final String outputProjectArchiveStorageKey = createStorageKey(commandContext.getTaskRequest(), "archive-output.tar.gz");
         final String outputProjectArchiveDirectUploadUrl = temporalStorage.getDirectUploadUrl(outputProjectArchiveStorageKey);
 
-        // Build command line arguments that will be passed to Kubernetes API here
+        // Build command line arguments for a Container task
         final ImmutableList.Builder<String> bashArguments = ImmutableList.builder();
-        // TODO
-        // Revisit we need it or not for debugging. If the command will be enabled, pods will show commands are executed
-        // by the executor and will include pre-signed URLs in the commands.
+        // Revisit we need it or not for debugging. If set -eux will be enabled, it will show executing commands
+        // and will include pre-signed URLs in the commands.
         //bashArguments.add("set -eux");
         bashArguments.add(s("mkdir -p %s", ioDirectoryPath.toString()));
         // retry by exponential backoff 1+2+4+8+16+32+64+128=255 seconds by the default to avoid temporary network outage and/or S3 errors
         // exit 22 on non-transient http errors so that task can be retried
         bashArguments.add(s("curl --retry %d --retry-connrefused --fail -s \"%s\" --output %s", retryDownloads, projectArchiveDirectDownloadUrl, relativeProjectArchivePath.toString()));
+        bashArguments.add("curl_download_exit_code=$?; if [ $curl_download_exit_code -ne 0 ]; then echo \"curl_download_exit_code=$curl_download_exit_code\"; fi");
         bashArguments.add(s("tar -zxf %s", relativeProjectArchivePath.toString()));
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
             bashArguments.add(s("pushd %s", commandRequest.getWorkingDirectory().toString()));
@@ -739,17 +769,18 @@ public class EcsCommandExecutor
         bashArguments.addAll(setEcsContainerOverrideArgumentsBeforeCommand());
         // Add command passed from operator
         bashArguments.add(commandRequest.getCommandLine().stream().map(Object::toString).collect(Collectors.joining(" ")));
-        bashArguments.add(s("exit_code=$?"));
+        bashArguments.add("python_exit_code=$?");
         bashArguments.addAll(setEcsContainerOverrideArgumentsAfterCommand());
         if (!commandRequest.getWorkingDirectory().toString().isEmpty()) {
-            bashArguments.add(s("popd"));
+            bashArguments.add("popd");
         }
         bashArguments.add(s("tar -zcf %s  --exclude %s --exclude %s .digdag/tmp/", outputProjectArchivePathName, relativeProjectArchivePath.toString(), outputProjectArchivePathName));
         // retry by exponential backoff 1+2+4+8+16+32+64=127 seconds by the default
         // Note that it's intended to curl exit 0 on http errors since it's only for LogWatch logging
         bashArguments.add(s("curl --retry %d --retry-connrefused%s -s -X PUT -T %s -L \"%s\"", retryUploads, curlFailOptOnUploads ? " --fail" : "", outputProjectArchivePathName, outputProjectArchiveDirectUploadUrl));
+        bashArguments.add("curl_upload_exit_code=$?; if [ $curl_upload_exit_code -ne 0 ]; then echo \"curl_upload_exit_code=$curl_upload_exit_code\"; fi");
         bashArguments.add(s("echo \"%s\"", ECS_END_OF_TASK_LOG_MARK));
-        bashArguments.add(s("exit $exit_code"));
+        bashArguments.add("exit $python_exit_code");
 
         final List<String> bashCommand = ImmutableList.<String>builder()
                 .add("/bin/bash")

@@ -17,11 +17,19 @@ pom.xml
 docker/bootstrap/constraints.txt
 docker/bootstrap/requirements.txt
 
+# env
+.node-version
+.java-version
+
 # intellij idea
 *.iml
 *.ipr
 *.iws
 *.idea
+
+# eclipse
+.classpath
+.settings
 
 # VSCode
 .project
