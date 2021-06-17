@@ -135,14 +135,15 @@ public class EcsCommandExecutor
         }
         catch (ConfigException e) {
             logger.debug("Fall back to DockerCommandExecutor: {} {}", e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "");
-            return runWithLocalDocker(commandContext, commandRequest);
+            return runWithLocalDocker(commandContext, commandRequest, e);
         }
     }
 
     @Nonnull
     protected CommandStatus runWithLocalDocker(
             @Nonnull final CommandContext commandContext,
-            @Nonnull final CommandRequest commandRequest)
+            @Nonnull final CommandRequest commandRequest,
+            @Nonnull final ConfigException ex)
                     throws IOException
     {
         return docker.run(commandContext, commandRequest);
