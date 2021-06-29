@@ -277,6 +277,7 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
+        logger.info("@@@@ GET_LOG: {}", request);
         return retryOnRateLimit(() -> logs.getLogEvents(request));
     }
 
