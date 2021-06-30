@@ -294,7 +294,23 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
-        logger.info("@@@@ GET_LOG: {}", request);
+        logger.info("@@@@ GET_LOG_WITH_TIMERANGE: {}", request);
+        return retryOnRateLimit(() -> logs.getLogEvents(request));
+    }
+
+    @Override
+    public GetLogEventsResult getLogWithoutStartFromHead(
+            final String groupName,
+            final String streamName,
+            final Optional<String> nextToken)
+    {
+        final GetLogEventsRequest request = new GetLogEventsRequest()
+                .withLogGroupName(groupName)
+                .withLogStreamName(streamName);
+//        if (nextToken.isPresent()) {
+//            request.withNextToken("f/" + nextToken.get());
+//        }
+        logger.info("@@@@ GET_LOG_WO_START_FROM_HEAD: {}", request);
         return retryOnRateLimit(() -> logs.getLogEvents(request));
     }
 

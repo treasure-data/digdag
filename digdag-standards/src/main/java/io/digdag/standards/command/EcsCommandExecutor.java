@@ -489,6 +489,14 @@ public class EcsCommandExecutor
                 );
                 logger.info("@@@@ GET_LOG_WITH_TIMERANGE RESULT: {}", result2);
         }
+        {
+            final GetLogEventsResult result3 = client.getLogWithoutStartFromHead(
+                    toLogGroupName(previousStatus),
+                    toLogStreamName(previousStatus),
+                    previousToken
+            );
+            logger.info("@@@@ GET_LOG_WO_START_FROM_HEAD RESULT: {}", result3);
+        }
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token

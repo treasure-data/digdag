@@ -44,6 +44,8 @@ public interface EcsClient
 
     GetLogEventsResult getLogWithTimerange(String groupName, String streamName, Optional<String> nextToken, Instant start, Instant end);
 
+    GetLogEventsResult getLogWithoutStartFromHead(String groupName, String streamName, Optional<String> nextToken);
+
     @Override
     void close() throws IOException;
 }
