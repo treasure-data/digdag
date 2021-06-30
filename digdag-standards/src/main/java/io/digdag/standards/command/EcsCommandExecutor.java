@@ -475,27 +475,35 @@ public class EcsCommandExecutor
             final ObjectNode previousExecutorStatus)
             throws IOException
     {
+        {
+            final GetLogEventsResult resultX = client.getLogWithoutNextToken(
+                    toLogGroupName(previousStatus),
+                    toLogStreamName(previousStatus)
+            );
+            logger.info("@@@@ GET_LOG_WO_NEXT_TOKEN RESULT: {}", resultX);
+        }
+
+        {
+            final GetLogEventsResult resultY = client.getLogWithoutStartFromHeadAndNextToken(
+                    toLogGroupName(previousStatus),
+                    toLogStreamName(previousStatus)
+            );
+            logger.info("@@@@ GET_LOG_WO_START_FROM_HEAD_AND_NEXT_TOKEN RESULT: {}", resultY);
+        }
+
         final Optional<String> previousToken = !previousExecutorStatus.has("next_token") ?
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
         final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         logger.info("@@@@ GET_LOG RESULT: {}", result);
         {
-                final GetLogEventsResult result2 = client.getLogWithTimerange(
+                final GetLogEventsResult resultZ = client.getLogWithTimerange(
                         toLogGroupName(previousStatus),
                         toLogStreamName(previousStatus),
                         previousToken,
                         Instant.now().minusSeconds(600),
                         Instant.now()
                 );
-                logger.info("@@@@ GET_LOG_WITH_TIMERANGE RESULT: {}", result2);
-        }
-        {
-            final GetLogEventsResult result3 = client.getLogWithoutStartFromHead(
-                    toLogGroupName(previousStatus),
-                    toLogStreamName(previousStatus),
-                    previousToken
-            );
-            logger.info("@@@@ GET_LOG_WO_START_FROM_HEAD RESULT: {}", result3);
+                logger.info("@@@@ GET_LOG_WITH_TIMERANGE RESULT: {}", resultZ);
         }
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token

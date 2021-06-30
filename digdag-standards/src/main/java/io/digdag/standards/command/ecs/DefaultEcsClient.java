@@ -278,7 +278,7 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
-        logger.info("@@@@ GET_LOG: {}", request);
+        logger.info("@@@@ GET_LOG REQUEST: {}", request);
         return retryOnRateLimit(() -> logs.getLogEvents(request));
     }
 
@@ -294,23 +294,32 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
-        logger.info("@@@@ GET_LOG_WITH_TIMERANGE: {}", request);
+        logger.info("@@@@ GET_LOG_WITH_TIMERANGE REQUEST: {}", request);
         return retryOnRateLimit(() -> logs.getLogEvents(request));
     }
 
     @Override
-    public GetLogEventsResult getLogWithoutStartFromHead(
+    public GetLogEventsResult getLogWithoutNextToken(
             final String groupName,
-            final String streamName,
-            final Optional<String> nextToken)
+            final String streamName)
+    {
+        final GetLogEventsRequest request = new GetLogEventsRequest()
+                .withStartFromHead(true)
+                .withLogGroupName(groupName)
+                .withLogStreamName(streamName);
+        logger.info("@@@@ GET_LOG_WO_NEXT_TOKEN REQUEST: {}", request);
+        return retryOnRateLimit(() -> logs.getLogEvents(request));
+    }
+
+    @Override
+    public GetLogEventsResult getLogWithoutStartFromHeadAndNextToken(
+            final String groupName,
+            final String streamName)
     {
         final GetLogEventsRequest request = new GetLogEventsRequest()
                 .withLogGroupName(groupName)
                 .withLogStreamName(streamName);
-//        if (nextToken.isPresent()) {
-//            request.withNextToken("f/" + nextToken.get());
-//        }
-        logger.info("@@@@ GET_LOG_WO_START_FROM_HEAD: {}", request);
+        logger.info("@@@@ GET_LOG_WO_START_FROM_HEAD_AND_NEXT_TOKEN REQUEST: {}", request);
         return retryOnRateLimit(() -> logs.getLogEvents(request));
     }
 
