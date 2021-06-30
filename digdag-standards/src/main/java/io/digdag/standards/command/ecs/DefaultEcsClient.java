@@ -290,7 +290,7 @@ public class DefaultEcsClient
                 .withLogGroupName(groupName)
                 .withLogStreamName(streamName)
                 .withStartTime(start.toEpochMilli())
-                .withEndTime(start.toEpochMilli());
+                .withEndTime(end.toEpochMilli());
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
