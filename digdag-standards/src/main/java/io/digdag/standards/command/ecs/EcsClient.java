@@ -11,6 +11,7 @@ import com.google.common.base.Predicate;
 import io.digdag.client.config.ConfigException;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
 public interface EcsClient
@@ -40,6 +41,8 @@ public interface EcsClient
     void stopTask(String cluster, String taskArn);
 
     GetLogEventsResult getLog(String groupName, String streamName, Optional<String> nextToken);
+
+    GetLogEventsResult getLogWithTimerange(String groupName, String streamName, Optional<String> nextToken, Instant start, Instant end);
 
     @Override
     void close() throws IOException;

@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -274,6 +275,22 @@ public class DefaultEcsClient
                 .withStartFromHead(true)
                 .withLogGroupName(groupName)
                 .withLogStreamName(streamName);
+        if (nextToken.isPresent()) {
+            request.withNextToken("f/" + nextToken.get());
+        }
+        logger.info("@@@@ GET_LOG: {}", request);
+        return retryOnRateLimit(() -> logs.getLogEvents(request));
+    }
+
+    @Override
+    public GetLogEventsResult getLogWithTimerange(String groupName, String streamName, Optional<String> nextToken, Instant start, Instant end)
+    {
+        final GetLogEventsRequest request = new GetLogEventsRequest()
+                .withStartFromHead(true)
+                .withLogGroupName(groupName)
+                .withLogStreamName(streamName)
+                .withStartTime(start.toEpochMilli())
+                .withEndTime(start.toEpochMilli());
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }

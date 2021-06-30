@@ -479,6 +479,16 @@ public class EcsCommandExecutor
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
         final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
         logger.info("@@@@ GET_LOG RESULT: {}", result);
+        {
+                final GetLogEventsResult result2 = client.getLogWithTimerange(
+                        toLogGroupName(previousStatus),
+                        toLogStreamName(previousStatus),
+                        previousToken,
+                        Instant.now().minusSeconds(600),
+                        Instant.now()
+                );
+                logger.info("@@@@ GET_LOG_WITH_TIMERANGE RESULT: {}", result2);
+        }
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
