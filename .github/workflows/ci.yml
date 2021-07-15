@@ -40,4 +40,4 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: test-coverage
-        path: /digdag/digag-*/build/reports/jacoco/
+        path: digdag-*/build/reports/jacoco/
