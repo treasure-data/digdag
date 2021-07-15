@@ -29,6 +29,8 @@ jobs:
         java-version: 1.8
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+    - name: Debug
+      run: ls -l digdag-*/build.gradle
     - name: Run tests in Docker
       run: ci/run_test.sh
       env:
