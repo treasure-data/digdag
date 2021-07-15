@@ -173,6 +173,7 @@ subprojects {
             destinationFile = file("$buildDir/jacoco/${name}.exec")
             excludes = ['**/Immutable*', '*Immutable*', 'generated/**']
         }
+	finalizedBy jacocoTestReport
     }
 
     javadoc {
