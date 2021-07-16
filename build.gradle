@@ -170,10 +170,15 @@ subprojects {
         }
         jacoco {
             enabled = true
-            destinationFile = file("$buildDir/jacoco/${name}.exec")
+            //Create unique name for each sub-project, each DB(Pg,H2), each CI_NODE
+	        def execName = String.format("test_%s_%s_%s",
+                    project.name,
+                    System.getenv("DIGDAG_TEST_POSTGRESQL") != null ? "pg" : "h2",
+                    System.getenv("CI_NODE_INDEX") != null ? System.getenv("CI_NODE_INDEX"): "0")
+            destinationFile = file("$buildDir/jacoco/${execName}.exec")
             excludes = ['**/Immutable*', '*Immutable*', 'generated/**']
         }
-	finalizedBy jacocoTestReport
+	    finalizedBy jacocoTestReport
     }
 
     javadoc {
@@ -668,4 +673,24 @@ task runServer(type: JavaExec) {
             '-H', 'Access-Control-Allow-Credentials=true',
             '-H', 'Access-Control-Allow-Methods=GET, POST, PUT, DELETE, OPTIONS, HEAD',
             '-H', 'Access-Control-Max-Age=1209600'
+}
+
+/**
+ *  Generate JaCoCo test report with 'jacoco-all/*exec'
+ *  Prepare exec files to 'jacoco-all/' should be done by another tools (Eg. CI).
+ *  This task will be executed in CI which run 'test' task multiples with different configuration (Pg vs H2)
+ */
+task combineJaCoCoReports(type: JacocoReport) {
+    sourceDirectories.setFrom(files(subprojects.sourceSets.main.allSource.srcDirs.flatten()))
+    classDirectories.setFrom(files(subprojects.sourceSets.main.output.flatten()))
+    executionData fileTree(project.rootDir.absolutePath).include("jacoco-all/**/*.exec")
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['**/Immutable*'])
+        }))
+    }
+    reports {
+        xml.enabled(true)
+        html.enabled(true)
+    }
 }

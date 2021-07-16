@@ -19,7 +19,9 @@ else
   BUILD_UI_OPT=${WITHOUT_BUILD_UI}
 fi
 
+mkdir jacoco-all
 # It's enough to build UI either with H2 or PostgreSQL not with the both
 "${BASEDIR}/run_test_h2.sh" ${WITHOUT_BUILD_UI}
+cp digdag-*/build/jacoco/*.exec jacoco-all/
 "${BASEDIR}/run_test_pg.sh" ${BUILD_UI_OPT}
-
+cp digdag-*/build/jacoco/*.exec jacoco-all/
