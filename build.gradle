@@ -681,6 +681,7 @@ task runServer(type: JavaExec) {
  *  This task will be executed in CI which run 'test' task multiples with different configuration (Pg vs H2)
  */
 task combineJaCoCoReports(type: JacocoReport) {
+    dependsOn subprojects.compileJava
     sourceDirectories.setFrom(files(subprojects.sourceSets.main.allSource.srcDirs.flatten()))
     classDirectories.setFrom(files(subprojects.sourceSets.main.output.flatten()))
     executionData fileTree(project.rootDir.absolutePath).include("jacoco-all/**/*.exec")
