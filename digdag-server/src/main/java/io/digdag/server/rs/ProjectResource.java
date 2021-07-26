@@ -1,5 +1,6 @@
 package io.digdag.server.rs;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.net.URI;
@@ -89,6 +90,7 @@ import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.ProjectContentTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SecretTarget;
 import io.digdag.spi.ac.SiteTarget;
@@ -700,8 +702,9 @@ public class ProjectResource
             @QueryParam("schedule_from") String scheduleFromString)
             throws ResourceConflictException, IOException, ResourceNotFoundException, AccessControlException
     {
+        ProjectTarget projectTarget = ProjectTarget.of(getSiteId(), name);
         ac.checkPutProject( // AccessControl
-                ProjectTarget.of(getSiteId(), name),
+                projectTarget,
                 getAuthenticatedUser());
 
         return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
@@ -740,7 +743,7 @@ public class ProjectResource
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
 
-                    validateWorkflowAndSchedule(meta);
+                    validateWorkflowAndSchedule(projectTarget, meta);
                 }
 
                 ArchiveManager.Location location =
@@ -873,8 +876,10 @@ public class ProjectResource
         }
     }
 
-    private void validateWorkflowAndSchedule(ArchiveMetadata meta)
+    private void validateWorkflowAndSchedule(ProjectTarget projectTarget, ArchiveMetadata meta)
+            throws AccessControlException
     {
+        List<Config> taskConfigs = new ArrayList<>();
         WorkflowDefinitionList defs = meta.getWorkflowList();
         for (WorkflowDefinition def : defs.get()) {
             Workflow wf = compiler.compile(def.getName(), def.getConfig());
@@ -882,15 +887,20 @@ public class ProjectResource
             // validate workflow and schedule
             for (WorkflowTask task : wf.getTasks()) {
                 // raise an exception if task doesn't valid.
-                task.getConfig();
+                Config taskConfig = task.getConfig();
+                // collect task configs for later access control check
+                taskConfigs.add(taskConfig);
             }
             Revision rev = Revision.builderFromArchive("check", meta, getUserInfo())
                     .archiveType(ArchiveType.NONE)
                     .build();
             // raise an exception if "schedule:" is invalid.
             srm.tryGetScheduler(rev, def);
-
         }
+
+        ac.checkPutProjectContent(
+                ProjectContentTarget.of(projectTarget, taskConfigs),
+                getAuthenticatedUser());
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
