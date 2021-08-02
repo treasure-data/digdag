@@ -39,6 +39,7 @@ import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.AttemptTarget;
+import io.digdag.spi.ac.ProjectContentTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
@@ -254,6 +255,18 @@ public class AccessControllerIT
         {
             switch (target.getName()) {
                 case "put_project_403":
+                    throw new AccessControlException("not allow"); // 403
+                default:
+                    return; // ok
+            }
+        }
+
+        @Override
+        public void checkPutProjectContent(ProjectContentTarget target, AuthenticatedUser user)
+                throws AccessControlException
+        {
+            switch (target.getProjectTarget().getName()) {
+                case "put_project_invalid_content":
                     throw new AccessControlException("not allow"); // 403
                 default:
                     return; // ok
@@ -856,7 +869,6 @@ public class AccessControllerIT
     {
         { // ok
             final String projectName = "put_project_ok";
-            final String wfName = projectName;
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
             // Create new project
@@ -876,8 +888,27 @@ public class AccessControllerIT
         }
 
         { // 403
-            final String projectName = "put_project_ok";
-            final String wfName = projectName;
+            final String projectName = "put_project_403";
+            final Path projectDir = folder.getRoot().toPath().resolve(projectName);
+
+            // Create new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.code(), is(0));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    projectName,
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(1));
+        }
+
+        { // 403 (invalid content)
+            final String projectName = "put_project_invalid_content";
             final Path projectDir = folder.getRoot().toPath().resolve(projectName);
 
             // Create new project

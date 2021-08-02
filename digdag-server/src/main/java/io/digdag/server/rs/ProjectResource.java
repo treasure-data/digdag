@@ -34,7 +34,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
-import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestSecret;
