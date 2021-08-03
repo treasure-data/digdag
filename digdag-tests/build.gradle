@@ -40,7 +40,7 @@ test {
         List<String> props = project.getProperties().get("testFilter").split("\\s+")
         println("testFilter: " + props)
         props.each {
-            String converted = it.replace("digdag-tests/src/test/java/acceptance/", "**/").replace(".java", "*.class")
+            String converted = it.replace("digdag-tests/src/test/java/", "").replace(".java", "*.class")
             println("target: " + converted)
             include(converted)
         }
