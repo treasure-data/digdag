@@ -16,6 +16,7 @@ jobs:
 
       # Set up Digdag database
       - run:
+          name: setup PostgreSqL
           command: |
             sudo ls /etc/postgresql/
             sudo sed -i 's/max_connections = 1000/max_connections = 2000/' /etc/postgresql/9.5/main/postgresql.conf
