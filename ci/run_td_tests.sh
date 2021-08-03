@@ -23,6 +23,5 @@ export CI_ACCEPTANCE_TEST=true
 
 ./gradlew clean cleanTest test --info --no-daemon -p digdag-tests --tests 'acceptance.*' \
 	  -PtestFilter="$target_src"
-#	  -PtestFilter='`circleci tests glob "digdag-tests/src/test/java/acceptance/td/*.java" | circleci tests split --split-by=timings`'
 
 
