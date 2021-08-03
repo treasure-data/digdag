@@ -11,11 +11,6 @@ jobs:
         environment:
           TERM: dumb
           TZ: 'UTC'
-      - image: circleci/postgres:9.5-alpine
-        environment:
-          POSTGRES_USER: digdag_test
-          POSTGRES_DB: digdag_test
-
     steps:
       - checkout
 
