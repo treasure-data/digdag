@@ -36,13 +36,13 @@ test {
         }
     }
 
-  if (project.hasProperty("testFilter")) {
-    List<String> props = project.getProperties().get("testFilter").split("\\s+")
-    println("testFilter: " + props)
-    props.each {
-      String converted = it.replace("digdag-tests/src/test/java/acceptance/td/", "**/").replace(".java", "*.class")
-      println("target: " + converted)
-      include(converted)
+    if (project.hasProperty("testFilter")) {
+        List<String> props = project.getProperties().get("testFilter").split("\\s+")
+        println("testFilter: " + props)
+        props.each {
+            String converted = it.replace("digdag-tests/src/test/java/acceptance/", "**/").replace(".java", "*.class")
+            println("target: " + converted)
+            include(converted)
+        }
     }
-  }
 }

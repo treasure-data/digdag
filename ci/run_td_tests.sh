@@ -12,15 +12,15 @@ minimumPoolSize = 0
 "
 
 echo "---TARGET test ---"
-target_src=`circleci tests glob "digdag-tests/src/test/java/acceptance/td/**/*IT.java" | circleci tests split --split-by=timings`
+target_src=`circleci tests glob "digdag-tests/src/test/java/acceptance/**/*IT.java" | circleci tests split --split-by=timings`
 echo $target_src | xargs -n 1 echo
 echo "------------------"
 
 
 export CI_ACCEPTANCE_TEST=true
 
-./gradlew clean cleanTest test --info --no-daemon -p digdag-tests --tests 'acceptance.td.*' \
+./gradlew clean cleanTest test --info --no-daemon -p digdag-tests --tests 'acceptance.*' \
 	  -PtestFilter="$target_src"
-#	  -PtestFilter='`circleci tests glob "digdag-tests/src/test/java/acceptance/td/**/*.java" | circleci tests split --split-by=timings`'
+#	  -PtestFilter='`circleci tests glob "digdag-tests/src/test/java/acceptance/td/*.java" | circleci tests split --split-by=timings`'
 
 
