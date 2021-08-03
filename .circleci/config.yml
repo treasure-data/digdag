@@ -22,6 +22,9 @@ jobs:
       # Set up Digdag database
       - run:
           command: |
+            sudo ls /etc/postgresql/
+            sudo sed -i 's/max_connections = 1000/max_connections = 2000/' /etc/postgresql/9.5/main/postgresql.conf
+            sudo service postgresql restart
             set -x
             # wait for PostgreSQL container to be available for 2 mins
             for i in $(seq 1 120); do
