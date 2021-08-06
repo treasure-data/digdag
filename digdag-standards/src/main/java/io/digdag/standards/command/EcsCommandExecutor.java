@@ -714,10 +714,11 @@ public class EcsCommandExecutor
         } else if(total >= 6000) {
             try {
                 // logging to WF console
-                log(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total), clog);
+                log(s("The total bytes of Environment variables are too long %d. We have a hard limit on 8000. "
+                        + "Please consider reducing the size of environment variables.", total), clog);
             } catch (IOException e) {
                 // internal logging
-                logger.warn(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total), e);
+                logger.warn(s("The total bytes of Environment variables are too long %d. We have a hard limit on 8000.", total), e);
             }
         }
     }
