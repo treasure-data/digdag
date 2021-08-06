@@ -26,6 +26,16 @@ public interface AccessController
             throws AccessControlException;
 
     /**
+     * Check if the user has permissions to put a project in considering of the content.
+     *
+     * @param target
+     * @param user
+     * @throws AccessControlException
+     */
+    void checkPutProjectContent(ProjectContentTarget target, AuthenticatedUser user)
+            throws AccessControlException;
+
+    /**
      * Check if the user has permissions to delete the project.
      *
      * @param target
