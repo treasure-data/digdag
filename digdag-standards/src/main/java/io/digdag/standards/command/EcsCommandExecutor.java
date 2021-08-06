@@ -80,6 +80,7 @@ public class EcsCommandExecutor
     static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
     static final String CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "max_wait_for_fetch_log_events";
     private static final long DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC = 60L;
+    private static final long ENV_VARS_BYTES_THRESHOLD = 8000;
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -670,6 +671,7 @@ public class EcsCommandExecutor
         final ContainerOverride containerOverride = new ContainerOverride();
         // Assume that a single container will run in the task.
         final ContainerDefinition cd = td.getContainerDefinitions().get(0);
+        validateTaskOverride(commandContext, commandRequest, cd);
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
         setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
@@ -681,6 +683,39 @@ public class EcsCommandExecutor
 
         request.withOverrides(taskOverride);
     }
+
+    protected void validateTaskOverride(
+            final CommandContext context,
+            final CommandRequest request,
+            final ContainerDefinition cd)
+            throws ConfigException
+    {
+        // Note: A total of 8192 characters are allowed for overrides. This limit includes
+        // the JSON formatting characters of the override structure.
+        //
+        // see https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html#API_RunTask_RequestSyntax
+        //
+        // This is simplified validation. The other payload size to environment variables is not exactly 192.
+        // Not using UTF-8 1-4 bytes per a character.
+        int total = 0;
+        for (Map.Entry<String, String> e : request.getEnvironments().entrySet()) {
+            String k = e.getKey();
+            String v = e.getValue();
+            if(k != null) {
+                total += k.length();
+            }
+            if(v != null) {
+                total += v.length();
+            }
+        }
+        if(total >= ENV_VARS_BYTES_THRESHOLD) {
+            throw new ConfigException("Due to AWS service limitation, the total characters of Environment variables "
+                    + "must be less than 8000 but it was " + total);
+        } else if(total >= 7500) {
+            logger.warn(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total));
+        }
+    }
+
 
     protected void setEcsContainerOverrideName(
             final CommandContext commandContext,
