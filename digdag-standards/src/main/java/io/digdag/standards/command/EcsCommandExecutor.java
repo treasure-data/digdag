@@ -54,6 +54,7 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -696,22 +697,21 @@ public class EcsCommandExecutor
         // see https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html#API_RunTask_RequestSyntax
         //
         // This is simplified validation. The other payload size to environment variables is not exactly 192.
-        // Not using UTF-8 1-4 bytes per a character.
         int total = 0;
         for (Map.Entry<String, String> e : request.getEnvironments().entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
             if(k != null) {
-                total += k.length();
+                total += k.getBytes(StandardCharsets.UTF_8).length;
             }
             if(v != null) {
-                total += v.length();
+                total += v.getBytes(StandardCharsets.UTF_8).length;
             }
         }
         if(total >= ENV_VARS_BYTES_THRESHOLD) {
             throw new ConfigException("Due to AWS service limitation, the total characters of Environment variables "
                     + "must be less than 8000 but it was " + total);
-        } else if(total >= 7500) {
+        } else if(total >= 6000) {
             logger.warn(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total));
         }
     }
