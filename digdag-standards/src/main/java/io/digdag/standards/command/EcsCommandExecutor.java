@@ -712,7 +712,13 @@ public class EcsCommandExecutor
             throw new ConfigException("Due to AWS service limitation, the total characters of Environment variables "
                     + "must be less than 8000 but it was " + total);
         } else if(total >= 6000) {
-            logger.warn(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total));
+            try {
+                // logging to WF console
+                log(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total), clog);
+            } catch (IOException e) {
+                // internal logging
+                logger.warn(s("The total characters of Environment variables are too long %d. We have a hard limit on 8000.", total), e);
+            }
         }
     }
 
