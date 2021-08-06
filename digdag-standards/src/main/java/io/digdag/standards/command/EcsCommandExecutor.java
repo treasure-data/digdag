@@ -81,7 +81,8 @@ public class EcsCommandExecutor
     static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
     static final String CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "max_wait_for_fetch_log_events";
     private static final long DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC = 60L;
-    private static final long ENV_VARS_BYTES_THRESHOLD = 8000;
+    private static final int ENV_VARS_BYTES_THRESHOLD = 8000;
+    private static final int ENV_VARS_BYTES_THRESHOLD_WARN = 6000;
 
     private final Config systemConfig;
     private final EcsClientFactory ecsClientFactory;
@@ -701,24 +702,27 @@ public class EcsCommandExecutor
         for (Map.Entry<String, String> e : request.getEnvironments().entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
-            if(k != null) {
+            if (k != null) {
                 total += k.getBytes(StandardCharsets.UTF_8).length;
             }
-            if(v != null) {
+            if (v != null) {
                 total += v.getBytes(StandardCharsets.UTF_8).length;
             }
         }
-        if(total >= ENV_VARS_BYTES_THRESHOLD) {
-            throw new ConfigException("Due to AWS service limitation, the total characters of Environment variables "
-                    + "must be less than 8000 but it was " + total);
-        } else if(total >= 6000) {
+        if (total >= ENV_VARS_BYTES_THRESHOLD)
+        {
+            throw new ConfigException(s("Due to AWS service limitation, the total characters of Environment variables "
+                    + "must be less than %d but it was %d", ENV_VARS_BYTES_THRESHOLD, total));
+        } else if (total >= ENV_VARS_BYTES_THRESHOLD_WARN)
+        {
             try {
                 // logging to WF console
-                log(s("The total bytes of Environment variables are too long %d. We have a hard limit on 8000. "
-                        + "Please consider reducing the size of environment variables.", total), clog);
+                log(s("The total bytes of Environment variables are too long %d. We have a hard limit on %d. "
+                        + "Please consider reducing the size of environment variables.", total, ENV_VARS_BYTES_THRESHOLD), clog);
             } catch (IOException e) {
                 // internal logging
-                logger.warn(s("The total bytes of Environment variables are too long %d. We have a hard limit on 8000.", total), e);
+                logger.warn(s("The total bytes of Environment variables are too long %d. We have a hard limit on %d.",
+                    total, ENV_VARS_BYTES_THRESHOLD), e);
             }
         }
     }
