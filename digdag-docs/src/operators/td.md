@@ -11,11 +11,11 @@
 
     +simple_query_expanded:
       td>:
-        data: "SELECT '${session_id}' FROM nasdaq"
+      query: "SELECT '${session_id}' FROM nasdaq"
 
     +simple_query_nonexpanded:
       td>:
-      query: "SELECT * FROM nasdaq"
+        data: "SELECT * FROM nasdaq"
 
     +create_new_table_using_result_of_select:
       td>: queries/select_sql.sql
