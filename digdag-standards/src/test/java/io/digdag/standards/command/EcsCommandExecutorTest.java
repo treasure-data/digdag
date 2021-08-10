@@ -222,7 +222,7 @@ public class EcsCommandExecutorTest
             fail("expect ConfigException");
         } catch (ConfigException e) {
             assertThat(e.getMessage(), containsString(
-                "The total bytes of Environment variables are too long"));
+                "the total bytes of Environment variables must be less than"));
         }
 
     }

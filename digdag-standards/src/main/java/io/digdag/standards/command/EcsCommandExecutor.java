@@ -711,7 +711,7 @@ public class EcsCommandExecutor
         }
         if (total >= ENV_VARS_BYTES_THRESHOLD)
         {
-            throw new ConfigException(s("Due to AWS service limitation, the total characters of Environment variables "
+            throw new ConfigException(s("Due to AWS service limitation, the total bytes of Environment variables "
                     + "must be less than %d but it was %d", ENV_VARS_BYTES_THRESHOLD, total));
         } else if (total >= ENV_VARS_BYTES_THRESHOLD_WARN)
         {
