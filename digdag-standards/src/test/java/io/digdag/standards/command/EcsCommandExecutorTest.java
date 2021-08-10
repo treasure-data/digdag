@@ -1,12 +1,15 @@
 package io.digdag.standards.command;
 
 import com.amazonaws.services.ecs.model.Container;
+import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
+
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.storage.StorageManager;
@@ -14,6 +17,7 @@ import io.digdag.spi.CommandContext;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.CommandRequest;
 import io.digdag.spi.CommandStatus;
+import io.digdag.spi.ImmutableCommandRequest;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.command.ecs.EcsClient;
 import io.digdag.standards.command.ecs.EcsClientConfig;
@@ -25,9 +29,15 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
@@ -185,5 +195,35 @@ public class EcsCommandExecutorTest
                 fail("Unexpected Exception happened. " + e.toString());
             }
         }
+    }
+
+    @Test
+    public void testValidateTaskOverride()
+    {
+        final EcsCommandExecutor executor =
+                spy(new EcsCommandExecutor(systemConfig, ecsClientFactory, dockerCommandExecutor,
+                    storageManager, projectArchiveLoader, commandLogger));
+
+        Map<String, String> env = new HashMap<>();
+        for (int i = 0; i < 100; i++) {
+            env.put(String.join("", Collections.nCopies(40, "k")) + i,
+                String.join("", Collections.nCopies(40, "v")));
+        }
+
+        CommandRequest request = ImmutableCommandRequest.builder()
+                                                        .environments(env)
+                                                        .commandLine(Collections.emptyList())
+                                                        .ioDirectory(mock(Path.class))
+                                                        .workingDirectory(mock(Path.class))
+                                                        .build();
+        try {
+            executor.validateTaskOverride(mock(CommandContext.class), request,
+                mock(ContainerDefinition.class));
+            fail("expect ConfigException");
+        } catch (ConfigException e) {
+            assertThat(e.getMessage(), containsString(
+                "the total bytes of Environment variables must be less than"));
+        }
+
     }
 }
