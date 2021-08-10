@@ -9,6 +9,7 @@ import com.amazonaws.services.ecs.model.Tag;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.AWSLogsException;
+import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -161,6 +162,39 @@ public class DefaultEcsClientTest
         Mockito.verify(ecsClient, times(3)).waitWithRandomJitter(anyLong(), anyLong());
     }
 
+    @Test
+    public void testRetryForGetLog()
+    {
+        final GetLogEventsRequest request = new GetLogEventsRequest()
+                // This should be true when using `nextToken`. See the doc for details.
+                .withStartFromHead(true)
+                .withLogGroupName("group")
+                .withLogStreamName("stream");
+
+        Supplier<Boolean> func = new Supplier<Boolean>()
+        {
+            private final int maxError = 3;
+            private int current = 0;
+
+            @Override
+            public Boolean get()
+            {
+                current += 1;
+                if (current <= maxError) {
+                    AWSLogsException ex = new AWSLogsException("The specified log stream does not exist.");
+                    ex.setErrorCode("ResourceNotFoundException");
+                    ex.setStatusCode(400);
+                    ex.setServiceName("AWSLogs");
+                    ex.setRequestId("xxxx-xxxx-xxxx");
+                    throw ex;
+                }
+                return true;
+            }
+        };
+        assertEquals(true, ecsClient.retryForGetLog(func, request));
+        Mockito.verify(ecsClient, times(3)).waitWithRandomJitter(anyLong(), anyLong());
+    }
+    
     @Test
     public void testGetLog()
     {
