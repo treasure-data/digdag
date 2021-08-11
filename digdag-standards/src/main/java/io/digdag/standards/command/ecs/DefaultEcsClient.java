@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -277,7 +278,7 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
-        return retryForGetLog(() -> logs.getLogEvents(request), request);
+        return retryForGetLog(r -> logs.getLogEvents(r), request);
     }
 
     @Override
@@ -330,11 +331,11 @@ public class DefaultEcsClient
      * @throws AmazonServiceException
      */
     @VisibleForTesting
-    <T> T retryForGetLog(Supplier<T> func, GetLogEventsRequest request) throws AmazonServiceException
+    <R> R retryForGetLog(Function<GetLogEventsRequest, R> func, GetLogEventsRequest request) throws AmazonServiceException
     {
         for (int i = 0; i < maxRetry; i++) {
             try {
-                return func.get();
+                return func.apply(request);
             }
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
