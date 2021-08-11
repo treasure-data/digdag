@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.hamcrest.Matchers.is;
@@ -171,13 +172,13 @@ public class DefaultEcsClientTest
                 .withLogGroupName("group")
                 .withLogStreamName("stream");
 
-        Supplier<Boolean> func = new Supplier<Boolean>()
+        Function<GetLogEventsRequest, Boolean> func = new Function<GetLogEventsRequest, Boolean>()
         {
             private final int maxError = 3;
             private int current = 0;
 
             @Override
-            public Boolean get()
+            public Boolean apply(GetLogEventsRequest req)
             {
                 current += 1;
                 if (current <= maxError) {
@@ -190,6 +191,7 @@ public class DefaultEcsClientTest
                 }
                 return true;
             }
+
         };
         assertEquals(true, ecsClient.retryForGetLog(func, request));
         Mockito.verify(ecsClient, times(3)).waitWithRandomJitter(anyLong(), anyLong());
