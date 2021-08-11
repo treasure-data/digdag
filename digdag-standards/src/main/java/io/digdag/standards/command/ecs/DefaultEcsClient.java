@@ -51,10 +51,10 @@ public class DefaultEcsClient
     private final AmazonECSClient client;
     private final AWSLogs logs;
 
-    private final int rateLimitMaxRetry;
-    private final long rateLimitMaxJitterSecs;   // 0.0 <= jitterSecs < rateLimitBaseJitterSecs
-    private final long rateLimitMaxBaseWaitSecs; // Max baseWaitSecs.
-    private final long rateLimitBaseIncrementalSecs;
+    private final int maxRetry;
+    private final long maxJitterSecs;   // 0.0 <= jitterSecs < baseJitterSecs
+    private final long maxBaseWaitSecs;
+    private final long baseIncrementalSecs;
 
     protected DefaultEcsClient(
             final EcsClientConfig config,
@@ -68,19 +68,19 @@ public class DefaultEcsClient
             final EcsClientConfig config,
             final AmazonECSClient client,
             final AWSLogs logs,
-            final int rateLimitMaxRetry,
-            final long rateLimitMaxJitterSecs,
-            final long rateLimitMaxBaseWaitSecs,
-            final long rateLimitBaseIncrementalSecs
+            final int maxRetry,
+            final long maxJitterSecs,
+            final long maxBaseWaitSecs,
+            final long baseIncrementalSecs
             )
     {
         this.config = config;
         this.client = client;
         this.logs = logs;
-        this.rateLimitMaxRetry = rateLimitMaxRetry;
-        this.rateLimitMaxJitterSecs = rateLimitMaxJitterSecs;
-        this.rateLimitMaxBaseWaitSecs = rateLimitMaxBaseWaitSecs;
-        this.rateLimitBaseIncrementalSecs = rateLimitBaseIncrementalSecs;
+        this.maxRetry = maxRetry;
+        this.maxJitterSecs = maxJitterSecs;
+        this.maxBaseWaitSecs = maxBaseWaitSecs;
+        this.baseIncrementalSecs = baseIncrementalSecs;
     }
 
     @Override
@@ -302,23 +302,23 @@ public class DefaultEcsClient
     public <T> T retryOnRateLimit(Supplier<T> func) throws AmazonServiceException
     {
         //ToDo  AmazonECSClient has its own retry policy mechanism. Evaluate it and consider it as replacement of this method.
-        for (int i = 0; i < rateLimitMaxRetry; i++) {
+        for (int i = 0; i < maxRetry; i++) {
             try {
                 return func.get();
             }
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
                     logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
-                    // Max of baseWaitSecs is rateLimitMaxBaseWaitSecs
-                    final long baseWaitSecs = Math.min(rateLimitBaseIncrementalSecs * i, rateLimitMaxBaseWaitSecs);
-                    waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
+                    // Max of baseWaitSecs is maxBaseWaitSecs
+                    final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
+                    waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
                 else {
                     throw ex;
                 }
             }
         }
-        logger.error("Failed to call EcsClient method after Retried {} times", rateLimitMaxRetry);
+        logger.error("Failed to call EcsClient method after Retried {} times", maxRetry);
         throw new RuntimeException("Failed to call EcsClient method");
     }
 
@@ -333,31 +333,31 @@ public class DefaultEcsClient
     @VisibleForTesting
     <T> T retryForGetLog(Supplier<T> func, GetLogEventsRequest request) throws AmazonServiceException
     {
-        for (int i = 0; i < rateLimitMaxRetry; i++) {
+        for (int i = 0; i < maxRetry; i++) {
             try {
                 return func.get();
             }
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
                     logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
-                    // Max of baseWaitSecs is rateLimitMaxBaseWaitSecs
-                    final long baseWaitSecs = Math.min(rateLimitBaseIncrementalSecs * i, rateLimitMaxBaseWaitSecs);
-                    waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
+                    // Max of baseWaitSecs is maxBaseWaitSecs
+                    final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
+                    waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
                 else if (ex.getStatusCode() == 400 && "AWSLogs".equals(ex.getServiceName()) && "ResourceNotFoundException".equals(ex.getErrorCode())) {
                     // Note CloudWatch log stream became available by an eventually consistency way. So, retry on ResourceNotFoundException
                     // com.amazonaws.services.logs.model.ResourceNotFoundException:
                     //   The specified log stream does not exist. (Service: AWSLogs; Status Code: 400; Error Code: ResourceNotFoundException; Request ID: xxxx)
                     logger.debug(String.format(Locale.ENGLISH, "LogStream does not exist yet: %s", request.getLogStreamName()), ex);
-                    final long baseWaitSecs = Math.min(rateLimitBaseIncrementalSecs * i, rateLimitMaxBaseWaitSecs);
-                    waitWithRandomJitter(baseWaitSecs, rateLimitMaxJitterSecs);
+                    final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
+                    waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
                 else {
                     throw ex;
                 }
             }
         }
-        logger.error("Failed to call EcsClient method after Retried {} times", rateLimitMaxRetry);
+        logger.error("Failed to call EcsClient method after Retried {} times", maxRetry);
         throw new RuntimeException("Failed to call EcsClient method");
     }
 
