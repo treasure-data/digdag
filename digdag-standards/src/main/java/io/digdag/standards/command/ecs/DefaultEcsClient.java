@@ -52,7 +52,7 @@ public class DefaultEcsClient
     private final AWSLogs logs;
 
     private final int maxRetry;
-    private final long maxJitterSecs;   // 0.0 <= jitterSecs < baseJitterSecs
+    private final long maxJitterSecs;
     private final long maxBaseWaitSecs;
     private final long baseIncrementalSecs;
 
@@ -309,7 +309,6 @@ public class DefaultEcsClient
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
                     logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
-                    // Max of baseWaitSecs is maxBaseWaitSecs
                     final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
@@ -340,7 +339,6 @@ public class DefaultEcsClient
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
                     logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
-                    // Max of baseWaitSecs is maxBaseWaitSecs
                     final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
