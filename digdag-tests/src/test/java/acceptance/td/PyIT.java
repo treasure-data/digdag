@@ -149,7 +149,7 @@ public class PyIT
             }
             assertThat(attempt.getSuccess(), is(true));
         }
-
+        Thread.sleep(60 * 1000); // Log will be delayed
         String logs = getAttemptLogs(client, attemptId);
         assertThat(logs, containsString("digdag params"));
         assertThat(logs, containsString("{'VAR_A': 'aaa'}")); // via _env in echo_params.dig

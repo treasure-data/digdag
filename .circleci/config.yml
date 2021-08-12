@@ -11,17 +11,15 @@ jobs:
         environment:
           TERM: dumb
           TZ: 'UTC'
-      - image: circleci/postgres:9.5-alpine
-        environment:
-          POSTGRES_USER: digdag_test
-          POSTGRES_DB: digdag_test
-
     steps:
       - checkout
 
       # Set up Digdag database
       - run:
+          name: setup PostgreSqL
           command: |
+            sudo sed -i 's/max_connections = 1000/max_connections = 2000/' /etc/postgresql/9.5/main/postgresql.conf
+            sudo service postgresql restart
             set -x
             # wait for PostgreSQL container to be available for 2 mins
             for i in $(seq 1 120); do
