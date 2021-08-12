@@ -176,6 +176,9 @@ signing.gnupg.passphrase=(the passphrase used to protect your private key)
 ```
 
 ### Release procedure
+
+As mentioned in the prerequirements, we need to build with JDK 8 in this procedure.
+
 1. run `git pull upstream master --tags`.
 1. run `./gradlew setVersion -Pto=<version>` command.
 1. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
