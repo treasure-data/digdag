@@ -121,11 +121,11 @@ public class MultiThreadAgent
                     // Because the maximum count doesn't increase, here can know that at least N number of threads are idling.
                     int guaranteedAvaialbleThreads = executor.getMaximumPoolSize() - maximumActiveTasks;
                     // Acquire at most guaranteedAvaialbleThreads or 10. This guarantees that all tasks start immediately.
-                    int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
+                    int maxAcquire = Math.min(guaranteedAvaialbleThreads, 20);
                     if (maxAcquire > 0) {
                         metrics.summary(Category.AGENT,"mtag_NumMaxAcquire", maxAcquire);
                         transactionManager.begin(() -> {
-                            List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
+                            List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 500);
                             for (TaskRequest req : reqs) {
                                 executor.submit(() -> {
                                     try {

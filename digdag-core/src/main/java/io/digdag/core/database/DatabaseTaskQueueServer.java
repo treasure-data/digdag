@@ -336,7 +336,7 @@ public class DatabaseTaskQueueServer
         int siteMaxConcurrency = queueConfig.getSiteMaxConcurrency(siteId);
 
         try {
-            if (!localLockMap.tryLock(siteId, 500)) {
+            if (!localLockMap.tryLock(siteId, 250)) {
                 return ImmutableList.of();
             }
         }
