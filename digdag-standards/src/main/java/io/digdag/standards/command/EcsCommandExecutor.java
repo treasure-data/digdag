@@ -80,7 +80,9 @@ public class EcsCommandExecutor
     private static final int DEFAULT_RETRY_TASK_OUTPUT_UPLOADS = 7;
     static final String CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "enable_curl_fail_opt_on_uploads";
     static final String CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS = ECS_COMMAND_EXECUTOR_SYSTEM_CONFIG_PREFIX + "max_wait_for_fetch_log_events";
+    static final String CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS_NON_ZERO_STATUS = CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS + ".non_zero_status";
     private static final long DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC = 60L;
+    private static final long DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC_NON_ZERO_STATUS = 300L;
     private static final int ENV_VARS_BYTES_THRESHOLD = 8000;
     private static final int ENV_VARS_BYTES_THRESHOLD_WARN = 6000;
 
@@ -92,7 +94,7 @@ public class EcsCommandExecutor
     private final CommandLogger clog;
     private final int retryDownloads, retryUploads;
     private final boolean curlFailOptOnUploads; // false by the default
-    private final long maxWaitForFetchLogEventsInSec;
+    private final long maxWaitForFetchLogEventsInSec, maxWaitForFetchLogEventsInSecNonZeroStatus;
 
     @Inject
     public EcsCommandExecutor(
@@ -113,6 +115,7 @@ public class EcsCommandExecutor
         this.retryUploads = systemConfig.get(CONFIG_RETRY_TASK_OUTPUT_UPLOADS, int.class, DEFAULT_RETRY_TASK_OUTPUT_UPLOADS);
         this.curlFailOptOnUploads = systemConfig.get(CONFIG_ENABLE_CURL_FAIL_OPT_ON_UPLOADS, boolean.class, false);
         this.maxWaitForFetchLogEventsInSec = systemConfig.get(CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS, long.class, DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC);
+        this.maxWaitForFetchLogEventsInSecNonZeroStatus = systemConfig.get(CONFIG_MAX_WAIT_FOR_FETCH_LOG_EVENTS_NON_ZERO_STATUS, long.class, DEFAULT_MAX_WAIT_FOR_FETCH_LOG_EVENTS_IN_SEC_NON_ZERO_STATUS);
     }
 
     @Override
@@ -344,7 +347,7 @@ public class EcsCommandExecutor
             final long taskFinishedAt = previousStatus.get("task_finished_at").asLong();
             final int statusCode =  previousStatus.get("status_code").intValue();
 
-            long timeout = taskFinishedAt + maxWaitForFetchLogEventsInSec;
+            long timeout = taskFinishedAt + ((statusCode != 0) ? maxWaitForFetchLogEventsInSecNonZeroStatus : maxWaitForFetchLogEventsInSec);
             do {
                 previousExecutorStatus = fetchLogEvents(client, previousStatus, previousExecutorStatus);
                 if (previousExecutorStatus.get("logging_finished_at") != null) {
@@ -360,6 +363,12 @@ public class EcsCommandExecutor
                 }
             }
             while (Instant.now().getEpochSecond() < timeout);
+
+            if (previousExecutorStatus.get("logging_finished_at") == null) {// case for timeout
+                logger.warn(s("Cannot find logging_finished_at marker in CloudWatch logs.\n"
+                        + "taskArn=%s, taskStatus=%d, logGroup=%s, logStream=%s",
+                    taskArn, statusCode, toLogGroupName(previousStatus), toLogStreamName(previousStatus)));
+            }
 
             final ObjectNode nextStatus = previousStatus.deepCopy();
             nextStatus.set("executor_state", previousExecutorStatus);
