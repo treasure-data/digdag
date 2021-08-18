@@ -364,7 +364,7 @@ public class EcsCommandExecutor
             while (Instant.now().getEpochSecond() < timeout);
 
             if (previousExecutorStatus.get("logging_finished_at") == null) {// case for timeout
-                logger.warn(s("Cannot find logging_finished_at marker in CloudWatch logs.\n"
+                logger.debug(s("Cannot find logging_finished_at marker in CloudWatch logs.\n"
                         + "taskArn=%s, taskStatus=%d, logGroup=%s, logStream=%s",
                     taskArn, statusCode, toLogGroupName(previousStatus), toLogStreamName(previousStatus)));
             }
