@@ -146,6 +146,7 @@ public class EcsCommandExecutorTest2 {
                                           .put("task_arn", "my_task_arn")
                                           .put("task_finished_at", Instant.now().getEpochSecond())
                                           .put("status_code", 0);
+        previousStatusJson.set("awslogs", om.createObjectNode().put("awslogs-group", "dummy group").put("awslogs-stream", "dummy stream"));
 
         try {
             executor.poll(commandContext, previousStatusJson);
