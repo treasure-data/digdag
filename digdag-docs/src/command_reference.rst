@@ -843,6 +843,9 @@ Creates a project archive and upload it to the server. This command uploads work
 
   Example: ``--copy-outgoing-symlinks``
 
+Digdag excludes files start with dot (``.``) from project archives.
+If you want to exclude other files, put a file named ``.digdagignore`` in the project root directory and write patterns to ignore in the same way as ``.gitignore``.
+
 download
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
