@@ -60,7 +60,9 @@ public class ProjectArchive
     static void listFiles(Path projectPath, PathConsumer consumer)
         throws IOException
     {
+        // parse .digdagignore
         Optional<DigdagIgnore> digdagIgnore = DigdagIgnore.ofProject(projectPath);
+        // filter rejects files / directories match .digdagignore and files / directories start with dot (.)
         DirectoryStream.Filter<Path> filter = (target) -> (
                 rejectDotFiles(target) && digdagIgnore
                         .map((ignore) -> ignore.accept(target))
