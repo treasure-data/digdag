@@ -333,13 +333,15 @@ public class DefaultEcsClient
     @VisibleForTesting
     <R> R retryForGetLog(Function<GetLogEventsRequest, R> func, GetLogEventsRequest request) throws AmazonServiceException
     {
+        String lastErrorMsg = "";
         for (int i = 0; i < maxRetry; i++) {
             try {
                 return func.apply(request);
             }
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
-                    logger.debug("Rate exceed: {}. Will be retried.", ex.toString());
+                    lastErrorMsg = String.format(Locale.ENGLISH, "Rate exceed: {}. Will be retried.", ex.toString());
+                    logger.debug(lastErrorMsg, ex);
                     final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
@@ -347,7 +349,8 @@ public class DefaultEcsClient
                     // Note CloudWatch log stream became available by an eventually consistency way. So, retry on ResourceNotFoundException
                     // com.amazonaws.services.logs.model.ResourceNotFoundException:
                     //   The specified log stream does not exist. (Service: AWSLogs; Status Code: 400; Error Code: ResourceNotFoundException; Request ID: xxxx)
-                    logger.debug(String.format(Locale.ENGLISH, "LogStream does not exist yet: %s", request.getLogStreamName()), ex);
+                    lastErrorMsg = String.format(Locale.ENGLISH, "LogStream does not exist yet: %s", request.getLogStreamName());
+                    logger.debug(lastErrorMsg, ex);
                     final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
@@ -356,8 +359,9 @@ public class DefaultEcsClient
                 }
             }
         }
-        logger.error("Failed to call EcsClient method after Retried {} times", maxRetry);
-        throw new RuntimeException("Failed to call EcsClient method");
+        String errMsg = String.format(Locale.ENGLISH, "Failed to fetch Cloudwatch log stream while system retried {} times. {}", maxRetry, lastErrorMsg);
+        logger.error(errMsg);
+        throw new RuntimeException(errMsg);
     }
 
     @VisibleForTesting
