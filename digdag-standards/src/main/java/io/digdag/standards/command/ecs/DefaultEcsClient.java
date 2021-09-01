@@ -63,7 +63,7 @@ public class DefaultEcsClient
             final AmazonECSClient client,
             final AWSLogs logs)
     {
-        this(config, client, logs, 60, 9, 10, 50, 10);
+        this(config, client, logs, 60, 5, 10, 50, 10);
     }
 
     protected DefaultEcsClient(
@@ -270,7 +270,7 @@ public class DefaultEcsClient
      * @param groupName
      * @param streamName
      * @param nextToken
-     * @return
+     * @return null if LogStream is not found
      */
     @Override
     public GetLogEventsResult getLog(
@@ -286,7 +286,14 @@ public class DefaultEcsClient
         if (nextToken.isPresent()) {
             request.withNextToken("f/" + nextToken.get());
         }
-        return retryForGetLog(r -> logs.getLogEvents(r), request);
+        try {
+            return retryForGetLog(r -> logs.getLogEvents(r), request);
+        } catch (AmazonServiceException ex) {
+            if (ex.getStatusCode() == 400 && "AWSLogs".equals(ex.getServiceName()) && "ResourceNotFoundException".equals(ex.getErrorCode())) {
+                return null;
+            }
+            throw ex;
+        }
     }
 
     @Override
@@ -362,7 +369,8 @@ public class DefaultEcsClient
                     logger.debug(lastErrorMsg, ex);
 
                     if (cntLogStreamMissingErrors >= maxRetryForLogStreamMissing) {
-                        break;
+                        logger.warn("Failed to fetch Cloudwatch log stream while system retried {} times: {}", cntLogStreamMissingErrors, ex);
+                        throw ex;
                     }
                     cntLogStreamMissingErrors++;
 
