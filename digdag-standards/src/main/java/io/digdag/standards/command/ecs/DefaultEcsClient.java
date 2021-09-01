@@ -53,6 +53,7 @@ public class DefaultEcsClient
     private final AWSLogs logs;
 
     private final int maxRetry;
+    private final int maxRetryForLogStreamMissing;
     private final long maxJitterSecs;
     private final long maxBaseWaitSecs;
     private final long baseIncrementalSecs;
@@ -62,7 +63,7 @@ public class DefaultEcsClient
             final AmazonECSClient client,
             final AWSLogs logs)
     {
-        this(config, client, logs, 60, 10, 50, 10);
+        this(config, client, logs, 60, 9, 10, 50, 10);
     }
 
     protected DefaultEcsClient(
@@ -70,6 +71,7 @@ public class DefaultEcsClient
             final AmazonECSClient client,
             final AWSLogs logs,
             final int maxRetry,
+            final int maxRetryForLogStreamMissing,
             final long maxJitterSecs,
             final long maxBaseWaitSecs,
             final long baseIncrementalSecs
@@ -79,6 +81,12 @@ public class DefaultEcsClient
         this.client = client;
         this.logs = logs;
         this.maxRetry = maxRetry;
+        if (maxRetryForLogStreamMissing > maxRetry) {
+            throw new IllegalArgumentException(
+                String.format(Locale.ENGLISH, "maxRetryForLogStreamMissing %d must be less than or equals to maxRetry %d",
+                    maxRetryForLogStreamMissing, maxRetry));
+        }
+        this.maxRetryForLogStreamMissing = maxRetryForLogStreamMissing;
         this.maxJitterSecs = maxJitterSecs;
         this.maxBaseWaitSecs = maxBaseWaitSecs;
         this.baseIncrementalSecs = baseIncrementalSecs;
@@ -334,15 +342,16 @@ public class DefaultEcsClient
     <R> R retryForGetLog(Function<GetLogEventsRequest, R> func, GetLogEventsRequest request) throws AmazonServiceException
     {
         String lastErrorMsg = "";
-        for (int i = 0; i < maxRetry; i++) {
+        int retryCnt = 0, cntLogStreamMissingErrors = 0;
+        for (; retryCnt < maxRetry; retryCnt++) {
             try {
                 return func.apply(request);
             }
             catch (AmazonServiceException ex) {
                 if (RetryUtils.isThrottlingException(ex)) {
-                    lastErrorMsg = String.format(Locale.ENGLISH, "Rate exceed: {}. Will be retried.", ex.toString());
+                    lastErrorMsg = String.format(Locale.ENGLISH, "Rate exceed: %s. Will be retried.", ex.toString());
                     logger.debug(lastErrorMsg, ex);
-                    final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
+                    final long baseWaitSecs = Math.min(baseIncrementalSecs * retryCnt, maxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
                 else if (ex.getStatusCode() == 400 && "AWSLogs".equals(ex.getServiceName()) && "ResourceNotFoundException".equals(ex.getErrorCode())) {
@@ -351,7 +360,13 @@ public class DefaultEcsClient
                     //   The specified log stream does not exist. (Service: AWSLogs; Status Code: 400; Error Code: ResourceNotFoundException; Request ID: xxxx)
                     lastErrorMsg = String.format(Locale.ENGLISH, "LogStream does not exist yet: %s", request.getLogStreamName());
                     logger.debug(lastErrorMsg, ex);
-                    final long baseWaitSecs = Math.min(baseIncrementalSecs * i, maxBaseWaitSecs);
+
+                    if (cntLogStreamMissingErrors >= maxRetryForLogStreamMissing) {
+                        break;
+                    }
+                    cntLogStreamMissingErrors++;
+
+                    final long baseWaitSecs = Math.min(baseIncrementalSecs * retryCnt, maxBaseWaitSecs);
                     waitWithRandomJitter(baseWaitSecs, maxJitterSecs);
                 }
                 else {
@@ -359,7 +374,8 @@ public class DefaultEcsClient
                 }
             }
         }
-        String errMsg = String.format(Locale.ENGLISH, "Failed to fetch Cloudwatch log stream while system retried {} times. {}", maxRetry, lastErrorMsg);
+        String errMsg = String.format(Locale.ENGLISH, "Failed to fetch Cloudwatch log stream while system retried %d times. %s",
+            retryCnt, lastErrorMsg);
         logger.error(errMsg);
         throw new RuntimeException(errMsg);
     }
