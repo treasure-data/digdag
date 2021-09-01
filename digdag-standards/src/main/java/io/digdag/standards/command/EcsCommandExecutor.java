@@ -18,6 +18,7 @@ import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
 import com.amazonaws.services.ecs.model.TaskSetNotFoundException;
+import com.amazonaws.services.ecs.model.TaskStopCode;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -401,15 +402,14 @@ public class EcsCommandExecutor
         final Task task;
         try {
             task = client.getTask(cluster, taskArn);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Get task: " + task);
+            }
         }
         catch (TaskSetNotFoundException e) {
             // if task is not present, an operator will throw TaskExecutionException to retry polling the status.
             logger.info(s("Cannot get the Ecs task status where cluster=%s, taskArn=%s. Will be retried.", cluster, taskArn));
             return EcsCommandStatus.of(false, previousStatus.deepCopy());
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("Get task: " + task);
         }
 
         final EcsTaskStatus taskStatus = EcsTaskStatus.of(task.getLastStatus());
@@ -439,7 +439,22 @@ public class EcsCommandExecutor
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
             // Set exit code of container finished to nextStatus
-            nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
+            int containerExitCode = task.getContainers().get(0).getExitCode().intValue();
+            nextStatus.put("status_code", containerExitCode);
+
+            String stopCode = task.getStopCode();
+            nextStatus.put("ecs_stop_code", stopCode);
+
+            // see com.amazonaws.services.ecs.model.TaskStopCode
+            if(TaskStopCode.TaskFailedToStart.toString().equals(stopCode)) {
+                String stoppedReason = task.getStoppedReason();
+                nextStatus.put("ecs_stopped_reason", stoppedReason);
+                throw new RuntimeException(s(
+                    "ECS Container task failed to start due to temporary AWS issues: stopCode=%s, stoppedReason=%s, containerExitCode=%d\n"
+                    + "Please retry workflow tasks. Refer https://docs.digdag.io/workflow_definition.html#retrying-failed-tasks-automatically for detail.\n"
+                    + "ECS error codes are available on https://docs.aws.amazon.com/AmazonECS/latest/userguide/stopped-task-error-codes.html",
+                    stopCode, stoppedReason, containerExitCode));
+            }
         }
 
         // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
@@ -489,6 +504,10 @@ public class EcsCommandExecutor
         final Optional<String> previousToken = !previousExecutorStatus.has("next_token") ?
                 Optional.absent() : Optional.of(previousExecutorStatus.get("next_token").asText());
         final GetLogEventsResult result = client.getLog(toLogGroupName(previousStatus), toLogStreamName(previousStatus), previousToken);
+        if (result == null) {
+            return previousExecutorStatus.deepCopy();
+        }
+
         final List<OutputLogEvent> logEvents = result.getEvents();
         final String nextForwardToken = result.getNextForwardToken().substring(2); // trim "f/" prefix of the token
         final String nextBackwardToken = result.getNextBackwardToken().substring(2); // trim "b/" prefix of the token
