@@ -13,6 +13,8 @@ import io.digdag.client.config.ConfigException;
 import java.io.IOException;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public interface EcsClient
         extends AutoCloseable
 {
@@ -39,6 +41,7 @@ public interface EcsClient
 
     void stopTask(String cluster, String taskArn);
 
+    @Nullable
     GetLogEventsResult getLog(String groupName, String streamName, Optional<String> nextToken);
 
     @Override

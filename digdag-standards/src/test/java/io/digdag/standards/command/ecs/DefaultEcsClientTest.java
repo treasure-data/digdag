@@ -59,7 +59,7 @@ public class DefaultEcsClientTest
     @Before
     public void setUp()
     {
-        ecsClient = spy(new DefaultEcsClient(ecsClientConfig, rawEcsClient, logs, 10, 2, 1, 5));
+        ecsClient = spy(new DefaultEcsClient(ecsClientConfig, rawEcsClient, logs, 10, 5, 2, 1, 5));
     }
 
     @Test
