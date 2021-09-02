@@ -51,9 +51,11 @@ public abstract class BaseOperator
 
             boolean doRetry = retry.evaluate();
             if (doRetry) {
+                // Remove command status so that pollable command executors can run tasks on retry
+                Config nextStateParams = retry.getNextRetryStateParams().remove("commandStatus");
                 throw TaskExecutionException.ofNextPollingWithCause(ex,
                         retry.getNextRetryInterval(),
-                        ConfigElement.copyOf(retry.getNextRetryStateParams()));
+                        ConfigElement.copyOf(nextStateParams));
             }
             else {
                 throw ex;
