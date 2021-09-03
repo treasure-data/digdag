@@ -35,7 +35,17 @@ jobs:
       # Run tests with dependencies cache
       - restore_cache:
           key: dependency-cache-{{ .Branch }}-{{ .Revision }}
-      - run: ci/run_td_tests.sh
+      - run:
+          name: run IT tests
+          command: |
+            nohup /entrypoint.sh > /dev/null 2>&1 &
+            sleep 10
+            ps -awx
+            ls -l /tmp/
+            . /tmp/minio_credential.txt
+            env
+            curl -v $TEST_S3_ENDPOINT
+            ci/run_td_tests.sh
       - save_cache:
           paths:
             - ~/.gradle
