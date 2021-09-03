@@ -6,11 +6,14 @@ jobs:
 
     # executor type https://circleci.com/docs/2.0/executor-types/
     docker:
-      - image: digdag/digdag-build:20191203T225216-c5b7206657c98c728b183634079f0a919ee98f8c
+      - image: digdag/digdag-build:20210902T164958-dc911cc971d8656872a988e03926e4e626f10a41
         # environment Variables in a Job https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-job
         environment:
           TERM: dumb
           TZ: 'UTC'
+          TEST_S3_ENDPOINT: http://127.0.0.1:9000
+          TEST_S3_ACCESS_KEY_ID: C0AI42GnKrP5H1yn
+          TEST_S3_SECRET_ACCESS_KEY: w42IbhJJXZt6E71y
     steps:
       - checkout
 
@@ -18,7 +21,7 @@ jobs:
       - run:
           name: setup PostgreSqL
           command: |
-            sudo sed -i 's/max_connections = 1000/max_connections = 2000/' /etc/postgresql/9.5/main/postgresql.conf
+            sudo sed -i 's/max_connections = 1000/max_connections = 2000/' /etc/postgresql/11/main/postgresql.conf
             sudo service postgresql restart
             set -x
             # wait for PostgreSQL container to be available for 2 mins
