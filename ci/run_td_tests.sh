@@ -14,7 +14,7 @@ minimumPoolSize = 0
 echo "---TARGET test ---"
 target_src1=`circleci tests glob "digdag-tests/src/test/java/acceptance/**/*IT.java" | circleci tests split --split-by=timings`
 # Exclude some tests due to failure in CircleCI. Will fix them later.
-target_src=`echo $target_src1 | sed -E 's/ digdag-tests\/src\/test\/java\/acceptance\/(S3Wait|S3Storage|Docker)IT.java//g'`
+target_src=`echo $target_src1 | sed -E 's/ digdag-tests\/src\/test\/java\/acceptance\/(Docker)IT.java//g'`
 echo $target_src | xargs -n 1 echo
 echo "------------------"
 
