@@ -345,7 +345,7 @@ public class EcsCommandExecutor
         // (finished previous poll once considering risk of crushing while running previous actual poll.)
         if (previousStatus.has("task_finished_at")) {
             final long taskFinishedAt = previousStatus.get("task_finished_at").asLong();
-            final int statusCode =  previousStatus.get("status_code").intValue();
+            final int statusCode = previousStatus.get("status_code").intValue(); // null ({@link com.fasterxml.jackson.databind.node.NullNode}) returns 0
 
             long timeout = taskFinishedAt + ((statusCode != 0) ? maxWaitForFetchLogEventsInSecNonZeroStatus : maxWaitForFetchLogEventsInSec);
             do {
@@ -439,7 +439,7 @@ public class EcsCommandExecutor
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
             // Set exit code of container finished to nextStatus
-            int containerExitCode = task.getContainers().get(0).getExitCode().intValue();
+            Integer containerExitCode = task.getContainers().get(0).getExitCode(); // could be null
             nextStatus.put("status_code", containerExitCode);
 
             String stopCode = task.getStopCode();
@@ -450,7 +450,7 @@ public class EcsCommandExecutor
                 String stoppedReason = task.getStoppedReason();
                 nextStatus.put("ecs_stopped_reason", stoppedReason);
                 throw new RuntimeException(s(
-                    "ECS Container task failed to start due to temporary AWS issues: stopCode=%s, stoppedReason=%s, containerExitCode=%d\n"
+                    "ECS Container task failed to start due to temporary AWS issues: stopCode=%s, stoppedReason=%s, containerExitCode=%s\n"
                     + "Please retry workflow tasks. Refer https://docs.digdag.io/workflow_definition.html#retrying-failed-tasks-automatically for detail.\n"
                     + "ECS error codes are available on https://docs.aws.amazon.com/AmazonECS/latest/userguide/stopped-task-error-codes.html",
                     stopCode, stoppedReason, containerExitCode));
