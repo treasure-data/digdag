@@ -437,7 +437,7 @@ public class EcsCommandExecutor
 
         String networkInterfaceId = findTaskDetailValue(task, "networkInterfaceId");
         if (networkInterfaceId != null) {
-            nextStatus.put("networkInterfaceId", networkInterfaceId); // used for audit logging
+            nextStatus.put("network_interface_id", networkInterfaceId); // used for audit logging
         }
 
         if (taskStatus.isFinished()) {
