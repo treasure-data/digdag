@@ -1,6 +1,7 @@
 package io.digdag.standards.command;
 
 import com.amazonaws.services.ecs.model.AssignPublicIp;
+import com.amazonaws.services.ecs.model.Attachment;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
@@ -434,6 +435,11 @@ public class EcsCommandExecutor
         final ObjectNode nextStatus = previousStatus.deepCopy();
         nextStatus.set("executor_state", nextExecutorStatus);
 
+        String networkInterfaceId = findTaskDetailValue(task, "networkInterfaceId");
+        if (networkInterfaceId != null) {
+            nextStatus.put("network_interface_id", networkInterfaceId); // used for audit logging
+        }
+
         if (taskStatus.isFinished()) {
             // To fetch log until all logs is written in CloudWatch,
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
@@ -459,6 +465,18 @@ public class EcsCommandExecutor
 
         // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
         return EcsCommandStatus.of(false, nextStatus);
+    }
+
+    @Nullable
+    protected static String findTaskDetailValue(@Nonnull final Task task, @Nonnull final String detailName) {
+        for (Attachment a : task.getAttachments()) {
+            for (KeyValuePair kv : a.getDetails()) {
+                if (detailName.equals(kv.getName())) {
+                    return kv.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     @VisibleForTesting
