@@ -34,6 +34,13 @@
     <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
   </Match>
 
+  <!-- Should be investigated on DockerCommandExecutor encoding -->
+  <Match>
+    <Class name="io.digdag.standards.command.DockerCommandExecutor" />
+    <Method name="buildImage" />
+    <Bug pattern="DM_DEFAULT_ENCODING" />
+  </Match>
+
   <!-- Should be investigated on CLI encoding behavior/specification -->
   <Match>
     <Or>
