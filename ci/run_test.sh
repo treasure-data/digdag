@@ -1,8 +1,20 @@
 #!/bin/bash -e
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# All SpotBugs reports are stored in spotbugs-all/
+mkdir spotbugs-all
 if [[ $(( 0 % ${CI_NODE_TOTAL} )) -eq ${CI_NODE_INDEX} ]]; then
     "${BASEDIR}/run_findbugs.sh"
+
+    mkdir spotbugs-all/"${CI_NODE_INDEX}"
+    for s in digdag-*/build/reports/spotbugs
+    do
+      subpj=$(echo "$s" |sed -E 's/\/build\/reports\/spotbugs//')
+      echo "$subpj"
+      dstdir=spotbugs-all/"${CI_NODE_INDEX}"/"${subpj}"
+      mkdir "$dstdir"
+      cp "${s}"/*html "${dstdir}"/
+    done
 fi
 
 if [[ $(( 1 % ${CI_NODE_TOTAL} )) -eq ${CI_NODE_INDEX} ]]; then
