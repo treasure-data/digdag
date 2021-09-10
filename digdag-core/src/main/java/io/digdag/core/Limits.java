@@ -6,10 +6,10 @@ import javax.inject.Inject;
 
 public class Limits
 {
-    private static final long MAX_WORKFLOW_TASKS = Long.valueOf(
+    private static final long MAX_WORKFLOW_TASKS = Long.parseLong(
             System.getProperty("io.digdag.limits.maxWorkflowTasks", "1000"));
 
-    private static final long MAX_ATTEMPTS = Long.valueOf(
+    private static final long MAX_ATTEMPTS = Long.parseLong(
             System.getProperty("io.digdag.limits.maxAttempts", "100"));
 
     private final long numOfMaxWorkflowTasks;

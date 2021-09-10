@@ -388,7 +388,7 @@ public class TdIT
             throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(out));
+        System.setOut(new PrintStream(out, false, "UTF-8"));
 
         try {
             Files.write(config, asList("secrets.td.apikey = " + "dummy"));
@@ -398,7 +398,7 @@ public class TdIT
 
             runWorkflow();
 
-            assertThat(out.toString(), Matchers.containsString("apikey will be tried to update by retrying"));
+            assertThat(out.toString("UTF-8"), Matchers.containsString("apikey will be tried to update by retrying"));
         } finally {
             System.setOut(System.out);
         }

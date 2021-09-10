@@ -319,7 +319,6 @@ public class WorkflowExecutorTest
         Config config = new YamlConfigLoader().loadString(content).toConfig(ConfigUtils.configFactory);
         runWorkflow("retry_in_loop", config);
         Path outPath = folder.getRoot().toPath().resolve("out");
-        String out = new String(Files.readAllBytes(outPath), UTF_8);
         assertThat(new String(Files.readAllBytes(outPath), UTF_8), is("loop0:try1try2succeeded.loop1:try1try2succeeded.loop2:try1try2try1try2try1try2"));
     }
 

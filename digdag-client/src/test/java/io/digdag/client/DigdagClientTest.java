@@ -210,7 +210,7 @@ public class DigdagClientTest
                 .taskName("test-task-1")
                 .build());
 
-        String receivedLogFileContents = CharStreams.toString(new InputStreamReader(logFileStream));
+        String receivedLogFileContents = CharStreams.toString(new InputStreamReader(logFileStream, UTF_8));
 
         assertThat(receivedLogFileContents, is(logFileContents));
 
@@ -242,7 +242,7 @@ public class DigdagClientTest
                 .taskName("test-task-1")
                 .build());
 
-        String receivedLogFileContents = CharStreams.toString(new InputStreamReader(logFileStream));
+        String receivedLogFileContents = CharStreams.toString(new InputStreamReader(logFileStream, UTF_8));
 
         assertThat(receivedLogFileContents, is(logFileContents));
 

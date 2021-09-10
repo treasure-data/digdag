@@ -171,7 +171,6 @@ public class DatabaseMigrator
     public List<Migration> getApplicableMigration()
     {
         List<Migration> applicableMigrations = new ArrayList<>();
-        MigrationContext context = new MigrationContext(databaseType);
         try (Handle handle = dbi.open()) {
             boolean isInitial = !existsSchemaMigrationsTable(handle);
             if (isInitial) {

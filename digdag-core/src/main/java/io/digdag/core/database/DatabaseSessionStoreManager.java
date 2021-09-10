@@ -959,7 +959,6 @@ public class DatabaseSessionStoreManager
                 return false;
             }
 
-            DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle);
             Map<Long, Long> oldIdToNewId = new HashMap<>();
             for (StoredTask task : tasks) {
                 Task newTask = Task.taskBuilder()

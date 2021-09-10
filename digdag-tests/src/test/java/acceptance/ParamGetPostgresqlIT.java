@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +57,7 @@ public class ParamGetPostgresqlIT
         );
 
         assertCommandStatus(status);
-        assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value1 value2"));
+        assertThat(new String(Files.readAllBytes(projectDir.resolve("out")), UTF_8).trim(), is("value1 value2"));
         cleanupParamTable();
     }
 
@@ -100,7 +101,7 @@ public class ParamGetPostgresqlIT
         );
 
         assertCommandStatus(status);
-        assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value2"));
+        assertThat(new String(Files.readAllBytes(projectDir.resolve("out")), UTF_8).trim(), is("value2"));
         cleanupParamTable();
     }
 
@@ -140,7 +141,7 @@ public class ParamGetPostgresqlIT
         );
 
         assertCommandStatus(status);
-        assertThat(new String(Files.readAllBytes(projectDir.resolve("out"))).trim(), is("value1 value2"));
+        assertThat(new String(Files.readAllBytes(projectDir.resolve("out")), UTF_8).trim(), is("value1 value2"));
         cleanupParamTable();
     }
 }

@@ -12,4 +12,31 @@
     <Method name="equals" />
     <Bug pattern="NP_METHOD_PARAMETER_TIGHTENS_ANNOTATION" />
   </Match>
+
+  <!-- generated class -->
+  <Match>
+    <Class name="~.*Immutable[^\.]+" />
+    <Method name="hashCode" />
+    <Bug pattern="DMI_BLOCKING_METHODS_ON_URL" />
+  </Match>
+
+  <!-- generated class -->
+  <Match>
+    <Class name="~.*Immutable[^\.]+" />
+    <Method name="equalTo" />
+    <Bug pattern="DMI_BLOCKING_METHODS_ON_URL" />
+  </Match>
+
+  <!-- ignore: This is test code and no concern about SQL injection -->
+  <Match>
+    <Class name="utils.TemporaryDigdagServer" />
+    <Method name="teardownDatabase" />
+    <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
+  </Match>
+
+  <!-- Should be fixed -->
+  <Match>
+    <Class name="io.digdag.core.workflow.TaskTree" />
+    <Bug pattern="DM_BOXED_PRIMITIVE_FOR_COMPARE" />
+  </Match>
 </FindBugsFilter>

@@ -24,7 +24,7 @@ public class DummyParamServerClient
     public Optional<Record> get(String key, int sitedId)
     {
         logger.warn("This is a Dummy Implementation, so just will return null");
-        return null;
+        return Optional.absent();
     }
 
     @Override

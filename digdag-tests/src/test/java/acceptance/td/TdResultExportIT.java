@@ -41,6 +41,7 @@ import java.util.concurrent.Callable;
 
 import static acceptance.td.Secrets.TD_API_KEY;
 import static acceptance.td.Secrets.TD_API_ENDPOINT;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
@@ -160,7 +161,7 @@ public class TdResultExportIT
     {
         return client.jobResult(jobId, TDResultFormat.JSON, input -> {
             try {
-                List<String> lines = CharStreams.readLines(new InputStreamReader(input));
+                List<String> lines = CharStreams.readLines(new InputStreamReader(input, UTF_8));
                 ObjectReader reader = objectMapper().readerFor(ArrayNode.class);
                 List<ArrayNode> result = new ArrayList<>();
                 for (String line : lines) {
