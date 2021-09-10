@@ -1,14 +1,19 @@
 package io.digdag.client.api;
 
-import java.util.Arrays;
 import java.util.Base64;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/**
+ *  This class is never used from Digdag. Should be removed.
+ */
+@Deprecated
 public class RestApiKey
 {
+    private static SecureRandom random = new SecureRandom();
+
     @JsonCreator
     public static RestApiKey of(String key)
     {
@@ -30,7 +35,6 @@ public class RestApiKey
 
     public static RestApiKey randomGenerate()
     {
-        SecureRandom random = new SecureRandom();
         long id = random.nextLong();
         byte[] secret = new byte[32];
         random.nextBytes(secret);
