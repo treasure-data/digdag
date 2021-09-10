@@ -1,9 +1,10 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '5.2.0'
     id 'com.github.kt3k.coveralls' version '2.10.1'
-    id 'com.github.spotbugs' version '4.0.5'
+    id 'com.github.spotbugs' version '4.7.3'
     id 'net.ltgt.apt-idea' version '0.21'
     id 'net.ltgt.apt-eclipse' version '0.21'
+    id "com.dorongold.task-tree" version "2.1.0"
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -97,10 +98,9 @@ subprojects {
     }
 
     spotbugs {
-        toolVersion = '4.0.1'
         effort = 'max'
         reportLevel = 'high'
-        ignoreFailures = true
+        ignoreFailures = false
         excludeFilter = file("${rootProject.projectDir}/config/findbugs-exclude.xml")
     }
 
