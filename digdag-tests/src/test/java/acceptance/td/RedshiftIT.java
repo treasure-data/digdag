@@ -40,13 +40,29 @@ import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TestUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -260,7 +276,7 @@ public class RedshiftIT
         assertCommandStatus(status);
 
         List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(projectDir.toFile(), "out")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(projectDir.toFile(), "out")), UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(line);
@@ -290,7 +306,7 @@ public class RedshiftIT
         assertCommandStatus(status);
 
         List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(projectDir.toFile(), "out")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(projectDir.toFile(), "out")), UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(line.trim());
@@ -581,7 +597,7 @@ public class RedshiftIT
     private void buildContentAsBufferedWriter(File file, ContentBuilder<BufferedWriter> builder)
             throws IOException
     {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), UTF_8))) {
             builder.build(writer);
         }
     }
@@ -1225,7 +1241,7 @@ public class RedshiftIT
                                     new InputStreamReader(
                                             s3Client.getObject(
                                                     objectSummary.getBucketName(),
-                                                    objectSummary.getKey()).getObjectContent()))) {
+                                                    objectSummary.getKey()).getObjectContent(), UTF_8))) {
                         lines.addAll(reader.lines().collect(Collectors.toList()));
                     }
                 }

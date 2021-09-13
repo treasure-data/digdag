@@ -91,7 +91,7 @@ public class MailOperatorFactoryTest
         this.tempPath = folder.getRoot().toPath();
 
         String body = Resources.toString(getClass().getResource("mail_body.txt"), UTF_8);
-        Files.write(Paths.get(this.tempPath.toString(), "mail_body.txt"), body.getBytes());
+        Files.write(Paths.get(this.tempPath.toString(), "mail_body.txt"), body.getBytes(UTF_8));
 
         this.mailConfig = newConfig()
                 .set("host", "localhost")

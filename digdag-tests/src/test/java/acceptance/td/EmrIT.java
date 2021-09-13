@@ -337,7 +337,7 @@ public class EmrIT
         ObjectListing resultListing = s3.listObjects(new ListObjectsRequest().withBucketName(resultUri.getBucket()).withPrefix(resultUri.getKey()));
         List<String> resultLines = resultListing.getObjectSummaries().stream().flatMap(o -> {
             try (S3Object object = s3.getObject(o.getBucketName(), o.getKey())) {
-                return CharStreams.readLines(new InputStreamReader(object.getObjectContent())).stream();
+                return CharStreams.readLines(new InputStreamReader(object.getObjectContent(), UTF_8)).stream();
             }
             catch (IOException e) {
                 throw ThrowablesUtil.propagate(e);

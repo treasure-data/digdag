@@ -41,6 +41,10 @@ jobs:
       with:
         name: jacoco-all
         path: jacoco-all/
+    - uses: actions/upload-artifact@v2
+      with:
+        name: spotbugs-all
+        path: spotbugs-all/
   jacoco:
     needs: build
     runs-on: ubuntu-latest

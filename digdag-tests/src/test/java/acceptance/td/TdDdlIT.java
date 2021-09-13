@@ -307,7 +307,7 @@ public class TdDdlIT
             throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(out));
+        System.setOut(new PrintStream(out, false, "UTF-8"));
 
         try {
             String dummyKey = "dummy";
@@ -333,7 +333,7 @@ public class TdDdlIT
                     "empty_db_1=" + emptyDb1,
                     "empty_db_2=" + emptyDb2);
 
-            assertThat(out.toString(), Matchers.containsString("apikey will be tried to update by retrying"));
+            assertThat(out.toString("UTF-8"), Matchers.containsString("apikey will be tried to update by retrying"));
         } finally {
             System.setOut(System.out);
         }

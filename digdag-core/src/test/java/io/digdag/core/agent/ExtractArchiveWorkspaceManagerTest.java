@@ -19,6 +19,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -48,7 +50,7 @@ public class ExtractArchiveWorkspaceManagerTest
                 "  echo>: hello\n" +
                 "";
 
-        Files.write(digFile.toPath(), wf.getBytes(), StandardOpenOption.CREATE);
+        Files.write(digFile.toPath(), wf.getBytes(UTF_8), StandardOpenOption.CREATE);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         GZIPOutputStream gzipOutputStream = new GZIPOutputStream(outputStream);
@@ -65,7 +67,7 @@ public class ExtractArchiveWorkspaceManagerTest
         when(storageObject.getContentLength()).thenReturn((long) archived.length);
         when(storageObject.getContentInputStream()).thenReturn(new ByteArrayInputStream(archived));
 
-        byte[] wrongArchive = "This isn't a proper archive content".getBytes();
+        byte[] wrongArchive = "This isn't a proper archive content".getBytes(UTF_8);
         wrongStorageObject = mock(StorageObject.class);
         when(wrongStorageObject.getContentLength()).thenReturn((long) wrongArchive.length);
         when(wrongStorageObject.getContentInputStream()).thenReturn(new ByteArrayInputStream(wrongArchive));

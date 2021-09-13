@@ -23,8 +23,10 @@ import utils.TestUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +37,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
@@ -222,7 +225,7 @@ public class PgIT
         assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(root().toFile(), "pg_test.csv")), UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 csvLines.add(line);
@@ -269,7 +272,7 @@ public class PgIT
         assertCommandStatus(status);
 
         List<String> csvLines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "pg_test.csv")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(root().toFile(), "pg_test.csv")), UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 csvLines.add(line);
@@ -301,7 +304,7 @@ public class PgIT
         assertCommandStatus(status);
 
         List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "out")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(root().toFile(), "out")), UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(line);
@@ -333,7 +336,7 @@ public class PgIT
         assertCommandStatus(status);
 
         List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(root().toFile(), "out")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(root().toFile(), "out")), UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(line.trim());
