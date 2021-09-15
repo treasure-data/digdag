@@ -4,6 +4,7 @@ import com.amazonaws.services.ecs.model.AssignPublicIp;
 import com.amazonaws.services.ecs.model.Attachment;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
+import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.KeyValuePair;
@@ -445,7 +446,8 @@ public class EcsCommandExecutor
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
             // Set exit code of container finished to nextStatus
-            Integer containerExitCode = task.getContainers().get(0).getExitCode(); // could be null
+            Container container = task.getContainers().get(0);
+            Integer containerExitCode = container.getExitCode(); // could be null
             nextStatus.put("status_code", containerExitCode);
 
             String stopCode = task.getStopCode();
@@ -453,13 +455,20 @@ public class EcsCommandExecutor
 
             // see com.amazonaws.services.ecs.model.TaskStopCode
             if(TaskStopCode.TaskFailedToStart.toString().equals(stopCode)) {
+                // Refer https://docs.aws.amazon.com/AmazonECS/latest/developerguide/stopped-task-errors.html
+                // for task stopped reason and container status
+                String containerStatus = container.getLastStatus();
+                nextStatus.put("container_status", containerStatus);
+                String containerStatusReason = container.getReason();
+                nextStatus.put("container_status_reason", containerStatusReason);
                 String stoppedReason = task.getStoppedReason();
                 nextStatus.put("ecs_stopped_reason", stoppedReason);
                 throw new RuntimeException(s(
-                    "ECS Container task failed to start due to temporary AWS issues: stopCode=%s, stoppedReason=%s, containerExitCode=%s\n"
+                    "ECS Container task failed to start due to temporary AWS issues: "
+                    + "stopCode=%s, stoppedReason=%s, containerExitCode=%s, containerStatus=%s, containerStatusReason=%s\n"
                     + "Please retry workflow tasks. Refer https://docs.digdag.io/workflow_definition.html#retrying-failed-tasks-automatically for detail.\n"
                     + "ECS error codes are available on https://docs.aws.amazon.com/AmazonECS/latest/userguide/stopped-task-error-codes.html",
-                    stopCode, stoppedReason, containerExitCode));
+                    stopCode, stoppedReason, containerExitCode, containerStatus, containerStatusReason));
             }
         }
 
