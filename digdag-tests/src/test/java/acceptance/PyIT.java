@@ -183,7 +183,7 @@ public class PyIT
         final String logs = getAttemptLogs(client, attempt.getId());
         assertTrue(logs != null);
         assertThat(attempt.getSuccess(), is(false));
-        final String regex = "\\[ERROR\\] [^\\n]*Task failed with unexpected error: Python command failed with code 1.*Error messages from python:[^\\n]*duplicae module name with standard library";
+        final String regex = "\\[ERROR\\] [^\\n]*Task failed with unexpected error: Python command failed with code 1.*Error messages from python:[^\\n]*program intentionally/accidentally finished, or module name conflicted with the standard library";
         assertTrue(Pattern.compile(regex, Pattern.DOTALL).matcher(logs).find());
     }
 
