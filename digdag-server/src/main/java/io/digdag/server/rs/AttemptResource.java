@@ -261,7 +261,7 @@ public class AttemptResource
                     .or(ImmutableList.of());
 
             Config params = request.getParams();
-            processAuthenticatedUserInfo(authedUser, params);
+            putAdditionalParams(params);
 
             // use the HTTP request time as the runTime
             AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -286,7 +286,8 @@ public class AttemptResource
         }, AttemptLimitExceededException.class, ResourceNotFoundException.class, TaskLimitExceededException.class, AccessControlException.class);
     }
 
-    protected void processAuthenticatedUserInfo(@Nonnull AuthenticatedUser user, @Nonnull Config params)
+    @Nonnull
+    protected void putAdditionalParams(@Nonnull Config params)
     {
         // nop by the default. Override if required
     }
