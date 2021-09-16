@@ -35,7 +35,6 @@ import io.digdag.client.api.*;
 import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
-import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
