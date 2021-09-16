@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -256,10 +258,13 @@ public class AttemptResource
                     .transform(r -> collectResumingTasks(r))
                     .or(ImmutableList.of());
 
+            Config params = request.getParams();
+            putAdditionalParams(params);
+
             // use the HTTP request time as the runTime
             AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                     def,
-                    request.getParams(),
+                    params,
                     ScheduleTime.runNow(request.getSessionTime()),
                     request.getRetryAttemptName(),
                     resumingAttemptId,
@@ -277,6 +282,11 @@ public class AttemptResource
                 return Response.status(Response.Status.CONFLICT).entity(res).build();
             }
         }, AttemptLimitExceededException.class, ResourceNotFoundException.class, TaskLimitExceededException.class, AccessControlException.class);
+    }
+
+    protected void putAdditionalParams(@Nonnull Config params)
+    {
+        // nop by the default. Override if required
     }
 
     private List<Long> collectResumingTasks(RestSessionAttemptRequest.Resume resume)
