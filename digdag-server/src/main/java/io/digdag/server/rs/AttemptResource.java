@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -33,6 +35,7 @@ import io.digdag.client.api.*;
 import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.ac.AttemptTarget;
 import io.digdag.spi.ac.ProjectTarget;
@@ -246,9 +249,10 @@ public class AttemptResource
             final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // check NotFound first
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
+            AuthenticatedUser authedUser = getAuthenticatedUser();
             ac.checkRunWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
-                    getAuthenticatedUser());
+                    authedUser);
 
             Optional<Long> resumingAttemptId = request.getResume()
                     .transform(r -> RestModels.parseAttemptId(r.getAttemptId()));
@@ -256,10 +260,13 @@ public class AttemptResource
                     .transform(r -> collectResumingTasks(r))
                     .or(ImmutableList.of());
 
+            Config params = request.getParams();
+            processAuthenticatedUserInfo(authedUser, params);
+
             // use the HTTP request time as the runTime
             AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                     def,
-                    request.getParams(),
+                    params,
                     ScheduleTime.runNow(request.getSessionTime()),
                     request.getRetryAttemptName(),
                     resumingAttemptId,
@@ -277,6 +284,11 @@ public class AttemptResource
                 return Response.status(Response.Status.CONFLICT).entity(res).build();
             }
         }, AttemptLimitExceededException.class, ResourceNotFoundException.class, TaskLimitExceededException.class, AccessControlException.class);
+    }
+
+    protected void processAuthenticatedUserInfo(@Nonnull AuthenticatedUser user, @Nonnull Config params)
+    {
+        // nop by the default. Override if required
     }
 
     private List<Long> collectResumingTasks(RestSessionAttemptRequest.Resume resume)
