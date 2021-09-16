@@ -285,7 +285,6 @@ public class AttemptResource
         }, AttemptLimitExceededException.class, ResourceNotFoundException.class, TaskLimitExceededException.class, AccessControlException.class);
     }
 
-    @Nonnull
     protected void putAdditionalParams(@Nonnull Config params)
     {
         // nop by the default. Override if required
