@@ -249,10 +249,9 @@ public class AttemptResource
             final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // check NotFound first
                     RestModels.parseWorkflowId(request.getWorkflowId()));
 
-            AuthenticatedUser authedUser = getAuthenticatedUser();
             ac.checkRunWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
-                    authedUser);
+                    getAuthenticatedUser());
 
             Optional<Long> resumingAttemptId = request.getResume()
                     .transform(r -> RestModels.parseAttemptId(r.getAttemptId()));
