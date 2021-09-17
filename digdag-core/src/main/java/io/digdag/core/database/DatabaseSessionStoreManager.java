@@ -57,6 +57,7 @@ import io.digdag.core.session.TaskStateSummary;
 import io.digdag.core.session.TaskType;
 import io.digdag.core.workflow.TaskConfig;
 import io.digdag.metrics.DigdagTimed;
+import io.digdag.spi.AccountRouting;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.ac.AccessController;
@@ -285,13 +286,15 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch)
+    public List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch, AccountRouting accountRouting)
     {
-        if (randomFetch) {
-            return autoCommit((handle, dao) -> dao.findAllTaskIdsByStateAtRandom(TaskStateCode.READY.get(), maxEntries));
+        String randomClause = randomFetch ? "order by random()" : "";
+        Optional<String> accountFilter = accountRouting.getFilterSQLOpt();
+        if (accountFilter.isPresent()) {
+            return autoCommit((handle, dao) -> dao.findAllTaskIdsByStateWithAccountFilter(TaskStateCode.READY.get(), maxEntries, randomClause, accountFilter.get()));
         }
         else {
-            return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
+            return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries, randomClause));
         }
     }
 
@@ -360,14 +363,31 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<Long> findTasksByState(TaskStateCode state, long lastId)
+    public List<Long> findTasksByState(TaskStateCode state, long lastId, AccountRouting accountRouting)
     {
-        return autoCommit((handle, dao) -> dao.findTasksByState(state.get(), lastId, 100));
+        Optional<String> accountFilter = accountRouting.getFilterSQLOpt();
+        if (accountFilter.isPresent()) {
+            return autoCommit((handle, dao) -> dao.findTasksByStateWithAccountFilter(state.get(), lastId, 100, accountFilter.get()));
+        }
+        else {
+            return autoCommit((handle, dao) -> dao.findTasksByState(state.get(), lastId, 100));
+        }
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId)
+    public List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId, AccountRouting accountRouting)
+    {
+        Optional<String> accountFilter = accountRouting.getFilterSQLOpt();
+        if (accountFilter.isPresent()) {
+            return findRootTasksByStatesWithAccountFilter(states, lastId, accountFilter.get());
+        }
+        else {
+            return findRootTasksByStates(states, lastId);
+        }
+    }
+
+    private List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId)
     {
         return autoCommit((handle, dao) ->
                 handle.createQuery(
@@ -388,9 +408,43 @@ public class DatabaseSessionStoreManager
             );
     }
 
+    private List<TaskAttemptSummary> findRootTasksByStatesWithAccountFilter(TaskStateCode[] states, long lastId, String accountFilter)
+    {
+        return autoCommit((handle, dao) ->
+                handle.createQuery(
+                                "select id, attempt_id, state" +
+                                        " from tasks t" +
+                                        " where parent_id is null" +
+                                        " and state in (" +
+                                        Stream.of(states)
+                                                .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                                        " and id > :lastId" +
+                                        " and exists ( select site_id from session_attempts a where t.attempt_id = a.id" +
+                                        "   and " + accountFilter + " )" +
+                                        " order by id asc" +
+                                        " limit :limit"
+                        )
+                        .bind("lastId", lastId)
+                        .bind("limit", 100)
+                        .map(tasm)
+                        .list()
+        );
+    }
+
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<Long> findDirectParentsOfBlockedTasks(long lastId)
+    public List<Long> findDirectParentsOfBlockedTasks(long lastId, AccountRouting accountRouting)
+    {
+        Optional<String> accountFilter = accountRouting.getFilterSQLOpt();
+        if (accountFilter.isPresent()) {
+            return findDirectParentsOfBlockedTasksWithAccountFilter(lastId, accountFilter.get());
+        }
+        else {
+            return findDirectParentsOfBlockedTasks(lastId);
+        }
+    }
+
+    private List<Long> findDirectParentsOfBlockedTasks(long lastId)
     {
         return autoCommit((handle, dao) ->
                 handle.createQuery(
@@ -406,6 +460,26 @@ public class DatabaseSessionStoreManager
                 .mapTo(Long.class)
                 .list()
             );
+    }
+
+    private List<Long> findDirectParentsOfBlockedTasksWithAccountFilter(long lastId, String accountFilter)
+    {
+        return autoCommit((handle, dao) ->
+                handle.createQuery(
+                                "select distinct parent_id" +
+                                        " from tasks t" +
+                                        " where parent_id > :lastId" +
+                                        " and state = " + TaskStateCode.BLOCKED_CODE +
+                                        " and exists ( select site_id from session_attempts a where t.attempt_id = a.id" +
+                                        "   and " + accountFilter + " )" +
+                                        " order by parent_id" +
+                                        " limit :limit"
+                        )
+                        .bind("lastId", lastId)
+                        .bind("limit", 100)
+                        .mapTo(Long.class)
+                        .list()
+        );
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
@@ -455,9 +529,15 @@ public class DatabaseSessionStoreManager
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public int trySetRetryWaitingToReady()
+    public int trySetRetryWaitingToReady(AccountRouting accountRouting)
     {
-        return autoCommit((handle, dao) -> dao.trySetRetryWaitingToReady());
+        Optional<String> accountFilter = accountRouting.getFilterSQLOpt();
+        if (accountFilter.isPresent()) {
+            return autoCommit((handle, dao) -> dao.trySetRetryWaitingToReadyWithAccountFilter(accountFilter.get()));
+        }
+        else {
+            return autoCommit((handle, dao) -> dao.trySetRetryWaitingToReady());
+        }
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
@@ -727,6 +807,13 @@ public class DatabaseSessionStoreManager
             }
             throw first;
         }
+    }
+
+    //Only for test purpose
+    @VisibleForTesting
+    public TaskControlStore createTaskControlStore(Handle handle)
+    {
+        return new DatabaseTaskControlStore(handle);
     }
 
     private StoredTask getTaskById(Handle handle, long taskId)
@@ -1725,10 +1812,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
-
-        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
-        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
-
     }
 
     @UseStringTemplate3StatementLocator
@@ -1790,9 +1873,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update skip locked")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
-
-        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
-        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
     }
 
     public interface Dao
@@ -2095,10 +2175,14 @@ public class DatabaseSessionStoreManager
         @GetGeneratedKeys
         long insertSessionMonitor(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime, @Bind("type") String type, @Bind("config") Config config);
 
-        @SqlQuery("select id from tasks where state = :state limit :limit")
-        List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
+        @SqlQuery("select id from tasks where state = :state <random> limit :limit")
+        List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit, @Define("random") String random);
 
-        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
+        @SqlQuery("select id from tasks where state = :state " +
+                " and exists ( select site_id from session_attempts a where tasks.attempt_id = a.id" +
+                "   and <accountFilter> )" +
+                " <random> limit :limit")
+        List<Long> findAllTaskIdsByStateWithAccountFilter(@Bind("state") short state, @Bind("limit") int limit, @Define("random") String random, @Define("accountFilter") String accountFilter);
 
         @SqlQuery("select id, session_id, state_flags, index from session_attempts where id = :attemptId for update")
         SessionAttemptSummary lockAttempt(@Bind("attemptId") long attemptId);
@@ -2174,6 +2258,16 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<Long> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
+        @SqlQuery("select id" +
+                " from tasks" +
+                " where state = :state" +
+                " and id \\> :lastId" +
+                " and exists ( select site_id from session_attempts a where tasks.attempt_id = a.id" +
+                "   and <accountFilter> )" +
+                " order by id asc" +
+                " limit :limit")
+        List<Long> findTasksByStateWithAccountFilter(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit, @Define("accountFilter") String accountFilter);
+
         @SqlQuery("select id from tasks" +
                 " where id = :id" +
                 " for update")
@@ -2225,6 +2319,14 @@ public class DatabaseSessionStoreManager
                 " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
                 " and retry_at \\<= now()")
         int trySetRetryWaitingToReady();
+
+        @SqlUpdate("update tasks" +
+                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
+                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                " and retry_at \\<= now()" +
+                " and exists ( select site_id from session_attempts a where tasks.attempt_id = a.id" +
+                "   and <accountFilter> )" )
+        int trySetRetryWaitingToReadyWithAccountFilter(@Define("accountFilter") String accountFilter);
 
         @SqlQuery("select * from session_monitors" +
                 " where next_run_time \\<= :currentTime" +

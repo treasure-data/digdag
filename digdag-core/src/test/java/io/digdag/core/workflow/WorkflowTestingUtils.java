@@ -9,6 +9,7 @@ import io.digdag.client.config.ConfigUtils;
 import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
+import io.digdag.core.acroute.DummyAccountRoutingFactory;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
@@ -24,6 +25,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.spi.AccountRoutingFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
@@ -75,6 +77,7 @@ public class WorkflowTestingUtils
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
+                binder.bind(AccountRoutingFactory.class).to(DummyAccountRoutingFactory.class);
             })
             ;
         DigdagEmbed embed = customizer.apply(bootstrap).initializeWithoutShutdownHook();

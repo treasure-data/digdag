@@ -6,6 +6,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.commons.ThrowablesUtil;
 import io.digdag.core.Limits;
+import io.digdag.core.acroute.DefaultAccountRoutingFactory;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -97,6 +98,12 @@ public class DatabaseFactory
     {
         ConfigFactory configFactory = createConfigFactory();
         Config systemConfig = configFactory.create();
+        return getWorkflowExecutor(configFactory, systemConfig);
+
+    }
+
+    public WorkflowExecutor getWorkflowExecutor(ConfigFactory configFactory, Config systemConfig)
+    {
         return new WorkflowExecutor(
                 getProjectStoreManager(),
                 getSessionStoreManager(),
@@ -107,7 +114,8 @@ public class DatabaseFactory
                 objectMapper(),
                 systemConfig,
                 new Limits(systemConfig),
-                StdDigdagMetrics.empty()
+                StdDigdagMetrics.empty(),
+                new DefaultAccountRoutingFactory(systemConfig)
         );
     }
 

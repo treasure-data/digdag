@@ -9,6 +9,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
+import io.digdag.spi.AccountRouting;
+import io.digdag.spi.AccountRoutingFactory;
 import io.digdag.spi.metrics.DigdagMetrics;
 
 public class LocalAgentManager
@@ -17,7 +19,6 @@ public class LocalAgentManager
     private final Supplier<MultiThreadAgent> agentFactory;
     private volatile Thread thread;
     private volatile MultiThreadAgent agent;
-
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
@@ -31,11 +32,12 @@ public class LocalAgentManager
             AgentId agentId,
             TaskServerApi taskServer,
             OperatorManager operatorManager,
-            TransactionManager transactionManager)
+            TransactionManager transactionManager,
+            AccountRoutingFactory acrouteFactory)
     {
         if (config.getEnabled()) {
             this.agentFactory =
-                    () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager, transactionManager, errorReporter, metrics);
+                    () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager, transactionManager, errorReporter, metrics, acrouteFactory);
         }
         else {
             this.agentFactory = null;
