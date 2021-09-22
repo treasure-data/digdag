@@ -461,7 +461,7 @@ You can include following parameters in ~/.config/digdag/config file:
 
 * client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
-* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.10.3(not yet released) or later.)
+* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.10.0 or later.)
 
 
 start
