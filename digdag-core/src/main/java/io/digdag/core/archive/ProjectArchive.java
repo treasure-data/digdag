@@ -5,12 +5,9 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
-import java.time.ZoneId;
 import java.nio.file.Path;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.immutables.value.Value;
 import static java.util.Locale.ENGLISH;
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -63,7 +60,15 @@ public class ProjectArchive
     static void listFiles(Path projectPath, PathConsumer consumer)
         throws IOException
     {
-        listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>());
+        // parse .digdagignore
+        Optional<DigdagIgnore> digdagIgnore = DigdagIgnore.ofProject(projectPath);
+        // filter rejects files / directories match .digdagignore and files / directories start with dot (.)
+        DirectoryStream.Filter<Path> filter = (target) -> (
+                rejectDotFiles(target) && digdagIgnore
+                        .map((ignore) -> ignore.accept(target))
+                        .orElse(true)
+        );
+        listFilesRecursively(projectPath, projectPath, consumer, filter, new HashSet<>());
     }
 
     public String pathToResourceName(Path path)
@@ -90,16 +95,16 @@ public class ProjectArchive
         return relative.toString().replace(File.separatorChar, '/');
     }
 
-    private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, Set<String> listed)
+    private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, DirectoryStream.Filter<Path> filter, Set<String> listed)
         throws IOException
     {
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(targetDir, ProjectArchive::rejectDotFiles)) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(targetDir, filter)) {
             for (Path path : ds) {
                 String resourceName = realPathToResourceName(projectPath, path);
                 if (listed.add(resourceName)) {
                     boolean cont = consumer.accept(resourceName, path);
                     if (cont && Files.isDirectory(path)) {
-                        listFilesRecursively(projectPath, path, consumer, listed);
+                        listFilesRecursively(projectPath, path, consumer, filter, listed);
                     }
                 }
             }
