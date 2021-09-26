@@ -2575,7 +2575,7 @@ const EditProjectPage = (props:{params: {projectId: string}}) =>
     <ProjectEditor projectId={props.match.params.projectId} />
   </div>
 
-const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
+export const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
     <AttemptView attemptId={match.params.attemptId} />
     <AttemptTimelineView attemptId={match.params.attemptId} />
@@ -2583,7 +2583,7 @@ const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
     <AttemptLogsView attemptId={match.params.attemptId} />
   </div>
 
-class SessionPage extends React.Component {
+export class SessionPage extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
