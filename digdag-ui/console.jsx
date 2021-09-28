@@ -32,6 +32,8 @@ import ReactInterval from 'react-interval'
 import { Buffer } from 'buffer/'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  faAngleRight,
+  faAngleDown,
   faSignOutAlt,
   faCheckCircle,
   faExclamationCircle,
@@ -1503,15 +1505,31 @@ const JobLink = ({ storeParams, stateParams }:{storeParams: Object, stateParams:
 }
 
 function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
-  function collectChildrenRecursively (result: Array<Task>, taskGroups: Map<string, Array<Task>>, parentTask: Task) {
+  const trees = makeTaskTrees(tasks);
+  const result = [];
+  function pushChildrenRecursively (tree: TaskTree) {
+    result.push(tree.task);
+    tree.subTasks.forEach(pushChildrenRecursively);
+  }
+  trees.forEach(pushChildrenRecursively);
+  return result;
+}
+
+type TaskTree = {
+  task: Task;
+  subTasks: Array<TaskTree>;
+}
+
+function makeTaskTrees(tasks: Array<Task>): Array<TaskTree> {
+  function collectChildrenRecursively (taskGroups: Map<string, Array<Task>>, parentTask: Task): Array<TaskTree> {
     const group: ?Array<Task> = taskGroups.get(parentTask.id)
-    if (group != null) {
-      taskGroups.delete(parentTask.id)
-      group.forEach(t => {
-        result.push(t)
-        collectChildrenRecursively(result, taskGroups, t)
-      })
+    if (group == null) {
+      return [];
     }
+    return group.map((t) => ({
+      task: t,
+      subTasks: collectChildrenRecursively(taskGroups, t),
+    }));
   }
 
   // First, divide tasks into rootTasks and taskGroups.
@@ -1537,23 +1555,12 @@ function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
     } else {
       rootTasks.push(t)
     }
-  })
+  });
 
-  // For each root task, push it to the result, and push its children to the result.
-  const result: Array<Task> = []
-  rootTasks.forEach(t => {
-    result.push(t)
-    // collect children recursively
-    collectChildrenRecursively(result, taskGroups, t)
-  })
-
-  // This is actually unnecessary but in case something is wrong, concatenate all
-  // remaining task groups at the end.
-  Array.from(taskGroups.values()).forEach(remainingGroup => {
-    Array.prototype.push.apply(result, remainingGroup)
-  })
-
-  return result
+  return rootTasks.map(t => ({
+    task: t,
+    subTasks: collectChildrenRecursively(taskGroups, t),
+  }))
 }
 
 class TaskListView extends React.Component {
@@ -1626,10 +1633,15 @@ function isSyntheticTask (task: Task): boolean {
 
 class TaskTimelineRow extends React.Component {
   props:{
-    task: Task;
+    taskTree: TaskTree;
     tasks: Map<string, Task>;
+    level: ?number;
     startTime: ?Object;
     endTime: ?Object;
+  };
+
+  state = {
+    open: true,
   };
 
   progressBar: any;
@@ -1639,11 +1651,12 @@ class TaskTimelineRow extends React.Component {
   }
 
   progressBarClasses () {
-    if (this.props.task.cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(this.props.task.state) >= 0) {
+    const { task } = this.props.taskTree;
+    if (task.cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(task.state) >= 0) {
       return 'progress-bar-warning'
     }
 
-    switch (this.props.task.state) {
+    switch (task.state) {
       // Pending
       case 'blocked':
         return ''
@@ -1674,22 +1687,15 @@ class TaskTimelineRow extends React.Component {
     }
   }
 
-  taskLevel () {
-    let task = this.props.task
-    const tasks = this.props.tasks
-    let level = 0
-    while (task != null && task.parentId != null) {
-      const parentId = task.parentId
-      if (!isSyntheticTask(task)) {
-        level++
-      }
-      task = tasks.get(parentId)
-    }
-    return level
+  toggle = () => {
+    this.setState({
+      open: !this.state.open,
+    });
   }
 
   render () {
-    const { startTime, endTime, task, tasks } = this.props
+    const { startTime, endTime, taskTree, tasks, level = 0 } = this.props;
+    const { task, subTasks } = taskTree;
     const parentTask = tasks.get(task.parentId || '')
     const namePrefix = parentTask != null ? parentTask.fullName : ''
     const taskName = task.fullName.substring(namePrefix.length)
@@ -1722,16 +1728,34 @@ class TaskTimelineRow extends React.Component {
       duration = taskDuration.format('d[d] h[h] mm[m] ss[s]')
       tooltip = `${task.startedAt || ''} -<br/>${task.updatedAt || ''}`
     }
+
+    const cursor = subTasks.length > 0 ? { cursor: 'pointer' } : {};
+
     return (
-      <tr>
-        <td style={{ whiteSpace: 'nowrap', paddingLeft: `${this.taskLevel()}em` }}>{taskName}</td>
-        <td className='align-middle' style={{ width: '100%' }}>
-          <div className='progress mb-0　' style={{ height: '1.4rem' }}>
-            <div ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
-              className={`progress-bar ${this.progressBarClasses()}`} role='progressbar' style={style}>{duration}</div>
-          </div>
-        </td>
-      </tr>
+      <React.Fragment>
+        {task.parentId != null && !isSyntheticTask(task) && <tr>
+          <td style={{ whiteSpace: 'nowrap', paddingLeft: `${level}em`, ...cursor }} onClick={this.toggle}>
+            {subTasks.length > 0 && <FontAwesomeIcon icon={this.state.open ? faAngleDown : faAngleRight}/>}
+            {taskName}
+          </td>
+          <td className='align-middle' style={{ width: '100%' }}>
+            <div className='progress mb-0　' style={{ height: '1.4rem' }}>
+              <div ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
+                className={`progress-bar ${this.progressBarClasses()}`} role='progressbar' style={style}>{duration}</div>
+            </div>
+          </td>
+        </tr>}
+        {this.state.open && subTasks.map((subTask) => (
+          <TaskTimelineRow
+            key={subTask.task.id}
+            level={level + 1}
+            taskTree={subTask}
+            tasks={tasks}
+            startTime={startTime}
+            endTime={endTime}
+          />
+        ))}
+      </React.Fragment>
     )
   }
 }
@@ -1750,11 +1774,9 @@ const TaskTimelineView = ({ tasks, startTime, endTime }:{
         </tr>
       </thead>
       <tbody>
-        { sortTasksForTreeView(Array.from(tasks.values()))
-          .filter(task => task.parentId != null)
-          .filter(task => !isSyntheticTask(task))
-          .map(task =>
-            <TaskTimelineRow key={task.id} task={task} tasks={tasks} startTime={startTime} endTime={endTime} />)
+        { makeTaskTrees(Array.from(tasks.values()))
+          .map(taskTree =>
+            <TaskTimelineRow key={taskTree.task.id} taskTree={taskTree} tasks={tasks} level={0} startTime={startTime} endTime={endTime} />)
         }
       </tbody>
     </table>
