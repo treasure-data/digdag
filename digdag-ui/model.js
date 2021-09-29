@@ -450,7 +450,9 @@ export class Model {
     return fetch(this.config.url + url, {
       credentials: 'include',
       method,
-      headers: this.headers()
+      headers: Object.assign({}, this.headers(), {
+        'Content-Type': 'application/json',
+      }),
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
