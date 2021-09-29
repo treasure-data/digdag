@@ -69,20 +69,38 @@ describe('SessionPage and AttemptPage', () => {
   })
 
   function commonTests() {
-    it("AttemptTimelineView", () => {
-      const timelineSection = getSection("Timeline");
-      expect(getByText(timelineSection, "+my_task_1")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+my_task_2")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+any_task_name_here")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+nested_task")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+nested_task_2")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+parallel_task_foo")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+bar")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+baz")).toBeInTheDocument();
-      expect(getByText(timelineSection, "+abc")).toBeInTheDocument();
+    describe("AttemptTimelineView", () => {
+      it("tasks are rendered", () => {
+        const timelineSection = getSection("Timeline");
+        expect(getByText(timelineSection, "+my_task_1")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+my_task_2")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+any_task_name_here")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+nested_task")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+nested_task_2")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+parallel_task_foo")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+bar")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+baz")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+abc")).toBeInTheDocument();
 
-      // root tasks are not rendered
-      expect(queryByText(timelineSection, "+basic")).not.toBeInTheDocument();
+        // root tasks are not rendered
+        expect(queryByText(timelineSection, "+basic")).not.toBeInTheDocument();
+      });
+
+      it("subtasks folds on click", () => {
+        const timelineSection = getSection("Timeline");
+        expect(getByText(timelineSection, "+nested_task")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+nested_task_2")).toBeInTheDocument();
+
+        fireEvent.click(getByText(timelineSection, "+any_task_name_here"))
+
+        expect(queryByText(timelineSection, "+nested_task")).not.toBeInTheDocument();
+        expect(queryByText(timelineSection, "+nested_task_2")).not.toBeInTheDocument();
+
+        fireEvent.click(getByText(timelineSection, "+any_task_name_here"))
+
+        expect(getByText(timelineSection, "+nested_task")).toBeInTheDocument();
+        expect(getByText(timelineSection, "+nested_task_2")).toBeInTheDocument();
+      });
     })
 
     it("AttemptTasksView", () => {
