@@ -1,9 +1,17 @@
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { getByText, queryByText, screen, render, waitFor } from '@testing-library/react';
+import {
+  getByText,
+  getByLabelText,
+  fireEvent,
+  queryByText,
+  screen,
+  render,
+  waitFor,
+} from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 
-import { SessionPage, AttemptPage } from './console';
+import { SessionPage, AttemptPage, WorkflowsPage } from './console';
 
 function getSection(headingText: string): HTMLElement {
   return screen.getByText(headingText, { selector: "h2" }).closest("div");
@@ -91,4 +99,42 @@ describe('SessionPage and AttemptPage', () => {
       expect(getByText(timelineSection, "+basic+abc")).toBeInTheDocument();
     })
   }
+})
+
+describe('WorkflowsPage', () => {
+    beforeEach(() => {
+      render(
+        <MemoryRouter>
+          <WorkflowsPage/>
+        </MemoryRouter>
+      );
+    });
+
+    it("WorkflowsView", () => {
+      const workflowsSection = getSection("Workflows");
+      expect(getByText(workflowsSection, "error_task").closest('a').href).toBe('http://localhost/projects/1/workflows/error_task');
+      expect(getByText(workflowsSection, "generate_subtasks").closest('a').href).toBe('http://localhost/projects/1/workflows/generate_subtasks');
+    })
+
+    describe("SessionsView", () => {
+      it('initial contents', () => {
+        const sessionsSection = getSection("Sessions");
+
+        expect(getByText(sessionsSection, "example")).toBeInTheDocument();
+        expect(getByText(sessionsSection, "basic")).toBeInTheDocument();
+        expect(getByText(sessionsSection, "d232a92c-09dc-4eba-815d-f95d18dc3d7f")).toBeInTheDocument();
+      })
+
+      it('status filter', () => {
+        const sessionsSection = getSection("Sessions");
+
+        expect(getByText(sessionsSection, "basic")).toBeInTheDocument();
+
+        fireEvent.change(getByLabelText(sessionsSection, "Status:"), {target: {value: "Failure" }});
+        expect(queryByText(sessionsSection, "basic")).not.toBeInTheDocument();
+
+        fireEvent.change(getByLabelText(sessionsSection, "Status:"), {target: {value: "Success" }});
+        expect(getByText(sessionsSection, "basic")).toBeInTheDocument();
+      })
+    })
 })
