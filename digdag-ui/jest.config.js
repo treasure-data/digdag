@@ -7,8 +7,8 @@ module.exports = {
   clearMocks: true,
   coverageProvider: "v8",
   setupFiles: [
-    "./jest.setup.external.js",
-    "./jest.setup.digdag-ui.js",
+    "./testlib/jest.setup.external.js",
+    "./testlib/jest.setup.digdag-ui.js",
   ],
   testEnvironment: "jsdom",
 };

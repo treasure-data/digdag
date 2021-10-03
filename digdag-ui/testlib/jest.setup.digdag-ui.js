@@ -1,7 +1,7 @@
-import './config/config'
+import '../config/config'
 import {
   setup as setupModel
-} from './model'
+} from '../model'
 
 setupModel({
   url: DIGDAG_CONFIG.url,
