@@ -377,6 +377,19 @@ project(':digdag-ui') {
         }
     }
 
+    task testUi {
+        doFirst {
+            exec {
+                // npm ci requires npm version 5.7 or more.
+                commandLine System.env.NPM ?: "npm", "ci"
+            }
+            exec {
+                commandLine System.env.NPM ?: "npm", "run", "test"
+            }
+        }
+    }
+    test.dependsOn('testUi')
+
     // include public/* in the jar file
     processResources {
         from '.'
