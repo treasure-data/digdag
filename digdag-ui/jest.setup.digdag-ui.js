@@ -1,4 +1,3 @@
-jest.mock('')
 import './config/config'
 import {
   setup as setupModel
