@@ -663,7 +663,7 @@ public class EcsCommandExecutor
         setEcsTaskLaunchType(clientConfig, runTaskRequest);
         setEcsTaskStartedBy(clientConfig, runTaskRequest);
         setEcsTaskTags(clientConfig, runTaskRequest);
-        setEcsNetworkConfiguration(clientConfig, runTaskRequest);
+        setEcsNetworkConfiguration(commandContext, clientConfig, runTaskRequest);
         setCapacityProviderStrategy(clientConfig, runTaskRequest);
         setPlacementStrategy(clientConfig, runTaskRequest);
         setFargatePlatformVersion(clientConfig, runTaskRequest);
@@ -974,7 +974,10 @@ public class EcsCommandExecutor
         }
     }
 
-    protected void setEcsNetworkConfiguration(final EcsClientConfig clientConfig, final RunTaskRequest request)
+    protected void setEcsNetworkConfiguration(
+            final CommandContext commandContext,
+            final EcsClientConfig clientConfig,
+            final RunTaskRequest request)
     {
         if (clientConfig.getSubnets().isPresent()) {
             request.withNetworkConfiguration(new NetworkConfiguration().withAwsvpcConfiguration(
