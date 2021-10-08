@@ -515,7 +515,7 @@ public class ScheduleExecutor
             ScheduleTime time, Optional<String> retryAttemptName,
             Optional<Instant> lastExecutedSessionTime)
     {
-        Config params = getOverrideSessionParams(def, rev, time, retryAttemptName, lastExecutedSessionTime, cf);
+        Config params = getSessionOverrideParams(def, rev, time, retryAttemptName, lastExecutedSessionTime, cf);
 
         return attemptBuilder.buildFromStoredWorkflow(
                 def,
@@ -528,7 +528,7 @@ public class ScheduleExecutor
     }
 
     @Nonnull
-    protected Config getOverrideSessionParams(
+    protected Config getSessionOverrideParams(
             StoredWorkflowDefinitionWithProject def,
             StoredRevision rev,
             ScheduleTime time,
