@@ -245,8 +245,9 @@ public class AttemptResource
     {
         return tm.<Response, AttemptLimitExceededException, ResourceNotFoundException, TaskLimitExceededException, AccessControlException>begin(() -> {
             ProjectStore rs = rm.getProjectStore(getSiteId());
-            final StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById( // check NotFound first
-                    RestModels.parseWorkflowId(request.getWorkflowId()));
+            long wfId = RestModels.parseWorkflowId(request.getWorkflowId());
+            StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(wfId);  // check NotFound first
+            StoredRevision rev = rm.getRevisionOfWorkflowDefinition(wfId);
 
             ac.checkRunWorkflow( // AccessControl
                     WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
@@ -259,7 +260,7 @@ public class AttemptResource
                     .or(ImmutableList.of());
 
             Config params = request.getParams();
-            putAdditionalParams(params);
+            putAdditionalParams(params, rev);
 
             // use the HTTP request time as the runTime
             AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -284,7 +285,7 @@ public class AttemptResource
         }, AttemptLimitExceededException.class, ResourceNotFoundException.class, TaskLimitExceededException.class, AccessControlException.class);
     }
 
-    protected void putAdditionalParams(@Nonnull Config params)
+    protected void putAdditionalParams(@Nonnull Config params, @Nonnull StoredRevision rev)
     {
         // nop by the default. Override if required
     }
