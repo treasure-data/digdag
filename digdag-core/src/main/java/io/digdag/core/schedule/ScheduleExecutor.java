@@ -14,6 +14,7 @@ import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.workflow.AttemptBuilder;
@@ -37,6 +38,7 @@ import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -286,9 +288,10 @@ public class ScheduleExecutor
     {
         Instant scheduleTime = sched.getNextScheduleTime();
         Instant runTime = sched.getNextRunTime();
+        StoredRevision rev = rm.getRevisionOfWorkflowDefinition(sched.getWorkflowDefinitionId());
 
         AttemptRequest ar = newAttemptRequest(
-                def, ScheduleTime.of(scheduleTime, runTime),
+                def, rev, ScheduleTime.of(scheduleTime, runTime),
                 Optional.absent(), sched.getLastSessionTime());
         try {
             workflowExecutor.submitWorkflow(def.getProject().getSiteId(),
@@ -458,8 +461,9 @@ public class ScheduleExecutor
                             lastExecutedSessionTime = submitter.getLastExecutedSessionTime(
                                     sched.getProjectId(), sched.getWorkflowName(), instant);
                         }
+                        StoredRevision rev = rm.getRevisionOfWorkflowDefinition(sched.getWorkflowDefinitionId());
                         AttemptRequest ar = newAttemptRequest(
-                                def, ScheduleTime.of(instant, sched.getNextScheduleTime()),
+                                def, rev, ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName), lastExecutedSessionTime);
                         StoredSessionAttemptWithSession attempt =
                             submitter.submitDelayedAttempt(ar, lastAttempt.transform(a -> a.getSessionId()));
@@ -507,17 +511,32 @@ public class ScheduleExecutor
     }
 
     private AttemptRequest newAttemptRequest(
-            StoredWorkflowDefinitionWithProject def,
+            StoredWorkflowDefinitionWithProject def, StoredRevision rev,
             ScheduleTime time, Optional<String> retryAttemptName,
             Optional<Instant> lastExecutedSessionTime)
     {
+        Config params = getSessionOverrideParams(def, rev, time, retryAttemptName, lastExecutedSessionTime, cf);
+
         return attemptBuilder.buildFromStoredWorkflow(
                 def,
-                cf.create(),
+                params,
                 time,
                 retryAttemptName,
                 Optional.absent(),
                 ImmutableList.of(),
                 lastExecutedSessionTime);
     }
+
+    @Nonnull
+    protected Config getSessionOverrideParams(
+            StoredWorkflowDefinitionWithProject def,
+            StoredRevision rev,
+            ScheduleTime time,
+            Optional<String> retryAttemptName,
+            Optional<Instant> lastExecutedSessionTime,
+            ConfigFactory cf)
+    {
+        return cf.create(); // override this method if required
+    }
+
 }
