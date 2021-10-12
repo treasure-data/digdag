@@ -446,12 +446,24 @@ public class EcsCommandExecutor
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
             // Set exit code of container finished to nextStatus
-            Container container = task.getContainers().get(0);
-            Integer containerExitCode = container.getExitCode(); // could be null
-            nextStatus.put("status_code", containerExitCode);
 
             String stopCode = task.getStopCode();
             nextStatus.put("ecs_stop_code", stopCode);
+            String stoppedReason = task.getStoppedReason();
+            nextStatus.put("ecs_stopped_reason", stoppedReason);
+
+            List<Container> containers = task.getContainers();
+            if (containers.isEmpty()) {
+                throw new RuntimeException(s("While the task is finished but no container associated with it. "
+                        + "Temporary ECS issue is suspected: taskArn=%s, stopCode=%s, stoppedReason=%s\n"
+                        + "Please retry workflow tasks. Refer https://docs.digdag.io/workflow_definition.html#retrying-failed-tasks-automatically for detail.\n"
+                        + "ECS error codes are available on https://docs.aws.amazon.com/AmazonECS/latest/userguide/stopped-task-error-codes.html",
+                        taskArn, stopCode, stoppedReason));
+            }
+
+            Container container = containers.get(0);
+            Integer containerExitCode = container.getExitCode(); // could be null
+            nextStatus.put("status_code", containerExitCode); // null accepted for containerExitCode
 
             // see com.amazonaws.services.ecs.model.TaskStopCode
             if(TaskStopCode.TaskFailedToStart.toString().equals(stopCode)) {
@@ -461,8 +473,6 @@ public class EcsCommandExecutor
                 nextStatus.put("container_status", containerStatus);
                 String containerStatusReason = container.getReason();
                 nextStatus.put("container_status_reason", containerStatusReason);
-                String stoppedReason = task.getStoppedReason();
-                nextStatus.put("ecs_stopped_reason", stoppedReason);
                 throw new RuntimeException(s(
                     "ECS Container task failed to start due to temporary AWS issues: "
                     + "stopCode=%s, stoppedReason=%s, containerExitCode=%s, containerStatus=%s, containerStatusReason=%s\n"
