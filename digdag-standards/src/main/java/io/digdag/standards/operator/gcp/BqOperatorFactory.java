@@ -1,7 +1,9 @@
 package io.digdag.standards.operator.gcp;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.api.services.bigquery.model.Clustering;
 import com.google.api.services.bigquery.model.DatasetReference;
+import com.google.api.services.bigquery.model.EncryptionConfiguration;
 import com.google.api.services.bigquery.model.ExternalDataConfiguration;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobConfigurationQuery;
@@ -86,6 +88,18 @@ class BqOperatorFactory
 
             params.getOptional("destination_table", String.class)
                     .transform(s -> cfg.setDestinationTable(tableReference(projectId, defaultDataset, s)));
+            params.getOptional("clustering", Clustering.class).transform(cfg::setClustering);
+            params.getOptional("encryption_configuration", EncryptionConfiguration.class).transform(cfg::setDestinationEncryptionConfiguration);
+            params.getOptional("maximum_bytes_billed", Long.class).transform(cfg::setMaximumBytesBilled);
+            Optional.of(params.getListOrEmpty("schema_update_options", String.class)).transform(cfg::setSchemaUpdateOptions);
+
+            if (params.has("range_partitioning")) {
+                cfg.setRangePartitioning(rangePartitioning(params.getNested("range_partitioning")));
+            }
+
+            if (params.has("time_partitioning")) {
+                cfg.setTimePartitioning(timePartitioning(params.getNested("time_partitioning")));
+            }
 
             return new JobConfiguration()
                     .setQuery(cfg);

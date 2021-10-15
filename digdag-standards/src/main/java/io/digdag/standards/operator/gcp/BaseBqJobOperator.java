@@ -2,6 +2,8 @@ package io.digdag.standards.operator.gcp;
 
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
+import com.google.api.services.bigquery.model.RangePartitioning;
+import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
@@ -43,4 +45,33 @@ abstract class BaseBqJobOperator
     }
 
     protected abstract JobConfiguration jobConfiguration(String projectId);
+
+    protected RangePartitioning rangePartitioning(Config params) {
+        Config rangeParams = params.getNested("range");
+        RangePartitioning.Range range = new RangePartitioning.Range();
+        range.setStart(rangeParams.get("start", Long.class))
+                .setEnd(rangeParams.get("end", Long.class))
+                .setInterval(rangeParams.get("interval", Long.class));
+
+        RangePartitioning rPart = new RangePartitioning();
+        rPart.setField(params.get("field", String.class))
+                .setRange(range);
+
+        return rPart;
+    }
+
+    protected TimePartitioning timePartitioning(Config params) {
+        TimePartitioning tPart = new TimePartitioning();
+        // required fields
+        tPart.setType(params.get("type", String.class));
+
+        // optional fields
+        params.getOptional("field", String.class).transform(tPart::setField);
+        params.getOptional("requirePartitionFilter", Boolean.class).transform(tPart::setRequirePartitionFilter);
+        if (params.has("expirationMs")) {
+            tPart.setExpirationMs(params.get("expirationMs", Long.class));
+        }
+
+        return tPart;
+    }
 }

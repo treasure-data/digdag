@@ -1,11 +1,14 @@
 package io.digdag.standards.operator.gcp;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.services.bigquery.model.Clustering;
 import com.google.api.services.bigquery.model.DatasetReference;
+import com.google.api.services.bigquery.model.EncryptionConfiguration;
+import com.google.api.services.bigquery.model.HivePartitioningOptions;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobConfigurationLoad;
+import com.google.api.services.bigquery.model.ParquetOptions;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -99,6 +102,22 @@ class BqLoadOperatorFactory
             Optional.of(params.getListOrEmpty("projection_fields", String.class)).transform(cfg::setProjectionFields);
             params.getOptional("autodetect", boolean.class).transform(cfg::setAutodetect);
             Optional.of(params.getListOrEmpty("schema_update_options", String.class)).transform(cfg::setSchemaUpdateOptions);
+            params.getOptional("clustering", Clustering.class).transform(cfg::setClustering);
+            Optional.of(params.getListOrEmpty("decimal_target_types", String.class)).transform(cfg::setDecimalTargetTypes);
+            params.getOptional("encryption_configuration", EncryptionConfiguration.class).transform(cfg::setDestinationEncryptionConfiguration);
+            params.getOptional("hive_partitioning_options", HivePartitioningOptions.class).transform(cfg::setHivePartitioningOptions);
+            params.getOptional("json_extension", String.class).transform(cfg::setJsonExtension);
+            params.getOptional("null_marker", String.class).transform(cfg::setNullMarker);
+            params.getOptional("parquet_options", ParquetOptions.class).transform(cfg::setParquetOptions);
+            params.getOptional("use_avro_logical_types", boolean.class).transform(cfg::setUseAvroLogicalTypes);
+
+            if (params.has("range_partitioning")) {
+                cfg.setRangePartitioning(rangePartitioning(params.getNested("range_partitioning")));
+            }
+
+            if (params.has("time_partitioning")) {
+                cfg.setTimePartitioning(timePartitioning(params.getNested("time_partitioning")));
+            }
 
             return new JobConfiguration()
                     .setLoad(cfg);
