@@ -403,6 +403,7 @@ In the config file, following parameters are available
 * api.max_archive_total_size_limit (integer. The maximum size of an archived project. i.e. ``digdag push`` size. default: 2MB(2\*1024\*1024))
 * eval.js-engine-type (type of ConfigEvalEngine. "nashorn" or "graal". "nashorn" is default on Java8 and "graal" is default on Java11)
 * eval.extended-syntax (boolean, default: true. Enable or disable extended syntax in graal. If true, nested ``{..}`` is allowed)
+* agent.max-task-threads (integer. The maximum number of task execution threads)
 
 Authenticator Plugins
 *********************
