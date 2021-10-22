@@ -347,8 +347,8 @@ public class DigdagClient implements AutoCloseable
     {
         return doGet(RestWorkflowDefinitionCollection.class,
                 target("/api/workflows")
-		.queryParam("last_id", lastId.orNull())
-		.queryParam("count", count));
+                .queryParam("last_id", lastId.orNull())
+                .queryParam("count", count));
     }
     
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(Id projId)
