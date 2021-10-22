@@ -19,7 +19,7 @@ public class ShowWorkflow
 {
     @Parameter(names = {"--last-id"})
     Id lastId = null;
-	
+        
     @Parameter(names = {"--count"})
     int count = 100;
 
@@ -45,9 +45,9 @@ public class ShowWorkflow
     public SystemExitException usage(String error)
     {
         err.println("Usage: " + programName + " workflows [project-name] [name]");
-	err.println("  Options:");
-	err.println("  --count number   number of workflows");
-	err.println("  --lastid id      last id of workflow");
+        err.println("  Options:");
+        err.println("  --count number   number of workflows");
+        err.println("  --lastid id      last id of workflow");
         showCommonOptions();
         return systemExit(error);
     }
@@ -65,7 +65,7 @@ public class ShowWorkflow
             }
         }
         else {
-	    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(Optional.fromNullable(lastId), count).getWorkflows();
+            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(Optional.fromNullable(lastId), count).getWorkflows();
             String lastProjName = null;
             for (RestWorkflowDefinition def : defs) {
                 if (!def.getProject().getName().equals(lastProjName)) {
