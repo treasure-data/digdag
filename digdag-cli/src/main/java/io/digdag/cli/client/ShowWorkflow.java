@@ -47,7 +47,7 @@ public class ShowWorkflow
         err.println("Usage: " + programName + " workflows [project-name] [name]");
         err.println("  Options:");
         err.println("  --count number   number of workflows");
-        err.println("  --lastid id      last id of workflow");
+        err.println("  --last-id id      last id of workflow");
         showCommonOptions();
         return systemExit(error);
     }
