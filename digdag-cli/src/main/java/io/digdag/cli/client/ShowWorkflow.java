@@ -65,7 +65,6 @@ public class ShowWorkflow
             }
         }
         else {
-            //List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions().getWorkflows();
 	    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(Optional.fromNullable(lastId), count).getWorkflows();
             String lastProjName = null;
             for (RestWorkflowDefinition def : defs) {
