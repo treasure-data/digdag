@@ -705,10 +705,12 @@ class StatusFilter extends React.Component {
     return (
       <div className='status-filter'>
         <form className='form-inline mb-2'>
-          <label className='control-label pr-2'>Status:</label>
-          <select className='form-control form-control-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
-            {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <label className='control-label pr-2'>
+            Status:
+            {<select className='form-control form-control-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+              {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
+          </select>}
+          </label>
         </form>
         {childrenWithProps}
       </div>
@@ -2124,7 +2126,7 @@ const ProjectsPage = (props:{}) =>
     <SessionsView />
   </div>
 
-const WorkflowsPage = () =>
+export const WorkflowsPage = () =>
   <div className='container-fluid'>
     <div className='float-right'>
       <Link
@@ -2575,7 +2577,7 @@ const EditProjectPage = (props:{params: {projectId: string}}) =>
     <ProjectEditor projectId={props.match.params.projectId} />
   </div>
 
-const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
+export const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
     <AttemptView attemptId={match.params.attemptId} />
     <AttemptTimelineView attemptId={match.params.attemptId} />
@@ -2583,7 +2585,7 @@ const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
     <AttemptLogsView attemptId={match.params.attemptId} />
   </div>
 
-class SessionPage extends React.Component {
+export class SessionPage extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
