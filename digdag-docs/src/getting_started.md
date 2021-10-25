@@ -1,6 +1,15 @@
 # Getting started
 
-## 1. Downloading the latest version
+## 1. Requirements.
+
+Digdag runs on Java. Make sure Java Runtime is installed.
+
+| Digdag version | Java Runtime Version |
+|----------------|----------------------|
+| >= 0.10.0      | Java 8 or 11         |
+| <  0.10.0      | Java 8               |
+
+## 2. Downloading the latest version
 
 Digdag is a single executable file. You can install the file to `~/bin` using `curl` command as following:
 
@@ -63,7 +72,7 @@ Then, run Step 1 again.
 
 If you got an error such as **'Unsupported major.minor version 52.0'**, please download and install the latest [Java SE Development Kit 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) (must be newer than **8u72**).
 
-## 2. Running sample workflow
+## 3. Running sample workflow
 
 `digdag init <dir>` command generates sample workflow for you:
 
