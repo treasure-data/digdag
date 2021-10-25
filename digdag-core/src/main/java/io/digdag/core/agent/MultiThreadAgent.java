@@ -5,6 +5,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.ErrorReporter;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.log.LogMarkers;
+import io.digdag.spi.AccountRouting;
+import io.digdag.spi.AccountRoutingFactory;
 import io.digdag.spi.TaskRequest;
 import java.time.Duration;
 import java.util.List;
@@ -33,6 +35,8 @@ public class MultiThreadAgent
     private final OperatorManager runner;
     private final TransactionManager transactionManager;
     private final ErrorReporter errorReporter;
+    private final AccountRoutingFactory acrouteFactory;
+    private final AccountRouting accountRouting;
 
     private final Object addActiveTaskLock = new Object();
     private final BlockingQueue<Runnable> executorQueue;
@@ -44,8 +48,8 @@ public class MultiThreadAgent
 
     public MultiThreadAgent(
             AgentConfig config, AgentId agentId,
-            TaskServerApi taskServer, OperatorManager runner,
-            TransactionManager transactionManager, ErrorReporter errorReporter, DigdagMetrics metrics)
+            TaskServerApi taskServer, OperatorManager runner, TransactionManager transactionManager, ErrorReporter errorReporter,
+            DigdagMetrics metrics, AccountRoutingFactory acrouteFactory)
     {
         this.agentId = agentId;
         this.config = config;
@@ -54,6 +58,8 @@ public class MultiThreadAgent
         this.transactionManager = transactionManager;
         this.errorReporter = errorReporter;
         this.metrics = metrics;
+        this.acrouteFactory = acrouteFactory;
+        this.accountRouting = this.acrouteFactory.newAccountRouting(AccountRouting.ModuleType.AGENT);
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(false)  // make them non-daemon threads so that shutting down agent doesn't kill operator execution
@@ -125,7 +131,7 @@ public class MultiThreadAgent
                     if (maxAcquire > 0) {
                         metrics.summary(Category.AGENT,"mtag_NumMaxAcquire", maxAcquire);
                         transactionManager.begin(() -> {
-                            List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
+                            List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000, accountRouting);
                             for (TaskRequest req : reqs) {
                                 executor.submit(() -> {
                                     try {
