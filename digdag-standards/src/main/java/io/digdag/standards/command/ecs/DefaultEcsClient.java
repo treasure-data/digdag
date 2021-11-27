@@ -10,6 +10,7 @@ import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;
 import com.amazonaws.services.ecs.model.DescribeTasksResult;
+import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.InvalidParameterException;
 import com.amazonaws.services.ecs.model.ListTagsForResourceRequest;
 import com.amazonaws.services.ecs.model.ListTagsForResourceResult;
@@ -55,13 +56,14 @@ public class DefaultEcsClient
     private final long rateLimitMaxJitterSecs;   // 0.0 <= jitterSecs < rateLimitBaseJitterSecs
     private final long rateLimitMaxBaseWaitSecs; // Max baseWaitSecs.
     private final long rateLimitBaseIncrementalSecs;
+    private final int retryDelayOnAgentErrorSecs;
 
     protected DefaultEcsClient(
             final EcsClientConfig config,
             final AmazonECSClient client,
             final AWSLogs logs)
     {
-        this(config, client, logs, 60, 10, 50, 10);
+        this(config, client, logs, 60, 10, 50, 10, 3);
     }
 
     protected DefaultEcsClient(
@@ -71,7 +73,8 @@ public class DefaultEcsClient
             final int rateLimitMaxRetry,
             final long rateLimitMaxJitterSecs,
             final long rateLimitMaxBaseWaitSecs,
-            final long rateLimitBaseIncrementalSecs
+            final long rateLimitBaseIncrementalSecs,
+            final int retryDelayOnAgentErrorSecs
             )
     {
         this.config = config;
@@ -81,6 +84,7 @@ public class DefaultEcsClient
         this.rateLimitMaxJitterSecs = rateLimitMaxJitterSecs;
         this.rateLimitMaxBaseWaitSecs = rateLimitMaxBaseWaitSecs;
         this.rateLimitBaseIncrementalSecs = rateLimitBaseIncrementalSecs;
+        this.retryDelayOnAgentErrorSecs = retryDelayOnAgentErrorSecs;
     }
 
     @Override
@@ -89,15 +93,7 @@ public class DefaultEcsClient
         return config;
     }
 
-    /**
-     * Run task on AWS ECS.
-     * https://docs.aws.amazon.com/cli/latest/reference/ecs/run-task.html
-     *
-     * @param request
-     * @return
-     */
-    @Override
-    public RunTaskResult submitTask(final RunTaskRequest request)
+    private RunTaskResult runTask(final RunTaskRequest request)
             throws ConfigException
     {
         try {
@@ -115,6 +111,37 @@ public class DefaultEcsClient
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isAgentError(final RunTaskResult result)
+    {
+        for (final Failure f : result.getFailures()) {
+            if (f.getReason().equals("AGENT")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Run task on AWS ECS.
+     * Retry once on AGENT error, which can happen as a part of the agent's normal operation.
+     * https://docs.aws.amazon.com/cli/latest/reference/ecs/run-task.html
+     * https://docs.aws.amazon.com/AmazonECS/latest/developerguide/api_failures_messages.html
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public RunTaskResult submitTask(final RunTaskRequest request)
+    {
+        RunTaskResult result = runTask(request);
+        if (isAgentError(result)) {
+            logger.debug("Submitting a task failed with AGENT error. Will be retried in {} sec.", String.valueOf(retryDelayOnAgentErrorSecs));
+            waitWithRandomJitter(retryDelayOnAgentErrorSecs, 0);
+            result = runTask(request);
+        }
+        return result;
     }
 
     @Override
