@@ -113,7 +113,7 @@ public class DockerCommandExecutor
 
             // mount
             command.add("-v").add(String.format(ENGLISH,
-                        "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
+                        "%s:%s:rw,Z", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
             // working directory
             final Path workingDirectory = getAbsoluteWorkingDirectory(context, request); // absolute
