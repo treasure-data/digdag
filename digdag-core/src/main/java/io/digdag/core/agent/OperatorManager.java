@@ -254,7 +254,12 @@ public class OperatorManager
         String type;
         if (config.has("_type")) {
             type = config.get("_type", String.class);
-            logger.info("type: {}", type);
+            if (checkTaskLogPrintable(request)) { // Reduce task log output for polling
+                logger.info("type: {}", type);
+            }
+            else {
+                logger.debug("(retry: {}) type: {}", request.getRetryCount(), type);
+            }
             shouldBeUsedKeys.remove("_type");
         }
         else {
@@ -273,7 +278,12 @@ public class OperatorManager
             Object command = config.getOptional(operatorKey.get(), Object.class).orNull();
             config.set("_type", type);
             config.set("_command", command);
-            logger.info("{}>: {}", type, Optional.fromNullable(command).or(""));
+            if (checkTaskLogPrintable(request)) { // Reduce task log output for polling
+                logger.info("{}>: {}", type, Optional.fromNullable(command).or(""));
+            }
+            else {
+                logger.debug("(retry: {}) {}>: {}", request.getRetryCount(), type, Optional.fromNullable(command).or(""));
+            }
             shouldBeUsedKeys.remove(operatorKey.get());
         }
 
@@ -288,7 +298,6 @@ public class OperatorManager
 
         // Track accessed keys using UsedKeysSet class
         CheckedConfig.UsedKeysSet usedKeys = new CheckedConfig.UsedKeysSet();
-
         TaskRequest mergedRequest = TaskRequest.builder()
             .from(request)
             .localConfig(new CheckedConfig(localConfig, usedKeys))
@@ -305,6 +314,30 @@ public class OperatorManager
         }
 
         callback.taskSucceeded(request, agentId, result);
+    }
+
+    /***
+     * Check task log should be printed or not.
+     * Reduce iterating output in polling
+     * Conditions:
+     *    true if the first polling
+     *    true if task duration larger than 30 min and every 10 polling.
+     * @param request
+     * @return
+     */
+    @VisibleForTesting
+    static boolean checkTaskLogPrintable(TaskRequest request)
+    {
+        boolean print = false;
+        if (request.getRetryCount() == 0) {
+            print = true;
+        }
+        else if (request.getStartedAt().isPresent() &&
+                Instant.now().isAfter(request.getStartedAt().get().plusSeconds(30*60)) &&
+                request.getRetryCount() % 10 == 0){
+            print = true;
+        }
+        return print;
     }
 
     private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, Collection<String> candidateKeys)

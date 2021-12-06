@@ -133,7 +133,7 @@ public class PollingWaiter
             pollState.params().set(ITERATION, iteration + 1);
             int interval = calculateNextInterval(now, startTime.get(), iteration);
             String formattedErrorMessage = String.format(waitMessage, waitMessageParameters);
-            logger.info("{}: checking again in {}", formattedErrorMessage, Durations.formatDuration(Duration.ofSeconds(interval)));
+            logger.debug("{}: checking again in {}", formattedErrorMessage, Durations.formatDuration(Duration.ofSeconds(interval)));
             throw pollState.pollingTaskExecutionException(interval);
         }
 

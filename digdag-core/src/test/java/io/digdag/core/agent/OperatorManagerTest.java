@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
@@ -8,6 +9,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.OperatorTestingUtils;
+import io.digdag.spi.ImmutableTaskRequest;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretStoreManager;
@@ -21,9 +23,16 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -175,5 +184,61 @@ public class OperatorManagerTest
         verify(callback, times(0)).taskSucceeded(any(), any(), any());
         verify(callback, times(1)).taskFailed(eq(taskRequest), any(), any());
         verify(callback, times(0)).retryTask(any(), any(), anyInt(), any(), any());
+    }
+
+    @Test
+    public void checkStuckConfigEval()
+            throws InterruptedException
+    {
+        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        OperatorManager om = spy(operatorManager);
+        try {
+            om.start();
+
+            // The background task shouldn't detect any stuck
+            executorService.execute(() -> om.runWithHeartbeat(taskRequest));
+            TimeUnit.SECONDS.sleep(3);
+            verify(om, atMost(0)).handleStuckTask(anyString(), anyLong(), any());
+
+            // Test again with stuck config eval
+            doAnswer(answer -> {
+                // Simulate a stuck situation
+                TimeUnit.SECONDS.sleep(10);
+                throw new TimeoutException("Shouldn't reach here");
+            }).when(om).evalConfig(taskRequest);
+
+            // The background task should detect the stuck this time
+            executorService.execute(() -> om.runWithHeartbeat(taskRequest));
+            TimeUnit.SECONDS.sleep(3);
+            verify(om, atLeastOnce()).handleStuckTask(eq("config eval"), eq(taskRequest.getTaskId()), any());
+        }
+        finally {
+            executorService.shutdownNow();
+            om.shutdown();
+        }
+    }
+
+    // As for `checkStuckNonblockingOperators`, see acceptance.td.TdIT.detectStuckNonblockingTask
+
+    @Test
+    public void testCheckTaskLogPrintable()
+    {
+        // First polling must be true
+        ImmutableTaskRequest request = OperatorTestingUtils.newTaskRequest(simpleConfig)
+                .withRetryCount(0);
+        assertTrue(OperatorManager.checkTaskLogPrintable(request));
+        request = request.withRetryCount(1);
+        assertFalse(OperatorManager.checkTaskLogPrintable(request));
+
+        // After 30 min from start, every 10 polling must be true
+        request = request.withStartedAt(Optional.of(Instant.now().minusSeconds(60*30+1)));
+        assertFalse(OperatorManager.checkTaskLogPrintable(request.withRetryCount(5)));
+        assertFalse(OperatorManager.checkTaskLogPrintable(request.withRetryCount(6)));
+        assertFalse(OperatorManager.checkTaskLogPrintable(request.withRetryCount(7)));
+        assertFalse(OperatorManager.checkTaskLogPrintable(request.withRetryCount(8)));
+        assertFalse(OperatorManager.checkTaskLogPrintable(request.withRetryCount(9)));
+        assertTrue(OperatorManager.checkTaskLogPrintable(request.withRetryCount(10)));
     }
 }

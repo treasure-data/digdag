@@ -54,6 +54,18 @@ public interface TaskRequest
 
     Config getLastStateParams();
 
+    @Value.Default
+    default int getRetryCount()
+    {
+        return 0;
+    }
+
+    @Value.Default
+    default Optional<Instant> getStartedAt()
+    {
+        return Optional.absent();
+    }
+
     static ImmutableTaskRequest.Builder builder()
     {
         return ImmutableTaskRequest.builder();

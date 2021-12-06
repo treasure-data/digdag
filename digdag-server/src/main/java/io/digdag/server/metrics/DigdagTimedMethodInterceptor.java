@@ -31,7 +31,7 @@ public class DigdagTimedMethodInterceptor implements MethodInterceptor
             return invokeMain(invocation);
         }
         catch (Exception e) {
-            logger.debug("invocationMain Failed. {}", e.toString());
+            logger.trace("invocationMain Failed. {}", e.toString());
             throw e;
         }
     }

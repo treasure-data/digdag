@@ -125,6 +125,8 @@ public class TdWaitOperatorFactory
                     throw state.pollingTaskExecutionException(queryPollInterval);
                 }
 
+                logger.info("Finished. Last job id={}", job.getJobId());
+
                 // The query condition was fulfilled, we're done.
                 return TaskResult.empty(request);
             }
@@ -155,7 +157,13 @@ public class TdWaitOperatorFactory
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);
-            logger.info("Started {} job id={}:\n{}", engine, jobId, query);
+            if (request.getLastStateParams().getOptional("__last_job_id", String.class).isPresent()) {
+                logger.debug("Started {} job id={}:\n{}", engine, jobId, query);
+            }
+            else {
+                logger.info("Started {} job id={}:\n{}", engine, jobId, query);
+            }
+            state.params().set("__last_job_id", jobId);
 
             return jobId;
         }

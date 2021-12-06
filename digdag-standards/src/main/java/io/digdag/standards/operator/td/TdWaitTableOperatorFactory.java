@@ -149,7 +149,7 @@ public class TdWaitTableOperatorFactory
                 if (!done) {
                     throw state.pollingTaskExecutionException(tablePollInterval);
                 }
-
+                logger.info("Finished. Last job id={}", job.getJobId());
                 // The row count condition was fulfilled. We're done.
                 return TaskResult.empty(request);
             }
@@ -220,7 +220,13 @@ public class TdWaitTableOperatorFactory
                     .createTDJobRequest();
 
             String jobId = op.submitNewJobWithRetry(req);
-            logger.info("Started {} job id={}:\n{}", engine, jobId, query);
+            if (request.getLastStateParams().getOptional("__last_job_id", String.class).isPresent()) {
+                logger.debug("Started {} job id={}:\n{}", engine, jobId, query);
+            }
+            else {
+                logger.info("Started {} job id={}:\n{}", engine, jobId, query);
+            }
+            state.params().set("__last_job_id", jobId);
             return jobId;
         }
 
