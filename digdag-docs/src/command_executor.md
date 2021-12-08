@@ -99,6 +99,7 @@ _export:
     docker: "/usr/local/bin/docker"
     run_options: [ "-m", "1G" ]
     pull_always: true
+    selinux: true
 
 +task1:
   py>: ...
@@ -112,6 +113,7 @@ The sub keys in docker are as follows.
 | docker      | Docker command. default is `docker`     |
 | run_options | Arguments to be passed to `docker run`1 |
 | pull_always | Digdag caches the docker image. If you want to pull the image always, set to `true`. Default is `false` |
+| selinux     | Set to `true` when using SELinux. Default is `false` |
 
 You can build a docker image to be used with `build` parameter.
 
