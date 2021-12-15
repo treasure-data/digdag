@@ -16,7 +16,8 @@ import {
   Link,
   Switch,
   withRouter,
-  matchPath
+  matchPath,
+  RouteComponentProps,
 } from 'react-router-dom'
 import Measure from 'react-measure'
 import Tar from 'tar-js'
@@ -1441,7 +1442,7 @@ const DurationView = ({ start, end }:{start:?string, end:?string}) => {
   return <span>{duration}</span>
 }
 
-const ParamsView = ({ params }:{params: Object}) =>
+const ParamsView = ({ params }:{params: ?Object}) =>
   _.isEmpty(params)
     ? null
     : <CodeViewer className='params-view' language='yaml' value={yaml.safeDump(params, { sortKeys: true })} />
@@ -1535,7 +1536,7 @@ function makeTaskTrees(tasks: Array<Task>): Array<TaskTree> {
   // First, divide tasks into rootTasks and taskGroups.
   const rootTasks: Array<Task> = []
   const taskGroups: Map<string, Array<Task>> = new Map() // {parentId => Array<Task>}
-  const taskOrders: Map<string, Number> = new Map()
+  const taskOrders: Map<string, number> = new Map()
   tasks.forEach(t => {
     const parentId: ?string = t.parentId
     if (taskOrders.get(t.fullName) == null) {
@@ -1926,7 +1927,7 @@ class LogFileView extends React.Component {
   props:{
     attemptId: string;
     file: LogFileHandle;
-    order: Number;
+    order: number;
   }
 
   state = {
@@ -2017,7 +2018,7 @@ class AttemptLogsView extends React.Component {
     if (!files.length) {
       return <pre />
     }
-    const taskOrders: Map<string, Number> = new Map()
+    const taskOrders: Map<string, number> = new Map()
     return this.state.files.map(file => {
       if (taskOrders.get(file.taskName) == null) {
         taskOrders.set(file.taskName, 1)
@@ -2162,7 +2163,7 @@ export const WorkflowsPage = () =>
     <SessionsView />
   </div>
 
-const ProjectPage = (props:{params: {projectId: string}}) =>
+const ProjectPage = (props: RouteComponentProps<{projectId: string}>) =>
   <div className='container-fluid'>
     <ProjectView projectId={props.match.params.projectId} />
   </div>
@@ -2170,12 +2171,10 @@ const ProjectPage = (props:{params: {projectId: string}}) =>
 class WorkflowPage extends React.Component {
   ignoreLastFetch:boolean;
 
-  props:{
-    params: {
-      projectId: string;
-      workflowName: string;
-    }
-  };
+  props: RouteComponentProps<{
+    projectId: string;
+    workflowName: string;
+  }>;
 
   state:{
     workflow: ?Workflow;
@@ -2228,11 +2227,9 @@ class WorkflowPage extends React.Component {
 class WorkflowRevisionPage extends React.Component {
   ignoreLastFetch:boolean;
 
-  props:{
-    params: {
-      workflowId: string;
-    };
-  };
+  props: RouteComponentProps<{
+    workflowId: string;
+  }>;
 
   state:{
     workflow: ?Workflow;
@@ -2594,12 +2591,12 @@ const NewProjectPage = (props:{}) =>
     <ProjectEditor projectId={null} />
   </div>
 
-const EditProjectPage = (props:{params: {projectId: string}}) =>
+const EditProjectPage = (props: RouteComponentProps<{projectId: string}>) =>
   <div className='container-fluid'>
     <ProjectEditor projectId={props.match.params.projectId} />
   </div>
 
-export const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
+export const AttemptPage = ({ match }: RouteComponentProps<{attemptId: string}>) =>
   <div className='container-fluid'>
     <AttemptView attemptId={match.params.attemptId} />
     <AttemptTimelineView attemptId={match.params.attemptId} />
@@ -2610,11 +2607,9 @@ export const AttemptPage = ({ match }:{params: {attemptId: string}}) =>
 export class SessionPage extends React.Component {
   ignoreLastFetch:boolean;
 
-  props:{
-    params: {
-      sessionId: string;
-    }
-  };
+  props: RouteComponentProps<{
+    sessionId: string;
+  }>;
 
   state:{
     session: ?Session;

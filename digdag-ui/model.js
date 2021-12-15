@@ -80,7 +80,7 @@ export type Task = {
   updatedAt: string;
   retryAt: ?string;
   startedAt: ?string;
-  order: ?Number;
+  order: ?number;
 };
 
 export type TaskCollection = {
