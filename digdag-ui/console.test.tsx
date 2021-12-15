@@ -1,5 +1,5 @@
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Switch } from 'react-router-dom';
 import {
   getByText,
   getByLabelText,
@@ -14,30 +14,26 @@ import '@testing-library/jest-dom/extend-expect';
 import { SessionPage, AttemptPage, WorkflowsPage } from './console';
 
 function getSection(headingText: string): HTMLElement {
-  return screen.getByText(headingText, { selector: "h2" }).closest("div");
+  return screen.getByText(headingText, { selector: "h2" }).closest("div")!;
 }
 
 describe('SessionPage and AttemptPage', () => {
   describe('SessionPage', () => {
-    const match = {
-      params: {
-        sessionId: 1,
-      },
-    };
-    
     beforeEach(() => {
       render(
-        <MemoryRouter>
-          <SessionPage match={match} />
+        <MemoryRouter initialEntries={["/sessions/1"]} >
+          <Switch>
+            <Route path='/sessions/:sessionId' component={SessionPage} />
+          </Switch>
         </MemoryRouter>
       );
     });
 
     it("SessionView", () => {
       const sessionSection = getSection("Session")
-      expect(getByText(sessionSection, "example").closest('a').href).toBe('http://localhost/projects/1');
-      expect(getByText(sessionSection, "basic").closest('a').href).toBe('http://localhost/workflows/5');
-      expect(getByText(sessionSection, "Success").closest('a').href).toBe('http://localhost/attempts/1');
+      expect(getByText(sessionSection, "example").closest('a')?.href).toBe('http://localhost/projects/1');
+      expect(getByText(sessionSection, "basic").closest('a')?.href).toBe('http://localhost/workflows/5');
+      expect(getByText(sessionSection, "Success").closest('a')?.href).toBe('http://localhost/attempts/1');
     });
 
     commonTests();
@@ -52,16 +48,18 @@ describe('SessionPage and AttemptPage', () => {
     
     beforeEach(() => {
       render(
-        <MemoryRouter>
-          <AttemptPage match={match} />
+        <MemoryRouter initialEntries={["/attempts/1"]}>
+          <Switch>
+            <Route path='/attempts/:attemptId' component={AttemptPage} />
+          </Switch>
         </MemoryRouter>
       );
     });
 
     it("AttemptView", () => {
       const sessionSection = getSection("Attempt")
-      expect(getByText(sessionSection, "example").closest('a').href).toBe('http://localhost/projects/1');
-      expect(getByText(sessionSection, "basic").closest('a').href).toBe('http://localhost/workflows/5');
+      expect(getByText(sessionSection, "example").closest('a')?.href).toBe('http://localhost/projects/1');
+      expect(getByText(sessionSection, "basic").closest('a')?.href).toBe('http://localhost/workflows/5');
       expect(getByText(sessionSection, "Success")).toBeInTheDocument();
     });
 
@@ -130,8 +128,8 @@ describe('WorkflowsPage', () => {
 
     it("WorkflowsView", () => {
       const workflowsSection = getSection("Workflows");
-      expect(getByText(workflowsSection, "error_task").closest('a').href).toBe('http://localhost/projects/1/workflows/error_task');
-      expect(getByText(workflowsSection, "generate_subtasks").closest('a').href).toBe('http://localhost/projects/1/workflows/generate_subtasks');
+      expect(getByText(workflowsSection, "error_task").closest('a')?.href).toBe('http://localhost/projects/1/workflows/error_task');
+      expect(getByText(workflowsSection, "generate_subtasks").closest('a')?.href).toBe('http://localhost/projects/1/workflows/generate_subtasks');
     })
 
     describe("SessionsView", () => {

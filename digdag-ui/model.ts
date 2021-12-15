@@ -1,5 +1,3 @@
-// @flow
-
 import pako from 'pako'
 import untar from 'js-untar'
 import { Buffer } from 'buffer/'
@@ -15,7 +13,7 @@ export type LogFileHandle = {
   taskName: string;
   fileTime: string;
   agentId: string;
-  direct: ?string;
+  direct?: string;
 }
 
 export type LogFileHandleCollection = {
@@ -34,7 +32,7 @@ export type IdName = {
 
 export type NameOptionalId = {
   name: string;
-  id: ?string;
+  id?: string;
 };
 
 export type UUID = string;
@@ -68,7 +66,7 @@ export type ProjectCollection = {
 export type Task = {
   id: string;
   fullName: string;
-  parentId: ?string;
+  parentId?: string;
   config: Object;
   upstreams: Array<string>;
   isGroup: boolean;
@@ -78,9 +76,9 @@ export type Task = {
   storeParams: Object;
   stateParams: Object;
   updatedAt: string;
-  retryAt: ?string;
-  startedAt: ?string;
-  order: ?number;
+  retryAt?: string;
+  startedAt?: string;
+  order?: number;
 };
 
 export type TaskCollection = {
@@ -94,7 +92,7 @@ export type Attempt = {
   sessionId: string;
   sessionUuid: UUID;
   sessionTime: string;
-  retryAttemptName: ?string;
+  retryAttemptName?: string;
   done: boolean;
   success: boolean;
   cancelRequested: boolean;
@@ -113,9 +111,9 @@ export type Session = {
   workflow: NameOptionalId;
   sessionUuid: UUID;
   sessionTime: string;
-  lastAttempt: ?{
+  lastAttempt?: {
     id: string;
-    retryAttemptName: ?string;
+    retryAttemptName?: string;
     done: boolean;
     success: boolean;
     cancelRequested: boolean;
@@ -136,7 +134,8 @@ export type Schedule = {
   workflow: IdAndName;
   nextRunTime: string;
   nextScheduleTime: string;
-  disabledAt: ?string;
+  revision: string;
+  disabledAt?: string;
 }
 
 export type ScheduleCollection = {
@@ -166,7 +165,7 @@ export class ProjectArchive {
     }
   }
 
-  getWorkflow (name: string): ?string {
+  getWorkflow (name: string): string | null {
     var buffer = this.getFileContents(`${name}.dig`)
     // Also look for <workflow>.yml if this archive might be a legacy archive.
     if (this.legacy && !buffer) {
@@ -175,7 +174,7 @@ export class ProjectArchive {
     return buffer ? buffer.toString() : null
   }
 
-  getFileContents (name: string): ?Buffer {
+  getFileContents (name: string): Buffer | null {
     const file = this.fileMap.get(name)
     if (!file) {
       return null
@@ -205,13 +204,13 @@ export type ModelConfig = {
 
 export class Model {
   config: ModelConfig;
-  workflowCache: LRU;
-  queriesCache: LRU;
+  workflowCache: LRU.Cache<string, Promise<Workflow>>;
+  queriesCache: LRU.Cache<string, any>;
 
   constructor (config: ModelConfig) {
     this.config = config
-    this.workflowCache = LRU({ max: 10000 })
-    this.queriesCache = LRU({ max: 10000 })
+    this.workflowCache = (LRU as any)({ max: 10000 }) // need help: why keyword `new` isn't here?
+    this.queriesCache = (LRU as any)({ max: 10000 })
   }
 
   fetchProjects (): Promise<ProjectCollection> {
@@ -235,8 +234,8 @@ export class Model {
     workflow = this.get(`workflows/${id}`)
     this.workflowCache.set(id, workflow)
     const model = this
-    workflow.catch((error) => {
-      model.workflowCache.delete(id)
+    workflow.catch((error: unknown) => {
+      (model.workflowCache as any).delete(id)
       throw error
     })
     return workflow
@@ -270,7 +269,7 @@ export class Model {
     return this.get(`attempts`)
   }
 
-  fetchSessions (pageSize: number, lastId: ?number): Promise<SessionCollection> {
+  fetchSessions (pageSize: number, lastId?: string): Promise<SessionCollection> {
     if (lastId) {
       return this.get(`sessions?page_size=${pageSize}&last_id=${lastId}`)
     }
@@ -290,7 +289,7 @@ export class Model {
   }
 
   fetchAttemptTasks (attemptId: string): Promise<Map<string, Task>> {
-    return this.get(`attempts/${attemptId}/tasks`)
+    return this.get<TaskCollection>(`attempts/${attemptId}/tasks`)
       .then(taskCollection => new Map(taskCollection.tasks.map(task => [task.id, task])))
   }
 
@@ -319,7 +318,7 @@ export class Model {
         throw new Error(response.statusText)
       }
       return response.arrayBuffer().then(data => {
-        return untar(pako.inflate(data)).then(files => {
+        return untar(pako.inflate(data as any)).then(files => {
           return new ProjectArchive((files))
         })
       })
@@ -335,7 +334,7 @@ export class Model {
         throw new Error(response.statusText)
       }
       return response.arrayBuffer().then(data => {
-        return untar(pako.inflate(data).buffer)
+        return untar(pako.inflate(data as any).buffer)
       }).then(files => {
         return new ProjectArchive(files)
       })
@@ -402,26 +401,26 @@ export class Model {
     return this.get('version')
   }
 
-  enableSchedule (scheduleId: string) : Promise<*> {
+  enableSchedule (scheduleId: string) : Promise<void> {
     return this.post(`schedules/${scheduleId}/enable`)
   }
 
-  disableSchedule (scheduleId: string) : Promise<*> {
+  disableSchedule (scheduleId: string) : Promise<void> {
     return this.post(`schedules/${scheduleId}/disable`)
   }
 
   getTDQueryIdFromName (queryName: string) : string {
-    const query = this.queriesCache.get(queryName, null)
+    const query = (this.queriesCache.get as any)(queryName, null)
     if (!query) {
       return ''
     }
     return query.id
   }
 
-  fillTDQueryCache () : Promise<*> {
+  fillTDQueryCache () : Promise<void> {
     const model = this
     if (!this.config.td.useTD) {
-      return Promise.resolve({})
+      return Promise.resolve({} as any)
     }
     return fetch(this.config.td.apiV4 + '/queries', {
       credentials: 'include',
@@ -432,21 +431,21 @@ export class Model {
       }
       return response.json()
     }).then((queries) => {
-      queries.forEach((query) => {
+      queries.forEach((query: any) => {
         model.queriesCache.set(query.name, query)
       })
     })
   }
 
-  get (url: string): Promise<*> {
+  get <T = any>(url: string): Promise<T> {
     return this.http(url, 'GET')
   }
 
-  post (url: string): Promise<*> {
+  post (url: string): Promise<void> {
     return this.http(url, 'POST')
   }
 
-  http (url: string, method: MethodType): Promise<*> {
+  http <T extends MethodType>(url: string, method: T): Promise<T extends 'GET' ? any : void> {
     return fetch(this.config.url + url, {
       credentials: 'include',
       method,
@@ -464,7 +463,7 @@ export class Model {
     })
   }
 
-  put (url: string, body: any): Promise<*> {
+  put (url: string, body: any): Promise<void> {
     return fetch(this.config.url + url, {
       credentials: 'include',
       headers: Object.assign({}, this.headers(), {
@@ -480,7 +479,7 @@ export class Model {
     })
   }
 
-  putBinary (url: string, contentType: string, body: ArrayBuffer): Promise<*> {
+  putBinary (url: string, contentType: string, body: ArrayBuffer): Promise<Project> {
     return fetch(this.config.url + url, {
       credentials: 'include',
       headers: Object.assign({}, this.headers(), {
@@ -488,7 +487,7 @@ export class Model {
         'Content-Length': body.byteLength.toString()
       }),
       method: 'PUT',
-      body: new global.Blob([body], { type: contentType })
+      body: new (global as any).Blob([body], { type: contentType })
     }).then(response => {
       if (!response.ok) {
         return response.text().then(text => {
@@ -500,7 +499,7 @@ export class Model {
   }
 
   fetchArrayBuffer (url: string, directUrl: boolean) {
-    let options = {}
+    let options: RequestInit = {}
     if (!directUrl) {
       // if the URL is the direct url given by the server, client shouldn't send credentials to the host
       // because the host is not always trusted and might not have exact Access-Control-Allow-Origin
@@ -522,7 +521,7 @@ export class Model {
   }
 }
 
-var instance: ?Model = null
+var instance: Model | null = null
 
 export function setup (config: ModelConfig) {
   instance = new Model(config)
