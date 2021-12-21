@@ -192,42 +192,6 @@ public class OperatorManagerTest
     }
 
     @Test
-    public void checkStuckConfigEval()
-            throws InterruptedException
-    {
-        TaskRequest taskRequest = OperatorTestingUtils.newTaskRequest(simpleConfig);
-
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        OperatorManager om = spy(operatorManager);
-        try {
-            om.start();
-
-            // The background task shouldn't detect any stuck
-            executorService.execute(() -> om.runWithHeartbeat(taskRequest));
-            TimeUnit.SECONDS.sleep(3);
-            verify(om, atMost(0)).handleStuckTask(anyString(), anyLong(), any());
-
-            // Test again with stuck config eval
-            doAnswer(answer -> {
-                // Simulate a stuck situation
-                TimeUnit.SECONDS.sleep(10);
-                throw new TimeoutException("Shouldn't reach here");
-            }).when(om).evalConfig(taskRequest);
-
-            // The background task should detect the stuck this time
-            executorService.execute(() -> om.runWithHeartbeat(taskRequest));
-            TimeUnit.SECONDS.sleep(3);
-            verify(om, atLeastOnce()).handleStuckTask(eq("config eval"), eq(taskRequest.getTaskId()), any());
-        }
-        finally {
-            executorService.shutdownNow();
-            om.shutdown();
-        }
-    }
-
-    // As for `checkStuckNonblockingOperators`, see acceptance.td.TdIT.detectStuckNonblockingTask
-
-    @Test
     public void testCheckTaskLogPrintable()
     {
         // First polling must be true
