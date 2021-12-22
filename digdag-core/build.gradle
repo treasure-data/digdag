@@ -18,7 +18,7 @@ dependencies {
     runtime 'org.antlr:stringtemplate:3.2.1' // Used by jdbi2's string template v3 at runtime
     compile 'com.zaxxer:HikariCP:2.4.7'
     compile 'com.h2database:h2:1.4.192'
-    compile 'org.postgresql:postgresql:9.4.1211'
+    compile 'org.postgresql:postgresql:42.3.1'
     compile 'org.yaml:snakeyaml:1.23'
     compile 'com.google.code.findbugs:annotations:3.0.1'
     compile 'org.weakref:jmxutils:1.19'
