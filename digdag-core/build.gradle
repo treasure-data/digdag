@@ -5,7 +5,7 @@ dependencies {
     compile project(':digdag-plugin-utils')
     compile project(':digdag-spi')
 
-    compile ('com.google.inject:guice:5.0.1') {
+    compile ("com.google.inject:guice:${project.ext.guiceVersion}") {
         exclude group: 'com.google.guava', module: 'guava'
     }
     compile 'org.embulk:guice-bootstrap:0.3.2'
