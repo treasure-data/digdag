@@ -37,8 +37,11 @@ import io.digdag.cli.client.Version;
 import io.digdag.core.Environment;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -258,7 +261,7 @@ public class Main
             command.configPath = mainOpts.configPath;
         }
 
-        configureLogging(command.logLevel, command.logPath);
+        configureLogging(command.logLevel, command.logPath, command.logbackConfigPath);
 
         for (Map.Entry<String, String> pair : command.systemProperties.entrySet()) {
             System.setProperty(pair.getKey(), pair.getValue());
@@ -267,7 +270,7 @@ public class Main
         return verbose;
     }
 
-    private static void configureLogging(String level, String logPath)
+    private static void configureLogging(String level, String logPath, String logbackConfig)
     {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         JoranConfigurator configurator = new JoranConfigurator();
@@ -277,7 +280,25 @@ public class Main
         // logback uses system property to embed variables in XML file
         Level lv = Level.toLevel(level.toUpperCase(), Level.DEBUG);
         System.setProperty("digdag.log.level", lv.toString());
+        if (!logPath.equals("-")) {
+            System.setProperty("digdag.log.path", logPath);
+        }
 
+        try {
+            if (logbackConfig == null) {
+                configurator.doConfigure(getLogbackConfigResource(logPath));
+            }
+            else {
+                configurator.doConfigure(getLogbackConfigureFile(logbackConfig));
+            }
+        } catch (JoranException | MalformedURLException ex) {
+            System.err.println(ex);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private static URL getLogbackConfigResource(String logPath)
+    {
         String name;
         if (logPath.equals("-")) {
             if (System.console() != null) {
@@ -286,14 +307,15 @@ public class Main
                 name = "/digdag/cli/logback-console.xml";
             }
         } else {
-            System.setProperty("digdag.log.path", logPath);
             name = "/digdag/cli/logback-file.xml";
         }
-        try {
-            configurator.doConfigure(Main.class.getResource(name));
-        } catch (JoranException ex) {
-            throw new RuntimeException(ex);
-        }
+        return Main.class.getResource(name);
+    }
+
+    private static File getLogbackConfigureFile(String logbackConfigPath)
+            throws MalformedURLException
+    {
+        return new File(logbackConfigPath);
     }
 
     // called also by Run
@@ -361,6 +383,7 @@ public class Main
         err.println("    -L, --log PATH                   output log messages to a file (default: -)");
         err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         err.println("    -X KEY=VALUE                     add a performance system config");
+        err.println("    --logback-config PATH            path to logback configuration file (for developers only)");
         err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(env) + ")");
         err.println("    --version                        show client version");
         err.println("");
