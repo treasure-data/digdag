@@ -19,8 +19,8 @@ public class CommandExecutorProvider
     @Inject
     public CommandExecutorProvider(Set<CommandExecutorFactory> injectedFactories, PluginSet.WithInjector pluginSet, Config systemConfig)
     {
-        // TODO: Need to confirm: config key name and default value
-        String executorName = systemConfig.get("agent.command_executor.type", String.class, "docker");
+        // Set ECS as default command executor type
+        String executorName = systemConfig.get("agent.command_executor.type", String.class, "ecs");
         Stream<CommandExecutorFactory> candidates = Stream.concat(
                 // Search from PluginSet first
                 pluginSet.getServiceProviders(CommandExecutorFactory.class).stream(),
