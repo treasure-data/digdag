@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Environment;
@@ -30,10 +28,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
@@ -50,10 +48,9 @@ public class CommandExecutorProviderTest
         this.systemConfig = configFactory.create();
     }
 
-    @Test
-    public void testCommandExecutorType()
+    private static  <T extends CommandExecutorProvider> T newCommandExecutorProvider(Class<T> providerClass, Config systemConfig)
     {
-        Injector injector = Guice.createInjector((Module) (binder) -> {
+        Injector injector = Guice.createInjector((binder) -> {
             Multibinder<CommandExecutorFactory> commandExecutorBinder = Multibinder.newSetBinder(binder, CommandExecutorFactory.class);
             commandExecutorBinder.addBinding().to(MockCommandExecutorFactory.class).in(Scopes.SINGLETON);
             commandExecutorBinder.addBinding().to(DockerCommandExecutorFactory.class).in(Scopes.SINGLETON);
@@ -66,19 +63,24 @@ public class CommandExecutorProviderTest
             binder.bind(OperatorRegistry.DynamicOperatorPluginInjectionModule.class).in(Scopes.SINGLETON);
             binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(Environment.class).toInstance(ImmutableMap.<String, String>of());
         });
+        return injector.getInstance(providerClass);
+    }
 
+    @Test
+    public void testCommandExecutorType()
+    {
         {
             systemConfig.set("agent.command_executor.type", "mock");
-            assertThat(injector.getInstance(CommandExecutorProvider.class).get(), is(instanceOf(MockCommandExecutor.class)));
+            assertThat(newCommandExecutorProvider(CommandExecutorProvider.class, systemConfig).get(), is(instanceOf(MockCommandExecutor.class)));
         }
         {
             systemConfig.set("agent.command_executor.type", "docker");
-            assertThat(injector.getInstance(CommandExecutorProvider.class).get(), is(instanceOf(DockerCommandExecutor.class)));
+            assertThat(newCommandExecutorProvider(CommandExecutorProvider.class, systemConfig).get(), is(instanceOf(DockerCommandExecutor.class)));
         }
         {
             systemConfig.set("agent.command_executor.type", "ooo");
             try {
-                injector.getInstance(CommandExecutorProvider.class).get();
+                newCommandExecutorProvider(CommandExecutorProvider.class, systemConfig).get();
                 fail();
             }
             catch (Exception e) {
