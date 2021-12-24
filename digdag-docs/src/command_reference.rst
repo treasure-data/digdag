@@ -404,6 +404,7 @@ In the config file, following parameters are available
 * eval.js-engine-type (type of ConfigEvalEngine. "nashorn" or "graal". "nashorn" is default on Java8 and "graal" is default on Java11)
 * eval.extended-syntax (boolean, default: true. Enable or disable extended syntax in graal. If true, nested ``{..}`` is allowed)
 * agent.max-task-threads (integer. The maximum number of task execution threads)
+* agent.command_executor.type (type of command executor, "ecs", "docker", "simple" or "kubernetes". See also CommandExecutor Plugins section bellow. default: "ecs")
 
 Authenticator Plugins
 *********************
@@ -420,6 +421,21 @@ Configuration:
 * server.authenticator.basic.password (string. Required if username is set)
 * server.authenticator.basic.admin (boolean. default `false`)
 
+CommandExecutor Plugins
+*********************
+
+CommandExecutor implementation is to be provided by a system plugin (See `System plugins section in Internal architecture <internal.html#system-plugins>`). Interface is ``io.digdag.spi.CommandExecutorFactory``.
+
+You can specify the command executor to use by `agent.command_executor.type`. (digdag version v0.10.4 and up)
+
+The following executors can be set by default.
+
+* ecs (default)
+* docker
+* simple
+* kubernetes (EXPERIMENTAL)
+
+See also [Command Executor](command_executor.html) for details.
 
 Secret Encryption Key
 *********************
