@@ -60,15 +60,15 @@ import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.ac.AccessController;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.Define;
-import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.customizer.Define;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.stringtemplate4.UseStringTemplateEngine;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -425,7 +425,7 @@ public class DatabaseSessionStoreManager
             //   5. Thread-A unlocks task1.
             //   6. Thread-B continues UPDATE statement. It updates task1. But it
             //      might not update task2 depending on processing order.
-            int n = handle.createStatement("update tasks" +
+            int n = handle.createUpdate("update tasks" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
                     " and state in (" +
@@ -435,7 +435,7 @@ public class DatabaseSessionStoreManager
                 .bind("attemptId", attemptId)
                 .execute();
             if (n > 0) {
-                handle.createStatement("update session_attempts" +
+                handle.createUpdate("update session_attempts" +
                         " set state_flags = " + bitOr("state_flags", Integer.toString(AttemptStateFlags.CANCEL_REQUESTED_CODE)) +
                         " where id = :attemptId")
                     .bind("attemptId", attemptId)
@@ -804,7 +804,7 @@ public class DatabaseSessionStoreManager
             if (success) {
                 code |= AttemptStateFlags.SUCCESS_CODE;
             }
-            int n = handle.createStatement(
+            int n = handle.createUpdate(
                     "update session_attempts" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(code)) + "," +
                     " finished_at = now()" +
@@ -1060,7 +1060,7 @@ public class DatabaseSessionStoreManager
                     " and error is not null"
                 )
                 .bind("parentId", taskId)
-                .map(new ConfigResultSetMapper(configMapper, "error"))
+                .map(new ConfigRowMapper(configMapper, "error"))
                 .list();
         }
 
@@ -1132,7 +1132,7 @@ public class DatabaseSessionStoreManager
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setPlannedStateWithDelayedError(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int newFlags, Optional<Config> updateError)
         {
-            int n = handle.createStatement("update tasks" +
+            int n = handle.createUpdate("update tasks" +
                     " set updated_at = now(), state = :newState, state_flags = " + bitOr("state_flags", Integer.toString(newFlags)) +
                     " where id = :id" +
                     " and state = :oldState"
@@ -1153,7 +1153,7 @@ public class DatabaseSessionStoreManager
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setRetryWaitingState(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int retryInterval, Config stateParams, Optional<Config> updateError)
         {
-            int n = handle.createStatement("update tasks" +
+            int n = handle.createUpdate("update tasks" +
                     " set updated_at = now()," +
                         " state = :newState," +
                         " state_params = :stateParams," +
@@ -1179,7 +1179,7 @@ public class DatabaseSessionStoreManager
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public int trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(long taskId)
         {
-            return handle.createStatement("update tasks" +
+            return handle.createUpdate("update tasks" +
                     " set updated_at = now(), state = case" +
                     " when task_type = " + TaskType.GROUPING_ONLY + " then " + TaskStateCode.PLANNED_CODE +
                     " when " + bitAnd("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) + " != 0 then " + TaskStateCode.CANCELED_CODE +
@@ -1656,7 +1656,7 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    @UseStringTemplate3StatementLocator
+    @UseStringTemplateEngine
     public interface H2Dao
             extends Dao
     {
@@ -1701,7 +1701,7 @@ public class DatabaseSessionStoreManager
 
     }
 
-    @UseStringTemplate3StatementLocator
+    @UseStringTemplateEngine
     public interface PgDao
             extends Dao
     {
@@ -2232,10 +2232,10 @@ public class DatabaseSessionStoreManager
     }
 
     static class InstantMapper
-            implements ResultSetMapper<Instant>
+            implements RowMapper<Instant>
     {
         @Override
-        public Instant map(int index, ResultSet r, StatementContext ctx)
+        public Instant map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             java.sql.Timestamp t = r.getTimestamp("date");
@@ -2249,7 +2249,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredSessionMapper
-            implements ResultSetMapper<StoredSession>
+            implements RowMapper<StoredSession>
     {
         private final ConfigMapper cfm;
 
@@ -2259,7 +2259,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSession map(int index, ResultSet r, StatementContext ctx)
+        public StoredSession map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredSession.builder()
@@ -2274,7 +2274,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredSessionAttemptMapper
-            implements ResultSetMapper<StoredSessionAttempt>
+            implements RowMapper<StoredSessionAttempt>
     {
         private final ConfigMapper cfm;
 
@@ -2284,7 +2284,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionAttempt map(int index, ResultSet r, StatementContext ctx)
+        public StoredSessionAttempt map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             String attemptName = r.getString("attempt_name");
@@ -2304,7 +2304,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredSessionAttemptWithSessionMapper
-            implements ResultSetMapper<StoredSessionAttemptWithSession>
+            implements RowMapper<StoredSessionAttemptWithSession>
     {
         private final ConfigMapper cfm;
 
@@ -2314,7 +2314,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionAttemptWithSession map(int index, ResultSet r, StatementContext ctx)
+        public StoredSessionAttemptWithSession map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             String attemptName = r.getString("attempt_name");
@@ -2342,7 +2342,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredSessionWithLastAttemptMapper
-            implements ResultSetMapper<StoredSessionWithLastAttempt>
+            implements RowMapper<StoredSessionWithLastAttempt>
     {
         private final ConfigMapper cfm;
 
@@ -2352,7 +2352,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionWithLastAttempt map(int index, ResultSet r, StatementContext ctx)
+        public StoredSessionWithLastAttempt map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             String attemptName = r.getString("attempt_name");
@@ -2381,10 +2381,10 @@ public class DatabaseSessionStoreManager
     }
 
     static class SessionAttemptSummaryMapper
-            implements ResultSetMapper<SessionAttemptSummary>
+            implements RowMapper<SessionAttemptSummary>
     {
         @Override
-        public SessionAttemptSummary map(int index, ResultSet r, StatementContext ctx)
+        public SessionAttemptSummary map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableSessionAttemptSummary.builder()
@@ -2397,7 +2397,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredTaskMapper
-            implements ResultSetMapper<StoredTask>
+            implements RowMapper<StoredTask>
     {
         private final ConfigMapper cfm;
 
@@ -2407,7 +2407,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredTask map(int index, ResultSet r, StatementContext ctx)
+        public StoredTask map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredTask.builder()
@@ -2433,7 +2433,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class ArchivedTaskMapper
-            implements ResultSetMapper<ArchivedTask>
+            implements RowMapper<ArchivedTask>
     {
         private final ConfigKeyListMapper cklm;
         private final ConfigMapper cfm;
@@ -2445,7 +2445,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public ArchivedTask map(int index, ResultSet r, StatementContext ctx)
+        public ArchivedTask map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             TaskReport report = taskReportFromConfig(cfm.fromResultSetOrEmpty(r, "report"));
@@ -2480,7 +2480,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class ResumingTaskMapper
-            implements ResultSetMapper<ResumingTask>
+            implements RowMapper<ResumingTask>
     {
         private final ConfigKeyListMapper cklm;
         private final ConfigMapper cfm;
@@ -2492,7 +2492,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public ResumingTask map(int index, ResultSet r, StatementContext ctx)
+        public ResumingTask map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             TaskReport report = taskReportFromConfig(cfm.fromResultSetOrEmpty(r, "report"));
@@ -2516,10 +2516,10 @@ public class DatabaseSessionStoreManager
     }
 
     static class TaskStateSummaryMapper
-            implements ResultSetMapper<TaskStateSummary>
+            implements RowMapper<TaskStateSummary>
     {
         @Override
-        public TaskStateSummary map(int index, ResultSet r, StatementContext ctx)
+        public TaskStateSummary map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableTaskStateSummary.builder()
@@ -2532,10 +2532,10 @@ public class DatabaseSessionStoreManager
     }
 
     static class TaskAttemptSummaryMapper
-            implements ResultSetMapper<TaskAttemptSummary>
+            implements RowMapper<TaskAttemptSummary>
     {
         @Override
-        public TaskAttemptSummary map(int index, ResultSet r, StatementContext ctx)
+        public TaskAttemptSummary map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableTaskAttemptSummary.builder()
@@ -2547,10 +2547,10 @@ public class DatabaseSessionStoreManager
     }
 
     static class TaskRelationMapper
-            implements ResultSetMapper<TaskRelation>
+            implements RowMapper<TaskRelation>
     {
         @Override
-        public TaskRelation map(int index, ResultSet r, StatementContext ctx)
+        public TaskRelation map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableTaskRelation.builder()
@@ -2562,7 +2562,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredSessionMonitorMapper
-            implements ResultSetMapper<StoredSessionMonitor>
+            implements RowMapper<StoredSessionMonitor>
     {
         private final ConfigMapper cfm;
 
@@ -2572,7 +2572,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionMonitor map(int index, ResultSet r, StatementContext ctx)
+        public StoredSessionMonitor map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredSessionMonitor.builder()
@@ -2588,10 +2588,10 @@ public class DatabaseSessionStoreManager
     }
 
     static class StoredDelayedSessionAttemptMapper
-            implements ResultSetMapper<StoredDelayedSessionAttempt>
+            implements RowMapper<StoredDelayedSessionAttempt>
     {
         @Override
-        public StoredDelayedSessionAttempt map(int index, ResultSet r, StatementContext ctx)
+        public StoredDelayedSessionAttempt map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredDelayedSessionAttempt.builder()
@@ -2618,7 +2618,7 @@ public class DatabaseSessionStoreManager
     }
 
     static class IdConfigMapper
-            implements ResultSetMapper<IdConfig>
+            implements RowMapper<IdConfig>
     {
         private final ConfigKeyListMapper cklm;
         private final String resetKeysColumn;
@@ -2636,7 +2636,7 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public IdConfig map(int index, ResultSet r, StatementContext ctx)
+        public IdConfig map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             List<ConfigKey> resetKeys = null;
@@ -2651,20 +2651,20 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    static class ConfigResultSetMapper
-            implements ResultSetMapper<Config>
+    static class ConfigRowMapper
+            implements RowMapper<Config>
     {
         private final ConfigMapper cfm;
         private final String column;
 
-        public ConfigResultSetMapper(ConfigMapper cfm, String column)
+        public ConfigRowMapper(ConfigMapper cfm, String column)
         {
             this.cfm = cfm;
             this.column = column;
         }
 
         @Override
-        public Config map(int index, ResultSet r, StatementContext ctx)
+        public Config map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return cfm.fromResultSetOrEmpty(r, column);

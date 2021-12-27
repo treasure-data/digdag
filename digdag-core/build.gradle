@@ -14,7 +14,9 @@ dependencies {
         exclude group: 'com.google.inject', module: 'guice'
     }
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${project.ext.jacksonVersion}"
-    compile 'org.jdbi:jdbi:2.75'
+    compile 'org.jdbi:jdbi3-core:3.26.0'
+    compile 'org.jdbi:jdbi3-sqlobject:3.26.0'
+    compile 'org.jdbi:jdbi3-stringtemplate4:3.26.0'
     runtime 'org.antlr:stringtemplate:3.2.1' // Used by jdbi2's string template v3 at runtime
     compile 'com.zaxxer:HikariCP:2.4.7'
     compile 'com.h2database:h2:1.4.192'

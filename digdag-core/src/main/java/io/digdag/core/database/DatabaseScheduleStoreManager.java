@@ -12,24 +12,20 @@ import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.ac.AccessController;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.Define;
-import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-
-import javax.sql.DataSource;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.customizer.Define;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.stringtemplate4.UseStringTemplateEngine;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DatabaseScheduleStoreManager
@@ -243,13 +239,13 @@ public class DatabaseScheduleStoreManager
         }
     }
 
-    @UseStringTemplate3StatementLocator
+    @UseStringTemplateEngine
     public interface H2Dao
             extends Dao
     {
     }
 
-    @UseStringTemplate3StatementLocator
+    @UseStringTemplateEngine
     public interface PgDao
             extends Dao
     {
@@ -362,7 +358,7 @@ public class DatabaseScheduleStoreManager
     }
 
     static class StoredScheduleMapper
-            implements ResultSetMapper<StoredSchedule>
+            implements RowMapper<StoredSchedule>
     {
         private final ConfigMapper cfm;
 
@@ -372,7 +368,7 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public StoredSchedule map(int index, ResultSet r, StatementContext ctx)
+        public StoredSchedule map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredSchedule.builder()

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Jdbi;
 
 public class DatabaseSecretStoreManager
         implements SecretStoreManager

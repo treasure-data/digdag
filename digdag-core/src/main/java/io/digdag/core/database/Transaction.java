@@ -1,6 +1,6 @@
 package io.digdag.core.database;
 
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public interface Transaction
 {

@@ -1,6 +1,6 @@
 package io.digdag.core.database.migrate;
 
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20151204221156_CreateTables
         implements Migration
@@ -14,12 +14,12 @@ public class Migration_20151204221156_CreateTables
                 .mapTo(String.class)
                 .first();
             if (ver == null) {
-                handle.update("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+                handle.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
             }
         }
 
         // projects
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("projects")
                 .addIntId("id")
                 .addInt("site_id", "not null")
@@ -27,11 +27,11 @@ public class Migration_20151204221156_CreateTables
                 .addTimestamp("created_at", "not null")
                 //.addTimestamp("deleted_at", "not null")  // this points UNIXTIME 0 (1970-01-01 00:00:00 UTC) if this project is not deleted
                 .build());
-        handle.update("create unique index projects_on_site_id_and_name on projects (site_id, name)");
-        //handle.update("create unique index projects_on_site_id_and_name on projects (site_id, name, deleted_at)");
+        handle.execute("create unique index projects_on_site_id_and_name on projects (site_id, name)");
+        //handle.execute("create unique index projects_on_site_id_and_name on projects (site_id, name, deleted_at)");
 
         // revisions
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("revisions")
                 .addIntId("id")
                 .addInt("project_id", "not null references projects (id)")
@@ -43,18 +43,18 @@ public class Migration_20151204221156_CreateTables
                 .addBinary("archive_md5", "")
                 .addTimestamp("created_at", "not null")
                 .build());
-        handle.update("create unique index revisions_on_project_id_and_name on revisions (project_id, name)");
-        handle.update("create index revisions_on_project_id_and_id on revisions (project_id, id desc)");
+        handle.execute("create unique index revisions_on_project_id_and_name on revisions (project_id, name)");
+        handle.execute("create index revisions_on_project_id_and_id on revisions (project_id, id desc)");
 
         // revision_archives
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("revision_archives")
                 .addIntIdNoAutoIncrement("id", "references revisions (id)")
                 .addLongBinary("archive_data", "not null")
                 .build());
 
         // workflow_configs
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("workflow_configs")
                 .addIntId("id")
                 .addInt("project_id", "not null references projects (id)")
@@ -62,20 +62,20 @@ public class Migration_20151204221156_CreateTables
                 .addString("timezone", "not null")
                 .addMediumText("config", "not null")
                 .build());
-        handle.update("create index workflow_configs_on_project_id_and_config_digest on workflow_configs (project_id, config_digest)");
+        handle.execute("create index workflow_configs_on_project_id_and_config_digest on workflow_configs (project_id, config_digest)");
 
         // workflow_definitions
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("workflow_definitions")
                 .addLongId("id")
                 .addInt("config_id", "not null references workflow_configs (id)")
                 .addInt("revision_id", "not null references revisions (id)")
                 .addString("name", "not null")
                 .build());
-        handle.update("create unique index workflow_definitions_on_revision_id_and_name on workflow_definitions (revision_id, name)");
+        handle.execute("create unique index workflow_definitions_on_revision_id_and_name on workflow_definitions (revision_id, name)");
 
         // schedules
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("schedules")
                 .addIntId("id")
                 .addInt("project_id", "not null references projects (id)")
@@ -86,12 +86,12 @@ public class Migration_20151204221156_CreateTables
                 .addTimestamp("created_at", "not null")
                 .addTimestamp("updated_at", "not null")
                 .build());
-        handle.update("create index schedules_on_project_id on schedules (project_id)");
-        handle.update("create unique index schedules_on_workflow_definition_id on schedules (workflow_definition_id)");
-        handle.update("create index schedules_on_next_run_time on schedules (next_run_time)");
+        handle.execute("create index schedules_on_project_id on schedules (project_id)");
+        handle.execute("create unique index schedules_on_workflow_definition_id on schedules (workflow_definition_id)");
+        handle.execute("create index schedules_on_next_run_time on schedules (next_run_time)");
 
         // sessions
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("sessions")
                 .addLongId("id")
                 .addInt("project_id", "not null references projects (id)")
@@ -100,11 +100,11 @@ public class Migration_20151204221156_CreateTables
                 .addUuid("session_uuid", context.isPostgres() ? "not null default(uuid_generate_v4())" : "not null default(RANDOM_UUID())")
                 .addLong("last_attempt_id", "")
                 .build());
-        handle.update("create unique index sessions_on_project_id_and_workflow_name_and_session_time on sessions (project_id, workflow_name, session_time)");
-        handle.update("create index sessions_on_project_id on sessions (project_id, id)");
+        handle.execute("create unique index sessions_on_project_id_and_workflow_name_and_session_time on sessions (project_id, workflow_name, session_time)");
+        handle.execute("create index sessions_on_project_id on sessions (project_id, id)");
 
         // session_attempts
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("session_attempts")
                 .addLongId("id")
                 .addLong("session_id", "not null references sessions (id)")
@@ -117,13 +117,13 @@ public class Migration_20151204221156_CreateTables
                 .addMediumText("params", "")
                 .addTimestamp("created_at", "not null")
                 .build());
-        handle.update("create unique index session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
-        handle.update("create index session_attempts_on_site_id on session_attempts (site_id, id desc)");
-        handle.update("create index session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id desc)");
-        handle.update("create index session_attempts_on_project_id on session_attempts (project_id, id desc)");
+        handle.execute("create unique index session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
+        handle.execute("create index session_attempts_on_site_id on session_attempts (site_id, id desc)");
+        handle.execute("create index session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id desc)");
+        handle.execute("create index session_attempts_on_project_id on session_attempts (project_id, id desc)");
 
         // task_archives
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("task_archives")
                 .addLongIdNoAutoIncrement("id", "references session_attempts (id)")
                 .addLongText("tasks", "not null")  // collection of tasks, delete tasks transactionally when archived
@@ -131,7 +131,7 @@ public class Migration_20151204221156_CreateTables
                 .build());
 
         // session_monitors
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("session_monitors")
                 .addLongId("id")
                 .addLong("attempt_id", "not null")
@@ -141,11 +141,11 @@ public class Migration_20151204221156_CreateTables
                 .addTimestamp("created_at", "not null")
                 .addTimestamp("updated_at", "not null")
                 .build());
-        handle.update("create index session_monitors_on_attempt_id on session_monitors (attempt_id)");
-        handle.update("create index session_monitors_on_next_run_time on session_monitors (next_run_time)");
+        handle.execute("create index session_monitors_on_attempt_id on session_monitors (attempt_id)");
+        handle.execute("create index session_monitors_on_next_run_time on session_monitors (next_run_time)");
 
         // tasks
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("tasks")
                 .addLongId("id")
                 .addLong("attempt_id", "not null references session_attempts (id)")
@@ -158,19 +158,19 @@ public class Migration_20151204221156_CreateTables
                 .addTimestamp("retry_at", "")
                 .addMediumText("state_params", "")
                 .build());
-        handle.update("create index tasks_on_attempt_id on tasks (attempt_id, id)");
-        handle.update("create index tasks_on_parent_id_and_state on tasks (parent_id, state)");
+        handle.execute("create index tasks_on_attempt_id on tasks (attempt_id, id)");
+        handle.execute("create index tasks_on_parent_id_and_state on tasks (parent_id, state)");
         if (context.isPostgres()) {
             // for findTasksByState(PLANNED) at propagateAllPlannedToDone
             // for findTasksByState(READY) through findAllReadyTaskIds() at enqueueReadyTasks
-            handle.update("create index tasks_on_state_and_id on tasks (state, id) where state = 0 or state = 1 or state = 5");
+            handle.execute("create index tasks_on_state_and_id on tasks (state, id) where state = 0 or state = 1 or state = 5");
         }
         else {
             // for findTasksByState
-            handle.update("create index tasks_on_state_and_id on tasks (state, id)");
+            handle.execute("create index tasks_on_state_and_id on tasks (state, id)");
         }
 
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("task_details")
                 .addLongIdNoAutoIncrement("id", "references tasks (id)")
                 .addMediumText("full_name", "not null")
@@ -178,7 +178,7 @@ public class Migration_20151204221156_CreateTables
                 .addMediumText("export_config", "")
                 .build());
 
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("task_state_details")
                 .addLongIdNoAutoIncrement("id", "references tasks (id)")
                 .addMediumText("subtask_config", "")
@@ -189,16 +189,16 @@ public class Migration_20151204221156_CreateTables
                 .build());
 
         // task_dependencies
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("task_dependencies")
                 .addLongId("id")
                 .addLong("upstream_id", "not null")
                 .addLong("downstream_id", "not null")
                 .build());
-        handle.update("create index task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
+        handle.execute("create index task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
 
         // queue_settings
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("queue_settings")
                 .addIntId("id")
                 .addInt("site_id", "not null")
@@ -207,28 +207,28 @@ public class Migration_20151204221156_CreateTables
                 .addTimestamp("created_at", "not null")
                 .addTimestamp("updated_at", "not null")
                 .build());
-        handle.update("create unique index queue_settings_on_site_id_and_name on queue_settings (site_id, name)");
-        handle.update("create index queue_settings_on_site_id on queue_settings (site_id, id)");
+        handle.execute("create unique index queue_settings_on_site_id_and_name on queue_settings (site_id, name)");
+        handle.execute("create index queue_settings_on_site_id on queue_settings (site_id, id)");
 
         // queues
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("queues")
                 .addIntIdNoAutoIncrement("id", "references queue_settings (id)")
                 .addInt("max_concurrency", "not null")
                 .build());
 
         // resource_types
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("resource_types")
                 .addIntId("id")
                 .addInt("queue_id", "not null references queues (id)")
                 .addInt("max_concurrency", "not null")
                 .addString("name", "not null")
                 .build());
-        handle.update("create unique index resource_types_on_queue_id_and_name on resource_types (queue_id, name)");
+        handle.execute("create unique index resource_types_on_queue_id_and_name on resource_types (queue_id, name)");
 
         // queued_tasks
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("queued_tasks")
                 .addLongId("id")
                 .addInt("site_id", "not null")  // denormalized for performance
@@ -239,10 +239,10 @@ public class Migration_20151204221156_CreateTables
                 .addTimestamp("created_at", "not null")
                 .addLongBinary("data", "not null")
                 .build());
-        handle.update("create unique index queued_tasks_on_queue_id_task_id on queued_tasks (queue_id, task_id)");
+        handle.execute("create unique index queued_tasks_on_queue_id_task_id on queued_tasks (queue_id, task_id)");
 
         // queued_shared_task_locks
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("queued_shared_task_locks")
                 .addLongId("id")  // references queued_tasks.id
                 .addInt("queue_id", "not null")
@@ -254,7 +254,7 @@ public class Migration_20151204221156_CreateTables
                 .build());
 
         // queued_task_locks
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("queued_task_locks")
                 .addLongId("id")  // references queued_tasks.id
                 .addInt("queue_id", "not null")
@@ -266,18 +266,18 @@ public class Migration_20151204221156_CreateTables
                 .build());
 
         if (context.isPostgres()) {
-            handle.update("create index queued_shared_task_locks_grouping on queued_shared_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
-            handle.update("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
-            handle.update("create index queued_shared_task_locks_expiration on queued_shared_task_locks (hold_expire_time) where hold_expire_time is not null");
-            handle.update("create index queued_task_locks_grouping on queued_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
-            handle.update("create index queued_task_locks_ordering on queued_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
-            handle.update("create index queued_task_locks_expiration on queued_task_locks (hold_expire_time) where hold_expire_time is not null");
+            handle.execute("create index queued_shared_task_locks_grouping on queued_shared_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
+            handle.execute("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
+            handle.execute("create index queued_shared_task_locks_expiration on queued_shared_task_locks (hold_expire_time) where hold_expire_time is not null");
+            handle.execute("create index queued_task_locks_grouping on queued_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
+            handle.execute("create index queued_task_locks_ordering on queued_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
+            handle.execute("create index queued_task_locks_expiration on queued_task_locks (hold_expire_time) where hold_expire_time is not null");
         }
         else {
-            handle.update("create index queued_shared_task_locks_grouping on queued_shared_task_locks (hold_expire_time, queue_id, resource_type_id)");
-            handle.update("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, hold_expire_time, priority desc, id)");
-            handle.update("create index queued_task_locks_grouping on queued_task_locks (hold_expire_time, queue_id, resource_type_id)");
-            handle.update("create index queued_task_locks_ordering on queued_task_locks (queue_id, hold_expire_time, priority desc, id)");
+            handle.execute("create index queued_shared_task_locks_grouping on queued_shared_task_locks (hold_expire_time, queue_id, resource_type_id)");
+            handle.execute("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, hold_expire_time, priority desc, id)");
+            handle.execute("create index queued_task_locks_grouping on queued_task_locks (hold_expire_time, queue_id, resource_type_id)");
+            handle.execute("create index queued_task_locks_ordering on queued_task_locks (queue_id, hold_expire_time, priority desc, id)");
         }
     }
 }

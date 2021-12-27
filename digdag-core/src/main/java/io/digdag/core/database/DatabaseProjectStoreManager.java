@@ -31,15 +31,15 @@ import io.digdag.metrics.DigdagTimed;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.ac.AccessController;
 import org.immutables.value.Value;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.Define;
-import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.customizer.Define;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.stringtemplate4.UseStringTemplateEngine;
 
 import javax.activation.DataSource;
 
@@ -388,10 +388,10 @@ public class DatabaseProjectStoreManager
     }
 
     private static class IdTimeZoneMapper
-            implements ResultSetMapper<IdTimeZone>
+            implements RowMapper<IdTimeZone>
     {
         @Override
-        public IdTimeZone map(int index, ResultSet r, StatementContext ctx)
+        public IdTimeZone map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return new IdTimeZone(r.getLong("id"), ZoneId.of(r.getString("timezone")));
@@ -534,7 +534,7 @@ public class DatabaseProjectStoreManager
             // delete unused schedules
             if (!oldScheduleNames.isEmpty()) {
                 // those names don exist any more.
-                handle.createStatement(
+                handle.createUpdate(
                         "delete from schedules" +
                         " where id " + inLargeIdListExpression(oldScheduleNames.values())
                     )
@@ -550,7 +550,7 @@ public class DatabaseProjectStoreManager
         }
     }
 
-    @UseStringTemplate3StatementLocator
+    @UseStringTemplateEngine
     public interface H2Dao
             extends Dao
     {
@@ -609,7 +609,7 @@ public class DatabaseProjectStoreManager
                 @Define("acFilter") String acFilter);
     }
 
-    @UseStringTemplate3StatementLocator
+    @UseStringTemplateEngine
     public interface PgDao
             extends Dao
     {
@@ -928,7 +928,7 @@ public class DatabaseProjectStoreManager
     }
 
     static class StoredProjectMapper
-            implements ResultSetMapper<StoredProject>
+            implements RowMapper<StoredProject>
     {
         private final ConfigMapper cfm;
 
@@ -938,7 +938,7 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public StoredProject map(int index, ResultSet r, StatementContext ctx)
+        public StoredProject map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             String name = r.getString("name");
@@ -958,7 +958,7 @@ public class DatabaseProjectStoreManager
     }
 
     static class StoredProjectWithRevisionMapper
-            implements ResultSetMapper<StoredProjectWithRevision>
+            implements RowMapper<StoredProjectWithRevision>
     {
         private final ConfigMapper cfm;
 
@@ -968,7 +968,7 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public StoredProjectWithRevision map(int index, ResultSet r, StatementContext ctx)
+        public StoredProjectWithRevision map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             String name = r.getString("name");
@@ -992,7 +992,7 @@ public class DatabaseProjectStoreManager
     }
 
     static class StoredRevisionMapper
-            implements ResultSetMapper<StoredRevision>
+            implements RowMapper<StoredRevision>
     {
         private final ConfigMapper cfm;
 
@@ -1002,7 +1002,7 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public StoredRevision map(int index, ResultSet r, StatementContext ctx)
+        public StoredRevision map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredRevision.builder()
@@ -1020,7 +1020,7 @@ public class DatabaseProjectStoreManager
     }
 
     static class StoredWorkflowDefinitionMapper
-            implements ResultSetMapper<StoredWorkflowDefinition>
+            implements RowMapper<StoredWorkflowDefinition>
     {
         private final ConfigMapper cfm;
 
@@ -1030,7 +1030,7 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinition map(int index, ResultSet r, StatementContext ctx)
+        public StoredWorkflowDefinition map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredWorkflowDefinition.builder()
@@ -1044,7 +1044,7 @@ public class DatabaseProjectStoreManager
     }
 
     static class StoredWorkflowDefinitionWithProjectMapper
-            implements ResultSetMapper<StoredWorkflowDefinitionWithProject>
+            implements RowMapper<StoredWorkflowDefinitionWithProject>
     {
         private final ConfigMapper cfm;
 
@@ -1054,7 +1054,7 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinitionWithProject map(int index, ResultSet r, StatementContext ctx)
+        public StoredWorkflowDefinitionWithProject map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             String projName = r.getString("proj_name");
@@ -1084,10 +1084,10 @@ public class DatabaseProjectStoreManager
     }
 
     static class WorkflowConfigMapper
-            implements ResultSetMapper<WorkflowConfig>
+            implements RowMapper<WorkflowConfig>
     {
         @Override
-        public WorkflowConfig map(int index, ResultSet r, StatementContext ctx)
+        public WorkflowConfig map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableWorkflowConfig.builder()
@@ -1099,10 +1099,10 @@ public class DatabaseProjectStoreManager
     }
 
     static class IdNameMapper
-            implements ResultSetMapper<IdName>
+            implements RowMapper<IdName>
     {
         @Override
-        public IdName map(int index, ResultSet r, StatementContext ctx)
+        public IdName map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return IdName.of(r.getInt("id"), r.getString("name"));
@@ -1119,10 +1119,10 @@ public class DatabaseProjectStoreManager
     }
 
     static class ScheduleStatusMapper
-            implements ResultSetMapper<ScheduleStatus>
+            implements RowMapper<ScheduleStatus>
     {
         @Override
-        public ScheduleStatus map(int index, ResultSet r, StatementContext ctx)
+        public ScheduleStatus map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ScheduleStatus.of(

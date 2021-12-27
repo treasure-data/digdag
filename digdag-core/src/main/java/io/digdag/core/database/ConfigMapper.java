@@ -12,9 +12,10 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import io.digdag.commons.ThrowablesUtil;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.Argument;
-import org.skife.jdbi.v2.tweak.ArgumentFactory;
+import org.jdbi.v3.core.argument.AbstractArgumentFactory;
+import org.jdbi.v3.core.argument.Argument;
+import org.jdbi.v3.core.config.ConfigRegistry;
+import org.jdbi.v3.core.statement.StatementContext;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 
@@ -97,17 +98,15 @@ class ConfigMapper
         }
     }
 
-    public class ConfigArgumentFactory
-            implements ArgumentFactory<Config>
+    public class ConfigArgumentFactory extends AbstractArgumentFactory<Config>
     {
-        @Override
-        public boolean accepts(Class<?> expectedType, Object value, StatementContext ctx)
+        public ConfigArgumentFactory()
         {
-            return value instanceof Config;
+            super(Types.CLOB);
         }
 
         @Override
-        public Argument build(Class<?> expectedType, Config value, StatementContext ctx)
+        protected Argument build(Config value, ConfigRegistry config)
         {
             return new ConfigArgument(value);
         }

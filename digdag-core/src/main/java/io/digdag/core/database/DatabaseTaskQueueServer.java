@@ -21,12 +21,12 @@ import io.digdag.core.ErrorReporter;
 import io.digdag.core.log.LogMarkers;
 import io.digdag.spi.metrics.DigdagMetrics;
 import static io.digdag.spi.metrics.DigdagMetrics.Category;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.core.mapper.RowMapper;
 import io.digdag.spi.ImmutableTaskQueueLock;
 import io.digdag.spi.TaskQueueRequest;
 import io.digdag.spi.TaskQueueLock;
@@ -281,7 +281,7 @@ public class DatabaseTaskQueueServer
             else {
                 lockExpireTimeSql = statementUnixTimestampSql() + " + " + Integer.toString(lockSeconds);
             }
-            return handle.createStatement(
+            return handle.createUpdate(
                     "update queued_task_locks" +
                     " set lock_expire_time = " + lockExpireTimeSql +
                     " where id = :id" +
@@ -380,7 +380,7 @@ public class DatabaseTaskQueueServer
                             .bind("limit", count)
                             .mapTo(long.class)
                             .list();
-                    handle.createStatement(
+                    handle.createUpdate(
                             "update queued_task_locks" +
                             " set lock_expire_time = :expireTime, lock_agent_id = :agentId" +
                             " where id in (" +
@@ -421,7 +421,7 @@ public class DatabaseTaskQueueServer
         try {
             int c = autoCommit((handle, dao) -> {
                 if (isEmbededDatabase()) {
-                    return handle.createStatement(
+                    return handle.createUpdate(
                             "update queued_task_locks" +
                                     " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
                                     " where lock_expire_time is not null" +
@@ -431,7 +431,7 @@ public class DatabaseTaskQueueServer
                             .execute();
                 }
                 else {
-                    return handle.createStatement(
+                    return handle.createUpdate(
                             "update queued_task_locks" +
                                     " set lock_expire_time = NULL, lock_agent_id = NULL, retry_count = retry_count + 1" +
                                     " where lock_expire_time is not null" +
@@ -454,10 +454,10 @@ public class DatabaseTaskQueueServer
     }
 
     static class ImmutableTaskQueueLockMapper
-            implements ResultSetMapper<ImmutableTaskQueueLock>
+            implements RowMapper<ImmutableTaskQueueLock>
     {
         @Override
-        public ImmutableTaskQueueLock map(int index, ResultSet r, StatementContext ctx)
+        public ImmutableTaskQueueLock map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableTaskQueueLock.builder()

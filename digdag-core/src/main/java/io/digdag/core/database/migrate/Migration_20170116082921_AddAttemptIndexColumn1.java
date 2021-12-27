@@ -1,7 +1,7 @@
 package io.digdag.core.database.migrate;
 
 import java.util.List;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20170116082921_AddAttemptIndexColumn1
         implements Migration
@@ -9,7 +9,7 @@ public class Migration_20170116082921_AddAttemptIndexColumn1
     @Override
     public void migrate(Handle handle, MigrationContext context)
     {
-        handle.update("alter table session_attempts" +
+        handle.execute("alter table session_attempts" +
                 " add column index int");
     }
 }

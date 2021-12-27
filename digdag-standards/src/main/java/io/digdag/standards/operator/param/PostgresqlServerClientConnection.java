@@ -1,7 +1,7 @@
 package io.digdag.standards.operator.param;
 
 import io.digdag.spi.ParamServerClientConnection;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class PostgresqlServerClientConnection implements ParamServerClientConnection<Handle>
 {

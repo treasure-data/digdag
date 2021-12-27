@@ -1,6 +1,6 @@
 package io.digdag.core.database.migrate;
 
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20160623123456_AddUserInfoColumnToRevisions
         implements Migration
@@ -8,7 +8,7 @@ public class Migration_20160623123456_AddUserInfoColumnToRevisions
     @Override
     public void migrate(Handle handle, MigrationContext context)
     {
-        handle.update("alter table revisions" +
+        handle.execute("alter table revisions" +
                 " add column user_info text");
     }
 }
