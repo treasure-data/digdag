@@ -2,6 +2,7 @@ package io.digdag.core.database;
 
 import com.google.inject.Inject;
 import io.digdag.commons.ThrowablesUtil;
+import org.jdbi.v3.core.Handles;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.transaction.TransactionException;
@@ -62,7 +63,7 @@ public class ThreadLocalTransactionManager
             }
 
             if (handle == null) {
-                Jdbi dbi = Jdbi.create(ds);
+                Jdbi dbi = JdbiHelper.createJdbi(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
                 dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
                 dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredProjectWithRevisionMapper(configMapper));
@@ -94,6 +95,7 @@ public class ThreadLocalTransactionManager
                 handle = dbi.open();
 
                 try {
+                    handle.getConfig(Handles.class).setForceEndTransactions(false);
                     handle.getConnection().setAutoCommit(autoAutoCommit);
                 }
                 catch (SQLException ex) {

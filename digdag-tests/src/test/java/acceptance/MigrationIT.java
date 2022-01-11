@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.core.database.JdbiHelper;
 import io.digdag.core.database.migrate.Migration;
 import io.digdag.core.database.migrate.MigrationContext;
 import io.digdag.core.database.migrate.Migration_20151204221156_CreateTables;
@@ -49,7 +50,7 @@ public class MigrationIT
         try {
             server.setupDatabase();
             DataSource ds = server.getTestDBDataSource();
-            Jdbi dbi = Jdbi.create(ds);
+            Jdbi dbi = JdbiHelper.createJdbi(ds);
             DatabaseMigrator migrator = new DatabaseMigrator(dbi, server.getRemoteTestDatabaseConfig());
             MigrationContext context = new MigrationContext(migrator.getDatabaseType());
 
