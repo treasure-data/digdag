@@ -33,6 +33,7 @@ import io.digdag.spi.ac.AccessController;
 import org.immutables.value.Value;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.sqlobject.SingleValue;
 import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
@@ -754,6 +755,7 @@ public class DatabaseProjectStoreManager
                 " limit :limit")
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
+        @SingleValue
         @SqlQuery("select archive_data from revision_archives" +
                 " where id = :revId")
         byte[] selectRevisionArchiveData(@Bind("revId") int revId);

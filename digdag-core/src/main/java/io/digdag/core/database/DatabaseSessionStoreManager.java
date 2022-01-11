@@ -471,7 +471,7 @@ public class DatabaseSessionStoreManager
         return transaction((handle, dao) -> {
             Long locked = ifNotLocked ? dao.lockTaskIfNotLocked(taskId) : dao.lockTask(taskId);
             if (locked != null) {
-                T result = func.call(new DatabaseTaskControlStore(handle));
+                T result = func.call(new DatabaseTaskControlStore(handle, databaseType));
                 return Optional.of(result);
             }
             return Optional.<T>absent();
@@ -501,7 +501,7 @@ public class DatabaseSessionStoreManager
             if (locked != null) {
                 try {
                     StoredTask task = getTaskById(handle, taskId);
-                    T result = func.call(new DatabaseTaskControlStore(handle), task);
+                    T result = func.call(new DatabaseTaskControlStore(handle, databaseType), task);
                     return Optional.of(result);
                 }
                 catch (ResourceNotFoundException ex) {
@@ -783,7 +783,7 @@ public class DatabaseSessionStoreManager
                     dao.lockRootTask(attemptId),
                     "root task of attempt id=%d", attemptId);
             StoredTask task = getTaskById(handle, taskId);
-            T result = func.call(new DatabaseTaskControlStore(handle), task);
+            T result = func.call(new DatabaseTaskControlStore(handle, databaseType), task);
             return result;
         }
 
@@ -821,11 +821,18 @@ public class DatabaseSessionStoreManager
         private final Handle handle;
         private final Dao dao;
 
-        public DatabaseTaskControlStore(Handle handle)
+        public DatabaseTaskControlStore(Handle handle, String dbType)
         {
             this.handle = handle;
-            this.dao = handle.attach(Dao.class);
+            // JDBI3 does not accept Dao.class which is abstract.
+            if (dbType.equals("postgresql")) {
+                this.dao = handle.attach(PgDao.class);
+            }
+            else {
+                this.dao = handle.attach(H2Dao.class);
+            }
         }
+
 
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         @Override
@@ -951,7 +958,7 @@ public class DatabaseSessionStoreManager
                 return false;
             }
 
-            DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle);
+            DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle, databaseType);
             Map<Long, Long> oldIdToNewId = new HashMap<>();
             for (StoredTask task : tasks) {
                 Task newTask = Task.taskBuilder()
@@ -1013,7 +1020,9 @@ public class DatabaseSessionStoreManager
                 )
                 .bind("parentId", taskId)
                 .mapTo(Long.class)
-                .first() != null;
+                .findOne()
+                .isPresent();
+
         }
 
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
@@ -1046,7 +1055,8 @@ public class DatabaseSessionStoreManager
                 )
                 .bind("parentId", taskId)
                 .mapTo(Long.class)
-                .first() != null;
+                .findOne()
+                .isPresent();
         }
 
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
@@ -1075,21 +1085,21 @@ public class DatabaseSessionStoreManager
         @Override
         public boolean setStartedState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
-            long n = dao.setStartedState(taskId, beforeState.get(), afterState.get());
+            int n = dao.setStartedState(taskId, beforeState.get(), afterState.get());
             return n > 0;
         }
 
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setDoneState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
-            long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
+            int n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
             return n > 0;
         }
 
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setErrorStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error)
         {
-            long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
+            int n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
             if (n > 0) {
                 dao.setError(taskId, error);
                 return true;
@@ -1100,7 +1110,7 @@ public class DatabaseSessionStoreManager
         @DigdagTimed(value = "dtcst_", category = "db", appendMethodName = true)
         public boolean setPlannedStateSuccessful(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result)
         {
-            long n = dao.setState(taskId, beforeState.get(), afterState.get());
+            int n = dao.setState(taskId, beforeState.get(), afterState.get());
             if (n > 0) {
                 dao.setSuccessfulReport(taskId,
                         result.getSubtaskConfig(),
@@ -1552,7 +1562,7 @@ public class DatabaseSessionStoreManager
             long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get(), task.getStateFlags().get());  // tasks table don't have unique index
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
-            return func.call(new DatabaseTaskControlStore(handle), taskId);
+            return func.call(new DatabaseTaskControlStore(handle, databaseType), taskId);
         }
 
         @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)
@@ -2139,13 +2149,13 @@ public class DatabaseSessionStoreManager
                 " set updated_at = now(), state = :newState" +
                 " where id = :id" +
                 " and state = :oldState")
-        long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
+        int setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks" +
                 " set started_at = coalesce(started_at, now()), updated_at = now(), state = :newState" +
                 " where id = :id" +
                 " and state = :oldState")
-        long setStartedState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
+        int setStartedState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks" +
                 " set updated_at = now(), state = :newState" +
@@ -2156,17 +2166,17 @@ public class DatabaseSessionStoreManager
                 // * When the session is retried with resume, ResumingTask doesn't restore state_params.
                 " where id = :id" +
                 " and state = :oldState")
-        long setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
+        int setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update task_state_details" +
                 " set error = :error" +
                 " where id = :id")
-        long setError(@Bind("id") long taskId, @Bind("error") Config error);
+        int setError(@Bind("id") long taskId, @Bind("error") Config error);
 
         @SqlUpdate("update task_state_details" +
                 " set subtask_config = :subtaskConfig, export_params = :exportParams, store_params = :storeParams, report = :report, error = null, reset_store_params = :resetStoreParams" +
                 " where id = :id")
-        long setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("resetStoreParams") String resetStoreParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
+        int setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("resetStoreParams") String resetStoreParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
 
         @SqlUpdate("update tasks" +
                 " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
