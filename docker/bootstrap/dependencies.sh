@@ -17,12 +17,12 @@ apt-get -y install docker-compose
 
 # Postgres
 sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 7FCC7D46ACCC4CF8 # To fix failure at add-apt-repository
-add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
+add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main"
 wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 apt-get -y update
-apt-get -y install postgresql-9.5 postgresql-client-9.5
-cp pg_hba.conf /etc/postgresql/9.5/main/
-cp postgresql.conf /etc/postgresql/9.5/main/
+apt-get -y install postgresql-11 postgresql-client-11
+cp pg_hba.conf /etc/postgresql/11/main/
+cp postgresql.conf /etc/postgresql/11/main/
 /etc/init.d/postgresql start
 sudo -u postgres createuser -s digdag_test
 sudo -u postgres createdb -O digdag_test digdag_test
