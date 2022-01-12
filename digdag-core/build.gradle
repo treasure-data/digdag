@@ -14,10 +14,20 @@ dependencies {
         exclude group: 'com.google.inject', module: 'guice'
     }
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${project.ext.jacksonVersion}"
-    compile "org.jdbi:jdbi3-core:${project.ext.jdbi3Version}"
+    // Downgrade caffeine which jdbi3-core depends on to 2.x to support Java8
+    // If Digdag drop support of Java8, remove it.
+    compile ('com.github.ben-manes.caffeine:caffeine:2.9.3') {
+        version {
+            strictly '2.9.3'
+        }
+    }
+    compile ("org.jdbi:jdbi3-core:${project.ext.jdbi3Version}") {
+        exclude group: 'com.github.ben-manes.caffeine', module: 'caffeine'
+    }
     compile "org.jdbi:jdbi3-postgres:${project.ext.jdbi3Version}"
     compile "org.jdbi:jdbi3-sqlobject:${project.ext.jdbi3Version}"
     compile "org.jdbi:jdbi3-stringtemplate4:${project.ext.jdbi3Version}"
+
     runtime 'org.antlr:stringtemplate:3.2.1' // Used by jdbi2's string template v3 at runtime
     compile 'com.zaxxer:HikariCP:2.4.7'
     compile 'com.h2database:h2:1.4.192'
