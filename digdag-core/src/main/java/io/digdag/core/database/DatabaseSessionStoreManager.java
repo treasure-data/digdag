@@ -471,7 +471,7 @@ public class DatabaseSessionStoreManager
         return transaction((handle, dao) -> {
             Long locked = ifNotLocked ? dao.lockTaskIfNotLocked(taskId) : dao.lockTask(taskId);
             if (locked != null) {
-                T result = func.call(new DatabaseTaskControlStore(handle, databaseType));
+                T result = func.call(new DatabaseTaskControlStore(handle));
                 return Optional.of(result);
             }
             return Optional.<T>absent();
@@ -501,7 +501,7 @@ public class DatabaseSessionStoreManager
             if (locked != null) {
                 try {
                     StoredTask task = getTaskById(handle, taskId);
-                    T result = func.call(new DatabaseTaskControlStore(handle, databaseType), task);
+                    T result = func.call(new DatabaseTaskControlStore(handle), task);
                     return Optional.of(result);
                 }
                 catch (ResourceNotFoundException ex) {
@@ -783,7 +783,7 @@ public class DatabaseSessionStoreManager
                     dao.lockRootTask(attemptId),
                     "root task of attempt id=%d", attemptId);
             StoredTask task = getTaskById(handle, taskId);
-            T result = func.call(new DatabaseTaskControlStore(handle, databaseType), task);
+            T result = func.call(new DatabaseTaskControlStore(handle), task);
             return result;
         }
 
@@ -821,16 +821,11 @@ public class DatabaseSessionStoreManager
         private final Handle handle;
         private final Dao dao;
 
-        public DatabaseTaskControlStore(Handle handle, String dbType)
+        public DatabaseTaskControlStore(Handle handle)
         {
             this.handle = handle;
             // JDBI3 does not accept Dao.class which is abstract.
-            if (dbType.equals("postgresql")) {
-                this.dao = handle.attach(PgDao.class);
-            }
-            else {
-                this.dao = handle.attach(H2Dao.class);
-            }
+            this.dao = handle.attach(dao(databaseType));
         }
 
 
@@ -958,7 +953,7 @@ public class DatabaseSessionStoreManager
                 return false;
             }
 
-            DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle, databaseType);
+            DatabaseTaskControlStore store = new DatabaseTaskControlStore(handle);
             Map<Long, Long> oldIdToNewId = new HashMap<>();
             for (StoredTask task : tasks) {
                 Task newTask = Task.taskBuilder()
@@ -1562,7 +1557,7 @@ public class DatabaseSessionStoreManager
             long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get(), task.getStateFlags().get());  // tasks table don't have unique index
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
-            return func.call(new DatabaseTaskControlStore(handle, databaseType), taskId);
+            return func.call(new DatabaseTaskControlStore(handle), taskId);
         }
 
         @DigdagTimed(value = "dscst_", category = "db", appendMethodName = true)

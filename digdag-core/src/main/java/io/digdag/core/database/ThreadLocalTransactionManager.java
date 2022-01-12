@@ -63,7 +63,7 @@ public class ThreadLocalTransactionManager
             }
 
             if (handle == null) {
-                Jdbi dbi = JdbiHelper.createJdbi(ds);
+                Jdbi dbi = DatabaseHelper.createJdbi(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
                 dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
                 dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredProjectWithRevisionMapper(configMapper));

@@ -7,14 +7,18 @@ import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 import javax.sql.DataSource;
 
-public class JdbiHelper
+public class DatabaseHelper
 {
     public static Jdbi createJdbi(DataSource ds)
     {
         Jdbi jdbi = Jdbi.create(ds);
         jdbi.installPlugin(new SqlObjectPlugin());
-        jdbi.installPlugin(new PostgresPlugin());
-        jdbi.installPlugin(new H2DatabasePlugin());
+        if (ds.getClass().getCanonicalName().startsWith("org.h2")) {
+            jdbi.installPlugin(new H2DatabasePlugin());
+        }
+        else {
+            jdbi.installPlugin(new PostgresPlugin());
+        }
         return jdbi;
     }
 }

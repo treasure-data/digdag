@@ -73,7 +73,7 @@ public class DatabaseTestingUtils
         DatabaseConfig config = getEnvironmentDatabaseConfig();
         DataSourceProvider dsp = new DataSourceProvider(config);
 
-        Jdbi dbi = JdbiHelper.createJdbi(dsp.get());
+        Jdbi dbi = DatabaseHelper.createJdbi(dsp.get());
         TransactionManager tm = new ThreadLocalTransactionManager(dsp.get(), autoAutoCommit);
         // FIXME
         new DatabaseMigrator(dbi, config).migrate();

@@ -410,7 +410,7 @@ public class DatabaseProjectStoreManager
         {
             this.handle = handle;
             this.siteId = siteId;
-            this.dao = handle.attach(Dao.class);
+            this.dao = handle.attach(dao(databaseType));
         }
 
         /**

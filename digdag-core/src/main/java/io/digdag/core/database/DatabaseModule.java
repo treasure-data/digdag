@@ -51,7 +51,7 @@ public class DatabaseModule
         public AutoMigrator(DataSource ds, DatabaseConfig config)
         {
             if (config.getAutoMigrate()) {
-                this.migrator = new DatabaseMigrator(JdbiHelper.createJdbi(ds), config);
+                this.migrator = new DatabaseMigrator(DatabaseHelper.createJdbi(ds), config);
             }
         }
 
@@ -80,7 +80,7 @@ public class DatabaseModule
         @Override
         public Jdbi get()
         {
-            return JdbiHelper.createJdbi(ds);
+            return DatabaseHelper.createJdbi(ds);
         }
     }
 }
