@@ -111,8 +111,13 @@ public class DockerCommandExecutor
             command.add("--rm");  // remove container when exits
 
             // mount
-            command.add("-v").add(String.format(ENGLISH,
-                        "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
+            if (dockerConfig.get("selinux", Boolean.class, false)) {
+                command.add("-v").add(String.format(ENGLISH,
+                    "%s:%s:rw,Z", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
+            } else {
+                command.add("-v").add(String.format(ENGLISH,
+                    "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
+            }
 
             // working directory
             final Path workingDirectory = getAbsoluteWorkingDirectory(context, request); // absolute
