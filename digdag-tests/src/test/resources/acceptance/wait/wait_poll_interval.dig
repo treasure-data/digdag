@@ -1,0 +1,3 @@
++wait:
+  wait>: 10s
+  poll_interval: 5s
