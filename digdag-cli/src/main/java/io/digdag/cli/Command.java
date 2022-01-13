@@ -50,6 +50,9 @@ public abstract class Command
     @Parameter(names = {"-l", "--log-level"})
     protected String logLevel = "info";
 
+    @Parameter(names = {"--logback-config"})
+    protected String logbackConfigPath = null;
+
     @DynamicParameter(names = "-X")
     protected Map<String, String> systemProperties = new HashMap<>();
 

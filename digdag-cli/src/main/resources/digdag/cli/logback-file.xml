@@ -16,6 +16,7 @@
 
   <logger name="io.netty.util" level="INFO"/>
   <logger name="io.netty.buffer" level="INFO"/>
+  <logger name="com.zaxxer.hikari" level="INFO"/>
 
   <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
   </appender>
