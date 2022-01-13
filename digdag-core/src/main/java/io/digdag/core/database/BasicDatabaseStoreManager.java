@@ -12,9 +12,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import io.digdag.commons.ThrowablesUtil;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
-import org.skife.jdbi.v2.exceptions.TransactionFailedException;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
+import org.jdbi.v3.core.transaction.TransactionException;
 import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,7 +194,7 @@ public abstract class BasicDatabaseStoreManager <D>
             ThrowablesUtil.propagateIfInstanceOf(ex, exClass2);
             ThrowablesUtil.propagateIfInstanceOf(ex, exClass3);
             ThrowablesUtil.propagateIfPossible(ex);
-            throw new TransactionFailedException(
+            throw new TransactionException(
                     "Transaction failed due to exception being thrown " +
                             "from within the callback. See cause " +
                             "for the original exception.", ex);

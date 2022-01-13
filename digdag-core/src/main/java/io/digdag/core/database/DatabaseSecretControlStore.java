@@ -4,11 +4,11 @@ import com.google.common.base.Optional;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.database.DatabaseSecretStore.EncryptedSecret;
 import io.digdag.spi.SecretControlStore;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 import java.util.List;
 import static java.util.Locale.ENGLISH;

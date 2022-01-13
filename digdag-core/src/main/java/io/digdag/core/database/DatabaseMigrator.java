@@ -2,9 +2,8 @@ package io.digdag.core.database;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.exceptions.StatementException;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.Handle;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,16 +45,16 @@ public class DatabaseMigrator
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());
 
-    private final DBI dbi;
+    private final Jdbi dbi;
     private final String databaseType;
 
     @Inject
-    public DatabaseMigrator(DBI dbi, DatabaseConfig config)
+    public DatabaseMigrator(Jdbi dbi, DatabaseConfig config)
     {
         this(dbi, config.getType());
     }
 
-    DatabaseMigrator(DBI dbi, String databaseType)
+    DatabaseMigrator(Jdbi dbi, String databaseType)
     {
         this.dbi = dbi;
         this.databaseType = databaseType;
@@ -139,10 +138,10 @@ public class DatabaseMigrator
             }
             else {
                 // Start transaction -> Lock table -> Re-check migration status -> migrate
-                return handle.inTransaction((h, session) -> {
+                return handle.inTransaction((h) -> {
                     if (context.isPostgres()) {
                         // lock tables not to run migration concurrently.
-                        h.update("LOCK TABLE schema_migrations IN EXCLUSIVE MODE");
+                        h.execute("LOCK TABLE schema_migrations IN EXCLUSIVE MODE");
                         // re-check migration status after lock
                         if (!checkIfMigrationApplied(h, m.getVersion())) {
                             logger.info("Applying database migration:" + m.getVersion());
@@ -208,7 +207,7 @@ public class DatabaseMigrator
     @VisibleForTesting
     public void createSchemaMigrationsTable(Handle handle, MigrationContext context)
     {
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("schema_migrations")
                 .addString("name", "not null")
                 .addTimestamp("created_at", "not null")
@@ -240,7 +239,7 @@ public class DatabaseMigrator
     public void applyMigration(Migration m, Handle handle, MigrationContext context)
     {
         m.migrate(handle, context);
-        handle.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
+        handle.execute("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
     }
 
     @VisibleForTesting

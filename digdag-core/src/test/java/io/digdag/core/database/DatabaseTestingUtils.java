@@ -10,9 +10,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
 import io.digdag.commons.ThrowablesUtil;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.IDBI;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.Handle;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
@@ -74,7 +73,7 @@ public class DatabaseTestingUtils
         DatabaseConfig config = getEnvironmentDatabaseConfig();
         DataSourceProvider dsp = new DataSourceProvider(config);
 
-        DBI dbi = new DBI(dsp.get());
+        Jdbi dbi = DatabaseHelper.createJdbi(dsp.get());
         TransactionManager tm = new ThreadLocalTransactionManager(dsp.get(), autoAutoCommit);
         // FIXME
         new DatabaseMigrator(dbi, config).migrate();
@@ -106,25 +105,25 @@ public class DatabaseTestingUtils
     {
         cleanDatabase(
                 embed.getInjector().getInstance(DatabaseConfig.class).getType(),
-                embed.getInjector().getInstance(DBI.class));
+                embed.getInjector().getInstance(Jdbi.class));
     }
 
-    public static void cleanDatabase(String databaseType, IDBI dbi)
+    public static void cleanDatabase(String databaseType, Jdbi dbi)
     {
         try (Handle handle = dbi.open()) {
             switch (databaseType) {
             case "h2":
                 // h2 database can't truncate tables with references if REFERENTIAL_INTEGRITY is true (default)
-                handle.createStatement("SET REFERENTIAL_INTEGRITY FALSE").execute();
+                handle.createUpdate("SET REFERENTIAL_INTEGRITY FALSE").execute();
                 for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
-                    handle.createStatement("TRUNCATE TABLE " + name).execute();
+                    handle.createUpdate("TRUNCATE TABLE " + name).execute();
                 }
-                handle.createStatement("SET REFERENTIAL_INTEGRITY TRUE").execute();
+                handle.createUpdate("SET REFERENTIAL_INTEGRITY TRUE").execute();
                 break;
             default:
                 // postgresql needs "CASCADE" option to TRUNCATE
                 for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
-                    handle.createStatement("TRUNCATE " + name + " CASCADE").execute();
+                    handle.createUpdate("TRUNCATE " + name + " CASCADE").execute();
                 }
                 break;
             }

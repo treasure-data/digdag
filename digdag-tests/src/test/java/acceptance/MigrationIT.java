@@ -1,14 +1,15 @@
 package acceptance;
 
 import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.core.database.DatabaseHelper;
 import io.digdag.core.database.migrate.Migration;
 import io.digdag.core.database.migrate.MigrationContext;
 import io.digdag.core.database.migrate.Migration_20151204221156_CreateTables;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.Handle;
 import utils.TemporaryDigdagServer;
 
 import javax.sql.DataSource;
@@ -49,7 +50,7 @@ public class MigrationIT
         try {
             server.setupDatabase();
             DataSource ds = server.getTestDBDataSource();
-            DBI dbi = new DBI(ds);
+            Jdbi dbi = DatabaseHelper.createJdbi(ds);
             DatabaseMigrator migrator = new DatabaseMigrator(dbi, server.getRemoteTestDatabaseConfig());
             MigrationContext context = new MigrationContext(migrator.getDatabaseType());
 

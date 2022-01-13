@@ -1,7 +1,7 @@
 package io.digdag.core.database.migrate;
 
 import java.util.List;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20170116090744_AddAttemptIndexColumn2
         implements Migration
@@ -10,7 +10,7 @@ public class Migration_20170116090744_AddAttemptIndexColumn2
     public void migrate(Handle handle, MigrationContext context)
     {
         if (context.isPostgres()) {
-            handle.update(
+            handle.execute(
                     "update session_attempts set index = seq.index " +
                     "from (" +
                         "select id, rank() over (partition by session_id order by id) as index from session_attempts" +
@@ -20,7 +20,7 @@ public class Migration_20170116090744_AddAttemptIndexColumn2
         else {
             List<IdAndSessionId> list =
                 handle.createQuery("select id, session_id from session_attempts order by session_id, id")
-                .map((index, r, ctx) -> new IdAndSessionId(r.getLong("id"), r.getLong("session_id")))
+                .map((r, ctx) -> new IdAndSessionId(r.getLong("id"), r.getLong("session_id")))
                 .list();
             long lastSessionId = 0L;
             long lastIndex = 0;
@@ -30,17 +30,17 @@ public class Migration_20170116090744_AddAttemptIndexColumn2
                     lastIndex = 0;
                 }
                 lastIndex++;
-                handle.createStatement("update session_attempts set index = :index where id = :id")
+                handle.createUpdate("update session_attempts set index = :index where id = :id")
                     .bind("id", s.id)
                     .bind("index", lastIndex)
                     .execute();
             }
         }
 
-        handle.update("alter table session_attempts" +
+        handle.execute("alter table session_attempts" +
                 " alter column index set not null");
 
-        handle.update("create unique index session_attempts_on_session_id_and_index on session_attempts (session_id, index desc)");
+        handle.execute("create unique index session_attempts_on_session_id_and_index on session_attempts (session_id, index desc)");
     }
 
     private static class IdAndSessionId

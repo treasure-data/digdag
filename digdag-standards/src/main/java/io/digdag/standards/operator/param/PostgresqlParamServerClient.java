@@ -8,7 +8,7 @@ import io.digdag.spi.ParamServerClient;
 import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
 import io.digdag.spi.ValueType;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 import java.util.HashMap;
 import java.util.function.Consumer;
@@ -69,7 +69,7 @@ public class PostgresqlParamServerClient
             throw ThrowablesUtil.propagate(e);
         }
 
-        handle.insert(
+        handle.execute(
                 "insert into params (key, value, value_type, site_id, created_at, updated_at) values (?, ?, ?, ?, now(), now()) " +
                         "on conflict on constraint params_site_id_key_uniq do update set value = ?, updated_at = now()",
                 key, jsonValue, ValueType.STRING.ordinal(), siteId, jsonValue); // value_type is fixed to ValueType.STRING for now

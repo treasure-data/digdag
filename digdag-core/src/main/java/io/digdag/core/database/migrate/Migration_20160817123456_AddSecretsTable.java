@@ -1,6 +1,6 @@
 package io.digdag.core.database.migrate;
 
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20160817123456_AddSecretsTable
         implements Migration
@@ -8,7 +8,7 @@ public class Migration_20160817123456_AddSecretsTable
     @Override
     public void migrate(Handle handle, MigrationContext context)
     {
-        handle.update(
+        handle.execute(
                 context.newCreateTableBuilder("secrets")
                         .addLongId("id")
                         .addLong("site_id", "not null")
@@ -20,6 +20,6 @@ public class Migration_20160817123456_AddSecretsTable
                         .addTimestamp("updated_at", "not null")
                         .build());
 
-        handle.update("create index secrets_on_site_id_and_project_id_and_scope_and_key on secrets (site_id, project_id, scope, key)");
+        handle.execute("create index secrets_on_site_id_and_project_id_and_scope_and_key on secrets (site_id, project_id, scope, key)");
     }
 }

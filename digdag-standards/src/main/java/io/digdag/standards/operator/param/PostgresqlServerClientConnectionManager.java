@@ -11,11 +11,11 @@ import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.ParamServerClientConnectionManager;
 import io.digdag.spi.Record;
 import io.digdag.spi.ValueType;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.exceptions.TransactionFailedException;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.core.transaction.TransactionException;
+import org.jdbi.v3.core.mapper.RowMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +29,14 @@ public class PostgresqlServerClientConnectionManager
 {
     private AutoCloseable closer;
     private Config systemConfig;
-    private DBI dbi;
+    private Jdbi dbi;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     class RecordMapper
-            implements ResultSetMapper<Record>
+            implements RowMapper<Record>
     {
         @Override
-        public Record map(int index, ResultSet r, StatementContext ctx)
+        public Record map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -60,7 +60,7 @@ public class PostgresqlServerClientConnectionManager
 
         HikariDataSource ds = createDataSourceWithConnectionPool();
         this.closer = ds;
-        this.dbi = new DBI(ds);
+        this.dbi = Jdbi.create(ds);
         registerMapper();
         initializeTables();
     }
@@ -73,7 +73,7 @@ public class PostgresqlServerClientConnectionManager
             handle.getConnection().setAutoCommit(false);
         }
         catch (SQLException ex) {
-            throw new TransactionFailedException("Failed to set auto commit: " + false, ex);
+            throw new TransactionException("Failed to set auto commit: " + false, ex);
         }
         handle.begin();
 
@@ -118,7 +118,7 @@ public class PostgresqlServerClientConnectionManager
 
     private void registerMapper()
     {
-        dbi.registerMapper(new PostgresqlServerClientConnectionManager.RecordMapper());
+        dbi.registerRowMapper(new PostgresqlServerClientConnectionManager.RecordMapper());
     }
 
     private void initializeTables()
@@ -127,7 +127,7 @@ public class PostgresqlServerClientConnectionManager
         try (Handle handle = dbi.open()) {
             Map<String, Object> tableExists = handle.createQuery(
                     "select 1 from information_schema.tables where table_name = 'params'"
-            ).first();
+            ).mapToMap().first();
             if (tableExists != null) {
                 return;
             }

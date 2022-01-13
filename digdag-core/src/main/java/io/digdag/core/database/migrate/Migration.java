@@ -2,7 +2,7 @@ package io.digdag.core.database.migrate;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public interface Migration
 {

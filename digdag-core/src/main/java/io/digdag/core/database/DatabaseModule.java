@@ -11,7 +11,7 @@ import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.session.SessionStoreManager;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Jdbi;
 
 public class DatabaseModule
         implements Module
@@ -29,7 +29,7 @@ public class DatabaseModule
         binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(AutoMigrator.class);
-        binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
+        binder.bind(Jdbi.class).toProvider(DbiProvider.class);  // don't make this singleton because Jdbi.registerMapper is called for each StoreManager
         binder.bind(TransactionManager.class).to(ThreadLocalTransactionManager.class).in(Scopes.SINGLETON);
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
@@ -51,7 +51,7 @@ public class DatabaseModule
         public AutoMigrator(DataSource ds, DatabaseConfig config)
         {
             if (config.getAutoMigrate()) {
-                this.migrator = new DatabaseMigrator(new DBI(ds), config);
+                this.migrator = new DatabaseMigrator(DatabaseHelper.createJdbi(ds), config);
             }
         }
 
@@ -66,7 +66,7 @@ public class DatabaseModule
     }
 
     public static class DbiProvider
-            implements Provider<DBI>
+            implements Provider<Jdbi>
     {
         private final DataSource ds;
 
@@ -78,9 +78,9 @@ public class DatabaseModule
         }
 
         @Override
-        public DBI get()
+        public Jdbi get()
         {
-            return new DBI(ds);
+            return DatabaseHelper.createJdbi(ds);
         }
     }
 }

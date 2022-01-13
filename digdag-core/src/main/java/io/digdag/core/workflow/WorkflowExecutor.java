@@ -575,6 +575,7 @@ public class WorkflowExecutor
             return func.get();
         }
         catch (Exception e) {
+            e.printStackTrace();
             catchingNotify(e);
             metrics.increment(Category.EXECUTOR, "errorInRunWhile");
             logger.warn(errorMessage);

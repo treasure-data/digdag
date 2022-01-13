@@ -2,9 +2,10 @@ package io.digdag.core.database;
 
 import com.google.inject.Inject;
 import io.digdag.commons.ThrowablesUtil;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.exceptions.TransactionFailedException;
+import org.jdbi.v3.core.Handles;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.transaction.TransactionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,43 +63,43 @@ public class ThreadLocalTransactionManager
             }
 
             if (handle == null) {
-                DBI dbi = new DBI(ds);
+                Jdbi dbi = DatabaseHelper.createJdbi(ds);
                 ConfigKeyListMapper cklm = new ConfigKeyListMapper();
-                dbi.registerMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
-                dbi.registerMapper(new DatabaseProjectStoreManager.StoredProjectWithRevisionMapper(configMapper));
-                dbi.registerMapper(new DatabaseProjectStoreManager.StoredRevisionMapper(configMapper));
-                dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionMapper(configMapper));
-                dbi.registerMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionWithProjectMapper(configMapper));
-                dbi.registerMapper(new DatabaseProjectStoreManager.WorkflowConfigMapper());
-                dbi.registerMapper(new DatabaseProjectStoreManager.IdNameMapper());
-                dbi.registerMapper(new DatabaseProjectStoreManager.ScheduleStatusMapper());
-                dbi.registerMapper(new DatabaseQueueSettingStoreManager.StoredQueueSettingMapper(configMapper));
-                dbi.registerMapper(new DatabaseScheduleStoreManager.StoredScheduleMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredTaskMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.ArchivedTaskMapper(cklm, configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.ResumingTaskMapper(cklm, configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredSessionMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredSessionWithLastAttemptMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredSessionAttemptMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredSessionAttemptWithSessionMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.TaskStateSummaryMapper());
-                dbi.registerMapper(new DatabaseSessionStoreManager.TaskAttemptSummaryMapper());
-                dbi.registerMapper(new DatabaseSessionStoreManager.SessionAttemptSummaryMapper());
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredSessionMonitorMapper(configMapper));
-                dbi.registerMapper(new DatabaseSessionStoreManager.StoredDelayedSessionAttemptMapper());
-                dbi.registerMapper(new DatabaseSessionStoreManager.TaskRelationMapper());
-                dbi.registerMapper(new DatabaseSessionStoreManager.InstantMapper());
-                dbi.registerMapper(new DatabaseSecretStore.ScopedSecretMapper());
-                dbi.registerMapper(new DatabaseTaskQueueServer.ImmutableTaskQueueLockMapper());
-
-                dbi.registerArgumentFactory(configMapper.getArgumentFactory());
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredProjectMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredProjectWithRevisionMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredRevisionMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.StoredWorkflowDefinitionWithProjectMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.WorkflowConfigMapper());
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.IdNameMapper());
+                dbi.registerRowMapper(new DatabaseProjectStoreManager.ScheduleStatusMapper());
+                dbi.registerRowMapper(new DatabaseQueueSettingStoreManager.StoredQueueSettingMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseScheduleStoreManager.StoredScheduleMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredTaskMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.ArchivedTaskMapper(cklm, configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.ResumingTaskMapper(cklm, configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredSessionMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredSessionWithLastAttemptMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredSessionAttemptMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredSessionAttemptWithSessionMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.TaskStateSummaryMapper());
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.TaskAttemptSummaryMapper());
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.SessionAttemptSummaryMapper());
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredSessionMonitorMapper(configMapper));
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.StoredDelayedSessionAttemptMapper());
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.TaskRelationMapper());
+                dbi.registerRowMapper(new DatabaseSessionStoreManager.InstantMapper());
+                dbi.registerRowMapper(new DatabaseSecretStore.ScopedSecretMapper());
+                dbi.registerRowMapper(new DatabaseTaskQueueServer.ImmutableTaskQueueLockMapper());
+                dbi.registerArgument(configMapper.getArgumentFactory());
                 handle = dbi.open();
 
                 try {
+                    handle.getConfig(Handles.class).setForceEndTransactions(false);
                     handle.getConnection().setAutoCommit(autoAutoCommit);
                 }
                 catch (SQLException ex) {
-                    throw new TransactionFailedException("Failed to set auto commit: " + autoAutoCommit, ex);
+                    throw new TransactionException("Failed to set auto commit: " + autoAutoCommit, ex);
                 }
                 if (!autoAutoCommit) {
                     handle.begin();
@@ -129,11 +130,11 @@ public class ThreadLocalTransactionManager
                 isValid = handle.getConnection().isValid(30);
             }
             catch (SQLException ex) {
-                throw new TransactionFailedException(
+                throw new TransactionException(
                         "Can't validate a transaction before commit", ex);
             }
             if (!isValid) {
-                throw new TransactionFailedException(
+                throw new TransactionException(
                         "Trying to commit a transaction that is already aborted. " +
                                 "Because current transaction is aborted, commands including " +
                                 "commit are ignored until end of transaction block.");

@@ -8,8 +8,9 @@ import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.core.database.DatabaseHelper;
 import io.digdag.core.database.migrate.Migration;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Jdbi;
 
 import java.nio.file.Paths;
 import java.util.List;
@@ -33,7 +34,7 @@ public class Migrate
         checkArgs();
         DatabaseConfig dbConfig = DatabaseConfig.convertFrom(buildConfig());
         try (DataSourceProvider dsp = new DataSourceProvider(dbConfig)) {
-            DBI dbi = new DBI(dsp.get());
+            Jdbi dbi = DatabaseHelper.createJdbi(dsp.get());
             DatabaseMigrator migrator = new DatabaseMigrator(dbi, dbConfig);
             switch (subCommand) {
                 case RUN:

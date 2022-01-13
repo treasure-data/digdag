@@ -5,7 +5,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Jdbi;
 
 public class DatabaseSecretControlStoreManager
         implements SecretControlStoreManager

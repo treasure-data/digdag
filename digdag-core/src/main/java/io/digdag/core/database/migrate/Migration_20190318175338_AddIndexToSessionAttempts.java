@@ -1,6 +1,6 @@
 package io.digdag.core.database.migrate;
 
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20190318175338_AddIndexToSessionAttempts
         implements Migration
@@ -10,7 +10,7 @@ public class Migration_20190318175338_AddIndexToSessionAttempts
     {
         // DatabaseSessionStoreManager.getActiveAttemptCount uses this index.
         if (context.isPostgres()) {
-            handle.update("create index concurrently session_attempts_on_site_id_and_state_flags_partial_2 on session_attempts"
+            handle.execute("create index concurrently session_attempts_on_site_id_and_state_flags_partial_2 on session_attempts"
                     + " using btree(site_id) where state_flags & 2 = 0");
         }
         else {

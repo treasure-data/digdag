@@ -1,6 +1,6 @@
 package io.digdag.core.database.migrate;
 
-import org.skife.jdbi.v2.Handle;
+import org.jdbi.v3.core.Handle;
 
 public class Migration_20200716114008_AddLastAttemptIdIndexToSessions
     implements Migration
@@ -9,9 +9,9 @@ public class Migration_20200716114008_AddLastAttemptIdIndexToSessions
     public void migrate(Handle handle, MigrationContext context)
     {
         if (context.isPostgres()) {
-            handle.update("create index concurrently sessions_on_last_attempt_id on sessions (last_attempt_id)");
+            handle.execute("create index concurrently sessions_on_last_attempt_id on sessions (last_attempt_id)");
         } else {
-            handle.update("create index sessions_on_last_attempt_id on sessions (last_attempt_id)");
+            handle.execute("create index sessions_on_last_attempt_id on sessions (last_attempt_id)");
         }
     }
 

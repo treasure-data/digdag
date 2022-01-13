@@ -4,24 +4,17 @@ import java.util.List;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import com.google.common.base.*;
-import com.google.common.collect.*;
 import com.google.inject.Inject;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.queue.QueueSettingStore;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.queue.StoredQueueSetting;
 import io.digdag.core.queue.ImmutableStoredQueueSetting;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.client.config.Config;
-import io.digdag.core.repository.ResourceConflictException;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.core.mapper.RowMapper;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public class DatabaseQueueSettingStoreManager
@@ -129,7 +122,7 @@ public class DatabaseQueueSettingStoreManager
     }
 
     static class StoredQueueSettingMapper
-            implements ResultSetMapper<StoredQueueSetting>
+            implements RowMapper<StoredQueueSetting>
     {
         private final ConfigMapper cfm;
 
@@ -139,7 +132,7 @@ public class DatabaseQueueSettingStoreManager
         }
 
         @Override
-        public StoredQueueSetting map(int index, ResultSet r, StatementContext ctx)
+        public StoredQueueSetting map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return ImmutableStoredQueueSetting.builder()

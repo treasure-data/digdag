@@ -3,7 +3,6 @@ package io.digdag.core.database;
 import java.util.*;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
-import org.skife.jdbi.v2.IDBI;
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;

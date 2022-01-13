@@ -3,11 +3,11 @@ package io.digdag.core.database;
 import com.google.common.base.Optional;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.spi.SecretStore;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.core.mapper.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -71,10 +71,10 @@ class DatabaseSecretStore
     }
 
     static class ScopedSecretMapper
-            implements ResultSetMapper<EncryptedSecret>
+            implements RowMapper<EncryptedSecret>
     {
         @Override
-        public EncryptedSecret map(int index, ResultSet r, StatementContext ctx)
+        public EncryptedSecret map(ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return new EncryptedSecret(r.getString("engine"), r.getString("value"));
