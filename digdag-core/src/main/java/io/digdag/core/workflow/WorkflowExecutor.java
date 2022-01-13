@@ -1158,6 +1158,8 @@ public class WorkflowExecutor
                 .config(params)
                 .lastStateParams(task.getStateParams())
                 .workflowDefinitionId(attempt.getWorkflowDefinitionId())
+                .retryCount(task.getRetryCount())
+                .startedAt(task.getStartedAt())
                 .build();
 
             return Optional.of(request);

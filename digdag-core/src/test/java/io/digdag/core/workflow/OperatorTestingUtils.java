@@ -85,6 +85,7 @@ public class OperatorTestingUtils
             .config(newConfig())
             .localConfig(config)
             .lastStateParams(newConfig())
+            .retryCount(0)
             .build();
     }
 
