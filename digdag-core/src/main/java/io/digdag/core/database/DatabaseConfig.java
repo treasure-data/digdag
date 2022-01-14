@@ -88,6 +88,8 @@ public interface DatabaseConfig
                     .loginTimeout(config.get(keyPrefix + "." + "loginTimeout", int.class, 30))
                     .socketTimeout(config.get(keyPrefix + "." + "socketTimeout", int.class, 1800))
                     .ssl(config.get(keyPrefix + "." + "ssl", boolean.class, false))
+                    .sslfactory(config.get(keyPrefix + "." + "sslfactory", String.class, "org.postgresql.ssl.NonValidatingFactory"))
+                    .sslmode(config.getOptional(keyPrefix + "." + "sslmode", String.class))
                     .build()));
             break;
         default:
@@ -169,6 +171,8 @@ public interface DatabaseConfig
                 config.set(keyPrefix + "." + "loginTimeout", remoteDatabaseConfig.getLoginTimeout());
                 config.set(keyPrefix + "." + "socketTimeout", remoteDatabaseConfig.getSocketTimeout());
                 config.set(keyPrefix + "." + "ssl", remoteDatabaseConfig.getSsl());
+                config.set(keyPrefix + "." + "sslfactory", remoteDatabaseConfig.getSslfactory());
+                config.setOptional(keyPrefix + "." + "sslmode", remoteDatabaseConfig.getSslmode());
                 break;
             default:
                 throw new AssertionError("Unknown database.type: " + databaseConfig.getType());
@@ -268,7 +272,10 @@ public interface DatabaseConfig
             props.setProperty("password", rc.get().getPassword());
             if (rc.get().getSsl()) {
                 props.setProperty("ssl", "true");
-                props.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");  // disable server certificate validation
+                props.setProperty("sslfactory", rc.get().getSslfactory());
+                if (rc.get().getSslmode().isPresent()) {
+                    props.setProperty("sslmode", rc.get().getSslmode().get());
+                }
             }
         }
 
