@@ -10,7 +10,7 @@ apply plugin: 'idea'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.10.3'
+    version = '0.10.4'
 
     ext {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
