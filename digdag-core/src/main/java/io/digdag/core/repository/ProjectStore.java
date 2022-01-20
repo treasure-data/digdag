@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ProjectStore
 {
-    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
+    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter);
 
     List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter);
 

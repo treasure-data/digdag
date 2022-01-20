@@ -125,11 +125,6 @@ public class DatabaseProjectStoreManager
             this.siteId = siteId;
         }
 
-        //public List<StoredProject> getAllProjects()
-        //{
-        //    return dao.getProjects(siteId, Integer.MAX_VALUE, 0);
-        //}
-
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
         public List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
@@ -139,9 +134,9 @@ public class DatabaseProjectStoreManager
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
-        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
+        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0), generatePartialMatchPattern(namePattern), acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
@@ -710,6 +705,7 @@ public class DatabaseProjectStoreManager
                 " where proj.site_id = :siteId" +
                 " and proj.name is not null" +
                 " and proj.id \\> :lastId" +
+                " and proj.name like :namePattern" +
                 " and <acFilter>" +
                 " order by proj.id asc" +
                 " limit :limit")
@@ -717,6 +713,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
 
         List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);

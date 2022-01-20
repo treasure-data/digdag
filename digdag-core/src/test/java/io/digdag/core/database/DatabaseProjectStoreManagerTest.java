@@ -11,8 +11,10 @@ import io.digdag.core.repository.ProjectControl;
 import io.digdag.core.repository.ProjectMap;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredProjectWithRevision;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
@@ -26,6 +28,7 @@ import org.junit.Test;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static io.digdag.core.database.DatabaseTestingUtils.assertConflict;
 import static io.digdag.core.database.DatabaseTestingUtils.assertEmpty;
@@ -225,10 +228,10 @@ public class DatabaseProjectStoreManagerTest
             ////
             // public simple listings
             //
-            assertEquals(ImmutableList.of(proj1, proj2), store.getProjects(100, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(proj1), store.getProjects(1, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId()), () -> "true"));
-            assertEmpty(anotherSite.getProjects(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj1, proj2), store.getProjects(100, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj1), store.getProjects(1, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId()), Optional.absent(), () -> "true"));
+            assertEmpty(anotherSite.getProjects(100, Optional.absent(), Optional.absent(), () -> "true"));
 
             assertEquals(ImmutableList.of(proj1Rev1, proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.absent(), () -> "true"));
             assertEquals(ImmutableList.of(proj1Rev1), store.getProjectsWithLatestRevision(1, Optional.absent(), () -> "true"));
@@ -428,7 +431,7 @@ public class DatabaseProjectStoreManagerTest
             assertNotFound(() -> store.getProjectByName(deletingProject.getName()));
 
             // listing doesn't include deleted projects
-            assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent(), Optional.absent(), () -> "true"));
             assertEquals(ImmutableList.of(), store.getProjectsWithLatestRevision(100, Optional.absent(), () -> "true"));
             assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
 
@@ -454,5 +457,59 @@ public class DatabaseProjectStoreManagerTest
 
             assertNotEquals(sameName.getId(), deletingProject.getId());
         });
+    }
+
+    @Test
+    public void testGetProjects()
+            throws Exception
+    {
+        factory.begin(() -> {
+            StoredProject proj1 = createTestProject("proj1abc", "proj1_rev1", "proj1_wf1");
+            StoredProject proj2 = createTestProject("proj2def", "proj2_rev1", "proj2_wf1");
+            StoredProject proj3 = createTestProject("proj3ghi", "proj3_rev1", "proj3_wf1");
+            StoredProject proj4 = createTestProject("other4jkl", "other4_rev1", "other4_wf1");
+            List<StoredProject> projects;
+
+            projects = store.getProjects(100, Optional.absent(), Optional.absent(), () -> "true");
+            assertEquals(ImmutableList.of("proj1abc", "proj2def", "proj3ghi", "other4jkl"), projects.stream().map( (x) -> x.getName()).collect(Collectors.toList()));
+
+            // Check pageSize
+            projects = store.getProjects(2, Optional.absent(), Optional.absent(), () -> "true");
+            assertEquals(ImmutableList.of("proj1abc", "proj2def"), projects.stream().map( (x) -> x.getName()).collect(Collectors.toList()));
+
+            // Check lastId
+            projects = store.getProjects(2, Optional.of(proj2.getId()), Optional.absent(), () -> "true");
+            assertEquals(ImmutableList.of("proj3ghi", "other4jkl"), projects.stream().map( (x) -> x.getName()).collect(Collectors.toList()));
+
+            // Check namePattern
+            projects = store.getProjects(100, Optional.absent(), Optional.of("proj"), () -> "true");
+            assertEquals(ImmutableList.of("proj1abc", "proj2def", "proj3ghi"), projects.stream().map( (x) -> x.getName()).collect(Collectors.toList()));
+
+            // Check namePattern
+            projects = store.getProjects(100, Optional.absent(), Optional.of("ghi"), () -> "true");
+            assertEquals(ImmutableList.of("proj3ghi"), projects.stream().map( (x) -> x.getName()).collect(Collectors.toList()));
+
+            // Check combination
+            projects = store.getProjects(100, Optional.of(proj1.getId()), Optional.of("proj"), () -> "true");
+            assertEquals(ImmutableList.of("proj2def", "proj3ghi"), projects.stream().map( (x) -> x.getName()).collect(Collectors.toList()));
+        });
+    }
+
+    private StoredProject createTestProject(String projectName, String revision, String workflowName)
+            throws ResourceConflictException
+    {
+        Project srcProj1 = Project.of(projectName);
+        Revision srcRev1 = createRevision(revision);
+        WorkflowDefinition srcWf1 = createWorkflow(workflowName);
+        return store.putAndLockProject(
+                srcProj1,
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+                    assertNotConflict(() -> {
+                        StoredRevision rev1 = lock.insertRevision(srcRev1);
+                        lock.insertWorkflowDefinitions(rev1, ImmutableList.of(srcWf1), sm, Instant.now());
+                    });
+                    return lock.get();
+                });
     }
 }
