@@ -233,10 +233,10 @@ public class DatabaseProjectStoreManagerTest
             assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId()), Optional.absent(), () -> "true"));
             assertEmpty(anotherSite.getProjects(100, Optional.absent(), Optional.absent(), () -> "true"));
 
-            assertEquals(ImmutableList.of(proj1Rev1, proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(proj1Rev1), store.getProjectsWithLatestRevision(1, Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.of(proj1.getId()), () -> "true"));
-            assertEmpty(anotherSite.getProjectsWithLatestRevision(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj1Rev1, proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj1Rev1), store.getProjectsWithLatestRevision(1, Optional.absent(), Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(proj2Rev3), store.getProjectsWithLatestRevision(100, Optional.of(proj1.getId()), Optional.absent(), () -> "true"));
+            assertEmpty(anotherSite.getProjectsWithLatestRevision(100, Optional.absent(), Optional.absent(), () -> "true"));
 
             assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(proj2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
             assertEquals(ImmutableList.of(rev3), store.getRevisions(proj2.getId(), 1, Optional.absent()));
@@ -432,7 +432,7 @@ public class DatabaseProjectStoreManagerTest
 
             // listing doesn't include deleted projects
             assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent(), Optional.absent(), () -> "true"));
-            assertEquals(ImmutableList.of(), store.getProjectsWithLatestRevision(100, Optional.absent(), () -> "true"));
+            assertEquals(ImmutableList.of(), store.getProjectsWithLatestRevision(100, Optional.absent(), Optional.absent(), () -> "true"));
             assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.absent(), () -> "true"));
 
             // lookup by project/revision id succeeds and deletedAt is set

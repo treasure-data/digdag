@@ -280,7 +280,10 @@ public class ProjectResource
                             siteTarget,
                             getAuthenticatedUser());
 
-                    collection = ps.getProjectsWithLatestRevision(100, Optional.absent(),
+                    collection = ps.getProjectsWithLatestRevision(
+                                Optional.fromNullable(count).or(100),
+                                Optional.fromNullable(lastId),
+                                Optional.fromNullable(namePattern),
                                 ac.getListProjectsFilterOfSite(siteTarget, getAuthenticatedUser()))
                             .stream()
                             .map(projWithRev -> {

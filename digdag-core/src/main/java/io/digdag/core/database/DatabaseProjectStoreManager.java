@@ -127,9 +127,9 @@ public class DatabaseProjectStoreManager
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
-        public List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
+        public List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getProjectsWithLatestRevision(siteId, pageSize, lastId.or(0), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getProjectsWithLatestRevision(siteId, pageSize, lastId.or(0), generatePartialMatchPattern(namePattern), acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
@@ -584,7 +584,12 @@ public class DatabaseProjectStoreManager
         " and proj.id > :lastId" +
         " order by proj.id asc" +
         " limit :limit")
-        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
+                @Define("acFilter") String acFilter);
 
         // h2's MERGE doesn't return generated id when conflicting row already exists
         @SqlUpdate("merge into projects" +
@@ -647,7 +652,12 @@ public class DatabaseProjectStoreManager
         " where projects_with_revision.revision_id = projects_with_revision.max_revision_id" +
         " order by id asc" +
         " limit :limit")
-        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
+                @Define("acFilter") String acFilter);
 
         @SqlQuery("insert into projects" +
                 " (site_id, name, created_at)" +
@@ -716,7 +726,12 @@ public class DatabaseProjectStoreManager
                 @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
 
-        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
+                @Define("acFilter") String acFilter);
 
         @SqlUpdate("update projects" +
                 " set deleted_name = name, deleted_at = now(), name = NULL" +
