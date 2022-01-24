@@ -580,6 +580,7 @@ public class DatabaseProjectStoreManager
         ") a on a.id = rev.id" +
         " where proj.site_id = :siteId" +
         " and proj.name is not null" +
+        " and proj.name like :namePattern" +
         " and <acFilter>" +
         " and proj.id > :lastId" +
         " order by proj.id asc" +
@@ -646,6 +647,7 @@ public class DatabaseProjectStoreManager
             " join revisions rev on proj.id = rev.project_id" +
             " where proj.site_id = :siteId" +
             " and proj.name is not null" +
+            " and proj.name like :namePattern" +
             " and <acFilter>" +
             " and proj.id > :lastId" +
         ") as projects_with_revision" +
