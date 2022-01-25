@@ -1,4 +1,4 @@
-/// <reference path="./packages.d.ts"/>
+import './packages.d.ts'
 
 import './style.less'
 
@@ -18,7 +18,7 @@ import {
   Switch,
   withRouter,
   matchPath,
-  RouteComponentProps,
+  RouteComponentProps
 } from 'react-router-dom'
 import Measure from 'react-measure'
 import Tar from 'tar-js'
@@ -63,66 +63,66 @@ import {
   setup as setupModel
 } from './model'
 
-type Scrubber = (args:{key: string, value: string}) => string
+// FIXME
+/* eslint-disable @typescript-eslint/strict-boolean-expressions, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-floating-promises, react/no-deprecated */
+
+type Scrubber = (args: {key: string, value: string}) => string
 
 const refreshIntervalMillis = 5000
 
 const isDevelopmentEnv = process.env.NODE_ENV !== 'production'
 
-type AuthItem = {
-  key: string;
-  name: string;
-  type: string;
-  validate: (args:{
-    key: string;
-    value: string;
-    valid: (key:string) => void;
-    invalid: (key:string) => void;
-  }) => void;
-  scrub: Scrubber;
+interface AuthItem {
+  key: string
+  name: string
+  type: string
+  validate: (args: {
+    key: string
+    value: string
+    valid: (key: string) => void
+    invalid: (key: string) => void
+  }) => void
+  scrub: Scrubber
 }
 
-/* eslint-disable */
-// because of the global type, this results in an eslint error (when it's not)
-type ConsoleConfig = {
-  url: string;
+interface ConsoleConfig {
+  url: string
   td: {
-    useTD: boolean;
-    apiV4: string,
-    jobUrl: (id:string) => string;
-    connectorUrl: (id:string) => string;
-    queryUrl: (id:string) => string;
-  },
-  logoutUrl?: string,
+    useTD: boolean
+    apiV4: string
+    jobUrl: (id: string) => string
+    connectorUrl: (id: string) => string
+    queryUrl: (id: string) => string
+  }
+  logoutUrl?: string
   navbar?: {
-    className?: string;
-    brand?: string;
-    logo?: string;
-    style?: Object;
-  };
+    className?: string
+    brand?: string
+    logo?: string
+    style?: Object
+  }
   auth: {
-    title: string;
-    items: Array<AuthItem>;
-  };
-  headers: HeadersProvider;
+    title: string
+    items: AuthItem[]
+  }
+  headers: HeadersProvider
 }
 
-declare var DIGDAG_CONFIG:ConsoleConfig;
-/* eslint-enable */
+declare let DIGDAG_CONFIG: ConsoleConfig
 
-function MaybeWorkflowLink ({ workflow } : { workflow: NameOptionalId }) {
+function MaybeWorkflowLink ({ workflow }: { workflow: NameOptionalId }) {
   if (workflow.id) {
     return <Link to={`/workflows/${workflow.id}`}>{workflow.name}</Link>
   }
   return <span>{workflow.name}</span>
 }
 
-type CodeViewerProps = {
-  className?: string;
-  language: string;
-  value: string;
-  editorOptions: Object;
-  style?: any; // NOTE: seems unused, but some callers pass it
+interface CodeViewerProps {
+  className?: string
+  language: string
+  value: string
+  editorOptions: Object
+  style?: any // NOTE: seems unused, but some callers pass it
 }
 
 class CodeViewer extends React.Component<CodeViewerProps> {
@@ -140,15 +140,14 @@ class CodeViewer extends React.Component<CodeViewerProps> {
     }
   }
 
-  /* eslint-disable */
-  editor?: HTMLElement | null; // standard does not have definition of flow.dom.HTMLElement
-  /* eslint-enable */
+  editor?: HTMLElement | null // standard does not have definition of flow.dom.HTMLElement
 
-  _editor: any; // we have no definition for AceEditor
+  _editor: any // we have no definition for AceEditor
 
   constructor (props: CodeViewerProps) {
     super(props)
     // Uses ace 1.1.9.
+    /* eslint-disable @typescript-eslint/no-var-requires */
     const Ace = require('brace')
     require('brace/ext/language_tools')
     require('brace/ext/linking')
@@ -157,6 +156,7 @@ class CodeViewer extends React.Component<CodeViewerProps> {
     require('brace/mode/yaml')
     require('brace/mode/python')
     require('brace/mode/scala')
+    /* eslint-enable @typescript-eslint/no-var-requires */
     Ace.acequire('ace/ext/language_tools')
     Ace.acequire('ace/ext/linking')
   }
@@ -170,8 +170,10 @@ class CodeViewer extends React.Component<CodeViewerProps> {
   }
 
   componentDidMount () {
+    /* eslint-disable @typescript-eslint/no-var-requires */
     const Ace = require('brace')
     require('./ace-digdag')
+    /* eslint-enable @typescript-eslint/no-var-requires */
     this._editor = Ace.edit(this.editor)
     this._editor.setOptions(this.props.editorOptions)
     this._editor.$blockScrolling = Infinity
@@ -216,7 +218,7 @@ class CodeViewer extends React.Component<CodeViewerProps> {
     this._editor.resize(true)
   }
 
-  render () {
+  render (): React.ReactElement {
     const { className } = this.props
     return (
       <div
@@ -228,7 +230,7 @@ class CodeViewer extends React.Component<CodeViewerProps> {
   }
 }
 
-type CodeEditorProps = {
+interface CodeEditorProps {
   className?: string
   language: string
   value: string
@@ -237,9 +239,9 @@ type CodeEditorProps = {
 }
 
 class CodeEditor extends React.Component<CodeEditorProps> {
-  _editor: any;
+  _editor: any
 
-  render () {
+  render (): React.ReactElement {
     const editorOptions = {
       enableLinking: false,
       highlightActiveLine: true,
@@ -252,7 +254,8 @@ class CodeEditor extends React.Component<CodeEditorProps> {
     )
   }
 
-  getValue () {
+  getValue (): any {
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
     return this._editor && this._editor.getValue()
   }
 }
@@ -260,10 +263,10 @@ class CodeEditor extends React.Component<CodeEditorProps> {
 class CacheLoader extends React.Component {
   state = {
     hasCache: false
-  };
+  }
 
   componentWillMount () {
-    model().fillTDQueryCache().then(() => {
+    model().fillTDQueryCache().then((): void => {
       this.setState({ hasCache: true })
     })
   }
@@ -283,12 +286,11 @@ class CacheLoader extends React.Component {
   }
 }
 
-type ProjectListViewProps = {
-  projects: Array<Project>;
+interface ProjectListViewProps {
+  projects: Project[]
 }
 
 class ProjectListView extends React.Component<ProjectListViewProps> {
-
   render () {
     const projectRows = this.props.projects.map(project =>
       <tr key={project.id}>
@@ -316,17 +318,20 @@ class ProjectListView extends React.Component<ProjectListViewProps> {
   }
 }
 
-type WorkflowListViewProps = {
-  workflows: Array<Workflow>;
+interface WorkflowListViewProps {
+  workflows: Workflow[]
 }
 
 class WorkflowListView extends React.Component<WorkflowListViewProps> {
-
   render () {
     const rows = this.props.workflows.map(workflow =>
       <tr key={workflow.id}>
-        <td><Link
-          to={`/projects/${workflow.project.id}/workflows/${encodeURIComponent(workflow.name)}`}>{workflow.name}</Link>
+        <td>
+          <Link
+            to={`/projects/${workflow.project.id}/workflows/${encodeURIComponent(workflow.name)}`}
+          >
+            {workflow.name}
+          </Link>
         </td>
         <td>{workflow.revision}</td>
         <td>{workflow.project.name}</td>
@@ -351,7 +356,7 @@ class WorkflowListView extends React.Component<WorkflowListViewProps> {
   }
 }
 
-type AttemptStatusViewProps = {
+interface AttemptStatusViewProps {
   attempt: Attempt
 }
 
@@ -374,45 +379,45 @@ const AttemptStatusView: React.FC<AttemptStatusViewProps> = ({ attempt }) => {
 }
 
 function attemptCanRetryAll (attempt: Attempt | Session['lastAttempt'] | undefined) {
-  if (!attempt) {
+  if (attempt == null) {
     return false
   }
   return attempt.done || attempt.cancelRequested
 }
 
 function attemptCanResume (attempt: Attempt | Session['lastAttempt'] | undefined) {
-  if (!attempt) {
+  if (attempt == null) {
     return false
   }
   return attempt.done && !attempt.success
 }
 
 function attemptCanBeKilled (attempt: Attempt | null) {
-  if (!attempt) {
+  if (attempt == null) {
     return false
   }
   return !attempt.done && !attempt.cancelRequested
 }
 
-const SessionStatusView = ({ session }:{session: Session}) => {
+const SessionStatusView = ({ session }: {session: Session}) => {
   const attempt = session.lastAttempt as Attempt
   return attempt
     ? <Link to={`/attempts/${attempt.id}`}><AttemptStatusView attempt={attempt} /></Link>
     : <span><FontAwesomeIcon icon={faSyncAlt} className='text-info' /> Pending</span>
 }
 
-type SessionStatusViewProps = {
+interface SessionStatusViewProps {
   session: Session
 }
 
 class SessionRevisionView extends React.Component<SessionStatusViewProps> {
-  ignoreLastFetch?:boolean;
+  ignoreLastFetch?: boolean
 
   state: {
     workflow: Workflow | null
   } = {
     workflow: null
-  };
+  }
 
   componentDidMount () {
     this.fetchWorkflow()
@@ -434,7 +439,7 @@ class SessionRevisionView extends React.Component<SessionStatusViewProps> {
     if (!id) {
       return
     }
-    model().fetchWorkflow(id).then(workflow => {
+    model().fetchWorkflow(id).then((workflow): void => {
       if (!this.ignoreLastFetch) {
         this.setState({ workflow })
       }
@@ -442,18 +447,17 @@ class SessionRevisionView extends React.Component<SessionStatusViewProps> {
   }
 
   render () {
-    return this.state.workflow
+    return (this.state.workflow != null)
       ? <span>{this.state.workflow.revision}</span>
       : <span />
   }
 }
 
-type AttemptListViewProps = {
-  attempts: Array<Attempt>;
+interface AttemptListViewProps {
+  attempts: Attempt[]
 }
 
 class AttemptListView extends React.Component<AttemptListViewProps> {
-
   render () {
     const rows = this.props.attempts.map(attempt => {
       return (
@@ -493,16 +497,15 @@ class AttemptListView extends React.Component<AttemptListViewProps> {
   }
 }
 
-type SessionListViewProps = {
-  sessions: Array<Session>;
+interface SessionListViewProps {
+  sessions: Session[]
 }
 
 class SessionListView extends React.Component<SessionListViewProps> {
-
   render () {
     const rows = this.props.sessions.map(session => {
-      const lastAttemptCreatedAt = session.lastAttempt ? session.lastAttempt.createdAt : null
-      const lastAttemptFinishedAt = session.lastAttempt ? session.lastAttempt.finishedAt : null
+      const lastAttemptCreatedAt = (session.lastAttempt != null) ? session.lastAttempt.createdAt : null
+      const lastAttemptFinishedAt = (session.lastAttempt != null) ? session.lastAttempt.finishedAt : null
       return (
         <tr key={session.id}>
           <td><Link to={`/sessions/${session.id}`}>{session.id}</Link></td>
@@ -541,13 +544,12 @@ class SessionListView extends React.Component<SessionListViewProps> {
   }
 }
 
-type ScheduleListViewProps = {
-  workflowName: string;
-  projectId: string;
+interface ScheduleListViewProps {
+  workflowName: string
+  projectId: string
 }
 
 class ScheduleListView extends React.Component<ScheduleListViewProps> {
-
   state: {
     schedules: Schedule[]
   }
@@ -571,7 +573,7 @@ class ScheduleListView extends React.Component<ScheduleListViewProps> {
 
   disableSchedule () {
     const { schedules } = this.state
-    if (!schedules || !schedules.length) {
+    if (!schedules || (schedules.length === 0)) {
       return
     }
     model()
@@ -581,7 +583,7 @@ class ScheduleListView extends React.Component<ScheduleListViewProps> {
 
   enableSchedule () {
     const { schedules } = this.state
-    if (!schedules || !schedules.length) {
+    if (!schedules || (schedules.length === 0)) {
       return
     }
     model()
@@ -591,6 +593,7 @@ class ScheduleListView extends React.Component<ScheduleListViewProps> {
 
   render () {
     const { schedules } = this.state
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
     const hasSchedule = schedules && schedules.length
     const isPaused = hasSchedule && !_.get(schedules, ['0', 'disabledAt'])
     const rows = (schedules || []).map(schedule => {
@@ -605,21 +608,23 @@ class ScheduleListView extends React.Component<ScheduleListViewProps> {
         </tr>
       )
     })
-    const statusButton = isPaused ? (
-      <button
-        className='btn btn-sm btn-secondary float-right'
-        onClick={this.disableSchedule.bind(this)}
-      >
-        PAUSE
-      </button>
-    ) : (
-      <button
-        className='btn btn-sm btn-success float-right'
-        onClick={this.enableSchedule.bind(this)}
-      >
-        RESUME
-      </button>
-    )
+    const statusButton = isPaused
+      ? (
+        <button
+          className='btn btn-sm btn-secondary float-right'
+          onClick={this.disableSchedule.bind(this)}
+        >
+          PAUSE
+        </button>
+        )
+      : (
+        <button
+          className='btn btn-sm btn-success float-right'
+          onClick={this.enableSchedule.bind(this)}
+        >
+          RESUME
+        </button>
+        )
     return (
       <div>
         <h2 className='d-inline-flex'>
@@ -652,7 +657,7 @@ class ScheduleListView extends React.Component<ScheduleListViewProps> {
 class ProjectsView extends React.Component {
   state = {
     projects: []
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -675,28 +680,29 @@ class ProjectsView extends React.Component {
   }
 }
 
-type StatusFilterProps = {
+interface StatusFilterProps {
   sessions: Session[]
   children: (sessions: Session[]) => React.ReactNode
 }
 
 class StatusFilter extends React.Component<StatusFilterProps> {
+  // eslint-disable-next-line @typescript-eslint/no-extraneous-class
   static Status = class Status {
-    static ALL = 'All';
-    static SUCCESS = 'Success';
-    static FAILURE = 'Failure';
-    static PENDING = 'Pending';
-    static CANCELED = 'Canceled';
-    static CANCELING = 'Canceling';
+    static ALL = 'All'
+    static SUCCESS = 'Success'
+    static FAILURE = 'Failure'
+    static PENDING = 'Pending'
+    static CANCELED = 'Canceled'
+    static CANCELING = 'Canceling'
 
     static allStatus () {
       return [Status.ALL, Status.SUCCESS, Status.FAILURE, Status.PENDING, Status.CANCELED, Status.CANCELING]
     }
-  };
+  }
 
   state = {
     selectedStatus: StatusFilter.Status.ALL
-  };
+  }
 
   filterSessionsByStatus (sessions: Session[], selectedStatus: string) {
     switch (selectedStatus) {
@@ -725,9 +731,9 @@ class StatusFilter extends React.Component<StatusFilterProps> {
         <form className='form-inline mb-2'>
           <label className='control-label pr-2'>
             Status:
-            {<select className='form-control form-control-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
+            <select className='form-control form-control-sm' onChange={(e) => this.setState({ selectedStatus: e.target.value })}>
               {StatusFilter.Status.allStatus().map(s => <option key={s} value={s}>{s}</option>)}
-          </select>}
+            </select>
           </label>
         </form>
         {childrenWithProps}
@@ -736,14 +742,13 @@ class StatusFilter extends React.Component<StatusFilterProps> {
   }
 }
 
-type SessionsPaginationProps = {
+interface SessionsPaginationProps {
   isOldest: boolean
   onClickLatest: () => void
   onClickOlder: () => void
 }
 
 class SessionsPagination extends React.Component<SessionsPaginationProps> {
-
   render () {
     return (
       <div className='d-flex justify-content-center'>
@@ -759,7 +764,7 @@ class SessionsPagination extends React.Component<SessionsPaginationProps> {
 }
 
 class SessionsView extends React.Component {
-  static pageSize = 100;
+  static pageSize = 100
 
   state: {
     sessions: Session[]
@@ -768,7 +773,7 @@ class SessionsView extends React.Component {
   } = {
     sessions: [],
     isOldest: false
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -784,7 +789,7 @@ class SessionsView extends React.Component {
     model().fetchSessions(SessionsView.pageSize, this.state.lastId).then(({ sessions }) => {
       this.setState({ sessions })
       const last = _.last(sessions)
-      if (!last) return []
+      if (last == null) return []
       return model().fetchSessions(1, last.id).then(olderOne => olderOne.sessions)
     }).then((olderOne) => {
       this.setState({ isOldest: olderOne.length === 0 })
@@ -808,7 +813,7 @@ class SessionsView extends React.Component {
     return (
       <div>
         <h2>Sessions</h2>
-        <StatusFilter sessions={this.state.sessions} >
+        <StatusFilter sessions={this.state.sessions}>
           {(sessions) => <SessionListView sessions={sessions} />}
         </StatusFilter>
         <SessionsPagination isOldest={this.state.isOldest} onClickLatest={() => this.showLatest()} onClickOlder={() => this.showOlder()} />
@@ -818,22 +823,22 @@ class SessionsView extends React.Component {
   }
 }
 
-type ProjectViewProps = {
-  projectId: string;
+interface ProjectViewProps {
+  projectId: string
 }
 
 class ProjectView extends React.Component<ProjectViewProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    project: Project | {},
-    workflows: Workflow[],
+    project: Project | {}
+    workflows: Workflow[]
     sessions: Session[]
   } = {
     project: {},
     workflows: [],
     sessions: []
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -928,20 +933,20 @@ class ProjectView extends React.Component<ProjectViewProps> {
   }
 }
 
-type WorkflowViewProps = {
-  workflow: Workflow;
+interface WorkflowViewProps {
+  workflow: Workflow
 }
 
 class WorkflowView extends React.Component<WorkflowViewProps> {
-  ignoreLastFetch:boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    sessions: Session[], 
-    projectArchive: ProjectArchive | null,
+    sessions: Session[]
+    projectArchive: ProjectArchive | null
   } = {
     sessions: [],
     projectArchive: null
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -972,7 +977,7 @@ class WorkflowView extends React.Component<WorkflowViewProps> {
   }
 
   definition () {
-    if (!this.state.projectArchive) {
+    if (this.state.projectArchive == null) {
       return ''
     }
     const workflow = this.state.projectArchive.getWorkflow(this.props.workflow.name)
@@ -1030,14 +1035,13 @@ class WorkflowView extends React.Component<WorkflowViewProps> {
               <pre className='mb-0'>
                 <code>
                   <Measure>
-                    { ({ width }: any) =>
+                    {({ width }: any) =>
                       <CodeViewer
                         className='definition'
                         language='digdag'
                         value={this.definition()}
                         style={{ width }}
-                      />
-                    }
+                      />}
                   </Measure>
                 </code>
               </pre>
@@ -1060,20 +1064,20 @@ class WorkflowView extends React.Component<WorkflowViewProps> {
   }
 }
 
-type TaskFile = {
-  name: string;
-  taskType: string;
-  fileType: string;
-};
+interface TaskFile {
+  name: string
+  taskType: string
+  fileType: string
+}
 
-function task (node:any) {
+function task (node: any) {
   let command = ''
-  let taskType= node['_type'] || ''
+  let taskType = node._type || ''
   if (taskType) {
-    command = node['_command']
+    command = node._command
   } else {
     const operators = ['td', 'td_load', 'sh', 'rb', 'py', 'mail', 'redshift']
-    for (let operator of operators) {
+    for (const operator of operators) {
       command = node[operator + '>'] || ''
       if (command) {
         taskType = operator
@@ -1090,14 +1094,14 @@ function task (node:any) {
   return { taskType, command }
 }
 
-function resolveTaskFile (taskType:string, command:string, task:Object, projectArchive:ProjectArchive): TaskFile | null {
+function resolveTaskFile (taskType: string, command: string, task: Object, projectArchive: ProjectArchive): TaskFile | null {
   // TODO: resolve paths relative from the workflow file
   // TODO: make operators provide information about files used in a structured way instead of this hack
   let filename = ''
   const cmd = path.normalize(command)
   _.forEach(projectArchive.files, function (p) {
     // check the cmd contains filename
-    if (cmd.indexOf(p.name) !== -1) {
+    if (cmd.includes(p.name)) {
       filename = p.name
     }
   })
@@ -1105,14 +1109,14 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
     return null
   }
   const fileTypes: any = {
-    'td': 'sql',
-    'td_load': 'yaml',
-    'sh': 'bash',
-    'py': 'python',
-    'rb': 'ruby',
-    'spark': 'python',
-    'redshift': 'sql',
-    'mail': (task as any)['html'] ? 'html' : 'txt'
+    td: 'sql',
+    td_load: 'yaml',
+    sh: 'bash',
+    py: 'python',
+    rb: 'ruby',
+    spark: 'python',
+    redshift: 'sql',
+    mail: (task as any).html ? 'html' : 'txt'
   }
   const fileType = fileTypes[taskType]
   if (!fileType) {
@@ -1121,41 +1125,41 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
   return { taskType, name: filename, fileType }
 }
 
-function enumerateTaskFiles (node:Object, files:Array<TaskFile>, projectArchive:ProjectArchive) {
+function enumerateTaskFiles (node: Object, files: TaskFile[], projectArchive: ProjectArchive) {
   if (node && typeof node === 'object') {
-    let { taskType, command } = task(node)
+    const { taskType, command } = task(node)
     if (typeof command === 'object') {
       return
     }
     const taskFile = resolveTaskFile(taskType, command, node, projectArchive)
-    if (taskFile) {
+    if (taskFile != null) {
       files.push(taskFile)
     } else {
-      for (let key of Object.keys(node)) {
+      for (const key of Object.keys(node)) {
         enumerateTaskFiles(node[key as keyof typeof node], files, projectArchive)
       }
     }
   }
 }
 
-function workflowFiles (workflow:Workflow, projectArchive:ProjectArchive):Array<TaskFile> {
+function workflowFiles (workflow: Workflow, projectArchive: ProjectArchive): TaskFile[] {
   const files: TaskFile[] = []
   enumerateTaskFiles(workflow.config, files, projectArchive)
   return files
 }
 
-function fileString (file:string, projectArchive?:ProjectArchive | null) {
-  if (!projectArchive) {
+function fileString (file: string, projectArchive?: ProjectArchive | null) {
+  if (projectArchive == null) {
     return ''
   }
   const buffer = projectArchive.getFileContents(file)
-  if (!buffer) {
+  if (buffer == null) {
     return ''
   }
   return buffer.toString()
 }
 
-const FileView = ({ file, fileType, contents }:{file: string, fileType: string, contents: string}) =>
+const FileView = ({ file, fileType, contents }: {file: string, fileType: string, contents: string}) =>
   <div>
     <h4>{file}</h4>
     <div className='card bg-light my-2'>
@@ -1163,14 +1167,13 @@ const FileView = ({ file, fileType, contents }:{file: string, fileType: string, 
         <pre className='mb-0'>
           <code>
             <Measure>
-              { ({ width }: any) =>
+              {({ width }: any) =>
                 <CodeViewer
                   className='definition'
                   language={fileType}
                   value={contents}
                   style={{ width }}
-                />
-              }
+                />}
             </Measure>
           </code>
         </pre>
@@ -1178,27 +1181,33 @@ const FileView = ({ file, fileType, contents }:{file: string, fileType: string, 
     </div>
   </div>
 
-const WorkflowFilesView = ({ workflow, projectArchive }:{workflow: Workflow, projectArchive?: ProjectArchive | null}) =>
-  projectArchive ? <div>{
-    workflowFiles(workflow, projectArchive).map(file =>
-      <FileView key={file.name} file={file.name} fileType={file.fileType}
-        contents={fileString(file.name, projectArchive)} />)
-  }</div> : null
+const WorkflowFilesView = ({ workflow, projectArchive }: {workflow: Workflow, projectArchive?: ProjectArchive | null}) =>
+  (projectArchive != null)
+    ? (
+      <div>
+        {workflowFiles(workflow, projectArchive).map(file =>
+          <FileView
+            key={file.name} file={file.name} fileType={file.fileType}
+            contents={fileString(file.name, projectArchive)}
+          />)}
+      </div>
+      )
+    : null
 
-type AttemptViewProps = {
-  attemptId: string;
+interface AttemptViewProps {
+  attemptId: string
 }
 
 class AttemptView extends React.Component<AttemptViewProps> {
-  ignoreLastFetch:boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    attempt: Attempt | null,
-    done: boolean,
+    attempt: Attempt | null
+    done: boolean
   } = {
     attempt: null,
     done: false
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -1233,7 +1242,7 @@ class AttemptView extends React.Component<AttemptViewProps> {
     const attempt = this.state.attempt
     const canKill = attemptCanBeKilled(attempt)
 
-    if (!attempt) {
+    if (attempt == null) {
       return null
     }
 
@@ -1246,8 +1255,7 @@ class AttemptView extends React.Component<AttemptViewProps> {
             onClick={this.killAttempt.bind(this)}
           >
             KILL
-          </button>
-        }
+          </button>}
         <table className='table table-sm'>
           <tbody>
             <tr>
@@ -1260,7 +1268,8 @@ class AttemptView extends React.Component<AttemptViewProps> {
             </tr>
             <tr>
               <td>Workflow</td>
-              <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
+              {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+              <td><Link to={`/workflows/${attempt.workflow.id!}`}>{attempt.workflow.name}</Link></td>
             </tr>
             <tr>
               <td>Session ID</td>
@@ -1294,15 +1303,15 @@ class AttemptView extends React.Component<AttemptViewProps> {
   }
 }
 
-type SessionViewProps = {
-  session: Session,
+interface SessionViewProps {
+  session: Session
 }
 
 class SessionView extends React.Component<SessionViewProps> {
   retryFailed () {
     const { session } = this.props
     const { lastAttempt } = session
-    if (lastAttempt) {
+    if (lastAttempt != null) {
       model()
         .resumeSessionWithLatestRevision(session, uuidv4(), lastAttempt.id)
         .then(() => this.forceUpdate())
@@ -1327,21 +1336,19 @@ class SessionView extends React.Component<SessionViewProps> {
           Session
         </h2>
         {canRetryAll &&
-        <button
-          className='btn btn-sm btn-primary float-right'
-          onClick={this.retryAll.bind(this)}
-        >
-              RETRY ALL
-        </button>
-        }
+          <button
+            className='btn btn-sm btn-primary float-right'
+            onClick={this.retryAll.bind(this)}
+          >
+            RETRY ALL
+          </button>}
         {canResume &&
-        <button
-          className='btn btn-sm btn-success mr-2 float-right'
-          onClick={this.retryFailed.bind(this)}
-        >
-              RETRY FAILED
-        </button>
-        }
+          <button
+            className='btn btn-sm btn-success mr-2 float-right'
+            onClick={this.retryFailed.bind(this)}
+          >
+            RETRY FAILED
+          </button>}
         <table className='table table-sm'>
           <tbody>
             <tr>
@@ -1374,15 +1381,15 @@ class SessionView extends React.Component<SessionViewProps> {
             </tr>
             <tr>
               <td>Last Attempt</td>
-              <td><FullTimestamp showAgo={Boolean(true)} t={lastAttempt && lastAttempt.createdAt} /></td>
+              <td><FullTimestamp showAgo={Boolean(true)} t={lastAttempt?.createdAt} /></td>
             </tr>
             <tr>
               <td>Last Attempt Duration:</td>
-              <td><DurationView start={lastAttempt && lastAttempt.createdAt} end={lastAttempt && lastAttempt.finishedAt} /></td>
+              <td><DurationView start={lastAttempt?.createdAt} end={lastAttempt?.finishedAt} /></td>
             </tr>
             <tr>
               <td>Last Attempt Params:</td>
-              <td><ParamsView params={lastAttempt && lastAttempt.params} /></td>
+              <td><ParamsView params={lastAttempt?.params} /></td>
             </tr>
           </tbody>
         </table>
@@ -1391,15 +1398,14 @@ class SessionView extends React.Component<SessionViewProps> {
   }
 }
 
-const SessionTime = ({ t }:{t?:string}) =>
+const SessionTime = ({ t }: {t?: string}) =>
   t ? <span>{t}</span> : null
 
-type TimeStampProps = {
+interface TimeStampProps {
   t?: string | null
 }
 
 class Timestamp extends React.Component<TimeStampProps> {
-
   render () {
     const { t } = this.props
     if (!t) {
@@ -1415,13 +1421,13 @@ class Timestamp extends React.Component<TimeStampProps> {
   }
 }
 
-type FullTimestampProps = {
-  t?: string,
+interface FullTimestampProps {
+  t?: string
   showAgo: boolean
 }
 
 class FullTimestamp extends React.Component<FullTimestampProps> {
-  timestamp: any = undefined;
+  timestamp: any = undefined
 
   componentDidMount () {
     jQuery(this.timestamp).tooltip({ html: true })
@@ -1454,7 +1460,7 @@ class FullTimestamp extends React.Component<FullTimestampProps> {
   }
 }
 
-const Alerts = ({ alertType, message }:{alertType:string, message:string}) => {
+const Alerts = ({ alertType, message }: {alertType: string, message: string}) => {
   switch (alertType) {
     case 'success':
       return <div className='alert alert-success' role='alert'>{message}</div>
@@ -1465,22 +1471,22 @@ const Alerts = ({ alertType, message }:{alertType:string, message:string}) => {
   }
 }
 
-const DurationView = ({ start, end }:{start?:string|null, end?:string|null}) => {
+const DurationView = ({ start, end }: {start?: string|null, end?: string|null}) => {
   if (!start || !end) {
     return <span />
   }
-  // @ts-ignore FIXME
+  // @ts-expect-error FIXME
   const duration = new Duration(new Date(start), new Date(end)).toString(1, 1) // format: 10y 2m 6d 3h 23m 8s
   return <span>{duration}</span>
 }
 
-const ParamsView = ({ params }:{params?: Object}) =>
+const ParamsView = ({ params }: {params?: Object}) =>
   _.isEmpty(params)
     ? null
     : <CodeViewer className='params-view' language='yaml' value={(yaml as any).safeDump(params, { sortKeys: true })} />
 
-const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: boolean}) => {
-  if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(state) >= 0) {
+const TaskState = ({ state, cancelRequested }: {state: string, cancelRequested: boolean}) => {
+  if (cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].includes(state)) {
     // These state won't progress once cancelRequested is set. Planned tasks won't generate tasks.
     return <span><FontAwesomeIcon icon={faExclamationCircle} className='text-warning' /> Canceling</span>
   }
@@ -1526,54 +1532,57 @@ const TaskState = ({ state, cancelRequested }:{state: string, cancelRequested: b
   }
 }
 
-const JobLink = ({ storeParams, stateParams }:{storeParams: any, stateParams: any}) => {
+const JobLink = ({ storeParams, stateParams }: {storeParams: any, stateParams: any}) => {
+  // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
   const paramsJobId = storeParams.td && storeParams.td.last_job_id
+  // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
   const stateJobId = stateParams.job && stateParams.job.jobId
   const jobId = paramsJobId || stateJobId
   const link = DIGDAG_CONFIG.td.jobUrl(jobId)
   if (!jobId) {
     return null
   }
-  return <a href={link} target='_blank'>{jobId}</a>
+  return <a href={link} target='_blank' rel='noreferrer'>{jobId}</a>
 }
 
-function sortTasksForTreeView (tasks: Array<Task>): Array<Task> {
-  const trees = makeTaskTrees(tasks);
-  const result: Array<Task> = [];
+function sortTasksForTreeView (tasks: Task[]): Task[] {
+  const trees = makeTaskTrees(tasks)
+  const result: Task[] = []
   function pushChildrenRecursively (tree: TaskTree) {
-    result.push(tree.task);
-    tree.subTasks.forEach(pushChildrenRecursively);
+    result.push(tree.task)
+    tree.subTasks.forEach(pushChildrenRecursively)
   }
-  trees.forEach(pushChildrenRecursively);
-  return result;
+  trees.forEach(pushChildrenRecursively)
+  return result
 }
 
-type TaskTree = {
-  task: Task;
-  subTasks: Array<TaskTree>;
+interface TaskTree {
+  task: Task
+  subTasks: TaskTree[]
 }
 
-function makeTaskTrees(tasks: Array<Task>): Array<TaskTree> {
-  function collectChildrenRecursively (taskGroups: Map<string, Array<Task>>, parentTask: Task): Array<TaskTree> {
-    const group  = taskGroups.get(parentTask.id)
+function makeTaskTrees (tasks: Task[]): TaskTree[] {
+  function collectChildrenRecursively (taskGroups: Map<string, Task[]>, parentTask: Task): TaskTree[] {
+    const group = taskGroups.get(parentTask.id)
     if (group == null) {
-      return [];
+      return []
     }
     return group.map((t) => ({
       task: t,
-      subTasks: collectChildrenRecursively(taskGroups, t),
-    }));
+      subTasks: collectChildrenRecursively(taskGroups, t)
+    }))
   }
 
   // First, divide tasks into rootTasks and taskGroups.
-  const rootTasks: Array<Task> = []
-  const taskGroups: Map<string, Array<Task>> = new Map() // {parentId => Array<Task>}
+  const rootTasks: Task[] = []
+  const taskGroups: Map<string, Task[]> = new Map() // {parentId => Array<Task>}
   const taskOrders: Map<string, number> = new Map()
   tasks.forEach(t => {
     const parentId = t.parentId
     if (taskOrders.get(t.fullName) == null) {
       taskOrders.set(t.fullName, 1)
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       taskOrders.set(t.fullName, taskOrders.get(t.fullName)! + 1)
     }
     t.order = taskOrders.get(t.fullName)
@@ -1588,20 +1597,19 @@ function makeTaskTrees(tasks: Array<Task>): Array<TaskTree> {
     } else {
       rootTasks.push(t)
     }
-  });
+  })
 
   return rootTasks.map(t => ({
     task: t,
-    subTasks: collectChildrenRecursively(taskGroups, t),
+    subTasks: collectChildrenRecursively(taskGroups, t)
   }))
 }
 
-type TaskListViewProps = {
+interface TaskListViewProps {
   tasks: Map<string, Task>
 }
 
 class TaskListView extends React.Component<TaskListViewProps> {
-
   render () {
     return (
       <div className='table-responsive'>
@@ -1625,6 +1633,7 @@ class TaskListView extends React.Component<TaskListViewProps> {
               sortTasksForTreeView(Array.from(this.props.tasks.values())).map(task =>
                 <tr key={task.id}>
                   <td>
+                    {/* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */}
                     {task.parentId != null ? <a href={'#logs-' + task.fullName + task.order}>{task.id}</a> : task.id}
                   </td>
                   <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
@@ -1665,29 +1674,28 @@ function isSyntheticTask (task: Task): boolean {
   return task.fullName.endsWith('^sub')
 }
 
-type TaskTimelineRowProps = {
-    taskTree: TaskTree;
-    tasks: Map<string, Task>;
-    level?: number;
-    startTime?: moment.Moment | null;
-    endTime?: moment.Moment | null;
+interface TaskTimelineRowProps {
+  taskTree: TaskTree
+  tasks: Map<string, Task>
+  level?: number
+  startTime?: moment.Moment | null
+  endTime?: moment.Moment | null
 }
 
 class TaskTimelineRow extends React.Component<TaskTimelineRowProps> {
-
   state = {
-    open: true,
-  };
+    open: true
+  }
 
-  progressBar: any;
+  progressBar: any
 
   componentDidMount () {
     jQuery(this.progressBar).tooltip({ html: true })
   }
 
   progressBarClasses () {
-    const { task } = this.props.taskTree;
-    if (task.cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].indexOf(task.state) >= 0) {
+    const { task } = this.props.taskTree
+    if (task.cancelRequested && ['ready', 'retry_waiting', 'group_retry_waiting', 'planned'].includes(task.state)) {
       return 'progress-bar-warning'
     }
 
@@ -1724,13 +1732,14 @@ class TaskTimelineRow extends React.Component<TaskTimelineRowProps> {
 
   toggle = () => {
     this.setState({
-      open: !this.state.open,
-    });
+      open: !this.state.open
+    })
   }
 
   render () {
-    const { startTime, endTime, taskTree, tasks, level = 0 } = this.props;
-    const { task, subTasks } = taskTree;
+    const { startTime, endTime, taskTree, tasks, level = 0 } = this.props
+    const { task, subTasks } = taskTree
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const parentTask = tasks.get(task.parentId || '')
     const namePrefix = parentTask != null ? parentTask.fullName : ''
     const taskName = task.fullName.substring(namePrefix.length)
@@ -1764,22 +1773,27 @@ class TaskTimelineRow extends React.Component<TaskTimelineRowProps> {
       tooltip = `${task.startedAt || ''} -<br/>${task.updatedAt || ''}`
     }
 
-    const cursor = subTasks.length > 0 ? { cursor: 'pointer' } : {};
+    const cursor = subTasks.length > 0 ? { cursor: 'pointer' } : {}
 
     return (
-      <React.Fragment>
-        {task.parentId != null && !isSyntheticTask(task) && <tr>
-          <td style={{ whiteSpace: 'nowrap', paddingLeft: `${level}em`, ...cursor }} onClick={this.toggle}>
-            {subTasks.length > 0 && <FontAwesomeIcon icon={this.state.open ? faAngleDown : faAngleRight}/>}
-            {taskName}
-          </td>
-          <td className='align-middle' style={{ width: '100%' }}>
-            <div className='progress mb-0　' style={{ height: '1.4rem' }}>
-              <div ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
-                className={`progress-bar ${this.progressBarClasses()}`} role='progressbar' style={style}>{duration}</div>
-            </div>
-          </td>
-        </tr>}
+      <>
+        {task.parentId != null && !isSyntheticTask(task) &&
+          <tr>
+            {/* eslint-disable-next-line react/jsx-handler-names */}
+            <td style={{ whiteSpace: 'nowrap', paddingLeft: `${level}em`, ...cursor }} onClick={this.toggle}>
+              {subTasks.length > 0 && <FontAwesomeIcon icon={this.state.open ? faAngleDown : faAngleRight} />}
+              {taskName}
+            </td>
+            <td className='align-middle' style={{ width: '100%' }}>
+              <div className='progress mb-0　' style={{ height: '1.4rem' }}>
+                <div
+                  ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
+                  className={`progress-bar ${this.progressBarClasses()}`} role='progressbar' style={style}
+                >{duration}
+                </div>
+              </div>
+            </td>
+          </tr>}
         {this.state.open && subTasks.map((subTask) => (
           <TaskTimelineRow
             key={subTask.task.id}
@@ -1790,15 +1804,15 @@ class TaskTimelineRow extends React.Component<TaskTimelineRowProps> {
             endTime={endTime}
           />
         ))}
-      </React.Fragment>
+      </>
     )
   }
 }
 
-const TaskTimelineView = ({ tasks, startTime, endTime }:{
-  tasks: Map<string, Task>;
-  startTime?: moment.Moment | null;
-  endTime?: moment.Moment | null;
+const TaskTimelineView = ({ tasks, startTime, endTime }: {
+  tasks: Map<string, Task>
+  startTime?: moment.Moment | null
+  endTime?: moment.Moment | null
 }) =>
   <div className='table-responsive'>
     <table className='table table-sm'>
@@ -1809,28 +1823,27 @@ const TaskTimelineView = ({ tasks, startTime, endTime }:{
         </tr>
       </thead>
       <tbody>
-        { makeTaskTrees(Array.from(tasks.values()))
+        {makeTaskTrees(Array.from(tasks.values()))
           .map(taskTree =>
-            <TaskTimelineRow key={taskTree.task.id} taskTree={taskTree} tasks={tasks} level={0} startTime={startTime} endTime={endTime} />)
-        }
+            <TaskTimelineRow key={taskTree.task.id} taskTree={taskTree} tasks={tasks} level={0} startTime={startTime} endTime={endTime} />)}
       </tbody>
     </table>
   </div>
 
-type AttemptTasksViewProps = {
-  attemptId: string;
+interface AttemptTasksViewProps {
+  attemptId: string
 }
 
 class AttemptTasksView extends React.Component<AttemptTasksViewProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    tasks: Map<string, Task>,
-    done: boolean,
+    tasks: Map<string, Task>
+    done: boolean
   } = {
     tasks: new Map(),
     done: false
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -1869,26 +1882,26 @@ class AttemptTasksView extends React.Component<AttemptTasksViewProps> {
   }
 }
 
-type AttemptTimelineViewProps = {
-  attemptId: string;
+interface AttemptTimelineViewProps {
+  attemptId: string
 }
 
 class AttemptTimelineView extends React.Component<AttemptTimelineViewProps> {
-  ignoreLastFetch:boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    tasks: Map<string, Task>,
-    done: boolean,
-    firstStartedAt: moment.Moment | null,
-    lastUpdatedAt: moment.Moment | null,
-    endTime: moment.Moment | null,
+    tasks: Map<string, Task>
+    done: boolean
+    firstStartedAt: moment.Moment | null
+    lastUpdatedAt: moment.Moment | null
+    endTime: moment.Moment | null
   } = {
     tasks: new Map(),
     done: false,
     firstStartedAt: null,
     lastUpdatedAt: null,
     endTime: null
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -1905,14 +1918,14 @@ class AttemptTimelineView extends React.Component<AttemptTimelineViewProps> {
     this.fetch()
   }
 
-  firstStartedAt (tasks: Array<Task>): moment.Moment | null {
+  firstStartedAt (tasks: Task[]): moment.Moment | null {
     return tasks
       .filter(task => task.startedAt !== null)
       .map(task => moment(task.startedAt))
       .reduce<moment.Moment | null>((first, startedAt) => first === null || startedAt.isBefore(first) ? startedAt : first, null)
   }
 
-  lastUpdatedAt (tasks: Array<Task>): moment.Moment | null {
+  lastUpdatedAt (tasks: Task[]): moment.Moment | null {
     return tasks
       .filter(task => task.updatedAt !== null)
       .map(task => moment(task.updatedAt))
@@ -1964,20 +1977,20 @@ class AttemptTimelineView extends React.Component<AttemptTimelineViewProps> {
   }
 }
 
-type LogFileViewProps = {
-  attemptId: string;
-  file: LogFileHandle;
-  order: number;
+interface LogFileViewProps {
+  attemptId: string
+  file: LogFileHandle
+  order: number
 }
 
 class LogFileView extends React.Component<LogFileViewProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
     data: pako.Data | null
   } = {
     data: null
-  };
+  }
 
   componentDidMount () {
     this.fetchFile()
@@ -2010,8 +2023,11 @@ class LogFileView extends React.Component<LogFileViewProps> {
     if (this.state.data) {
       return (
         <div>
-          <h3 id={'logs-' + this.props.file.taskName + this.props.order.toString()}
-            className='log-view'><small>{this.props.file.taskName}</small></h3>
+          <h3
+            id={'logs-' + this.props.file.taskName + this.props.order.toString()}
+            className='log-view'
+          ><small>{this.props.file.taskName}</small>
+          </h3>
 
           <div className='card bg-light my-2'>
             <div className='card-body p-2'>
@@ -2030,20 +2046,20 @@ class LogFileView extends React.Component<LogFileViewProps> {
   }
 }
 
-type AttemptLogsViewProps = {
-  attemptId: string;
+interface AttemptLogsViewProps {
+  attemptId: string
 }
 
 class AttemptLogsView extends React.Component<AttemptLogsViewProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    files: any[];
-    done: boolean;
+    files: any[]
+    done: boolean
   } = {
     files: [],
     done: false
-  };
+  }
 
   componentDidMount () {
     // Don't attempt to fetch logs automatically when the component is mounted
@@ -2063,7 +2079,7 @@ class AttemptLogsView extends React.Component<AttemptLogsViewProps> {
 
   logFiles () {
     const { files } = this.state
-    if (!files.length) {
+    if (files.length === 0) {
       return <pre />
     }
     const taskOrders: Map<string, number> = new Map()
@@ -2071,9 +2087,11 @@ class AttemptLogsView extends React.Component<AttemptLogsViewProps> {
       if (taskOrders.get(file.taskName) == null) {
         taskOrders.set(file.taskName, 1)
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         taskOrders.set(file.taskName, taskOrders.get(file.taskName)! + 1)
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} order={taskOrders.get(file.taskName)!} />
     })
   }
@@ -2107,7 +2125,7 @@ class AttemptLogsView extends React.Component<AttemptLogsViewProps> {
 class VersionView extends React.Component {
   state = {
     version: ''
-  };
+  }
 
   componentDidMount () {
     model().fetchVersion().then(version => {
@@ -2137,24 +2155,28 @@ class Navbar extends React.Component<RouteComponentProps> {
 
   brand () {
     const navbar = DIGDAG_CONFIG.navbar
-    return navbar ? navbar.brand : 'Digdag'
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (navbar != null) ? navbar.brand : 'Digdag'
   }
 
   logo () {
     const navbar = DIGDAG_CONFIG.navbar
-    return navbar && navbar.logo
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (navbar != null) && navbar.logo
       ? <a className='navbar-brand' href='/' style={{ marginTop: '-7px' }}><img src={navbar.logo} width='36' height='36' /></a>
       : null
   }
 
   className () {
     const { navbar } = DIGDAG_CONFIG
-    return navbar && navbar.className ? navbar.className : 'navbar-inverse'
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (navbar != null) && navbar.className ? navbar.className : 'navbar-inverse'
   }
 
   style () {
     const navbar = DIGDAG_CONFIG.navbar
-    return navbar && navbar.style ? navbar.style : {}
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (navbar != null) && (navbar.style != null) ? navbar.style : {}
   }
 
   isActiveClass (path: string) {
@@ -2163,7 +2185,7 @@ class Navbar extends React.Component<RouteComponentProps> {
       path: path,
       exact: true
     })
-    return match ? 'active' : ''
+    return (match != null) ? 'active' : ''
   }
 
   render () {
@@ -2171,8 +2193,10 @@ class Navbar extends React.Component<RouteComponentProps> {
       <nav className={`navbar ${this.className()} navbar-dark navbar-expand-lg`} style={this.style()}>
         {this.logo()}
         <a className='navbar-brand' href='/'>{this.brand()}</a>
-        <button type='button' className='navbar-toggler' data-toggle='collapse' data-target='#navbar'
-          aria-expanded='false' aria-controls='navbar' aria-label='Toggle navigation'>
+        <button
+          type='button' className='navbar-toggler' data-toggle='collapse' data-target='#navbar'
+          aria-expanded='false' aria-controls='navbar' aria-label='Toggle navigation'
+        >
           <span className='sr-only'>Toggle navigation</span>
           <span className='navbar-toggler-icon' />
         </button>
@@ -2183,6 +2207,7 @@ class Navbar extends React.Component<RouteComponentProps> {
           </ul>
           <li className='navbar-text navbar-right'><VersionView /></li>
           <ul className='nav navbar-nav navbar-right'>
+            {/* eslint-disable-next-line react/jsx-handler-names */}
             <li><a className='nav-link' href='/' onClick={this.logout}><FontAwesomeIcon icon={faSignOutAlt} /> Logout</a></li>
           </ul>
         </div>
@@ -2191,7 +2216,7 @@ class Navbar extends React.Component<RouteComponentProps> {
   }
 }
 
-const ProjectsPage = (props:{}) =>
+const ProjectsPage = (props: {}) =>
   <div className='container-fluid'>
     <ProjectsView />
     <SessionsView />
@@ -2202,7 +2227,7 @@ export const WorkflowsPage = () =>
     <div className='float-right'>
       <Link
         className='btn btn-sm btn-outline-secondary'
-        to={`/projects/new`}
+        to='/projects/new'
       >
         New project
       </Link>
@@ -2217,16 +2242,16 @@ const ProjectPage = (props: RouteComponentProps<{projectId: string}>) =>
   </div>
 
 type WorkflowPageProps = RouteComponentProps<{
-  projectId: string;
-  workflowName: string;
+  projectId: string
+  workflowName: string
 }>
 
 class WorkflowPage extends React.Component<WorkflowPageProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
-  state:{
-    workflow?: Workflow | null;
-  };
+  state: {
+    workflow?: Workflow | null
+  }
 
   constructor (props: WorkflowPageProps) {
     super(props)
@@ -2259,7 +2284,7 @@ class WorkflowPage extends React.Component<WorkflowPageProps> {
   }
 
   workflow () {
-    return this.state.workflow ? <WorkflowView workflow={this.state.workflow} /> : null
+    return (this.state.workflow != null) ? <WorkflowView workflow={this.state.workflow} /> : null
   }
 
   render () {
@@ -2273,16 +2298,15 @@ class WorkflowPage extends React.Component<WorkflowPageProps> {
 }
 
 type WorkflowRevisionPageProps = RouteComponentProps<{
-  workflowId: string;
+  workflowId: string
 }>
 
 class WorkflowRevisionPage extends React.Component<WorkflowRevisionPageProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
-
-  state:{
-    workflow?: Workflow | null;
-  };
+  state: {
+    workflow?: Workflow | null
+  }
 
   constructor (props: WorkflowRevisionPageProps) {
     super(props)
@@ -2315,7 +2339,7 @@ class WorkflowRevisionPage extends React.Component<WorkflowRevisionPageProps> {
   }
 
   workflow () {
-    return this.state.workflow ? <WorkflowView workflow={this.state.workflow} /> : null
+    return (this.state.workflow != null) ? <WorkflowView workflow={this.state.workflow} /> : null
   }
 
   render () {
@@ -2327,24 +2351,24 @@ class WorkflowRevisionPage extends React.Component<WorkflowRevisionPageProps> {
   }
 }
 
-type FileEditorProps = {
-  newFile: boolean,  // NOTE: seems unused, but some caller pass it
-  file?: TarEntry | null;
-  projectArchive?: ProjectArchive | null;
-  onDelete: () => void;
+interface FileEditorProps {
+  newFile: boolean // NOTE: seems unused, but some callers pass it
+  file?: TarEntry | null
+  projectArchive?: ProjectArchive | null
+  onDelete: () => void
 }
 
 class FileEditor extends React.Component<FileEditorProps> {
   editor?: CodeEditor
 
-  state:{
-    name: string;
+  state: {
+    name: string
   }
 
   constructor (props: FileEditorProps) {
     super(props)
     this.state = {
-      name: props.file ? props.file.name : 'new.dig'
+      name: (props.file != null) ? props.file.name : 'new.dig'
     }
   }
 
@@ -2353,11 +2377,11 @@ class FileEditor extends React.Component<FileEditorProps> {
   }
 
   getFileContents () {
-    var text
-    if (this.editor) {
+    let text
+    if (this.editor != null) {
       text = this.editor.getValue()
     } else {
-      text = this.props.file ? fileString(this.props.file.name, this.props.projectArchive) : ''
+      text = (this.props.file != null) ? fileString(this.props.file.name, this.props.projectArchive) : ''
     }
 
     const buffer = new Buffer(text)
@@ -2379,15 +2403,14 @@ class FileEditor extends React.Component<FileEditorProps> {
         </div>
         <pre>
           <Measure>
-            { ({ width }: any) =>
+            {({ width }: any) =>
               <CodeEditor
                 className='editor'
                 language='yaml' // TODO how to let ace guess language?
-                value={file ? fileString(file.name, this.props.projectArchive) : ''}
+                value={(file != null) ? fileString(file.name, this.props.projectArchive) : ''}
                 style={{ width }}
                 ref={(value: CodeEditor) => { this.editor = value }}
-              />
-            }
+              />}
           </Measure>
         </pre>
       </div>
@@ -2399,20 +2422,20 @@ class FileEditor extends React.Component<FileEditorProps> {
   }
 }
 
-type ProjectArchiveEditorProps = {
-  projectArchive?: ProjectArchive | null;
+interface ProjectArchiveEditorProps {
+  projectArchive?: ProjectArchive | null
 }
 
 class ProjectArchiveEditor extends React.Component<ProjectArchiveEditorProps> {
-  _editors: Record<string, any>;
+  _editors: Record<string, any>
 
-  state:{
-    entries: {
-      newFile: boolean,
-      key: string,
-      file: ProjectArchive['files'][number] | null,
+  state: {
+    entries: Array<{
+      newFile: boolean
+      key: string
+      file: ProjectArchive['files'][number] | null
       projectArchive: ProjectArchive | null
-    }[];
+    }>
   }
 
   constructor (props: ProjectArchiveEditorProps) {
@@ -2443,7 +2466,7 @@ class ProjectArchiveEditor extends React.Component<ProjectArchiveEditorProps> {
   }
 
   setInitialEntries () {
-    const projectFiles = this.props.projectArchive ? this.props.projectArchive.files : []
+    const projectFiles = (this.props.projectArchive != null) ? this.props.projectArchive.files : []
     const entries = projectFiles.map(file => ({
       newFile: false,
       key: file.name,
@@ -2485,7 +2508,7 @@ class ProjectArchiveEditor extends React.Component<ProjectArchiveEditorProps> {
     )
   }
 
-  getFiles (): Array<TarEntry> {
+  getFiles (): TarEntry[] {
     return this.state.entries.map(entry => {
       const editor = this._editors[entry.key]
       return ({ name: editor.getName(), buffer: editor.getFileContents() })
@@ -2493,21 +2516,21 @@ class ProjectArchiveEditor extends React.Component<ProjectArchiveEditorProps> {
   }
 }
 
-type ProjectEditorProps = {
-  projectId?: string | null;
+interface ProjectEditorProps {
+  projectId?: string | null
 }
 
 class ProjectEditor extends React.Component<ProjectEditorProps> {
-  ignoreLastFetch :boolean = false;
+  ignoreLastFetch: boolean = false
 
   state: {
-    projectId: string | null,
-    project: Project | null,
-    projectName: string,
-    revisionName: string,
-    projectArchive: ProjectArchive | null,
-    saveMessage: string,
-    alertType: string,
+    projectId: string | null
+    project: Project | null
+    projectName: string
+    revisionName: string
+    projectArchive: ProjectArchive | null
+    saveMessage: string
+    alertType: string
   } = {
     projectId: null,
     project: null,
@@ -2516,7 +2539,7 @@ class ProjectEditor extends React.Component<ProjectEditorProps> {
     projectArchive: null,
     saveMessage: '',
     alertType: ''
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -2557,9 +2580,9 @@ class ProjectEditor extends React.Component<ProjectEditorProps> {
 
   render () {
     const project = this.state.project
-    var title
-    var header
-    if (project) {
+    let title
+    let header
+    if (project != null) {
       title = 'Edit Workflows'
       header = (
         <table className='table table-sm'>
@@ -2626,8 +2649,8 @@ class ProjectEditor extends React.Component<ProjectEditorProps> {
   save () {
     const files = this._editor.getFiles()
     const archive = new Tar()
-    var out: '' | Uint8Array = ''
-    for (let file of files) {
+    let out: '' | Uint8Array = ''
+    for (const file of files) {
       out = archive.append(file.name, new Uint8Array(file.buffer))
     }
     const targz = pako.gzip(out)
@@ -2640,16 +2663,17 @@ class ProjectEditor extends React.Component<ProjectEditorProps> {
         saveMessage: `Revision ${this.state.revisionName} is saved.`
       })
     }).catch((error) => {
-      console.log(`Saving project failed`, error)
+      console.log('Saving project failed', error)
       this.setState({
         alertType: 'danger',
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         saveMessage: `Failed to store: ${error.message}`
       })
     })
   }
 }
 
-const NewProjectPage = (props:{}) =>
+const NewProjectPage = (props: {}) =>
   <div className='container-fluid'>
     <ProjectEditor projectId={null} />
   </div>
@@ -2668,17 +2692,17 @@ export const AttemptPage = ({ match }: RouteComponentProps<{attemptId: string}>)
   </div>
 
 type SessionPageProps = RouteComponentProps<{
-  sessionId: string;
+  sessionId: string
 }>
 
 export class SessionPage extends React.Component<SessionPageProps> {
-  ignoreLastFetch: boolean = false;
+  ignoreLastFetch: boolean = false
 
-  state:{
-    session?: Session | null;
-    tasks: Array<Task>
-    attempts: Array<Attempt>;
-  };
+  state: {
+    session?: Session | null
+    tasks: Task[]
+    attempts: Attempt[]
+  }
 
   constructor (props: SessionPageProps) {
     super(props)
@@ -2718,25 +2742,28 @@ export class SessionPage extends React.Component<SessionPageProps> {
   }
 
   session () {
-    return this.state.session
+    return (this.state.session != null)
       ? <SessionView session={this.state.session} />
       : null
   }
 
   tasks () {
-    return this.state.session && this.state.session.lastAttempt
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (this.state.session != null) && (this.state.session.lastAttempt != null)
       ? <AttemptTasksView attemptId={this.state.session.lastAttempt.id} />
       : null
   }
 
   timeline () {
-    return this.state.session && this.state.session.lastAttempt
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (this.state.session != null) && (this.state.session.lastAttempt != null)
       ? <AttemptTimelineView attemptId={this.state.session.lastAttempt.id} />
       : null
   }
 
   logs () {
-    return this.state.session && this.state.session.lastAttempt
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    return (this.state.session != null) && (this.state.session.lastAttempt != null)
       ? <AttemptLogsView attemptId={this.state.session.lastAttempt.id} />
       : <pre />
   }
@@ -2761,23 +2788,24 @@ export class SessionPage extends React.Component<SessionPageProps> {
   }
 }
 
-type LoginPageProps = {
-  onSubmit: (credentials:Credentials) => void;
+interface LoginPageProps {
+  onSubmit: (credentials: Credentials) => void
 }
 
 class LoginPage extends React.Component<LoginPageProps> {
-  state:Credentials;
+  state: Credentials
 
   constructor (props: LoginPageProps) {
     super(props)
     this.state = {}
     DIGDAG_CONFIG.auth.items.forEach(item => {
+      // eslint-disable-next-line react/no-direct-mutation-state
       this.state[item.key] = ''
     })
   }
 
   componentWillMount () {
-    if (!DIGDAG_CONFIG.auth.items.length) {
+    if (DIGDAG_CONFIG.auth.items.length === 0) {
       this.props.onSubmit({})
     }
   }
@@ -2791,8 +2819,8 @@ class LoginPage extends React.Component<LoginPageProps> {
     }
   }
 
-  valid (credentials:Credentials, key:string, value:string) {
-    return (key:string) => {
+  valid (credentials: Credentials, key: string, value: string) {
+    return (key: string) => {
       credentials[key] = value
       if (DIGDAG_CONFIG.auth.items.length === Object.keys(credentials).length) {
         this.props.onSubmit(credentials)
@@ -2808,11 +2836,11 @@ class LoginPage extends React.Component<LoginPageProps> {
 
   handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const credentials:Credentials = {}
-    for (let item of DIGDAG_CONFIG.auth.items) {
+    const credentials: Credentials = {}
+    for (const item of DIGDAG_CONFIG.auth.items) {
       const key = item.key
-      const scrub:Scrubber = item.scrub ? item.scrub : (args:{key: string, value: string}) => value
-      const value:string = scrub({ key, value: this.state[key] })
+      const scrub: Scrubber = item.scrub ? item.scrub : (args: {key: string, value: string}) => value
+      const value: string = scrub({ key, value: this.state[key] })
       item.validate({
         key,
         value,
@@ -2820,13 +2848,13 @@ class LoginPage extends React.Component<LoginPageProps> {
         invalid: this.invalid(credentials, key, key)
       })
     }
-  };
+  }
 
   render () {
     const authItems = DIGDAG_CONFIG.auth.items.map(item => {
       return (
         <div className='form-group' key={item.key}>
-          {/* @ts-ignore FIXME */}
+          {/* @ts-expect-error FIXME */}
           <label for={item.key}>{item.name}</label>
           <input
             type={item.type}
@@ -2853,7 +2881,7 @@ class LoginPage extends React.Component<LoginPageProps> {
 class WorkflowsView extends React.Component {
   state = {
     workflows: []
-  };
+  }
 
   componentDidMount () {
     this.fetch()
@@ -2911,6 +2939,7 @@ class ParserTest extends React.Component {
         table: \${td.table}
     `
   }
+
   render () {
     return (
       <div className='container-fluid'>
@@ -2942,6 +2971,7 @@ export class CodeViewerTest extends React.Component {
       WHERE FirstName = 'Daniele'
     `
   }
+
   exampleYAML () {
     return `
       td_load>: imports/facebook_ads_reporting.yml
@@ -2949,17 +2979,20 @@ export class CodeViewerTest extends React.Component {
       foo: bar
     `
   }
+
   render () {
     return (
       <div className='container-fluid'>
         <CodeViewer
           className='large-editor'
           language='sql'
-          value={this.exampleSQL()} />
+          value={this.exampleSQL()}
+        />
         <CodeViewer
           className='large-editor'
           language='digdag'
-          value={this.exampleYAML()} />
+          value={this.exampleYAML()}
+        />
       </div>
     )
   }
@@ -2986,8 +3019,7 @@ class ConsolePage extends React.Component {
                   <Switch>
                     <Route exact path='/parser-test' component={ParserTest} />
                     <Route exact path='/codeviewer' component={CodeViewerTest} />
-                  </Switch>
-                }
+                  </Switch>}
                 <Route component={withRouter(NotFoundPage)} />
               </Switch>
             </AppWrapper>
@@ -2999,13 +3031,13 @@ class ConsolePage extends React.Component {
 }
 
 export default class Console extends React.Component {
-  state:{
+  state: {
     authenticated: boolean
-  };
+  }
 
-  constructor (props:any) {
+  constructor (props: any) {
     super(props)
-    if (!DIGDAG_CONFIG.auth.items.length) {
+    if (DIGDAG_CONFIG.auth.items.length === 0) {
       this.state = { authenticated: true }
       this.setup({})
     } else {
@@ -3019,7 +3051,7 @@ export default class Console extends React.Component {
     }
   }
 
-  setup (credentials:Credentials) {
+  setup (credentials: Credentials) {
     setupModel({
       url: DIGDAG_CONFIG.url,
       td: DIGDAG_CONFIG.td,
@@ -3028,11 +3060,11 @@ export default class Console extends React.Component {
     })
   }
 
-  handleCredentialsSubmit:(credentials:Credentials) => void = (credentials:Credentials) => {
+  handleCredentialsSubmit: (credentials: Credentials) => void = (credentials: Credentials) => {
     window.localStorage.setItem('digdag.credentials', JSON.stringify(credentials))
     this.setup(credentials)
     this.setState({ authenticated: true })
-  };
+  }
 
   render () {
     if (this.state.authenticated) {
