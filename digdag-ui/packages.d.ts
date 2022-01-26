@@ -8,7 +8,7 @@ declare module 'duration' {
 
 // uuid/v4 is deprecated so @types/uuid doesn't declare types for v4.
 declare module 'uuid/v4' {
-  export default function (): default
+  export default function (): string
 }
 
 // need upgrade to get types
