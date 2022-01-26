@@ -362,41 +362,60 @@ wrapper {
 }
 
 project(':digdag-ui') {
+    task dependenciesUi {
+        doFirst {
+            exec {
+                // npm ci requires npm version 5.7 or more.
+                commandLine System.env.NPM ?: "npm", "ci"
+            }
+        }
+    }
+
     task buildUi {
         inputs.files fileTree(dir: ".", include: ["*.js", "*.jsx", "*.ts", "*.tsx", "config/*"])
         outputs.dir "public"
 
         doFirst {
             exec {
-                // npm ci requires npm version 5.7 or more.
-                commandLine System.env.NPM ?: "npm", "ci"
-            }
-            exec {
                 commandLine System.env.NPM ?: "npm", "run", "build"
                 environment "SHA", "assets"
             }
         }
+
+        dependsOn('dependenciesUi')
+
+        // include public/* in the jar file
+        processResources {
+            from '.'
+            include 'public/**/*'
+        }
+        processResources.dependsOn('buildUi')
     }
 
     task testUi {
         doFirst {
             exec {
-                // npm ci requires npm version 5.7 or more.
-                commandLine System.env.NPM ?: "npm", "ci"
-            }
-            exec {
                 commandLine System.env.NPM ?: "npm", "run", "test"
             }
         }
+
+        dependsOn('dependenciesUi')
     }
     test.dependsOn('testUi')
 
-    // include public/* in the jar file
-    processResources {
-        from '.'
-        include 'public/**/*'
+    task checkUi {
+        doFirst {
+            exec {
+                commandLine System.env.NPM ?: "npm", "run", "lint"
+            }
+            exec {
+                commandLine System.env.NPM ?: "npm", "run", "type"
+            }
+        }
+
+        dependsOn('dependenciesUi')
     }
-    processResources.dependsOn('buildUi')
+    check.dependsOn('checkUi')
 }
 
 project(':digdag-cli') {
