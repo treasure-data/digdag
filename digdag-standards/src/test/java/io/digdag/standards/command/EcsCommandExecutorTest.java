@@ -186,4 +186,35 @@ public class EcsCommandExecutorTest
             }
         }
     }
+
+    @Test
+    public void testErrorOnEmptyExitCodeFromContainer()
+            throws Exception
+    {
+        final EcsClient ecsClient = mock(EcsClient.class);
+        final CommandContext commandContext = mock(CommandContext.class);
+        final EcsCommandExecutor executor = spy(new EcsCommandExecutor(
+                systemConfig, ecsClientFactory, dockerCommandExecutor,
+                storageManager, projectArchiveLoader, commandLogger));
+        final Task task = mock(Task.class);
+        final Container container = mock(Container.class);
+
+        final ObjectNode previousStatusJson = om.createObjectNode();
+        previousStatusJson.put("cluster_name", "my_cluster");
+        previousStatusJson.put("task_arn", "my_task_arn");
+        previousStatusJson.put("executor_state", om.createObjectNode());
+        previousStatusJson.put("awslogs", om.createObjectNode().nullNode());
+
+        doReturn(mock(EcsClientConfig.class)).when(executor).createEcsClientConfig(any(Optional.class), any(Config.class), any(Config.class));
+        doReturn(ecsClient).when(ecsClientFactory).createClient(any(EcsClientConfig.class));
+        doReturn(mock(TaskRequest.class)).when(commandContext).getTaskRequest();
+        doReturn("stopped").when(task).getLastStatus();
+        doReturn(null).when(container).getExitCode();
+        doReturn(Arrays.asList(container)).when(task).getContainers();
+        doReturn(task).when(ecsClient).getTask(previousStatusJson.get("cluster_name").asText(), previousStatusJson.get("task_arn").asText());
+
+        CommandStatus commandStatus = executor.poll(commandContext, previousStatusJson);
+
+        assertThat(commandStatus.getStatusCode(), is(1));
+    }
 }
