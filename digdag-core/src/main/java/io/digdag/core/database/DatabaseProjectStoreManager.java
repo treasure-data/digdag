@@ -840,7 +840,7 @@ public class DatabaseProjectStoreManager
          *
          * @param siteId Target site_id
          * @param limit Number of workflows to be returned
-         * @param lastId Pagination based on workflow id. Return workflows whose id > lastId (orderAscending = true) or id < lastId (orderAscending = false).
+         * @param lastId Pagination based on workflow id. Return workflows whose id is greater than lastId (orderAscending = true) or id is less than lastId (orderAscending = false).
          * @param namePattern Search by workflow name with partial match. namePattern and projectNamePattern is "OR" search.
          * @param projectNamePattern Search by project name with partial match. namePattern and projectNamePattern is "OR" search.
          * @param orderDirection Order based on workflow id. "asc" or "dsc". The parameter must be validated before calling to avoid SQL injection.
