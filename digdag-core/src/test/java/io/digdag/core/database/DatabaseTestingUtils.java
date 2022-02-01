@@ -55,6 +55,7 @@ public class DatabaseTestingUtils
                 .autoMigrate(true)
                 .connectionTimeout(30)
                 .idleTimeout(600)
+                .keepaliveTime(0)
                 .validationTimeout(5)
                 .minimumPoolSize(0)
                 .maximumPoolSize(10)

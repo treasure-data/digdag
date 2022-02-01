@@ -363,6 +363,7 @@ In the config file, following parameters are available
 * database.ssl (boolean, default: false)
 * database.connectionTimeout (seconds in integer, default: 30)
 * database.idleTimeout (seconds in integer, default: 600)
+* database.keepaliveTime (seconds in integer, default: 0)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
 * database.minimumPoolSize (integer, default: same as database.maximumPoolSize)
