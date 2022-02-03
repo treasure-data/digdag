@@ -111,11 +111,11 @@ public class WorkflowResource
     @Path("/api/workflows")
     @ApiOperation("List workflows")
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
-            @ApiParam(value="list workflows whose id is grater than this id for pagination", required=false)
+            @ApiParam(value="pagination. return workflows which id are greater than last_id with order 'asc', which id are less than the last_id with order 'desc'", required=false)
             @QueryParam("last_id") Long lastId,
             @ApiParam(value="number of workflows to return", required=false)
             @QueryParam("count") Integer count,
-            @ApiParam(value="Sort order. 'asc' or 'dsc'", defaultValue = "asc", required=false)
+            @ApiParam(value="Sort order. 'asc' or 'desc'", defaultValue = "asc", required=false)
             @DefaultValue("asc") @QueryParam("order") String orderDirection,
             @ApiParam(value="name pattern to be partially matched", required=false)
             @QueryParam("name_pattern") String namePattern,
@@ -148,11 +148,11 @@ public class WorkflowResource
         if (orderDirection == null || orderDirection.equals("asc")) {
             return true;
         }
-        else if (orderDirection.equals("dsc")) {
+        else if (orderDirection.equals("desc")) {
             return false;
         }
         else {
-            throw new IllegalArgumentException("parameter 'order' must be either 'asc' or 'dsc'");
+            throw new IllegalArgumentException("parameter 'order' must be either 'asc' or 'desc'");
         }
     }
 

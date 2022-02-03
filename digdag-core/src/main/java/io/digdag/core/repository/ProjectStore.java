@@ -69,7 +69,7 @@ public interface ProjectStore
             int pageSize, Optional<Long> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
     {
-        // ascending is true and searchProjectNmae is disabled.
+        // ascending is true and searchProjectName is disabled.
         return getLatestActiveWorkflowDefinitions(pageSize, lastId, true, namePattern, false, acFilter);
     }
 

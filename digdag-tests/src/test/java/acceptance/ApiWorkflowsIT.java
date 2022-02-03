@@ -92,17 +92,24 @@ public class ApiWorkflowsIT
             }).collect(Collectors.joining(","));
             assertThat("List of workflow ids", ids, is("1,2,3,4"));
         }
-        { // order=dsc  count=2
-            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=dsc&count=2");
+        { // order=desc count=2
+            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=desc&count=2");
             assertThat("Num of workflows", restWorkflows.getWorkflows().size(), is(2));
             String ids = restWorkflows.getWorkflows().stream().map((n) -> {
                 return n.getId().get();
             }).collect(Collectors.joining(","));
             assertThat("List of workflow ids", ids, is("4,3"));
         }
-
-        { // order=dsc  count=2 name_pattern=f1a
-            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=dsc&count=2&name_pattern=f1a");
+        { // order=desc last_id=3
+            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=desc&last_id=3");
+            assertThat("Num of workflows", restWorkflows.getWorkflows().size(), is(2));
+            String ids = restWorkflows.getWorkflows().stream().map((n) -> {
+                return n.getId().get();
+            }).collect(Collectors.joining(","));
+            assertThat("List of workflow ids", ids, is("2,1"));
+        }
+        { // order=desc  count=2 name_pattern=f1a
+            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=desc&count=2&name_pattern=f1a");
             assertThat("Num of workflows", restWorkflows.getWorkflows().size(), is(2));
             String ids = restWorkflows.getWorkflows().stream().map((n) -> {
                 return n.getId().toString() + "-" + n.getName();
@@ -110,8 +117,8 @@ public class ApiWorkflowsIT
             assertThat("List of workflows", ids, is("3-wf1abc,1-wf1abc"));
         }
 
-        { // order=dsc  count=2 name_pattern=f1a search_project_name=true
-            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=dsc&count=2&name_pattern=prj2&search_project_name=true");
+        { // order=desc  count=2 name_pattern=f1a search_project_name=true
+            RestWorkflowDefinitionCollection restWorkflows = callGetWorkflows("?order=desc&count=2&name_pattern=prj2&search_project_name=true");
             assertThat("Num of workflows", restWorkflows.getWorkflows().size(), is(2));
             String ids = restWorkflows.getWorkflows().stream().map((n) -> {
                 return n.getId().toString() + "-" + n.getProject().getName() + "-" + n.getName();
