@@ -121,7 +121,7 @@ public class OperatorManager
     public void run(TaskRequest request)
     {
         long taskId = request.getTaskId();
-        String origThreadName = String.format("[%d:%s]%s", request.getSiteId(), request.getProjectName().or("----"), request.getTaskName());
+        String origThreadName = String.format("[%d:%s:%d:%d]%s", request.getSiteId(), request.getProjectName().or("----"), request.getSessionId(), request.getAttemptId(), request.getTaskName());
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(origThreadName)) {
