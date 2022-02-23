@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.time.Instant;
 import java.time.ZoneId;
+
+import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import it.sauronsoftware.cron4j.SchedulingPattern;
@@ -15,8 +17,10 @@ public class CronScheduler
     private final SchedulingPattern pattern;
     private final ZoneId timeZone;
     private final long delaySeconds;
+    private final Optional<Instant> startDate;
+    private final Optional<Instant> endDate;
 
-    CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds)
+    CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds, Optional<Instant> startDate, Optional<Instant> endDate)
     {
         this.pattern = new SchedulingPattern(cronPattern) {
             // workaround for a bug of cron4j:
@@ -29,12 +33,26 @@ public class CronScheduler
         };
         this.timeZone = timeZone;
         this.delaySeconds = delaySeconds;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     @Override
     public ZoneId getTimeZone()
     {
         return timeZone;
+    }
+
+    @Override
+    public Optional<Instant> getStartDate()
+    {
+        return startDate;
+    }
+
+    @Override
+    public Optional<Instant> getEndDate()
+    {
+        return endDate;
     }
 
     @Override
@@ -58,7 +76,7 @@ public class CronScheduler
     public ScheduleTime nextScheduleTime(Instant lastScheduleTime)
     {
         Instant next = next(lastScheduleTime);
-        return ScheduleTime.of(next, next.plusSeconds(delaySeconds));
+        return ScheduleTime.of(next, next.plusSeconds(delaySeconds), startDate, endDate);
     }
 
     @Override
@@ -83,7 +101,7 @@ public class CronScheduler
         }
 
         // nextOfBefore is same with currentScheduleTime or after currentScheduleTime. nextOfBefore is next of before. done.
-        return ScheduleTime.of(before, before.plusSeconds(delaySeconds));
+        return ScheduleTime.of(before, before.plusSeconds(delaySeconds), startDate, endDate);
     }
 
     private Instant next(Instant time)

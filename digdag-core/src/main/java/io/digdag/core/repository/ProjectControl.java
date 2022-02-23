@@ -98,7 +98,7 @@ public class ProjectControl
             Optional<Scheduler> sr = srm.tryGetScheduler(revision, def, true);
             if (sr.isPresent()) {
                 ScheduleTime firstTime = sr.get().getFirstScheduleTime(currentTime);
-                Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getTime());
+                Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getTime(), firstTime.getStartDate(), firstTime.getEndDate());
                 schedules.add(new ScheduleWithScheduler(schedule, sr.get()));
             }
         }
@@ -114,7 +114,7 @@ public class ProjectControl
                 .transform(it -> newSched.getScheduler().nextScheduleTime(it))
                 // otherwise, if this schedule hasn't run before, simply use the first execution
                 // time of the new schedule setting.
-                .or(() -> ScheduleTime.of(newSched.getNextScheduleTime(), newSched.getNextRunTime()));
+                .or(() -> ScheduleTime.of(newSched.getNextScheduleTime(), newSched.getNextRunTime(), newSched.getStartDate(), newSched.getEndDate()));
         });
     }
 
@@ -157,6 +157,18 @@ public class ProjectControl
         public Instant getNextScheduleTime()
         {
             return schedule.getNextScheduleTime();
+        }
+
+        @Override
+        public Optional<Instant> getStartDate()
+        {
+            return schedule.getStartDate();
+        }
+
+        @Override
+        public Optional<Instant> getEndDate()
+        {
+            return schedule.getEndDate();
         }
 
         public Scheduler getScheduler()

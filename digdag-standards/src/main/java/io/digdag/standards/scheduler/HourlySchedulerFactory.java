@@ -1,6 +1,9 @@
 package io.digdag.standards.scheduler;
 
+import java.time.Instant;
 import java.time.ZoneId;
+
+import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Scheduler;
@@ -16,10 +19,10 @@ public class HourlySchedulerFactory
     }
 
     @Override
-    public Scheduler newScheduler(Config config, ZoneId timeZone)
+    public Scheduler newScheduler(Config config, ZoneId timeZone, Optional<Instant> startDate, Optional<Instant> endDate)
     {
         String at = config.getOptional("_command", String.class).or(() -> config.get("at", String.class));
-        return new CronScheduler("0 * * * *", timeZone, parseAt(at));
+        return new CronScheduler("0 * * * *", timeZone, parseAt(at), startDate, endDate);
     }
 
     private long parseAt(String at)

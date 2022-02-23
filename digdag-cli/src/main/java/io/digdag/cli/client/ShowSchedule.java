@@ -50,6 +50,8 @@ public class ShowSchedule
             ln("  project: %s", sched.getProject().getName());
             ln("  workflow: %s", sched.getWorkflow().getName());
             ln("  disabled at: " + sched.getDisabledAt().transform(ts -> formatTimeWithDiff(now, ts)).or(""));
+            ln("  start date : " + sched.getStartDate().transform(ts -> formatTimeWithDiff(now, ts)).or(""));
+            ln("  end date: " + sched.getEndDate().transform(ts -> formatTimeWithDiff(now, ts)).or(""));
             ln("  next session time: %s", formatTime(sched.getNextScheduleTime()));
             ln("  next scheduled to run at: %s", formatTimeWithDiff(now, sched.getNextRunTime()));
             ln("");

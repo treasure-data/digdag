@@ -4,6 +4,7 @@ import java.time.Instant;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Optional;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableScheduleTime.class)
@@ -27,11 +28,17 @@ public interface ScheduleTime
      */
     Instant getTime();
 
-    static ScheduleTime of(Instant time, Instant runTime)
+    Optional<Instant> getStartDate();
+
+    Optional<Instant> getEndDate();
+
+    static ScheduleTime of(Instant time, Instant runTime, Optional<Instant> startDate, Optional<Instant> endDate)
     {
         return ImmutableScheduleTime.builder()
             .time(time)
             .runTime(runTime)
+            .startDate(startDate)
+            .endDate(endDate)
             .build();
     }
 

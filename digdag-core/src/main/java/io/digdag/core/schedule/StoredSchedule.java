@@ -25,4 +25,8 @@ public abstract class StoredSchedule
     public abstract Optional<Instant> getDisabledAt();
 
     public abstract Optional<Instant> getLastSessionTime();
+
+    public abstract Optional<Instant> getStartDate();
+
+    public abstract Optional<Instant> getEndDate();
 }

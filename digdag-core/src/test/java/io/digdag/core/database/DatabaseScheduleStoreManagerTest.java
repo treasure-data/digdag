@@ -88,12 +88,16 @@ public class DatabaseScheduleStoreManagerTest
                                                 srcWf1Rev1.getName(),
                                                 wfRefA.get().getId(),
                                                 runTime1,
-                                                schedTime1),
+                                                schedTime1,
+                                                Optional.absent(),
+                                                Optional.absent()),
                                         Schedule.of(
                                                 srcWf2.getName(),
                                                 wfRefB.get().getId(),
                                                 runTime1,
-                                                schedTime1)
+                                                schedTime1,
+                                                Optional.absent(),
+                                                Optional.absent())
                                 ),
                                 (oldStatus, newSched) -> {
                                     return oldStatus.getNextScheduleTime();
@@ -141,18 +145,24 @@ public class DatabaseScheduleStoreManagerTest
                                                 srcWf1Rev2.getName(),
                                                 wfRefA.get().getId(),
                                                 runTime1,
-                                                schedTime2),
+                                                schedTime2,
+                                                Optional.absent(),
+                                                Optional.absent()),
                                         Schedule.of(
                                                 srcWf3.getName(),
                                                 wfRefB.get().getId(),
                                                 runTime2,
-                                                schedTime2)
+                                                schedTime2,
+                                                Optional.absent(),
+                                                Optional.absent())
                                 ),
                                 (oldStatus, newSched) -> {
                                     // when conflicted (wf1), rollback 60 seconds schedule time and 120 seconds run time here
                                     return ScheduleTime.of(
                                             oldStatus.getNextScheduleTime().getTime().minusSeconds(60),
-                                            oldStatus.getNextScheduleTime().getRunTime().minusSeconds(120));
+                                            oldStatus.getNextScheduleTime().getRunTime().minusSeconds(120),
+                                            Optional.absent(),
+                                            Optional.absent());
                                 });
                         return lock.get();
                     });
@@ -244,7 +254,7 @@ public class DatabaseScheduleStoreManagerTest
                     }
                     else {
                         try {
-                            store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime3, runTime3));
+                            store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime3, runTime3, Optional.absent(), Optional.absent()));
                         }
                         catch (ResourceNotFoundException ex) {
                             throw new RuntimeException(ex);
@@ -260,7 +270,7 @@ public class DatabaseScheduleStoreManagerTest
             schedManager.lockReadySchedules(runTime2, 10, (store, schedule) -> {
                 updated.add(schedule.getId());
                 try {
-                    store.updateNextScheduleTimeAndLastSessionTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4), schedTime1);
+                    store.updateNextScheduleTimeAndLastSessionTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4, Optional.absent(), Optional.absent()), schedTime1);
                 }
                 catch (ResourceNotFoundException ex) {
                     throw new RuntimeException(ex);
@@ -305,12 +315,16 @@ public class DatabaseScheduleStoreManagerTest
                                                 srcWf1Rev1.getName(),
                                                 wfRefA.get().getId(),
                                                 yesterday,
-                                                yesterday),
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.absent()),
                                         Schedule.of(
                                                 srcWf2.getName(),
                                                 wfRefB.get().getId(),
                                                 yesterday,
-                                                yesterday)
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.absent())
                                 ),
                                 (oldStatus, newSched) -> {
                                     return oldStatus.getNextScheduleTime();
@@ -384,6 +398,170 @@ public class DatabaseScheduleStoreManagerTest
                 List<Integer> ready = new ArrayList<>();
                 schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule.getId()));
                 assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
+            }
+        });
+    }
+
+    @Test
+    public void testStartDateEndDate()
+            throws Exception
+    {
+        factory.begin(() -> {
+            Project srcProj1 = Project.of("proj1");
+            Revision srcRev1 = createRevision("rev1");
+            WorkflowDefinition srcWf1Rev1 = createWorkflow("wf1");
+            WorkflowDefinition srcWf2 = createWorkflow("wf2");
+
+            Instant yesterday = Instant.now().minus(Duration.ofDays(1)).truncatedTo(SECONDS);
+            Instant tomorrow = Instant.now().plus(Duration.ofDays(1)).truncatedTo(SECONDS);
+
+            final AtomicReference<StoredRevision> revRef = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRefA = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRefB = new AtomicReference<>();
+
+            StoredProject proj1 = store.putAndLockProject(
+                    srcProj1,
+                    (store, stored) -> {
+                        ProjectControl lock = new ProjectControl(store, stored);
+                        revRef.set(lock.insertRevision(srcRev1));
+                        wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev1)).get(0));
+                        wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf2)).get(0));
+                        store.updateSchedules(
+                                stored.getId(),
+                                ImmutableList.of(
+                                        Schedule.of(
+                                                srcWf1Rev1.getName(),
+                                                wfRefA.get().getId(),
+                                                yesterday,
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.absent()),
+                                        Schedule.of(
+                                                srcWf2.getName(),
+                                                wfRefB.get().getId(),
+                                                yesterday,
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.absent())
+                                ),
+                                (oldStatus, newSched) -> {
+                                    return oldStatus.getNextScheduleTime();
+                                });
+                        return lock.get();
+                    });
+
+            StoredWorkflowDefinition wf1 = wfRefA.get();
+            StoredWorkflowDefinition wf2 = wfRefB.get();
+            List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent(), () -> "true");
+            assertEquals(2, schedList1.size());
+            StoredSchedule sched1 = schedList1.get(0);
+            StoredSchedule sched2 = schedList1.get(1);
+
+
+            ProjectControlStore.ScheduleUpdateAction scheduleUpdateAction = (oldStatus, newSched) -> {
+                ScheduleTime st = oldStatus.getNextScheduleTime();
+                return ScheduleTime.of(st.getTime(), st.getRunTime(), newSched.getStartDate(), newSched.getEndDate());
+            };
+
+            // Verify that schedule is not fetched if "now() < start_date"
+            store.putAndLockProject(
+                srcProj1,
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+                    store.updateSchedules(
+                            stored.getId(),
+                            ImmutableList.of(
+                                    Schedule.of(
+                                            srcWf1Rev1.getName(),
+                                            wfRefA.get().getId(),
+                                            yesterday,
+                                            yesterday,
+                                            Optional.of(tomorrow),
+                                            Optional.absent()),
+                                    Schedule.of(
+                                            srcWf2.getName(),
+                                            wfRefB.get().getId(),
+                                            yesterday,
+                                            yesterday,
+                                            Optional.absent(),
+                                            Optional.absent())
+                            ),
+                            scheduleUpdateAction);
+                    return lock.get();
+                }
+            );
+            {
+                List<Schedule> ready = new ArrayList<>();
+                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule));
+                assertEquals(1, ready.size());
+                assertEquals(srcWf2.getName(), ready.get(0).getWorkflowName());
+            }
+
+            // Verify that schedule is fetched if "start_date < now() < end_dates"
+            store.putAndLockProject(
+                    srcProj1,
+                    (store, stored) -> {
+                        ProjectControl lock = new ProjectControl(store, stored);
+                        store.updateSchedules(
+                                stored.getId(),
+                                ImmutableList.of(
+                                        Schedule.of(
+                                                srcWf1Rev1.getName(),
+                                                wfRefA.get().getId(),
+                                                yesterday,
+                                                yesterday,
+                                                Optional.of(yesterday),
+                                                Optional.of(tomorrow)),
+                                        Schedule.of(
+                                                srcWf2.getName(),
+                                                wfRefB.get().getId(),
+                                                yesterday,
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.absent())
+                                ),
+                                scheduleUpdateAction);
+                        return lock.get();
+                    }
+            );
+            {
+                List<Integer> ready = new ArrayList<>();
+                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule.getId()));
+                assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
+            }
+
+            // Verify that schedule is not fetched if "end_date < now()"
+            store.putAndLockProject(
+                    srcProj1,
+                    (store, stored) -> {
+                        ProjectControl lock = new ProjectControl(store, stored);
+                        store.updateSchedules(
+                                stored.getId(),
+                                ImmutableList.of(
+                                        Schedule.of(
+                                                srcWf1Rev1.getName(),
+                                                wfRefA.get().getId(),
+                                                yesterday,
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.of(yesterday)),
+                                        Schedule.of(
+                                                srcWf2.getName(),
+                                                wfRefB.get().getId(),
+                                                yesterday,
+                                                yesterday,
+                                                Optional.absent(),
+                                                Optional.absent())
+                                ),
+                                scheduleUpdateAction);
+                        return lock.get();
+                    }
+            );
+            {
+                List<Schedule> ready = new ArrayList<>();
+                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule));
+                assertEquals(1, ready.size());
+                assertEquals(srcWf2.getName(), ready.get(0).getWorkflowName());
             }
         });
     }

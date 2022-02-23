@@ -23,6 +23,10 @@ public interface RestSchedule
 
     Optional<Instant> getDisabledAt();
 
+    Optional<Instant> getStartDate();
+
+    Optional<Instant> getEndDate();
+
     static ImmutableRestSchedule.Builder builder()
     {
         return ImmutableRestSchedule.builder();

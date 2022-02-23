@@ -18,13 +18,19 @@ public abstract class Schedule
 
     public abstract Instant getNextScheduleTime();
 
-    public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime)
+    public abstract Optional<Instant> getStartDate();
+
+    public abstract Optional<Instant> getEndDate();
+
+    public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime, Optional<Instant> startDate, Optional<Instant> endDate)
     {
         return ImmutableSchedule.builder()
             .workflowName(workflowName)
             .workflowDefinitionId(workflowDefinitionId)
             .nextRunTime(nextRunTime)
             .nextScheduleTime(nextScheduleTime)
+            .startDate(startDate)
+            .endDate(endDate)
             .build();
     }
 }

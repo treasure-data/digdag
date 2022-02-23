@@ -528,7 +528,9 @@ public class DatabaseProjectStoreManager
                                 matchedSchedId,
                                 schedule.getWorkflowDefinitionId(),
                                 newSchedule.getRunTime().getEpochSecond(),
-                                newSchedule.getTime().getEpochSecond());
+                                newSchedule.getTime().getEpochSecond(),
+                                newSchedule.getStartDate().transform(it -> it.getEpochSecond()).orNull(),
+                                newSchedule.getEndDate().transform(it -> it.getEpochSecond()).orNull());
                         oldScheduleNames.remove(schedule.getWorkflowName());
                     }
                 }
@@ -539,7 +541,9 @@ public class DatabaseProjectStoreManager
                                 projId,
                                 schedule.getWorkflowDefinitionId(),
                                 schedule.getNextRunTime().getEpochSecond(),
-                                schedule.getNextScheduleTime().getEpochSecond()),
+                                schedule.getNextScheduleTime().getEpochSecond(),
+                                schedule.getStartDate().transform(it -> it.getEpochSecond()).orNull(),
+                                schedule.getEndDate().transform(it -> it.getEpochSecond()).orNull()),
                         "workflow_definition_id=%d", schedule.getWorkflowDefinitionId());
                 }
             }
@@ -918,21 +922,21 @@ public class DatabaseProjectStoreManager
                 " where project_id = :projId")
         int deleteSchedules(@Bind("projId") int projId);
 
-        @SqlQuery("select next_run_time, next_schedule_time, last_session_time from schedules" +
+        @SqlQuery("select next_run_time, next_schedule_time, last_session_time, start_date, end_date from schedules" +
                 " where id = :id" +
                 " for update")
         ScheduleStatus lockScheduleById(@Bind("id") int schedId);
 
         @SqlUpdate("update schedules" +
-                " set workflow_definition_id = :workflowDefinitionId, next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
+                " set workflow_definition_id = :workflowDefinitionId, next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, start_date = :startDate, end_date = :endDate, updated_at = now()" +
                 " where id = :id")
-        int updateScheduleById(@Bind("id") int schedId, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        int updateScheduleById(@Bind("id") int schedId, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("startDate") Long startDate, @Bind("endDate") Long endDate);
 
         @SqlUpdate("insert into schedules" +
-                    " (project_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
-                    " values (:projId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())")
+                    " (project_id, workflow_definition_id, next_run_time, next_schedule_time, start_date, end_date, last_session_time, created_at, updated_at)" +
+                    " values (:projId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, :startDate, :endDate, NULL, now(), now())")
         @GetGeneratedKeys
-        int insertSchedule(@Bind("projId") int projid, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        int insertSchedule(@Bind("projId") int projid, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("startDate") Long startDate, @Bind("endDate") Long endDate);
     }
 
     @Value.Immutable
@@ -1174,7 +1178,9 @@ public class DatabaseProjectStoreManager
             return ScheduleStatus.of(
                     ScheduleTime.of(
                         Instant.ofEpochSecond(r.getLong("next_schedule_time")),
-                        Instant.ofEpochSecond(r.getLong("next_run_time"))),
+                        Instant.ofEpochSecond(r.getLong("next_run_time")),
+                        getOptionalLong(r, "start_date").transform(Instant::ofEpochSecond),
+                        getOptionalLong(r, "end_date").transform(Instant::ofEpochSecond)),
                     getOptionalLong(r, "last_session_time").transform(it -> Instant.ofEpochSecond(it)));
         }
     }

@@ -111,6 +111,8 @@ public class ScheduleExecutorTest
         when(schedule.getWorkflowDefinitionId()).thenReturn(WORKFLOW_DEFINITION_ID);
         when(schedule.getNextScheduleTime()).thenReturn(now);
         when(schedule.getNextRunTime()).thenReturn(now);
+        when(schedule.getStartDate()).thenReturn(Optional.absent());
+        when(schedule.getEndDate()).thenReturn(Optional.absent());
 
         when(sessionStoreManager.getSessionStore(SITE_ID)).thenReturn(sessionStore);
         when(projectStoreManager.getWorkflowDetailsById(WORKFLOW_DEFINITION_ID)).thenReturn(workflowDefinition);

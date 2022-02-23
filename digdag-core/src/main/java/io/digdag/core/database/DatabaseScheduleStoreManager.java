@@ -256,6 +256,7 @@ public class DatabaseScheduleStoreManager
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.next_run_time \\<= :currentTime" +
+                " and :currentTime between coalesce(s.start_date, 0) and coalesce(s.end_date, 253402300799)" +
                 " and s.disabled_at is null" +
                 " limit :limit" +
                 " for update of s skip locked")
@@ -330,6 +331,7 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select id from schedules" +
                 " where next_run_time \\<= :currentTime" +
+                " and :currentTime between coalesce(start_date, 0) and coalesce(end_date, 253402300799)" +
                 " and disabled_at is null" +
                 " limit :limit" +
                 " for update")
@@ -386,6 +388,8 @@ public class DatabaseScheduleStoreManager
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .disabledAt(getOptionalTimestampInstant(r, "disabled_at"))
                 .lastSessionTime(getOptionalLong(r, "last_session_time").transform(Instant::ofEpochSecond))
+                .startDate(getOptionalLong(r, "start_date").transform(Instant::ofEpochSecond))
+                .endDate(getOptionalLong(r, "end_date").transform(Instant::ofEpochSecond))
                 .build();
         }
     }

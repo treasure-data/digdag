@@ -3,6 +3,8 @@ package io.digdag.standards.scheduler;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+
+import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Scheduler;
@@ -22,7 +24,7 @@ public class DailySchedulerTest
 
     static Scheduler newScheduler(String pattern, String timeZone)
     {
-        return new DailySchedulerFactory().newScheduler(newConfig().set("_command", pattern), ZoneId.of(timeZone));
+        return new DailySchedulerFactory().newScheduler(newConfig().set("_command", pattern), ZoneId.of(timeZone), Optional.absent(), Optional.absent());
     }
 
     private static DateTimeFormatter TIME_FORMAT =
@@ -44,7 +46,9 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime1),
                 is(ScheduleTime.of(
                         instant("2016-02-03 00:00:00 +0000"),
-                        instant("2016-02-03 10:00:00 +0000"))));
+                        instant("2016-02-03 10:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
 
         // current time is 16:00:00
         // schedule is 10:00:00 every day
@@ -54,7 +58,9 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime2),
                 is(ScheduleTime.of(
                         instant("2016-02-04 00:00:00 +0000"),
-                        instant("2016-02-04 10:00:00 +0000"))));
+                        instant("2016-02-04 10:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -67,14 +73,18 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "Asia/Tokyo").getFirstScheduleTime(currentTime1),
                 is(ScheduleTime.of(
                         instant("2016-02-03 00:00:00 +0900"),
-                        instant("2016-02-03 10:00:00 +0900"))));
+                        instant("2016-02-03 10:00:00 +0900"),
+                        Optional.absent(),
+                        Optional.absent())));
 
         Instant currentTime2 = instant("2016-02-03 16:00:00 +0900");
         assertThat(
                 newScheduler("10:00:00", "Asia/Tokyo").getFirstScheduleTime(currentTime2),
                 is(ScheduleTime.of(
                         instant("2016-02-04 00:00:00 +0900"),
-                        instant("2016-02-04 10:00:00 +0900"))));
+                        instant("2016-02-04 10:00:00 +0900"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -91,14 +101,18 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "America/Los_Angeles").getFirstScheduleTime(currentTime1),
                 is(ScheduleTime.of(
                         instant("2016-03-13 00:00:00 -0800"),
-                        instant("2016-03-13 11:00:00 -0700"))));  // schedule runs at 10:00:00 although definition is "daily> 10:00:00"
+                        instant("2016-03-13 11:00:00 -0700"), // schedule runs at 10:00:00 although definition is "daily> 10:00:00"
+                        Optional.absent(),
+                        Optional.absent())));
 
         Instant currentTime2 = instant("2016-03-13 16:00:00 -0700");
         assertThat(
                 newScheduler("10:00:00", "America/Los_Angeles").getFirstScheduleTime(currentTime2),
                 is(ScheduleTime.of(
                         instant("2016-03-14 00:00:00 -0700"),
-                        instant("2016-03-14 10:00:00 -0700"))));
+                        instant("2016-03-14 10:00:00 -0700"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -109,21 +123,27 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime1),
                 is(ScheduleTime.of(
                         instant("2016-03-13 00:00:00 +0000"),
-                        instant("2016-03-13 10:00:00 +0000"))));
+                        instant("2016-03-13 10:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
 
         Instant currentTime2 = instant("2016-03-13 10:00:00 +0000");
         assertThat(
                 newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime2),
                 is(ScheduleTime.of(
                         instant("2016-03-13 00:00:00 +0000"),
-                        instant("2016-03-13 10:00:00 +0000"))));
+                        instant("2016-03-13 10:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
 
         Instant currentTime3 = instant("2016-03-13 00:00:00 +0000");
         assertThat(
                 newScheduler("00:00:00", "UTC").getFirstScheduleTime(currentTime3),
                 is(ScheduleTime.of(
                         instant("2016-03-13 00:00:00 +0000"),
-                        instant("2016-03-13 00:00:00 +0000"))));
+                        instant("2016-03-13 00:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -137,7 +157,9 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "UTC").nextScheduleTime(lastScheduleTime1),
                 is(ScheduleTime.of(
                         instant("2016-02-04 00:00:00 +0000"),
-                        instant("2016-02-04 10:00:00 +0000"))));
+                        instant("2016-02-04 10:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -150,7 +172,9 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "Asia/Tokyo").nextScheduleTime(lastScheduleTime1),
                 is(ScheduleTime.of(
                         instant("2016-02-04 00:00:00 +0900"),
-                        instant("2016-02-04 10:00:00 +0900"))));
+                        instant("2016-02-04 10:00:00 +0900"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -161,14 +185,18 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "America/Los_Angeles").nextScheduleTime(lastScheduleTime1),
                 is(ScheduleTime.of(
                         instant("2016-03-13 00:00:00 -0800"),
-                        instant("2016-03-13 10:00:00 -0800"))));
+                        instant("2016-03-13 10:00:00 -0800"),
+                        Optional.absent(),
+                        Optional.absent())));
 
         Instant lastScheduleTime2 = instant("2016-03-13 00:00:00 -0800");
         assertThat(
                 newScheduler("10:00:00", "America/Los_Angeles").nextScheduleTime(lastScheduleTime2),
                 is(ScheduleTime.of(
                         instant("2016-03-14 00:00:00 -0700"),
-                        instant("2016-03-14 10:00:00 -0700"))));
+                        instant("2016-03-14 10:00:00 -0700"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -182,7 +210,9 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "UTC").lastScheduleTime(currentScheduleTime1),
                 is(ScheduleTime.of(
                         instant("2016-02-02 00:00:00 +0000"),
-                        instant("2016-02-02 10:00:00 +0000"))));
+                        instant("2016-02-02 10:00:00 +0000"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -195,7 +225,9 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "Asia/Tokyo").lastScheduleTime(currentScheduleTime1),
                 is(ScheduleTime.of(
                         instant("2016-02-02 00:00:00 +0900"),
-                        instant("2016-02-02 10:00:00 +0900"))));
+                        instant("2016-02-02 10:00:00 +0900"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 
     @Test
@@ -206,13 +238,17 @@ public class DailySchedulerTest
                 newScheduler("10:00:00", "America/Los_Angeles").lastScheduleTime(currentScheduleTime1),
                 is(ScheduleTime.of(
                         instant("2016-03-12 00:00:00 -0800"),
-                        instant("2016-03-12 10:00:00 -0800"))));
+                        instant("2016-03-12 10:00:00 -0800"),
+                        Optional.absent(),
+                        Optional.absent())));
 
         Instant currentScheduleTime2 = instant("2016-03-14 00:00:00 -0700");
         assertThat(
                 newScheduler("10:00:00", "America/Los_Angeles").lastScheduleTime(currentScheduleTime2),
                 is(ScheduleTime.of(
                         instant("2016-03-13 00:00:00 -0800"),
-                        instant("2016-03-13 10:00:00 -0800"))));
+                        instant("2016-03-13 10:00:00 -0800"),
+                        Optional.absent(),
+                        Optional.absent())));
     }
 }

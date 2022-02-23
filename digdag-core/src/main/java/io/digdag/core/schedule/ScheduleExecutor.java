@@ -241,7 +241,9 @@ public class ScheduleExecutor
                     logger.info("Number of attempts or tasks exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
                     nextSchedule = ScheduleTime.of(
                             sched.getNextScheduleTime(),
-                            ScheduleTime.alignedNow().plusSeconds(600));
+                            ScheduleTime.alignedNow().plusSeconds(600),
+                            sched.getStartDate(),
+                            sched.getEndDate());
                 }
                 catch (ResourceConflictException ex) {
                     Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
@@ -254,7 +256,9 @@ public class ScheduleExecutor
             logger.error("Database state error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
             nextSchedule = ScheduleTime.of(
                     sched.getNextScheduleTime(),
-                    sched.getNextRunTime().plusSeconds(3600));
+                    sched.getNextRunTime().plusSeconds(3600),
+                    sched.getStartDate(),
+                    sched.getEndDate());
         }
         catch (RuntimeException ex) {
             logger.error(
@@ -262,7 +266,9 @@ public class ScheduleExecutor
                     "Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
             nextSchedule = ScheduleTime.of(
                     sched.getNextScheduleTime(),
-                    ScheduleTime.alignedNow().plusSeconds(3600));
+                    ScheduleTime.alignedNow().plusSeconds(3600),
+                    sched.getStartDate(),
+                    sched.getEndDate());
         }
 
         try {
@@ -288,7 +294,7 @@ public class ScheduleExecutor
         Instant runTime = sched.getNextRunTime();
 
         AttemptRequest ar = newAttemptRequest(
-                def, ScheduleTime.of(scheduleTime, runTime),
+                def, ScheduleTime.of(scheduleTime, runTime, sched.getStartDate(), sched.getEndDate()),
                 Optional.absent(), sched.getLastSessionTime());
         try {
             workflowExecutor.submitWorkflow(def.getProject().getSiteId(),
@@ -317,7 +323,7 @@ public class ScheduleExecutor
             if (sched.getNextScheduleTime().isBefore(alignedNextTime.getTime())) {
                 // OK
                 if (runTime.isPresent()) {
-                    alignedNextTime = ScheduleTime.of(alignedNextTime.getTime(), runTime.get());
+                    alignedNextTime = ScheduleTime.of(alignedNextTime.getTime(), runTime.get(), sched.getStartDate(), sched.getEndDate());
                 }
 
                 StoredSchedule updatedSched = copyWithUpdatedScheduleTime(sched, alignedNextTime);
@@ -348,7 +354,7 @@ public class ScheduleExecutor
             if (sched.getNextScheduleTime().isBefore(time.getTime())) {
                 // OK
                 if (runTime.isPresent()) {
-                    time = ScheduleTime.of(time.getTime(), runTime.get());
+                    time = ScheduleTime.of(time.getTime(), runTime.get(), sched.getStartDate(), sched.getEndDate());
                 }
 
                 StoredSchedule updatedSched = copyWithUpdatedScheduleTime(sched, time);
@@ -370,6 +376,8 @@ public class ScheduleExecutor
             .from(sched)
             .nextRunTime(nextTime.getRunTime())
             .nextScheduleTime(nextTime.getTime())
+            .startDate(sched.getStartDate())
+            .endDate(sched.getEndDate())
             .build();
     }
 
@@ -459,7 +467,7 @@ public class ScheduleExecutor
                                     sched.getProjectId(), sched.getWorkflowName(), instant);
                         }
                         AttemptRequest ar = newAttemptRequest(
-                                def, ScheduleTime.of(instant, sched.getNextScheduleTime()),
+                                def, ScheduleTime.of(instant, sched.getNextScheduleTime(), sched.getStartDate(), sched.getEndDate()),
                                 Optional.of(attemptName), lastExecutedSessionTime);
                         StoredSessionAttemptWithSession attempt =
                             submitter.submitDelayedAttempt(ar, lastAttempt.transform(a -> a.getSessionId()));

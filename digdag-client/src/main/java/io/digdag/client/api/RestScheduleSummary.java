@@ -26,6 +26,10 @@ public interface RestScheduleSummary
 
     Optional<Instant> getDisabledAt();
 
+    Optional<Instant> getStartDate();
+
+    Optional<Instant> getEndDate();
+
     static ImmutableRestScheduleSummary.Builder builder()
     {
         return ImmutableRestScheduleSummary.builder();

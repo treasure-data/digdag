@@ -1,5 +1,6 @@
 package io.digdag.core.schedule;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.function.Consumer;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.core.agent.CheckedConfig;
 import io.digdag.core.agent.EditDistance;
 import io.digdag.spi.Scheduler;
@@ -114,6 +116,9 @@ public class SchedulerManager
             c.set("_command", command);
         }
 
+        Optional<Instant> startDate = c.getOptional("start_date", String.class).transform(it -> LocalTimeOrInstant.fromString(it).toInstant(workflowTimeZone));
+        Optional<Instant> endDate = c.getOptional("end_date", String.class).transform(it -> LocalTimeOrInstant.fromString(it).toInstant(workflowTimeZone));
+
         for(String param : BUILT_IN_SCHEDULE_PARAMS){
             usedKeys.add(param);
         }
@@ -138,7 +143,7 @@ public class SchedulerManager
             }
         }
 
-        return factory.newScheduler(c, workflowTimeZone);
+        return factory.newScheduler(c, workflowTimeZone, startDate, endDate);
     }
 
     private String getWarnUnusedKey(String shouldBeUsedButNotUsedKey, Collection<String> candidateKeys)

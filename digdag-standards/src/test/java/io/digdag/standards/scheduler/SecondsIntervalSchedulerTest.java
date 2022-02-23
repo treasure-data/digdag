@@ -1,5 +1,6 @@
 package io.digdag.standards.scheduler;
 
+import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.standards.scheduler.SecondsIntervalSchedulerFactory.SecondsIntervalScheduler;
 import org.junit.Test;
@@ -16,38 +17,38 @@ public class SecondsIntervalSchedulerTest
     public void testGetFirstScheduleTime()
             throws Exception
     {
-        SecondsIntervalScheduler scheduler = new SecondsIntervalScheduler(UTC, 3, 2);
+        SecondsIntervalScheduler scheduler = new SecondsIntervalScheduler(UTC, 3, 2, Optional.absent(), Optional.absent());
 
         assertThat(scheduler.getFirstScheduleTime(Instant.ofEpochSecond(3)),
-                is(ScheduleTime.of(Instant.ofEpochSecond(3), Instant.ofEpochSecond(5))));
+                is(ScheduleTime.of(Instant.ofEpochSecond(3), Instant.ofEpochSecond(5), Optional.absent(), Optional.absent())));
 
         assertThat(scheduler.getFirstScheduleTime(Instant.ofEpochSecond(4)),
-                is(ScheduleTime.of(Instant.ofEpochSecond(6), Instant.ofEpochSecond(8))));
+                is(ScheduleTime.of(Instant.ofEpochSecond(6), Instant.ofEpochSecond(8), Optional.absent(), Optional.absent())));
     }
 
     @Test
     public void testNextScheduleTime()
             throws Exception
     {
-        SecondsIntervalScheduler scheduler = new SecondsIntervalScheduler(UTC, 3, 2);
+        SecondsIntervalScheduler scheduler = new SecondsIntervalScheduler(UTC, 3, 2, Optional.absent(), Optional.absent());
 
         assertThat(scheduler.nextScheduleTime(Instant.ofEpochSecond(3)),
-                is(ScheduleTime.of(Instant.ofEpochSecond(6), Instant.ofEpochSecond(8))));
+                is(ScheduleTime.of(Instant.ofEpochSecond(6), Instant.ofEpochSecond(8), Optional.absent(), Optional.absent())));
 
         assertThat(scheduler.nextScheduleTime(Instant.ofEpochSecond(4)),
-                is(ScheduleTime.of(Instant.ofEpochSecond(6), Instant.ofEpochSecond(8))));
+                is(ScheduleTime.of(Instant.ofEpochSecond(6), Instant.ofEpochSecond(8), Optional.absent(), Optional.absent())));
     }
 
     @Test
     public void testLastScheduleTime()
             throws Exception
     {
-        SecondsIntervalScheduler scheduler = new SecondsIntervalScheduler(UTC, 3, 2);
+        SecondsIntervalScheduler scheduler = new SecondsIntervalScheduler(UTC, 3, 2, Optional.absent(), Optional.absent());
 
         assertThat(scheduler.lastScheduleTime(Instant.ofEpochSecond(3)),
-                is(ScheduleTime.of(Instant.ofEpochSecond(0), Instant.ofEpochSecond(2))));
+                is(ScheduleTime.of(Instant.ofEpochSecond(0), Instant.ofEpochSecond(2), Optional.absent(), Optional.absent())));
 
         assertThat(scheduler.lastScheduleTime(Instant.ofEpochSecond(4)),
-                is(ScheduleTime.of(Instant.ofEpochSecond(3), Instant.ofEpochSecond(5))));
+                is(ScheduleTime.of(Instant.ofEpochSecond(3), Instant.ofEpochSecond(5), Optional.absent(), Optional.absent())));
     }
 }

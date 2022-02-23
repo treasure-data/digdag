@@ -192,6 +192,8 @@ public final class RestModels
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .disabledAt(sched.getDisabledAt())
+            .startDate(sched.getStartDate())
+            .endDate(sched.getEndDate())
             .build();
     }
 
@@ -244,6 +246,8 @@ public final class RestModels
             .createdAt(sched.getCreatedAt())
             .updatedAt(sched.getCreatedAt())
             .disabledAt(sched.getDisabledAt())
+            .startDate(sched.getStartDate())
+            .endDate(sched.getEndDate())
             .build();
     }
 
