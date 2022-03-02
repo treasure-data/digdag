@@ -4,6 +4,9 @@ dependencies {
     compile project(':digdag-spi')
     compile project(':digdag-plugin-utils')
 
+    // new schedules
+    compile 'com.cronutils:cron-utils:9.1.6'
+
     // schedules
     compile 'it.sauronsoftware.cron4j:cron4j:2.2.5'
 

@@ -11,6 +11,7 @@ import io.digdag.standards.scheduler.WeeklySchedulerFactory;
 import io.digdag.standards.scheduler.DailySchedulerFactory;
 import io.digdag.standards.scheduler.HourlySchedulerFactory;
 import io.digdag.standards.scheduler.MinutesIntervalSchedulerFactory;
+import io.digdag.standards.scheduler.QuartzCronSchedulerFactory;
 
 public class SchedulerModule
     implements Module
@@ -19,6 +20,7 @@ public class SchedulerModule
     public void configure(Binder binder)
     {
         addStandardSchedulerFactory(binder, CronSchedulerFactory.class);
+        addStandardSchedulerFactory(binder, QuartzCronSchedulerFactory.class);
         addStandardSchedulerFactory(binder, MonthlySchedulerFactory.class);
         addStandardSchedulerFactory(binder, WeeklySchedulerFactory.class);
         addStandardSchedulerFactory(binder, DailySchedulerFactory.class);
