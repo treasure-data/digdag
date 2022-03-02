@@ -451,7 +451,21 @@ public class RequireIT
     }
 
     @Test
-    public void testRequireHasTargetSessionIdEvenWhenChildIsNotKicked()
+    public void testTargetSessionIDWhenNoKickAndChildIsRunning()
+            throws Exception
+    {
+        testTargetSessionIDWhenNoKick(false);
+    }
+
+    @Test
+    public void testTargetSessionIDWhenNoKickAndChildFinished()
+            throws Exception
+    {
+        testTargetSessionIDWhenNoKick(true);
+    }
+
+
+    public void testTargetSessionIDWhenNoKick(boolean waitChildFinish)
             throws Exception
     {
         // Create new project
@@ -460,9 +474,8 @@ public class RequireIT
                 projectDir.toString());
         assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
 
-        Path childOutFile = projectDir.resolve("child.out").toAbsolutePath().normalize();
-        prepareForChildWF(childOutFile);
-        copyResource("acceptance/require/parent.dig", projectDir.resolve("parent.dig"));
+        copyResource("acceptance/require/parent_wait.dig", projectDir.resolve("parent_wait.dig"));
+        copyResource("acceptance/require/child_wait.dig", projectDir.resolve("child_wait.dig"));
 
         // Push the project
         CommandStatus pushStatus = main("push",
@@ -482,11 +495,28 @@ public class RequireIT
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "require", "child",
+                    "require", "child_wait",
                     "--session", session);
             assertThat(startStatus.code(), is(0));
             targetAttemptId = getAttemptId(startStatus);
             targetSessionId = getSessionId(startStatus);
+
+            if (waitChildFinish) {
+                // Wait for the attempt to complete
+                boolean success = false;
+                for (int i = 0; i < 60; i++) {
+                    CommandStatus attemptsStatus = main("attempts",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            targetAttemptId.toString());
+                    success = attemptsStatus.outUtf8().contains("status: success");
+                    if (success) {
+                        break;
+                    }
+                    Thread.sleep(1000);
+                }
+                assertThat(success, is(true));
+            }
         }
 
         // Start the workflow
@@ -495,7 +525,7 @@ public class RequireIT
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "require", "parent",
+                    "require", "parent_wait",
                     "--session", session);
             assertThat(startStatus.code(), is(0));
             attemptId = getAttemptId(startStatus);
