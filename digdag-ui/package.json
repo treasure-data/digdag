@@ -48,7 +48,7 @@
     "snazzy": "^6.0.0",
     "tar-js": "^0.3.0",
     "tether": "^1.4.5",
-    "urijs": "1.19.7",
+    "urijs": "1.19.9",
     "url-parse": "1.5.2",
     "uuid": "^3.2.1",
     "whatwg-fetch": "2.0.3"
