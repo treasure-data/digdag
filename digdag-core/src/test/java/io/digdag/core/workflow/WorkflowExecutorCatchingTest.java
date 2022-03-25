@@ -25,7 +25,6 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
@@ -146,7 +145,8 @@ public class WorkflowExecutorCatchingTest
         }
 
         @Override
-        protected BiFunction<TaskControlStore, StoredTask, Boolean> funcEnqueueLockedTask()
+        protected boolean enqueueLockedTask(final TaskQueueDispatcher dispatcher,
+                final TaskControlStore store, final StoredTask task)
         {
             funcEnqueueTaskCounter++;
             logger.debug("funcEnqueueTask called:" + funcEnqueueTaskCounter);
@@ -154,7 +154,7 @@ public class WorkflowExecutorCatchingTest
                 logger.info("funcEnqueueTask() throw Exception. counter=" + funcEnqueueTaskCounter);
                 throw new RuntimeException("Unknown exception");
             }
-            return super.funcEnqueueLockedTask();
+            return super.enqueueLockedTask(dispatcher, store, task);
         }
 
         @Override

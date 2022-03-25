@@ -205,7 +205,7 @@ public class WorkflowExecutor
         this.systemConfig = systemConfig;
         this.limits = limits;
         this.metrics = metrics;
-        this.bulkEnqueueSize = systemConfig.get("executor.bulk_enqueue_size", Integer.class, 2);
+        this.bulkEnqueueSize = systemConfig.get("executor.bulk_enqueue_size", Integer.class, 100);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -931,18 +931,12 @@ public class WorkflowExecutor
         //}
     }
 
-    @VisibleForTesting
-    protected BiFunction<TaskControlStore, StoredTask, Boolean> funcEnqueueLockedTask()
-    {
-        return (store, task) -> enqueueLockedTask(dispatcher, task.getId(), store, task);
-    }
-
     @DigdagTimed(category = "executor", appendMethodName = true)
     protected boolean enqueueReadyTasks(TaskQueuer queuer)
     {
         for (int i = 0; i < bulkEnqueueSize; i++) {
             boolean changed = tm.begin(() -> sm.tryLockReadyTask((store, task) -> {
-                catching(()->funcEnqueueLockedTask().apply(store, task), true, "Failed to call enqueueTask. taskId:" + task.getId());
+                catching(()->enqueueLockedTask(dispatcher, store, task), true, "Failed to call enqueueTask. taskId:" + task.getId());
                 return true;
             })).or(false);
             if (!changed) {
@@ -954,86 +948,81 @@ public class WorkflowExecutor
     }
 
     @DigdagTimed(category="executor", appendMethodName = true)
-    protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
+    @VisibleForTesting
+    protected boolean enqueueLockedTask(final TaskQueueDispatcher dispatcher,
+            final TaskControlStore store, final StoredTask task)
     {
-        sm.lockTaskIfNotLocked(taskId, (store, task) -> {
-            return enqueueLockedTask(dispatcher, taskId, store, task);
-        });
-    }
+        final long taskId = task.getId();
 
-    @DigdagTimed(category="executor", appendMethodName = true)
-    protected boolean enqueueLockedTask(final TaskQueueDispatcher dispatcher, final long taskId,
-            TaskControlStore store, StoredTask task)
-    {
-            TaskControl lockedTask = new TaskControl(store, task, limits);
-            if (lockedTask.getState() != TaskStateCode.READY) {
-                return false;
-            }
+        TaskControl lockedTask = new TaskControl(store, task, limits);
+        if (lockedTask.getState() != TaskStateCode.READY) {
+            return false;
+        }
 
-            if (task.getTaskType().isGroupingOnly()) {
-                return retryGroupingTask(lockedTask);
-            }
+        if (task.getTaskType().isGroupingOnly()) {
+            return retryGroupingTask(lockedTask);
+        }
 
-            // NOTE: Nothing to do here because CANCEL_REQUESTED task will be handled by　an agent.
-            // See also state transitions.
+        // NOTE: Nothing to do here because CANCEL_REQUESTED task will be handled by　an agent.
+        // See also state transitions.
 
-            int siteId;
+        int siteId;
+        try {
+            siteId = sm.getSiteIdOfTask(taskId);
+        }
+        catch (ResourceNotFoundException ex) {
+            tm.reset();
+            Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
+            logger.error("Database state error enqueuing task.", error);
+            return false;
+        }
+
+        try {
+            // TODO make queue name configurable. note that it also needs a new REST API and/or
+            //      CLI ccommands to create/delete/manage queues.
+            Optional<String> queueName = Optional.absent();
+
+            String encodedUnique = encodeUniqueQueuedTaskName(lockedTask.get());
+
+            TaskQueueRequest request = TaskQueueRequest.builder()
+                .priority(0)  // TODO make this configurable
+                .uniqueName(encodedUnique)
+                .data(Optional.absent())
+                .build();
+
+            logger.debug("Queuing task of attempt_id={}: id={} {}", task.getAttemptId(), task.getId(), task.getFullName());
             try {
-                siteId = sm.getSiteIdOfTask(taskId);
+                dispatcher.dispatch(siteId, queueName, request);
             }
-            catch (ResourceNotFoundException ex) {
+            catch (TaskConflictException ex) {
                 tm.reset();
-                Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
-                logger.error("Database state error enqueuing task.", error);
-                return false;
+                logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
+                        encodedUnique, queueName.or("<shared>"), siteId);
             }
 
-            try {
-                // TODO make queue name configurable. note that it also needs a new REST API and/or
-                //      CLI ccommands to create/delete/manage queues.
-                Optional<String> queueName = Optional.absent();
+            ////
+            // don't throw exceptions after here. task is already dispatched to a queue
+            //
 
-                String encodedUnique = encodeUniqueQueuedTaskName(lockedTask.get());
-
-                TaskQueueRequest request = TaskQueueRequest.builder()
-                    .priority(0)  // TODO make this configurable
-                    .uniqueName(encodedUnique)
-                    .data(Optional.absent())
-                    .build();
-
-                logger.debug("Queuing task of attempt_id={}: id={} {}", task.getAttemptId(), task.getId(), task.getFullName());
-                try {
-                    dispatcher.dispatch(siteId, queueName, request);
-                }
-                catch (TaskConflictException ex) {
-                    tm.reset();
-                    logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
-                            encodedUnique, queueName.or("<shared>"), siteId);
-                }
-
-                ////
-                // don't throw exceptions after here. task is already dispatched to a queue
-                //
-
-                boolean updated = lockedTask.setReadyToRunning();
-                if (!updated) {
-                    // return value of setReadyToRunning must be true because this task is locked
-                    // (won't be updated by other machines concurrently) and confirmed that
-                    // current state is READY.
-                    logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
-                }
-
-                return updated;
+            boolean updated = lockedTask.setReadyToRunning();
+            if (!updated) {
+                // return value of setReadyToRunning must be true because this task is locked
+                // (won't be updated by other machines concurrently) and confirmed that
+                // current state is READY.
+                logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
             }
-            catch (Exception ex) {
-                tm.reset();
-                logger.error(
-                        LogMarkers.UNEXPECTED_SERVER_ERROR,
-                        "Enqueue error, making this task failed: {}", task, ex);
-                // TODO retry here?
-                return taskFailed(lockedTask,
-                        buildExceptionErrorConfig(ex).toConfig(cf));
-            }
+
+            return updated;
+        }
+        catch (Exception ex) {
+            tm.reset();
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Enqueue error, making this task failed: {}", task, ex);
+            // TODO retry here?
+            return taskFailed(lockedTask,
+                    buildExceptionErrorConfig(ex).toConfig(cf));
+        }
     }
 
     private static String encodeUniqueQueuedTaskName(StoredTask task)

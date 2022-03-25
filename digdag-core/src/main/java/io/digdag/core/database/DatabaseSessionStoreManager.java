@@ -304,7 +304,7 @@ public class DatabaseSessionStoreManager
                         selectTaskDetailsQuery() +
                         " where state = " + TaskStateCode.READY.get() +
                         " limit 1" +
-                        " for update of table tasks skip locked"
+                        " for update of t skip locked"
                         )
                     .map(stm)
                     .first();
