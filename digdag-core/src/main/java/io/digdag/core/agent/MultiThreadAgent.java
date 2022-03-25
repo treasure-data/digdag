@@ -122,9 +122,10 @@ public class MultiThreadAgent
                     int guaranteedAvaialbleThreads = executor.getMaximumPoolSize() - maximumActiveTasks;
                     // Acquire at most guaranteedAvaialbleThreads or 10. This guarantees that all tasks start immediately.
                     int maxAcquire = Math.min(guaranteedAvaialbleThreads, 10);
+                    int actualyAcquired = 0;
                     if (maxAcquire > 0) {
                         metrics.summary(Category.AGENT,"mtag_NumMaxAcquire", maxAcquire);
-                        transactionManager.begin(() -> {
+                        actualyAcquired = transactionManager.begin(() -> {
                             List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(maxAcquire, agentId, config.getLockRetentionTime(), 1000);
                             for (TaskRequest req : reqs) {
                                 executor.submit(() -> {
@@ -144,10 +145,10 @@ public class MultiThreadAgent
                                 });
                                 activeTaskCount.incrementAndGet();
                             }
-                            return null;
+                            return reqs.size();
                         });
                     }
-                    else {
+                    if (actualyAcquired == 0) {
                         metrics.increment(Category.AGENT, "mtag_RunWaitCounter");
                         // no executor thread is available. sleep for a while until a task execution finishes
                         addActiveTaskLock.wait(500);
