@@ -49,12 +49,7 @@ class Env(object):
 
     def add_subtask(self, function=None, **params):
         if function is not None and not isinstance(function, dict):
-            if hasattr(function, "im_class"):
-                # Python 2
-                command = ".".join([function.im_class.__module__, function.im_class.__name__, function.__name__])
-            else:
-                # Python 3
-                command = ".".join([function.__module__, function.__qualname__])
+            command = ".".join([function.__module__, function.__qualname__])
             config = params
             config["py>"] = command
         else:
@@ -121,14 +116,7 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
         else:
             if spec.defaults is None or idx < len(spec.args) - len(spec.defaults):
                 # this keyword is required but not in params. raising an error.
-                if hasattr(callable_type, '__qualname__'):
-                    # Python 3
-                    name = callable_type.__qualname__
-                elif hasattr(callable_type, 'im_class'):
-                    # Python 2
-                    name = "%s.%s" % (callable_type.im_class.__name__, callable_type.__name__)
-                else:
-                    name = callable_type.__name__
+                name = callable_type.__qualname__
                 raise TypeError("Method '%s' requires parameter '%s' but not set" % (name, key))
     if keywords_:
         # above code was only for validation
