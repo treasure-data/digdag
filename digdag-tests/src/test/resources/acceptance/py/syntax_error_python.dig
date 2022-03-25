@@ -1,2 +1,3 @@
 +task1:
   py>: scripts.syntax_error.func1
+  python: python3

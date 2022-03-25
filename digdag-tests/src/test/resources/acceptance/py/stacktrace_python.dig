@@ -1,5 +1,6 @@
 +stacktrace_python:
   py>: scripts.stacktrace.run
+  python: python3
 
 _error:
   echo>: ERROR_MESSAGE_BEGIN ${error.message} ERROR_MESSAGE_END

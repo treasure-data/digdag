@@ -2,8 +2,8 @@
 
 +python_string_option:
   py>: scripts.echo_params.echo_params
-  python: "python"
+  python: "python3"
 
 +python_array_option:
   py>: scripts.echo_params.echo_params
-  python: ["python", "-v"]
+  python: ["python3", "-v"]
