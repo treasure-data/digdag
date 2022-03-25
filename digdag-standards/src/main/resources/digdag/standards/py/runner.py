@@ -109,12 +109,8 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
     if callable_type == object.__init__:
         # object.__init__ accepts *varargs and **keywords but it throws exception
         return {}
-    if hasattr(inspect, 'getfullargspec'): # Python3
-        spec = inspect.getfullargspec(callable_type)
-        keywords_ = spec.varkw
-    else: # Python 2
-        spec = inspect.getargspec(callable_type)
-        keywords_ = spec.keywords
+    spec = inspect.getfullargspec(callable_type)
+    keywords_ = spec.varkw
 
     args = {}
     for idx, key in enumerate(spec.args):
