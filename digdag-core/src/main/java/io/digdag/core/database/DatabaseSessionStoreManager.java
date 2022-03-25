@@ -282,16 +282,61 @@ public class DatabaseSessionStoreManager
             );
     }
 
+    private boolean isPostgres()
+    {
+        switch (databaseType) {
+        case "postgresql":
+            return true;
+        default:
+            return false;
+        }
+    }
+
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
     @Override
-    public List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch)
+    public <T> Optional<T> tryLockReadyTask(TaskLockActionWithDetails<T> func)
     {
-        if (randomFetch) {
-            return autoCommit((handle, dao) -> dao.findAllTaskIdsByStateAtRandom(TaskStateCode.READY.get(), maxEntries));
-        }
-        else {
-            return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
-        }
+        return transaction((handle, dao) -> {
+            if (isPostgres()) {
+                // FOR UPDATE with SKIP LOCKED is available only with PostgreSQL.
+                // Optimize two SELECTs into one SELECT with SKIP LOCKED.
+                StoredTask locked = handle.createQuery(
+                        selectTaskDetailsQuery() +
+                        " where state = " + TaskStateCode.READY.get() +
+                        " limit 1" +
+                        " for update of table tasks skip locked"
+                        )
+                    .map(stm)
+                    .first();
+
+                if (locked != null) {
+                    T result = func.call(new DatabaseTaskControlStore(handle), locked);
+                    return Optional.of(result);
+                }
+                return Optional.<T>absent();
+
+            } else {
+                // H2 doesn't support FOR UPDATE with JOIN. Use two SELECTs
+                Long lockedTaskId = handle.createQuery(
+                        "select id from tasks" +
+                        " where state = " + TaskStateCode.READY.get() +
+                        " limit 1 for update")
+                    .mapTo(Long.class)
+                    .first();
+                if (lockedTaskId != null) {
+                    try {
+                        StoredTask locked = getTaskById(handle, lockedTaskId);  // this doesn't need
+                        // FOR UPDATE clause because the row is already locked above
+                        T result = func.call(new DatabaseTaskControlStore(handle), locked);
+                        return Optional.of(result);
+                    }
+                    catch (ResourceNotFoundException ex) {
+                        // Never reach here because above query blocks DELETE
+                    }
+                }
+                return Optional.<T>absent();
+            }
+        });
     }
 
     @DigdagTimed(value = "dssm_", category = "db", appendMethodName = true)
@@ -1695,10 +1740,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
-
-        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
-        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
-
     }
 
     @UseStringTemplate3StatementLocator
@@ -1744,9 +1785,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " for update skip locked")
         Long lockTaskIfNotLocked(@Bind("id") long taskId);
-
-        @SqlQuery("select id from tasks where state = :state order by random() limit :limit")
-        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
     }
 
     public interface Dao
@@ -2042,11 +2080,6 @@ public class DatabaseSessionStoreManager
                 " values (:attemptId, :nextRunTime, :type, :config, now(), now())")
         @GetGeneratedKeys
         long insertSessionMonitor(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime, @Bind("type") String type, @Bind("config") Config config);
-
-        @SqlQuery("select id from tasks where state = :state limit :limit")
-        List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
-
-        List<Long> findAllTaskIdsByStateAtRandom(@Bind("state") short state, @Bind("limit") int limit);
 
         @SqlQuery("select id, session_id, state_flags, index from session_attempts where id = :attemptId for update")
         SessionAttemptSummary lockAttempt(@Bind("attemptId") long attemptId);

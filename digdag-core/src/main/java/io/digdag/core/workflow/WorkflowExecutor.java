@@ -33,6 +33,7 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskAttemptSummary;
+import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.metrics.DigdagTimed;
@@ -62,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -178,8 +180,7 @@ public class WorkflowExecutor
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
     private volatile boolean propagatorNotice = false;
-    private final boolean enqueueRandomFetch;
-    private final Integer enqueueFetchSize;
+    private final int bulkEnqueueSize;
 
     @Inject
     public WorkflowExecutor(
@@ -204,8 +205,7 @@ public class WorkflowExecutor
         this.systemConfig = systemConfig;
         this.limits = limits;
         this.metrics = metrics;
-        this.enqueueRandomFetch = systemConfig.get("executor.enqueue_random_fetch", Boolean.class, false);
-        this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
+        this.bulkEnqueueSize = systemConfig.get("executor.bulk_enqueue_size", Integer.class, 2);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -500,7 +500,7 @@ public class WorkflowExecutor
         try (TaskQueuer queuer = new TaskQueuer()) {
             propagateBlockedChildrenToReady();
             retryRetryWaitingTasks();
-            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+            enqueueReadyTasks(queuer);
             propagateAllPlannedToDone();
             propagateSessionArchive();
 
@@ -519,7 +519,10 @@ public class WorkflowExecutor
 
                 propagateBlockedChildrenToReady();
                 retryRetryWaitingTasks();
-                enqueueReadyTasks(queuer);
+
+                // enqueue at most bulkEnqueueSize tasks. It may leave some
+                // ready tasks on the database not to be enqueued.
+                boolean hasMoreReadyTasks = enqueueReadyTasks(queuer);
 
                 /**
                  *  propagateSessionArchive() should be always called.
@@ -531,7 +534,7 @@ public class WorkflowExecutor
                  */
                 boolean hasModification = propagateAllPlannedToDone();
                 propagateSessionArchive();
-                if (hasModification) {
+                if (hasMoreReadyTasks || hasModification) {
                     //propagateSessionArchive();
                 }
                 else {
@@ -929,30 +932,39 @@ public class WorkflowExecutor
     }
 
     @VisibleForTesting
-    protected Function<Long, Boolean> funcEnqueueTask()
+    protected BiFunction<TaskControlStore, StoredTask, Boolean> funcEnqueueLockedTask()
     {
-        return (tId) ->
-                tm.begin(() -> {
-                    enqueueTask(dispatcher, tId);
-                    return true;
-                });
+        return (store, task) -> enqueueLockedTask(dispatcher, task.getId(), store, task);
     }
 
     @DigdagTimed(category = "executor", appendMethodName = true)
-    protected void enqueueReadyTasks(TaskQueuer queuer)
+    protected boolean enqueueReadyTasks(TaskQueuer queuer)
     {
-        List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(enqueueFetchSize, enqueueRandomFetch));
-        logger.trace("readyTaskIds:{}", readyTaskIds);
-        for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
-            catching(()->funcEnqueueTask().apply(taskId), true, "Failed to call enqueueTask. taskId:" + taskId);
-            //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
+        for (int i = 0; i < bulkEnqueueSize; i++) {
+            boolean changed = tm.begin(() -> sm.tryLockReadyTask((store, task) -> {
+                catching(()->funcEnqueueLockedTask().apply(store, task), true, "Failed to call enqueueTask. taskId:" + task.getId());
+                return true;
+            })).or(false);
+            if (!changed) {
+                // Break and return false if no tasks are ready
+                return false;
+            }
         }
+        return true;  // Run next enqueueReadyTasks immediately without sleep at runWhile
     }
 
     @DigdagTimed(category="executor", appendMethodName = true)
     protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
         sm.lockTaskIfNotLocked(taskId, (store, task) -> {
+            return enqueueLockedTask(dispatcher, taskId, store, task);
+        });
+    }
+
+    @DigdagTimed(category="executor", appendMethodName = true)
+    protected boolean enqueueLockedTask(final TaskQueueDispatcher dispatcher, final long taskId,
+            TaskControlStore store, StoredTask task)
+    {
             TaskControl lockedTask = new TaskControl(store, task, limits);
             if (lockedTask.getState() != TaskStateCode.READY) {
                 return false;
@@ -1022,7 +1034,6 @@ public class WorkflowExecutor
                 return taskFailed(lockedTask,
                         buildExceptionErrorConfig(ex).toConfig(cf));
             }
-        }).or(false);
     }
 
     private static String encodeUniqueQueuedTaskName(StoredTask task)

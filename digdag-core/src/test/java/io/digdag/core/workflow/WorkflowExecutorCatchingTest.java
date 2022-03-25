@@ -11,7 +11,9 @@ import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskAttemptSummary;
+import io.digdag.core.session.TaskControlStore;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.metrics.DigdagMetrics;
 import org.junit.After;
@@ -23,6 +25,7 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
@@ -143,7 +146,7 @@ public class WorkflowExecutorCatchingTest
         }
 
         @Override
-        protected Function<Long, Boolean> funcEnqueueTask()
+        protected BiFunction<TaskControlStore, StoredTask, Boolean> funcEnqueueLockedTask()
         {
             funcEnqueueTaskCounter++;
             logger.debug("funcEnqueueTask called:" + funcEnqueueTaskCounter);
@@ -151,7 +154,7 @@ public class WorkflowExecutorCatchingTest
                 logger.info("funcEnqueueTask() throw Exception. counter=" + funcEnqueueTaskCounter);
                 throw new RuntimeException("Unknown exception");
             }
-            return super.funcEnqueueTask();
+            return super.funcEnqueueLockedTask();
         }
 
         @Override
