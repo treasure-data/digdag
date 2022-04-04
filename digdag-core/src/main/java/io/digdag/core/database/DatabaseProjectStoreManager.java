@@ -41,8 +41,6 @@ import org.skife.jdbi.v2.sqlobject.customizers.Define;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import javax.activation.DataSource;
-
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -55,8 +53,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ENGLISH;
 
 public class DatabaseProjectStoreManager
         extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
@@ -127,23 +125,18 @@ public class DatabaseProjectStoreManager
             this.siteId = siteId;
         }
 
-        //public List<StoredProject> getAllProjects()
-        //{
-        //    return dao.getProjects(siteId, Integer.MAX_VALUE, 0);
-        //}
-
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
-        public List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
+        public List<StoredProjectWithRevision> getProjectsWithLatestRevision(int pageSize, Optional<Integer> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getProjectsWithLatestRevision(siteId, pageSize, lastId.or(0), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getProjectsWithLatestRevision(siteId, pageSize, lastId.or(0), generatePartialMatchPattern(namePattern), acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
         @Override
-        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, AccessController.ListFilter acFilter)
+        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
         {
-            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0), generatePartialMatchPattern(namePattern), acFilter.getSql()));
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
@@ -301,10 +294,17 @@ public class DatabaseProjectStoreManager
         public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 int pageSize,
                 Optional<Long> lastId,
+                Optional<String> namePattern,
                 AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
-            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L), acFilter.getSql()));
+            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(
+                    siteId,
+                    pageSize,
+                    lastId.or(0L),
+                    generatePartialMatchPattern(namePattern),
+                    acFilter.getSql())
+            );
         }
 
         @DigdagTimed(value = "dpst_", category = "db", appendMethodName = true)
@@ -363,6 +363,19 @@ public class DatabaseProjectStoreManager
 
             Map<Long, ZoneId> map = IdTimeZone.listToMap(list);
             return new TimeZoneMap(map);
+        }
+
+        private String generatePartialMatchPattern(Optional<String> pattern)
+        {
+            // If provided pattern is absent or empty string, just set '%'
+            // so that the pattern does not affect to a where clause.
+            return !pattern.or("").isEmpty() ? "%" + escapeLikePattern(pattern.get()) + "%" : "%";
+        }
+
+        private String escapeLikePattern(String pattern)
+        {
+            return pattern.replace("%", "\\%")
+                    .replace("_", "\\_");
         }
     }
 
@@ -567,11 +580,17 @@ public class DatabaseProjectStoreManager
         ") a on a.id = rev.id" +
         " where proj.site_id = :siteId" +
         " and proj.name is not null" +
+        " and proj.name like :namePattern" +
         " and <acFilter>" +
         " and proj.id > :lastId" +
         " order by proj.id asc" +
         " limit :limit")
-        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
+                @Define("acFilter") String acFilter);
 
         // h2's MERGE doesn't return generated id when conflicting row already exists
         @SqlUpdate("merge into projects" +
@@ -599,6 +618,12 @@ public class DatabaseProjectStoreManager
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id \\> :lastId" +
+                // `workflow_definitions` table has a composite index
+                // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
+                // And the index is used for filter by `revision_id` and `name`.
+                // Since this query always limits the records by `revision_id` (the latest revision's one),
+                // partial matching of `name` (e.g. '%test%') can be accepted.
+                " and wd.name like :namePattern" +
                 " and <acFilter>" +
                 " order by wd.id" +
                 " limit :limit")
@@ -606,6 +631,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
     }
 
@@ -621,13 +647,19 @@ public class DatabaseProjectStoreManager
             " join revisions rev on proj.id = rev.project_id" +
             " where proj.site_id = :siteId" +
             " and proj.name is not null" +
+            " and proj.name like :namePattern" +
             " and <acFilter>" +
             " and proj.id > :lastId" +
         ") as projects_with_revision" +
         " where projects_with_revision.revision_id = projects_with_revision.max_revision_id" +
         " order by id asc" +
         " limit :limit")
-        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
+                @Define("acFilter") String acFilter);
 
         @SqlQuery("insert into projects" +
                 " (site_id, name, created_at)" +
@@ -657,6 +689,12 @@ public class DatabaseProjectStoreManager
                         " group by r.project_id" +
                     " )) " +
                     " and wf.id \\> :lastId" +
+                    // `workflow_definitions` table has a composite index
+                    // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
+                    // And the index is used for filter by `revision_id` and `name`.
+                    // Since this query always limits the records by `revision_id` (the latest revision's one),
+                    // partial matching of `name` (e.g. '%test%') can be accepted.
+                    " and wf.name like :namePattern" +
                     " and <acFilter>" +
                     " order by wf.id" +
                     " limit :limit" +
@@ -669,6 +707,7 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") long lastId,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
     }
 
@@ -678,6 +717,7 @@ public class DatabaseProjectStoreManager
                 " where proj.site_id = :siteId" +
                 " and proj.name is not null" +
                 " and proj.id \\> :lastId" +
+                " and proj.name like :namePattern" +
                 " and <acFilter>" +
                 " order by proj.id asc" +
                 " limit :limit")
@@ -685,9 +725,15 @@ public class DatabaseProjectStoreManager
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
                 @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
                 @Define("acFilter") String acFilter);
 
-        List<StoredProjectWithRevision> getProjectsWithLatestRevision(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId, @Define("acFilter") String acFilter);
+        List<StoredProjectWithRevision> getProjectsWithLatestRevision(
+                @Bind("siteId") int siteId,
+                @Bind("limit") int limit,
+                @Bind("lastId") int lastId,
+                @Bind("namePattern") String namePattern,
+                @Define("acFilter") String acFilter);
 
         @SqlUpdate("update projects" +
                 " set deleted_name = name, deleted_at = now(), name = NULL" +
@@ -774,7 +820,7 @@ public class DatabaseProjectStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String acFilter);
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String namePattern, String acFilter);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check

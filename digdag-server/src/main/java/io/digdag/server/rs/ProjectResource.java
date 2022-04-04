@@ -243,7 +243,13 @@ public class ProjectResource
     @ApiOperation("List projects with filters")
     public RestProjectCollection getProjects(
             @ApiParam(value="exact matching filter on project name", required=false)
-            @QueryParam("name") String name)
+            @QueryParam("name") String name,
+            @ApiParam(value="list projects whose id is grater than this id for pagination", required=false)
+            @QueryParam("last_id") Integer lastId,
+            @ApiParam(value="number of projects to return", required=false)
+            @QueryParam("count") Integer count,
+            @ApiParam(value="name pattern to be partially matched", required=false)
+            @QueryParam("name_pattern") String namePattern)
     {
         return tm.begin(() -> {
             ProjectStore ps = rm.getProjectStore(getSiteId());
@@ -274,7 +280,10 @@ public class ProjectResource
                             siteTarget,
                             getAuthenticatedUser());
 
-                    collection = ps.getProjectsWithLatestRevision(100, Optional.absent(),
+                    collection = ps.getProjectsWithLatestRevision(
+                                Optional.fromNullable(count).or(100),
+                                Optional.fromNullable(lastId),
+                                Optional.fromNullable(namePattern),
                                 ac.getListProjectsFilterOfSite(siteTarget, getAuthenticatedUser()))
                             .stream()
                             .map(projWithRev -> {
