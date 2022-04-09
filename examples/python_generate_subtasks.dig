@@ -5,4 +5,3 @@ timezone: UTC
 
 +parallel_process:
   py>: tasks.generate_subtasks.ParallelProcess.run
-
