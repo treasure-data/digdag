@@ -4,7 +4,7 @@ Scheduling workflow
 .. contents::
    :local:
 
-Setting up a schedule:
+Setting up a schedule
 ----------------------------------
 
 To run a workflow periodically, add a ``schedule:`` option to top-level workflow definitions.
@@ -135,7 +135,7 @@ It’s this case it’s best to skip the next hour’s workflow session, and ins
 * Added a ``skip_on_overtime: true | false`` schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.
 * Scheduled workflow sessions now have a ``last_executed_session_time`` variable which contains the previously executed session time. It is usually same with ``last_session_time`` but has different value when ``skip_on_overtime: true`` is set or the session is the first execution.
 
-Skipping backfill.
+Skipping backfill
 ------------------
 
 The ``skip_delayed_by`` option enables `backfill <command_reference.html#backfill>`_ command to skip creating sessions delayed by the specified time. When Digdag restarts, sessions of a schedule are automatically created until the next of ``last_session_time``.
@@ -163,3 +163,18 @@ If the workflow is executed at 16:02 due to some reason, the session will be ski
     schedule:
       cron>: '0 16 * * *'
       skip_delayed_by: 1s
+
+Set start/end
+-------------
+The ``start`` and ``end`` options set period of schedule.
+The option accepts date format `YYYY-MM-DD`.
+When ``start`` is set, the schedule will start on and after ``start``.
+When ``end`` is set, the schedule will run until the day (include the day).
+When next run time will be after the ``end``, next schedule will be set to `9999-01-01 00:00:00+0000` and never kicked.
+
+.. note::
+    After the schedule ends, if you change ``end`` date to extends the period, the schedule will be resumed from the last session.
+    It causes multiple session running unexpectedly.
+    For example, you set `end: 2022-03-31` and current date is `2022-04-15`.
+    Then you update `end: 2022-04-31`, the sessions between `2022-04-01` and `2022-04-15` will be kicked.
+    To avoid the case, recommend to set ``skip_delayed_by``.

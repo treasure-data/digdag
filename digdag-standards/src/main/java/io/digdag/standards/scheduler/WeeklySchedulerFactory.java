@@ -1,11 +1,14 @@
 package io.digdag.standards.scheduler;
 
+import com.google.common.base.Optional;
+import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.SchedulerFactory;
 import it.sauronsoftware.cron4j.SchedulingPattern;
 
+import java.time.Instant;
 import java.time.ZoneId;
 
 import static io.digdag.standards.scheduler.DailySchedulerFactory.parseAt;
@@ -13,6 +16,14 @@ import static io.digdag.standards.scheduler.DailySchedulerFactory.parseAt;
 public class WeeklySchedulerFactory
         implements SchedulerFactory
 {
+    private final ScheduleConfigHelper configHelper;
+
+    @Inject
+    public WeeklySchedulerFactory(ScheduleConfigHelper configHelper)
+    {
+        this.configHelper = configHelper;
+    }
+
     @Override
     public String getType()
     {
@@ -50,6 +61,16 @@ public class WeeklySchedulerFactory
             throw new ConfigException("weekly>: scheduler requires day,hh:mm:ss format: " + desc);
         }
 
-        return new CronScheduler(cronPattern, timeZone, dailyDelay);
+        Optional<Instant> start = configHelper.getDateTimeStart(config, "start", timeZone);
+        Optional<Instant> end = configHelper.getDateTimeEnd(config, "end", timeZone);
+        configHelper.validateStartEnd(start, end);
+
+        return new CronScheduler(
+                cronPattern,
+                timeZone,
+                dailyDelay,
+                start,
+                end
+        );
     }
 }

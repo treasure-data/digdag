@@ -1,5 +1,6 @@
 package io.digdag.standards.scheduler;
 
+import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import org.junit.Test;
@@ -12,9 +13,9 @@ import static org.hamcrest.Matchers.is;
 
 public class MinutesIntervalSchedulerTest extends SchedulerTestHelper
 {
-    Scheduler newScheduler(String pattern, String timeZone)
+    Scheduler newScheduler(String pattern, String timeZone, Optional<String> start, Optional<String> end)
     {
-        return new MinutesIntervalSchedulerFactory().newScheduler(newConfig(pattern), ZoneId.of(timeZone));
+        return new MinutesIntervalSchedulerFactory(configHelper).newScheduler(newConfig(pattern, start, end), ZoneId.of(timeZone));
     }
 
     @Test
@@ -108,6 +109,47 @@ public class MinutesIntervalSchedulerTest extends SchedulerTestHelper
                     is(ScheduleTime.of(
                             instant("2016-03-13 03:00:00 -0700"),
                             instant("2016-03-13 03:00:00 -0700"))));
+        }
+    }
+
+    @Test
+    public void firstScheduleTimeStartEnd()
+    {
+        // check start
+        {
+            Instant currentTime = instant("2016-03-03 17:19:59 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-03 17:20:00 +0900"),
+                            instant("2016-03-03 17:20:00 +0900"))));
+        }
+        // check start
+        {
+            Instant currentTime = instant("2016-02-03 17:09:59 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 00:00:00 +0900"),
+                            instant("2016-03-01 00:00:00 +0900"))));
+        }
+        // check end
+        {
+            Instant currentTime = instant("2016-03-31 23:59:59 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("9999-01-01 00:00:00 +0000"),
+                            instant("9999-01-01 00:00:00 +0000"))));
+        }
+        // check end
+        {
+            Instant currentTime = instant("2016-03-31 23:49:59 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-31 23:50:00 +0900"),
+                            instant("2016-03-31 23:50:00 +0900"))));
         }
     }
 
@@ -236,6 +278,65 @@ public class MinutesIntervalSchedulerTest extends SchedulerTestHelper
     }
 
     @Test
+    public void nextScheduleTimeStartEnd()
+    {
+        // check start
+        {
+            Instant lastScheduleTime1 = instant("2016-02-03 00:40:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime1),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 00:00:00 +0900"),
+                            instant("2016-03-01 00:00:00 +0900"))));
+        }
+        // check start
+        {
+            Instant lastScheduleTime1 = instant("2016-02-29 23:50:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime1),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 00:00:00 +0900"),
+                            instant("2016-03-01 00:00:00 +0900"))));
+        }
+        // check start
+        {
+            Instant lastScheduleTime1 = instant("2016-03-01 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime1),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 00:10:00 +0900"),
+                            instant("2016-03-01 00:10:00 +0900"))));
+        }
+        // check end
+        {
+            Instant lastScheduleTime1 = instant("2016-03-31 23:40:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime1),
+                    is(ScheduleTime.of(
+                            instant("2016-03-31 23:50:00 +0900"),
+                            instant("2016-03-31 23:50:00 +0900"))));
+        }
+        // check end
+        {
+            Instant lastScheduleTime1 = instant("2016-03-31 23:50:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime1),
+                    is(ScheduleTime.of(
+                            instant("9999-01-01 00:00:00 +0000"),
+                            instant("9999-01-01 00:00:00 +0000"))));
+        }
+        // check end
+        {
+            Instant lastScheduleTime1 = instant("2016-04-01 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime1),
+                    is(ScheduleTime.of(
+                            instant("9999-01-01 00:00:00 +0000"),
+                            instant("9999-01-01 00:00:00 +0000"))));
+        }
+    }
+
+    @Test
     public void lastScheduleTimeUtc()
     {
         {
@@ -329,4 +430,60 @@ public class MinutesIntervalSchedulerTest extends SchedulerTestHelper
                             instant("2016-03-13 00:49:00 -0800"))));
         }
     }
+
+    @Test
+    public void lastScheduleTimeStartEnd()
+    {
+        // lastScheduleTime calculation ignore start/end
+        {
+            Instant currentScheduleTime = instant("2016-02-29 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-02-28 23:50:00 +0900"),
+                            instant("2016-02-28 23:50:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-03-01 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-02-29 23:50:00 +0900"),
+                            instant("2016-02-29 23:50:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-03-02 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 23:50:00 +0900"),
+                            instant("2016-03-01 23:50:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-03-31 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-30 23:50:00 +0900"),
+                            instant("2016-03-30 23:50:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-04-01 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-31 23:50:00 +0900"),
+                            instant("2016-03-31 23:50:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-04-02 00:00:00 +0900");
+            assertThat(
+                    newScheduler("10", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-04-01 23:50:00 +0900"),
+                            instant("2016-04-01 23:50:00 +0900"))));
+        }
+    }
+
+
 }

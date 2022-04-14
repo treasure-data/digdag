@@ -13,12 +13,21 @@ import static java.util.Locale.ENGLISH;
 
 abstract class SchedulerTestHelper
 {
+    final ScheduleConfigHelper configHelper = new ScheduleConfigHelper();
+
     private static DateTimeFormatter TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
-    static Config newConfig(String command)
+    static Config newConfig()
+    {
+        return new ConfigFactory(objectMapper()).create();
+    }
+
+    static Config newConfig(String command, Optional<String> start, Optional<String> end)
     {
         Config config = new ConfigFactory(objectMapper()).create().set("_command", command);
+        config = start.isPresent() ? config.set("start", start.get()) : config;
+        config = end.isPresent() ? config.set("end", end.get()) : config;
         return config;
     }
 
@@ -27,5 +36,10 @@ abstract class SchedulerTestHelper
         return Instant.from(TIME_FORMAT.parse(time));
     }
 
-    abstract Scheduler newScheduler(String pattern, String timeZone);
+    Scheduler newScheduler(String pattern, String timeZone)
+    {
+        return newScheduler(pattern, timeZone, Optional.absent(), Optional.absent());
+    }
+
+    abstract Scheduler newScheduler(String pattern, String timeZone, Optional<String> start, Optional<String> end);
 }

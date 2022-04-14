@@ -1,5 +1,6 @@
 package io.digdag.standards.scheduler;
 
+import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import org.junit.Test;
@@ -12,9 +13,9 @@ import static org.hamcrest.Matchers.is;
 
 public class CronSchedulerTest extends SchedulerTestHelper
 {
-    Scheduler newScheduler(String pattern, String timeZone)
+    Scheduler newScheduler(String pattern, String timeZone, Optional<String> start, Optional<String> end)
     {
-        return new CronSchedulerFactory().newScheduler(newConfig(pattern), ZoneId.of(timeZone));
+        return new CronSchedulerFactory(configHelper).newScheduler(newConfig(pattern, start, end), ZoneId.of(timeZone));
     }
 
     @Test
@@ -143,17 +144,52 @@ public class CronSchedulerTest extends SchedulerTestHelper
     }
 
     @Test
+    public void firstScheduleTimeStartEnd()
+    {
+        // check start
+        {
+            Instant currentTime = instant("2016-02-03 09:59:59 +0000");
+            assertThat(
+                    newScheduler("00 10 * * *", "UTC", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 10:00:00 +0000"),
+                            instant("2016-03-01 10:00:00 +0000"))));
+        }
+
+        // check end
+        {
+            Instant currentTime = instant("2016-03-31 10:00:00 +0000");
+            assertThat(
+                    newScheduler("00 10 * * *", "UTC", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-31 10:00:00 +0000"),
+                            instant("2016-03-31 10:00:00 +0000"))));
+        }
+
+        // check end
+        {
+            Instant currentTime = instant("2016-03-31 10:00:01 +0000");
+            assertThat(
+                    newScheduler("00 10 * * *", "UTC", Optional.of("2016-03-01"), Optional.of("2016-03-31")).getFirstScheduleTime(currentTime),
+                    is(ScheduleTime.of(
+                            instant("9999-01-01 00:00:00 +0000"),
+                            instant("9999-01-01 00:00:00 +0000"))));
+        }
+
+    }
+
+    @Test
     public void nextScheduleTimeUtc()
     {
         // last schedule time is 00:00:00
         // schedule is 10:00:00 every day
         {
-            Instant lastScheduleTime = instant("2016-02-03 00:00:00 +0000");
+            Instant lastScheduleTime = instant("2016-02-03 10:00:00 +0000");
             assertThat(
                     newScheduler("00 10 * * *", "UTC").nextScheduleTime(lastScheduleTime),
                     is(ScheduleTime.of(
-                            instant("2016-02-03 10:00:00 +0000"),
-                            instant("2016-02-03 10:00:00 +0000"))));
+                            instant("2016-02-04 10:00:00 +0000"),
+                            instant("2016-02-04 10:00:00 +0000"))));
         }
     }
 
@@ -162,12 +198,12 @@ public class CronSchedulerTest extends SchedulerTestHelper
     {
         // same with nextScheduleTimeUtc but with TZ=Asia/Tokyo
         {
-            Instant lastScheduleTime = instant("2016-02-03 00:00:00 +0900");
+            Instant lastScheduleTime = instant("2016-02-03 10:00:00 +0900");
             assertThat(
                     newScheduler("00 10 * * *", "Asia/Tokyo").nextScheduleTime(lastScheduleTime),
                     is(ScheduleTime.of(
-                            instant("2016-02-03 10:00:00 +0900"),
-                            instant("2016-02-03 10:00:00 +0900"))));
+                            instant("2016-02-04 10:00:00 +0900"),
+                            instant("2016-02-04 10:00:00 +0900"))));
         }
     }
 
@@ -205,6 +241,66 @@ public class CronSchedulerTest extends SchedulerTestHelper
                             instant("2016-03-13 10:00:00 -0700"))));
         }
     }
+
+    @Test
+    public void nextScheduleTimeStartEnd()
+    {
+        // check start
+        {
+            Instant lastScheduleTime = instant("2016-02-03 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 10:00:00 +0900"),
+                            instant("2016-03-01 10:00:00 +0900"))));
+        }
+        // check start
+        {
+            Instant lastScheduleTime = instant("2016-02-29 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-01 10:00:00 +0900"),
+                            instant("2016-03-01 10:00:00 +0900"))));
+        }
+        // check start
+        {
+            Instant lastScheduleTime = instant("2016-03-01 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-02 10:00:00 +0900"),
+                            instant("2016-03-02 10:00:00 +0900"))));
+        }
+        // check end (next will be 03-31. It is still within end)
+        {
+            Instant lastScheduleTime = instant("2016-03-30 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-31 10:00:00 +0900"),
+                            instant("2016-03-31 10:00:00 +0900"))));
+        }
+        // check end (next will be 04-01. It is later than end)
+        {
+            Instant lastScheduleTime = instant("2016-03-31 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("9999-01-01 00:00:00 +0000"),
+                            instant("9999-01-01 00:00:00 +0000"))));
+        }
+        // check end (next will be 04-02. It is later than end)
+        {
+            Instant lastScheduleTime = instant("2016-04-01 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).nextScheduleTime(lastScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("9999-01-01 00:00:00 +0000"),
+                            instant("9999-01-01 00:00:00 +0000"))));
+        }
+    }
+
 
     @Test
     public void lastScheduleTimeUtc()
@@ -264,6 +360,44 @@ public class CronSchedulerTest extends SchedulerTestHelper
                     is(ScheduleTime.of(
                             instant("2016-03-12 10:00:00 -0800"),
                             instant("2016-03-12 10:00:00 -0800"))));
+        }
+    }
+
+    @Test
+    public void lastScheduleTimeStartEnd()
+    {
+        // lastScheduleTime calculation ignore start/end
+        {
+            Instant currentScheduleTime = instant("2016-03-12 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-11 10:00:00 +0900"),
+                            instant("2016-03-11 10:00:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-03-01 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-02-29 10:00:00 +0900"),
+                            instant("2016-02-29 10:00:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-04-01 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-03-31 10:00:00 +0900"),
+                            instant("2016-03-31 10:00:00 +0900"))));
+        }
+        {
+            Instant currentScheduleTime = instant("2016-04-02 10:00:00 +0900");
+            assertThat(
+                    newScheduler("00 10 * * *", "Asia/Tokyo", Optional.of("2016-03-01"), Optional.of("2016-03-31")).lastScheduleTime(currentScheduleTime),
+                    is(ScheduleTime.of(
+                            instant("2016-04-01 10:00:00 +0900"),
+                            instant("2016-04-01 10:00:00 +0900"))));
         }
     }
 }

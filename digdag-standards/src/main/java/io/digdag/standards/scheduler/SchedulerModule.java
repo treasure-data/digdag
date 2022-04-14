@@ -4,6 +4,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.standards.scheduler.CronSchedulerFactory;
 import io.digdag.standards.scheduler.MonthlySchedulerFactory;
@@ -25,6 +26,7 @@ public class SchedulerModule
         addStandardSchedulerFactory(binder, HourlySchedulerFactory.class);
         addStandardSchedulerFactory(binder, MinutesIntervalSchedulerFactory.class);
         addStandardSchedulerFactory(binder, SecondsIntervalSchedulerFactory.class);
+        binder.bind(ScheduleConfigHelper.class).in(Scopes.SINGLETON);
     }
 
     protected void addStandardSchedulerFactory(Binder binder, Class<? extends SchedulerFactory> factory)

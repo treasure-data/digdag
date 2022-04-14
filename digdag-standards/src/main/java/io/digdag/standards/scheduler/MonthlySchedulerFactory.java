@@ -1,6 +1,10 @@
 package io.digdag.standards.scheduler;
 
+import java.time.Instant;
 import java.time.ZoneId;
+
+import com.google.common.base.Optional;
+import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Scheduler;
@@ -11,6 +15,14 @@ import static io.digdag.standards.scheduler.DailySchedulerFactory.parseFragment;
 public class MonthlySchedulerFactory
         implements SchedulerFactory
 {
+    private final ScheduleConfigHelper configHelper;
+
+    @Inject
+    public MonthlySchedulerFactory(ScheduleConfigHelper configHelper)
+    {
+        this.configHelper = configHelper;
+    }
+
     @Override
     public String getType()
     {
@@ -37,6 +49,16 @@ public class MonthlySchedulerFactory
 
         long dailyDelay = parseAt("monthly>", fragments[1]);
 
-        return new CronScheduler("0 0 " + day + " * *", timeZone, dailyDelay);
+        Optional<Instant> start = configHelper.getDateTimeStart(config, "start", timeZone);
+        Optional<Instant> end = configHelper.getDateTimeEnd(config, "end", timeZone);
+        configHelper.validateStartEnd(start, end);
+
+        return new CronScheduler(
+                "0 0 " + day + " * *",
+                timeZone,
+                dailyDelay,
+                start,
+                end
+        );
     }
 }
