@@ -29,6 +29,7 @@ import static utils.TestUtils.main;
 
 public class PyIT
 {
+    private static final Logger logger = LoggerFactory.getLogger(PyIT.class);
     private static final String ECS_CONFIG = System.getenv("ECS_IT_CONFIG");
 
     private static final Logger logger = LoggerFactory.getLogger(EmrIT.class);
@@ -103,6 +104,28 @@ public class PyIT
     }
 
     @Test
+    public void testRunOnEcsWithRetry()
+            throws Exception
+    {
+        final int MAX_RETRY = 5;
+        for (int i = 0; i < MAX_RETRY; i++) {
+            try {
+                testRunOnEcs();
+                return;
+            } catch (AssertionError ae) {
+                logger.warn("testRunOnEcs() failed. {}", ae.toString());
+                if (i + 1 == MAX_RETRY) {
+                    logger.error("All try of testRunOnEcs() failed.");
+                    throw ae;
+                }
+                else {
+                    logger.warn("Retrying...");
+                    Thread.sleep(10*1000);
+                }
+            }
+        }
+    }
+
     public void testRunOnEcs()
             throws Exception
     {
