@@ -32,8 +32,6 @@ public class PyIT
     private static final Logger logger = LoggerFactory.getLogger(PyIT.class);
     private static final String ECS_CONFIG = System.getenv("ECS_IT_CONFIG");
 
-    private static final Logger logger = LoggerFactory.getLogger(EmrIT.class);
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
     @Rule
