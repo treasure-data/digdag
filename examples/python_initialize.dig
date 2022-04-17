@@ -1,0 +1,11 @@
+_export:
+  py:
+    require: tasks.initialize.InstanceVariable
+  arg1: var1
+  arg2: var2
+
++step1:
+  py>: tasks.initialize.InstanceVariable.step1
+
++step2:
+  py>: tasks.initialize.InstanceVariable.step2
