@@ -5,6 +5,7 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.config.Config;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,8 +35,8 @@ public class PyIT
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    // Not set Rule. It is initialized in setUp()
+    public TemporaryDigdagServer server;
 
     private String accessKeyId;
     private String secretAccessKey;
@@ -101,6 +102,16 @@ public class PyIT
                 .build();
     }
 
+    @After
+    public void stopServer()
+            throws Exception
+    {
+        if (server != null) {
+            server.close();
+            server = null;
+        }
+    }
+
     @Test
     public void testRunOnEcsWithRetry()
             throws Exception
@@ -111,14 +122,16 @@ public class PyIT
                 testRunOnEcs();
                 return;
             } catch (AssertionError ae) {
-                logger.warn("testRunOnEcs() failed. {}", ae.toString());
+                logger.error("testRunOnEcs() failed. {}", ae.toString());
                 if (i + 1 == MAX_RETRY) {
                     logger.error("All try of testRunOnEcs() failed.");
                     throw ae;
                 }
                 else {
-                    logger.warn("Retrying...");
+                    logger.error("Retrying...");
+                    server.close();
                     Thread.sleep(10*1000);
+                    setUp();
                 }
             }
         }
