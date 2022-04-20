@@ -102,7 +102,7 @@ For more information about SSE-C, See the [AWS S3 Documentation](http://docs.aws
     timeout: 60s
     continue_on_timeout: true
   +task2:
-    if>: ${s3.last_object}
+    if>: ${!!s3.last_object}
     _do:
       echo>: "No timeout"
   ```

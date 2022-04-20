@@ -1414,7 +1414,7 @@ class Timestamp extends React.Component<TimeStampProps> {
     const m = moment(t)
     return (
       <span>
-        <span>{m.fromNow()}</span>
+        <span title={m.format()}>{m.fromNow()}</span>
         <ReactInterval timeout={1000} enabled={Boolean(true)} callback={() => this.forceUpdate()} />
       </span>
     )
