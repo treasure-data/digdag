@@ -33,7 +33,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
     devtool: build ? 'source-map' : 'cheap-module-source-map',
     module: {
       rules: [{
-        test: /\.(js|jsx)$/,
+        test: /\.(js|jsx|ts|tsx)$/,
         exclude: /(node_modules)/,
         loader: 'babel-loader'
       }, {
@@ -67,7 +67,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       }]
     },
     resolve: {
-      extensions: ['*', '.js', '.jsx']
+      extensions: ['*', '.ts', '.tsx', '.js', '.jsx']
     },
     plugins: [
       // Only include the english locale for momentjs
