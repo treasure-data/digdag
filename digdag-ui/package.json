@@ -27,7 +27,7 @@
     "cryptiles": "4.1.2",
     "duration": "^0.2.0",
     "jquery": "3.5.1",
-    "js-untar": "0.1.4",
+    "js-untar": "^2.0.0",
     "js-yaml": "3.13.1",
     "lodash": "^4.17.21",
     "lru-cache": "4.0.2",
