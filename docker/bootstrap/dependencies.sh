@@ -2,6 +2,7 @@
 
 apt-get -y update
 apt-get -y install software-properties-common apt-transport-https wget git sudo
+apt-get -y install ca-certificates
 
 # Maven
 apt-get -y install maven
