@@ -1,4 +1,4 @@
-var DIGDAG_CONFIG = {
+const DIGDAG_CONFIG = {
   url: '/api/',
   td: {
     useTD: false,

@@ -114,6 +114,15 @@ public class DatabaseProjectStoreManager
                 "revision of workflow definition id=%s", wfId);
     }
 
+    private static String makeLastIdCond(Optional<Long> lastId, boolean ascending)
+    {
+        String signIneq = ascending ? "\\>" : "\\<";
+        Long lastIdValue = lastId.or( () -> ascending ? 0L : Long.MAX_VALUE);
+        return String.format("%s %d", signIneq, lastIdValue);
+    }
+
+
+
     private class DatabaseProjectStore
             implements ProjectStore
     {
@@ -294,15 +303,21 @@ public class DatabaseProjectStoreManager
         public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 int pageSize,
                 Optional<Long> lastId,
+                boolean ascending,
                 Optional<String> namePattern,
+                boolean searchProjectName,
                 AccessController.ListFilter acFilter)
             throws ResourceNotFoundException
         {
+            String projectNamePattern = searchProjectName ? generatePartialMatchPattern(namePattern) : "";
+            String ascDesc = ascending ? "asc" : "desc";
             return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(
                     siteId,
                     pageSize,
-                    lastId.or(0L),
+                    makeLastIdCond(lastId, ascending),
                     generatePartialMatchPattern(namePattern),
+                    projectNamePattern,
+                    ascDesc,
                     acFilter.getSql())
             );
         }
@@ -617,21 +632,23 @@ public class DatabaseProjectStoreManager
                 " join revisions rev on a.revision_id = rev.id" +
                 " join projects proj on a.project_id = proj.id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
-                " where wd.id \\> :lastId" +
+                " where wd.id <lastIdCond>" +
                 // `workflow_definitions` table has a composite index
                 // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
                 // And the index is used for filter by `revision_id` and `name`.
                 // Since this query always limits the records by `revision_id` (the latest revision's one),
                 // partial matching of `name` (e.g. '%test%') can be accepted.
-                " and wd.name like :namePattern" +
+                " and ( wd.name like :namePattern or proj.name like :projectNamePattern )" +
                 " and <acFilter>" +
-                " order by wd.id" +
+                " order by wd.id <orderDirection>" +
                 " limit :limit")
         List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
-                @Bind("lastId") long lastId,
+                @Define("lastIdCond") String lastIdCond,
                 @Bind("namePattern") String namePattern,
+                @Bind("projectNamePattern") String projectNamePattern,
+                @Define("orderDirection") String orderDirection,
                 @Define("acFilter") String acFilter);
     }
 
@@ -688,26 +705,28 @@ public class DatabaseProjectStoreManager
                         " and p.deleted_at is null" +
                         " group by r.project_id" +
                     " )) " +
-                    " and wf.id \\> :lastId" +
+                    " and wf.id <lastIdCond>" +
                     // `workflow_definitions` table has a composite index
                     // for `revision_id` and `name` (`workflow_definitions_on_revision_id_and_name`).
                     // And the index is used for filter by `revision_id` and `name`.
                     // Since this query always limits the records by `revision_id` (the latest revision's one),
                     // partial matching of `name` (e.g. '%test%') can be accepted.
-                    " and wf.name like :namePattern" +
+                    " and ( wf.name like :namePattern or proj.name like :projectNamePattern )" +
                     " and <acFilter>" +
-                    " order by wf.id" +
+                    " order by wf.id <orderDirection>" +
                     " limit :limit" +
                 ") wd" +
                 " join revisions r on r.id = wd.revision_id" +
                 " join projects p on p.id = r.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
-                " order by wd.id")
+                " order by wd.id <orderDirection>")
         List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
                 @Bind("siteId") int siteId,
                 @Bind("limit") int limit,
-                @Bind("lastId") long lastId,
+                @Define("lastIdCond") String lastIdCond,
                 @Bind("namePattern") String namePattern,
+                @Bind("projectNamePattern") String projectNamePattern,
+                @Define("orderDirection") String orderDirection,
                 @Define("acFilter") String acFilter);
     }
 
@@ -820,11 +839,27 @@ public class DatabaseProjectStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
-        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String namePattern, String acFilter);
+        default List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId, String namePattern, String acFilter)
+        {
+            // projects.name must be non-empty or null(for deleted projects). So empty string "" will never match.
+            return getLatestActiveWorkflowDefinitions(siteId, limit, makeLastIdCond(Optional.of(lastId), true), namePattern, "", "asc", acFilter);
+        }
+
+        /**
+         *
+         * @param siteId Target site_id
+         * @param limit Number of workflows to be returned
+         * @param lastIdCond Pagination based on workflow id. Must {@literal "> n" or "< n}"
+         * @param namePattern Search by workflow name with partial match. namePattern and projectNamePattern is "OR" search.
+         * @param projectNamePattern Search by project name with partial match. namePattern and projectNamePattern is "OR" search.
+         * @param orderDirection Order based on workflow id. "asc" or "desc". The parameter must be validated before calling to avoid SQL injection.
+         * @param acFilter  AccessControl filter clause. The parameter must be validated before calling to avoid SQL injection.
+         * @return
+         */
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, String lastIdCond, String namePattern, String projectNamePattern, String orderDirection, String acFilter);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
-
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
                 " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +

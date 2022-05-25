@@ -1,0 +1,23 @@
+timezone: UTC
+
+_export:
+  rb:
+    require: tasks/generate_subtasks
+
++just_params:
+  +split:
+    rb>: JustParams::ParallelProcess.split
+  +parallel_process:
+    rb>: JustParams::ParallelProcess.run
+
++with_singleton_method:
+  +split:
+    rb>: WithSingletonMethod::ParallelProcess.split
+  +parallel_process:
+    rb>: WithSingletonMethod::ParallelProcess.run
+
++with_instance_method:
+  +split:
+    rb>: WithInstanceMethod::ParallelProcess.split
+  +parallel_process:
+    rb>: WithInstanceMethod::ParallelProcess.run

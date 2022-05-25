@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -110,29 +111,49 @@ public class WorkflowResource
     @Path("/api/workflows")
     @ApiOperation("List workflows")
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(
-            @ApiParam(value="list workflows whose id is grater than this id for pagination", required=false)
+            @ApiParam(value="pagination. return workflows which id are greater than last_id with order 'asc', which id are less than the last_id with order 'desc'", required=false)
             @QueryParam("last_id") Long lastId,
             @ApiParam(value="number of workflows to return", required=false)
             @QueryParam("count") Integer count,
+            @ApiParam(value="Sort order. 'asc' or 'desc'", defaultValue = "asc", required=false)
+            @DefaultValue("asc") @QueryParam("order") String orderDirection,
             @ApiParam(value="name pattern to be partially matched", required=false)
-            @QueryParam("name_pattern") String namePattern
+            @QueryParam("name_pattern") String namePattern,
+            @ApiParam(value="name pattern to be partially matched", required=false)
+            @DefaultValue("false") @QueryParam("search_project_name") Boolean searchProjectName
     )
             throws ResourceNotFoundException, AccessControlException
     {
         final SiteTarget siteTarget = SiteTarget.of(getSiteId());
         ac.checkListWorkflowsOfSite(siteTarget, getAuthenticatedUser());  // AccessControl
-
         return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
             List<StoredWorkflowDefinitionWithProject> defs =
                     rm.getProjectStore(getSiteId())
-                            .getLatestActiveWorkflowDefinitions(Optional.fromNullable(count).or(100), Optional.fromNullable(lastId), // check NotFound first
+                            .getLatestActiveWorkflowDefinitions(
+                                    Optional.fromNullable(count).or(100),
+                                    Optional.fromNullable(lastId), // check NotFound first
+                                    orderAscending(orderDirection),
                                     Optional.fromNullable(namePattern),
+                                    searchProjectName,
                                     ac.getListWorkflowsFilterOfSite(
                                             SiteTarget.of(getSiteId()),
                                             getAuthenticatedUser()));
 
             return RestModels.workflowDefinitionCollection(defs);
         }, ResourceNotFoundException.class, AccessControlException.class);
+    }
+
+    private boolean orderAscending(String orderDirection)
+    {
+        if (orderDirection == null || orderDirection.equals("asc")) {
+            return true;
+        }
+        else if (orderDirection.equals("desc")) {
+            return false;
+        }
+        else {
+            throw new IllegalArgumentException("parameter 'order' must be either 'asc' or 'desc'");
+        }
     }
 
     @DigdagTimed(category = "api", value = "getWorkflowDefinitionById")

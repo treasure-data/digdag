@@ -1,5 +1,5 @@
-var fs = require('fs-extra')
-var path = require('path')
+const fs = require('fs-extra')
+const path = require('path')
 const getSha = require('./lib/git-sha1')
 
 try {

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig.json to read more about this file */
+    "target": "es2016",
+    "jsx": "preserve",
+    "rootDir": "./",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "**/*"
+  ],
+  "exclude": [
+    "node_modules/**/*",
+    "public/**/*",
+    "build/**/*"
+  ]
+}

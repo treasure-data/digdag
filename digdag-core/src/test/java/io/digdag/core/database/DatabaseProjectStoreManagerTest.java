@@ -375,6 +375,12 @@ public class DatabaseProjectStoreManagerTest
                     store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("%_"), () -> "true"));
             assertEquals(ImmutableList.of(),
                     store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), Optional.fromNullable("*"), () -> "true"));
+            // Check ascending parameter.
+            assertEquals(ImmutableList.of(wfDetails6, wfDetails5, wfDetails4, wfDetails3, wfDetails2, wfDetails1),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), false, Optional.absent(), false, () -> "true"));
+            // Check searchProjectName parameter.
+            assertEquals(ImmutableList.of(wfDetails6, wfDetails5, wfDetails4, wfDetails3, wfDetails2, wfDetails1),
+                    store.getLatestActiveWorkflowDefinitions(100, Optional.absent(), false, Optional.fromNullable("proj1"), true, () -> "true"));
         });
     }
 
