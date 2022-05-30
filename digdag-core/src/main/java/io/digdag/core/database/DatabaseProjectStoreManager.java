@@ -538,7 +538,11 @@ public class DatabaseProjectStoreManager
                     // found the same name. lock it and update
                     ScheduleStatus status = dao.lockScheduleById(matchedSchedId);
                     if (status != null) {
-                        ScheduleTime newSchedule = func.apply(status, schedule);
+                        ScheduleTimeWithInfo newScheduleWithInfo = func.apply(status, schedule);
+                        ScheduleTime newSchedule = newScheduleWithInfo.getScheduleTime();
+                        if (newScheduleWithInfo.isClearSchedule()) {
+                            dao.clearLastSessionTimeById(matchedSchedId);
+                        }
                         dao.updateScheduleById(
                                 matchedSchedId,
                                 schedule.getWorkflowDefinitionId(),
@@ -968,6 +972,11 @@ public class DatabaseProjectStoreManager
                     " values (:projId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())")
         @GetGeneratedKeys
         int insertSchedule(@Bind("projId") int projid, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+
+        @SqlUpdate("update schedules" +
+                " set last_session_time = NULL, updated_at = now()" +
+                " where id = :id")
+        int clearLastSessionTimeById(@Bind("id") int schedId);
     }
 
     @Value.Immutable

@@ -72,6 +72,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -448,25 +449,27 @@ public class DigdagClient implements AutoCloseable
     public RestProject putProjectRevision(String projName, String revision, File body, Optional<Instant> scheduleFrom)
         throws IOException
     {
+        return putProjectRevision(projName, revision, body, scheduleFrom, Collections.emptyList(), Optional.absent());
+    }
+
+    public RestProject putProjectRevision(String projName, String revision, File body, Optional<Instant> scheduleFrom, List<String> clearSchedule, Optional<Boolean> clearAllSchedules )
+        throws IOException
+    {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(projName), "projName");
         Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision");
+        WebTarget target = target("/api/projects")
+                .queryParam("project", projName)
+                .queryParam("revision", revision);
         if (scheduleFrom.isPresent()) {
-            return doPut(RestProject.class,
-                    "application/gzip",
-                    body,
-                    target("/api/projects")
-                    .queryParam("project", projName)
-                    .queryParam("revision", revision)
-                    .queryParam("schedule_from", scheduleFrom.get().toString()));
+            target = target.queryParam("schedule_from", scheduleFrom.get().toString());
         }
-        else {
-            return doPut(RestProject.class,
-                    "application/gzip",
-                    body,
-                    target("/api/projects")
-                    .queryParam("project", projName)
-                    .queryParam("revision", revision));
+        if (clearSchedule.size() > 0) {
+            target = target.queryParam("clear_schedule", clearSchedule.toArray(new String[0]));
         }
+        if (clearAllSchedules.isPresent()) {
+            target = target.queryParam("clear_schedule_all", clearAllSchedules.get());
+        }
+        return doPut(RestProject.class, "application/gzip", body, target);
     }
 
     @FunctionalInterface

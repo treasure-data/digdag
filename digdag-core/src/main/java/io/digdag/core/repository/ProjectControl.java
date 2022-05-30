@@ -1,18 +1,28 @@
 package io.digdag.core.repository;
 
+import java.util.Collections;
 import java.util.List;
 import java.time.Instant;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import io.digdag.commons.ThrowablesUtil;
+import io.digdag.core.repository.ProjectControlStore.ScheduleTimeWithInfo;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ProjectControl
 {
+    private static final Logger logger = LoggerFactory.getLogger(ProjectControl.class);
+
     public static interface DeleteProjectAction <T>
     {
         public T call(ProjectControl control, StoredProject project)
@@ -59,10 +69,18 @@ public class ProjectControl
     public List<StoredWorkflowDefinition> insertWorkflowDefinitions(
             StoredRevision revision, List<WorkflowDefinition> defs,
             SchedulerManager srm, Instant currentTime)
+            throws ResourceConflictException
+    {
+        return insertWorkflowDefinitions(revision, defs, Collections.emptyMap(), srm, currentTime);
+    }
+
+    public List<StoredWorkflowDefinition> insertWorkflowDefinitions(
+            StoredRevision revision, List<WorkflowDefinition> defs, Map<String,Boolean> clearSchedules,
+            SchedulerManager srm, Instant currentTime)
         throws ResourceConflictException
     {
         List<StoredWorkflowDefinition> list = insertWorkflowDefinitionsWithoutSchedules(revision, defs);
-        updateSchedules(revision, list, srm, currentTime);
+        updateSchedules(revision, list, clearSchedules, srm, currentTime);
         return list;
     }
 
@@ -88,8 +106,9 @@ public class ProjectControl
         }
     }
 
-    private void updateSchedules(
-            StoredRevision revision, List<StoredWorkflowDefinition> defs,
+    @VisibleForTesting
+    public void updateSchedules(
+            StoredRevision revision, List<StoredWorkflowDefinition> defs, Map<String,Boolean> clearSchedules,
             SchedulerManager srm, Instant currentTime)
         throws ResourceConflictException
     {
@@ -108,13 +127,20 @@ public class ProjectControl
         //   * validate SubtaskMatchPattern
 
         store.updateSchedules(project.getId(), schedules.build(), (oldStatus, newSched) -> {
-            return oldStatus.getLastScheduleTime()
-                // if last schedule_time exists (the schedule has run before at least once),
-                // calculate next time from the last time.
-                .transform(it -> newSched.getScheduler().nextScheduleTime(it))
-                // otherwise, if this schedule hasn't run before, simply use the first execution
-                // time of the new schedule setting.
-                .or(() -> ScheduleTime.of(newSched.getNextScheduleTime(), newSched.getNextRunTime()));
+            Optional<Instant> lastScheduleTime = oldStatus.getLastScheduleTime();
+            boolean clearSchedule = clearSchedules.getOrDefault(newSched.getWorkflowName(), false);
+
+            // if last schedule_time exists (the schedule has run before at least once) and no need to clear,
+            // calculate next time from the last time
+            ScheduleTime scheduleTime;
+            if (lastScheduleTime.isPresent() && !clearSchedule) {
+                scheduleTime = newSched.getScheduler().nextScheduleTime(lastScheduleTime.get());
+            }
+            // Otherwise, simply use the first execution time of the new schedule setting
+            else {
+                scheduleTime = ScheduleTime.of(newSched.getNextScheduleTime(), newSched.getNextRunTime());
+            }
+            return ScheduleTimeWithInfo.of(scheduleTime, clearSchedule);
         });
     }
 

@@ -26,6 +26,7 @@ allprojects {
 
     apply plugin: 'idea'
     apply plugin: 'java'
+    apply plugin: 'java-test-fixtures'
     apply plugin: 'jacoco'
     apply plugin: 'net.ltgt.apt-idea'
     // 'maven' plugin is deprecated and replaced by 'maven-publish'.
@@ -79,6 +80,7 @@ subprojects {
         testCompile 'pl.pragmatists:JUnitParams:1.0.5'
         testImplementation 'org.powermock:powermock-api-mockito:1.6.6'
         testImplementation 'org.powermock:powermock-module-junit4:1.6.6'
+        testFixturesImplementation 'junit:junit:4.13.2'
     }
 
     ext {
