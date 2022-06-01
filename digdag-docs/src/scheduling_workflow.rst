@@ -151,3 +151,15 @@ For example, If Digdag restarts at 20:00:00 and a workflow scheduled as below, i
 
     +setup:
       sh>: echo ${session_time}
+
+
+Also, if your workflow starts with delay ``skip_delayed_by`` option takes effect as well. 
+
+For example, your scheduling looks like this.
+If the workflow is executed at 16:02 due to some reason, the session will be skipped because ``skip_delayed_by`` is set to 1s and it is too late for the configured value.
+
+.. code-block:: yaml
+
+    schedule:
+      cron>: '0 16 * * *'
+      skip_delayed_by: 1s
