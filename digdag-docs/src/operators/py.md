@@ -81,7 +81,7 @@ See [Python API documents](../python_api.html) for details including variable ma
   ```yaml
   # sample.dig
   _export:
-    arg: awsome execution
+    arg: awesome execution
   py>: tasks.MyWorkflow.my_task
   ```
 
