@@ -76,6 +76,40 @@ See [Python API documents](../python_api.html) for details including variable ma
     print("simple execution")
   ```
 
+  You can pass arguments to class for initialization using `_export` as the following:
+
+  ```yaml
+  # sample.dig
+  _export:
+    arg: awsome execution
+  py>: tasks.MyWorkflow.my_task
+  ```
+
+  ```python
+  # tasks.py
+  class MyWorkflow(object):
+      def __init__(self, arg: str):
+          self.arg = arg
+      
+      def my_task(self):
+          print(self.arg)
+  ```
+
+  Or, you can pass arguments to function as the following:
+
+  ```yaml
+  # simple_sample.dig
+  _export:
+    arg: simple execution
+  py>: simple_tasks.my_func
+  ```
+
+  ```python
+  # simple_tasks.py
+  def my_func(arg: str):
+    print(arg)
+  ```
+
 * **python**: PATH STRING or COMMAND ARGUMENTS LIST
 
   The python defaults to `python`. If an alternate python and options are desired, use the `python` option.
