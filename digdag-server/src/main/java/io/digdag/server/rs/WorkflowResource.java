@@ -1,5 +1,6 @@
 package io.digdag.server.rs;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.time.Instant;
@@ -21,6 +22,8 @@ import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.metrics.DigdagTimed;
+import io.digdag.server.service.WorkflowService;
+import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.api.*;
 import io.digdag.spi.ac.AccessControlException;
@@ -31,6 +34,8 @@ import io.digdag.spi.metrics.DigdagMetrics;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Api("Workflow")
 @Path("/")
@@ -46,12 +51,16 @@ public class WorkflowResource
     // GET  /api/workflow?project=<name>&name=<name>      # lookup a workflow of the latest revision of a project by name
     // GET  /api/workflow?project=<name>&revision=<name>&name=<name>  # lookup a workflow of a past revision of a project by name
 
+    private static Logger logger = LoggerFactory.getLogger(WorkflowResource.class);
+
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TransactionManager tm;
     private final AccessController ac;
     private final DigdagMetrics metrics;
+
+    private final WorkflowService ws;
 
     @Inject
     public WorkflowResource(
@@ -60,7 +69,8 @@ public class WorkflowResource
             SchedulerManager srm,
             TransactionManager tm,
             AccessController ac,
-            DigdagMetrics metrics)
+            DigdagMetrics metrics,
+            WorkflowService ws)
     {
         this.rm = rm;
         this.sm = sm;
@@ -68,6 +78,7 @@ public class WorkflowResource
         this.tm = tm;
         this.ac = ac;
         this.metrics = metrics;
+        this.ws = ws;
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
@@ -124,37 +135,17 @@ public class WorkflowResource
     )
             throws ResourceNotFoundException, AccessControlException
     {
-        final SiteTarget siteTarget = SiteTarget.of(getSiteId());
-        ac.checkListWorkflowsOfSite(siteTarget, getAuthenticatedUser());  // AccessControl
-        return tm.<RestWorkflowDefinitionCollection, ResourceNotFoundException, AccessControlException>begin(() -> {
-            List<StoredWorkflowDefinitionWithProject> defs =
-                    rm.getProjectStore(getSiteId())
-                            .getLatestActiveWorkflowDefinitions(
-                                    Optional.fromNullable(count).or(100),
-                                    Optional.fromNullable(lastId), // check NotFound first
-                                    orderAscending(orderDirection),
-                                    Optional.fromNullable(namePattern),
-                                    searchProjectName,
-                                    ac.getListWorkflowsFilterOfSite(
-                                            SiteTarget.of(getSiteId()),
-                                            getAuthenticatedUser()));
-
-            return RestModels.workflowDefinitionCollection(defs);
-        }, ResourceNotFoundException.class, AccessControlException.class);
+        return ws.getWorkflows(
+                getSiteId(),
+                getAuthenticatedUser(),
+                Optional.fromNullable(lastId),
+                Optional.fromNullable(count),
+                orderDirection,
+                Optional.fromNullable(namePattern),
+                searchProjectName,
+                RestModels::workflowDefinitionCollection);
     }
 
-    private boolean orderAscending(String orderDirection)
-    {
-        if (orderDirection == null || orderDirection.equals("asc")) {
-            return true;
-        }
-        else if (orderDirection.equals("desc")) {
-            return false;
-        }
-        else {
-            throw new IllegalArgumentException("parameter 'order' must be either 'asc' or 'desc'");
-        }
-    }
 
     @DigdagTimed(category = "api", value = "getWorkflowDefinitionById")
     @GET
@@ -165,17 +156,7 @@ public class WorkflowResource
             @PathParam("id") long id)
             throws ResourceNotFoundException, AccessControlException
     {
-        return tm.<RestWorkflowDefinition, ResourceNotFoundException, AccessControlException>begin(() -> {
-            StoredWorkflowDefinitionWithProject def =
-                    rm.getProjectStore(getSiteId())
-                            .getWorkflowDefinitionById(id); // check NotFound first
-
-            ac.checkGetWorkflow( // AccessControl
-                    WorkflowTarget.of(getSiteId(), def.getName(), def.getProject().getName()),
-                    getAuthenticatedUser());
-
-            return RestModels.workflowDefinition(def);
-        }, ResourceNotFoundException.class, AccessControlException.class);
+        return ws.getWorkflow(getSiteId(), getAuthenticatedUser(), id, RestModels::workflowDefinition);
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)

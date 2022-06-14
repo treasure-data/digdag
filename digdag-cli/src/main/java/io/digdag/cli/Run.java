@@ -235,7 +235,7 @@ public class Run
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                     binder.bind(LogModule.class).in(Scopes.SINGLETON);
                     binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
-                    binder.bind(AccessController.class).to(DefaultAccessController.class);
+                    binder.bind(AccessController.class).to(DefaultAccessController.class).in(Scopes.SINGLETON);
                 })
                 .overrideModulesWith((binder) ->
                         binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON));
