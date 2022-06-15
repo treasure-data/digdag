@@ -20,7 +20,6 @@ module.exports = function buildWebpackConfig ({ build = false }) {
     mode: build ? 'production' : 'development',
     entry: {
       tether: 'tether',
-      bootstrap: 'bootstrap-loader/extractStyles',
       app: './index.jsx'
     },
     output: {
@@ -40,7 +39,28 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
         include: [path.join(__dirname, 'node_modules'), path.join(__dirname, 'public')]
-      }, {
+      }, {  
+        test: /\.(scss)$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: 'postcss-loader',
+            options: {
+              postcssOptions: {
+                plugins: function () {
+                  return [
+                    require('precss'),
+                    require('autoprefixer')
+                  ];
+                }
+              }
+            }
+          }, {
+            loader: 'sass-loader'
+          }
+        ]
+      },{
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
         loader: 'file-loader'
       }, {

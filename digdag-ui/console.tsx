@@ -5,7 +5,8 @@ import './style.less'
 import '@babel/polyfill'
 import 'whatwg-fetch'
 
-import 'bootstrap/dist/js/bootstrap'
+import 'bootstrap'
+import 'bootstrap/scss/bootstrap.scss'
 
 import _ from 'lodash'
 
