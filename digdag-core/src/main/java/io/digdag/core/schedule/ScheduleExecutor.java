@@ -55,7 +55,7 @@ public class ScheduleExecutor
         implements BackgroundExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleExecutor.class);
-    public static final List<String> BUILT_IN_SCHEDULE_PARAMS = Arrays.asList("skip_on_overtime", "skip_delayed_by");
+    public static final List<String> BUILT_IN_SCHEDULE_PARAMS = Arrays.asList("skip_on_overtime", "skip_delayed_by", "start", "end");
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
