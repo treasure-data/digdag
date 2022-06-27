@@ -5,9 +5,11 @@ import com.treasuredata.client.TDClientException;
 import io.digdag.client.config.Config;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.standards.operator.td.TDOperator.JobState;
 import io.digdag.standards.operator.td.TDOperator.SystemDefaultConfig;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
@@ -56,6 +58,19 @@ abstract class BaseTdJobOperator
         }
         catch (TDClientException ex) {
             throw propagateTDClientException(ex);
+        }
+    }
+
+    @Override
+    public void cleanup(TaskRequest request)
+    {
+        JobState job = state.params().get("job", JobState.class, JobState.empty());;
+        Optional<String> jobId = job.jobId();
+        if (jobId.isPresent()) {
+            logger.debug("cleanup is called: attempt_id={}, task_id={}, job_id={}", request.getAttemptId(), request.getTaskId(), jobId.get());
+            try (TDOperator op = TDOperator.fromConfig(clientFactory, systemDefaultConfig, env, params, context.getSecrets().getSecrets("td"))) { // TDClientException
+                op.client.killJob(jobId.get());
+            }
         }
     }
 

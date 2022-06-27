@@ -680,7 +680,7 @@ public class Run
         {
             String fullName = request.getTaskName();
             TaskResult result = cmd.skipTaskReports.apply(fullName);
-            String origThreadName = String.format("[%d:%s]%s", request.getSiteId(), request.getProjectName().or("----"), request.getTaskName());
+            String origThreadName = String.format("[%d:%s:%d:%d]%s", request.getSiteId(), request.getProjectName().or("----"), request.getSessionId(), request.getAttemptId(), request.getTaskName());
             if (result != null) {
                 try (SetThreadName threadName = new SetThreadName(origThreadName)) {
                     logger.warn("Skipped");
