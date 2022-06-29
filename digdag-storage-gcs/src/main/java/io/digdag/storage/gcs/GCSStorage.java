@@ -65,9 +65,8 @@ public class GCSStorage
     public StorageObject open(String object)
     {
         checkArgument(object != null, "object is null");
-        Blob blob = storage.get(bucket, object);
         String errorMessage = "opening file bucket " + bucket + " key " + object;
-        byte[] content = getWithRetry(errorMessage, () -> blob.getContent());
+        byte[] content = getWithRetry(errorMessage, () -> storage.get(bucket, object).getContent());
         InputStream byteStream = new ByteArrayInputStream(content);
         return new StorageObject(byteStream, content.length);
     }
