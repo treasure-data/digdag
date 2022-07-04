@@ -360,7 +360,7 @@ coveralls {
 
 wrapper {
     // Find the latest version at https://gradle.org/releases/
-    gradleVersion = '6.8.3'
+    gradleVersion = '6.9.2'
 }
 
 project(':digdag-ui') {
