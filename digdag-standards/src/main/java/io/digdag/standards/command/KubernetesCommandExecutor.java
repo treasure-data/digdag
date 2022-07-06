@@ -275,6 +275,7 @@ public class KubernetesCommandExecutor
             // Download output config archive
             final InputStream in = outConfigStorage.getContentInputStream(outputArchiveKey);
             ProjectArchives.extractTarArchive(context.getLocalProjectPath(), in); // runtime exception
+            client.deletePod(pod.getName());
         }
         else if (defaultPodTTL.isPresent() && isRunningLongerThanTTL(previousStatusJson)) {
             TaskRequest request = context.getTaskRequest();
