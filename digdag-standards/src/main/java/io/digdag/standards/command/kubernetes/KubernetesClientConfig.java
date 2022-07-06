@@ -4,12 +4,15 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.storage.StorageManager;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static io.digdag.client.DigdagClient.objectMapper;
 
 public class KubernetesClientConfig
 {
@@ -19,45 +22,36 @@ public class KubernetesClientConfig
             final Config systemConfig,
             final Config requestConfig)
     {
-
-        String clusterName = null;
-        if (name.isPresent()) {
+        if (!systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
+            throw new ConfigException("agent.command_executor.type: is not 'kubernetes'");
+        }
+        String clusterName;
+        if (!name.isPresent()) {
+            clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class); // ConfigException
+        } else {
             clusterName = name.get();
         }
-
-        Config extractedSystemConfig = null;
-        if (systemConfig != null && systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
-            if (clusterName == null) {
-                clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class); // ConfigException
-            }
-            final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-            extractedSystemConfig = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
-        }
-
-        Config extractedRequestConfig = null;
-        if (requestConfig != null && requestConfig.has("kubernetes")) {
+        final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
+        Config extractedSystemConfig = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);;
+        Config extractedRequestConfig;
+        if (systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "allow_configure_workflow_definition", Boolean.class, false)
+            && requestConfig != null
+            && requestConfig.has("kubernetes")) {
             if (clusterName == null) {
                 clusterName = requestConfig.get("name", String.class); // ConfigException
             }
             extractedRequestConfig = requestConfig.getNested("kubernetes");
+        } else {
+            extractedRequestConfig = newEmptyConfig();
         }
 
         // Create a config that merges RequestConfig with SystemConfig
-        final Config config;
-        if (extractedSystemConfig != null && extractedRequestConfig != null) {
-            config = extractedSystemConfig.merge(extractedRequestConfig);
-
-        } else if (extractedRequestConfig != null) {
-            config = extractedRequestConfig;
-
-        } else if (extractedSystemConfig != null) {
-            config = extractedSystemConfig;
-
-        } else {
-            throw new ConfigException("systemConfig and requestConfig does not exist");
-        }
-
+        final Config config = extractedSystemConfig.merge(extractedRequestConfig);
         return KubernetesClientConfig.createKubeConfig(clusterName, config);
+    }
+
+    private static Config newEmptyConfig() {
+        return new ConfigFactory(objectMapper()).create();
     }
 
     private static KubernetesClientConfig createKubeConfig(final String clusterName, final Config config){
