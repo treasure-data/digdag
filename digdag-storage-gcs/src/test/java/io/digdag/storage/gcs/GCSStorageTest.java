@@ -1,5 +1,6 @@
 package io.digdag.storage.gcs;
 
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.io.ByteStreams;
@@ -11,6 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.mockito.Mock;
+import org.mockito.Mockito;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +27,10 @@ import static io.digdag.core.storage.StorageManager.encodeHex;
 import static io.digdag.util.Md5CountInputStream.digestMd5;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -98,6 +105,30 @@ public class GCSStorageTest
         // if use LocalStorageHelper, returned elements order is randomize.
         assertThat(all.size(), is(2));
         assertThat(all, containsInAnyOrder(dummyStorageObjectSummary("test/file/1", 1), dummyStorageObjectSummary("test/file/2", 1)));
+    }
+
+    @Test
+    public void testRetryGetContent()
+            throws Exception
+    {
+        com.google.cloud.storage.Storage gcsStorage = mock(com.google.cloud.storage.Storage.class);
+        Blob blob = mock(Blob.class);
+
+        ConfigFactory cf = new ConfigFactory(objectMapper());
+        String bucket = UUID.randomUUID().toString();
+        Config config = cf.create()
+                .set("bucket", bucket);  // use unique bucket name
+        Storage storage = new GCSStorageFactory().newStorage(gcsStorage, config);
+
+        doThrow(new NullPointerException())
+            .doThrow(new NullPointerException())
+            .doReturn(blob)
+            .when(gcsStorage).get(Mockito.anyString(), Mockito.anyString());
+        
+        doReturn("content".getBytes()).when(blob).getContent();
+
+        assertEquals("content", readString(storage.open("object").getContentInputStream())); 
+        Mockito.verify(gcsStorage, Mockito.times(3)).get(Mockito.anyString(), Mockito.anyString());
     }
 
     public static StorageObjectSummary dummyStorageObjectSummary(String object, int contentLength){
