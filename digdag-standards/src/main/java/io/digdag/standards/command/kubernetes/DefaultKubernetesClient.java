@@ -23,8 +23,10 @@ import io.fabric8.kubernetes.api.model.Toleration;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.PersistentVolume;
+import io.fabric8.kubernetes.api.model.PersistentVolumeBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeSpec;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpec;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.utils.Serialization;
@@ -182,13 +184,15 @@ public class DefaultKubernetesClient
         final Config kubernetesPvConfig = extractTargetKindConfig(context, "PersistentVolume");
         if (kubernetesPvConfig != null && kubernetesPvConfig.has("spec"))
             return client.persistentVolumes()
-                .createOrReplaceWithNew()
-                .withNewMetadata()
-                .withName(kubernetesPvConfig.get("name", String.class))
-                .withNamespace(client.getNamespace())
-                .endMetadata()
-                .withSpec(getPersistentVolume(kubernetesPvConfig.get("spec", Config.class)))
-                .done();
+                .createOrReplace(
+                    new PersistentVolumeBuilder()
+                        .withNewMetadata()
+                        .withName(kubernetesPvConfig.get("name", String.class))
+                        .withNamespace(client.getNamespace())
+                        .endMetadata()
+                        .withSpec(getPersistentVolume(kubernetesPvConfig.get("spec", Config.class)))
+                        .build()
+                );
         else
             return null;
     }
@@ -198,13 +202,16 @@ public class DefaultKubernetesClient
         final Config kubernetesPvcConfig = extractTargetKindConfig(context, "PersistentVolumeClaim");
         if (kubernetesPvcConfig != null && kubernetesPvcConfig.has("spec"))
             return client.persistentVolumeClaims()
-                .createOrReplaceWithNew()
-                .withNewMetadata()
-                .withName(kubernetesPvcConfig.get("name", String.class))
-                .withNamespace(client.getNamespace())
-                .endMetadata()
-                .withSpec(getPersistentVolumeClaim(kubernetesPvcConfig.get("spec", Config.class)))
-                .done();
+                .createOrReplace(
+                    new PersistentVolumeClaimBuilder()
+                        .withNewMetadata()
+                        .withName(kubernetesPvcConfig.get("name", String.class))
+                        .withNamespace(client.getNamespace())
+                        .endMetadata()
+                        .withSpec(getPersistentVolumeClaim(kubernetesPvcConfig.get("spec", Config.class)))
+                        .build()
+
+                );
         else
             return null;
     }

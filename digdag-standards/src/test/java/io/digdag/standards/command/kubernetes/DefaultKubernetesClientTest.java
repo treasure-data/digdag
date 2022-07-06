@@ -8,10 +8,17 @@ import io.digdag.spi.TaskRequest;
 import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.NodeAffinityBuilder;
 import io.fabric8.kubernetes.api.model.NodeSelectorBuilder;
 import io.fabric8.kubernetes.api.model.NodeSelectorRequirementBuilder;
 import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpec;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpecBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeSpec;
+import io.fabric8.kubernetes.api.model.PersistentVolumeSpecBuilder;
+import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -22,18 +29,13 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
-import io.fabric8.kubernetes.api.model.PersistentVolume;
-import io.fabric8.kubernetes.api.model.PersistentVolumeBuilder;
-import io.fabric8.kubernetes.api.model.PersistentVolumeSpec;
-import io.fabric8.kubernetes.api.model.PersistentVolumeSpecBuilder;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpec;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaimSpecBuilder;
-import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
+import io.fabric8.kubernetes.client.dsl.PodResource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
@@ -45,8 +47,8 @@ import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultKubernetesClientTest
@@ -57,6 +59,12 @@ public class DefaultKubernetesClientTest
     private CommandContext commandContext;
     private CommandRequest commandRequest;
     private Config testKubernetesConfig;
+    private io.fabric8.kubernetes.client.DefaultKubernetesClient client;
+    private io.fabric8.kubernetes.api.model.Pod fabricPod;
+    private ObjectMeta objectMeta;
+    private Container container;
+    @Mock private MixedOperation<io.fabric8.kubernetes.api.model.Pod, PodList, PodResource<io.fabric8.kubernetes.api.model.Pod>> pods;
+    @Mock private NonNamespaceOperation<io.fabric8.kubernetes.api.model.Pod, PodList, PodResource<io.fabric8.kubernetes.api.model.Pod>> namespace;
 
     @Before
     public void setUp()
@@ -66,6 +74,10 @@ public class DefaultKubernetesClientTest
         k8sDefaultKubernetesClient =  mock(io.fabric8.kubernetes.client.DefaultKubernetesClient.class);
         commandContext = mock(CommandContext.class);
         commandRequest = mock(CommandRequest.class);
+        client = mock(io.fabric8.kubernetes.client.DefaultKubernetesClient.class);
+        fabricPod = mock(io.fabric8.kubernetes.api.model.Pod.class);
+        objectMeta = mock(ObjectMeta.class);
+        container = mock(Container.class);
 
         /*
             kubernetes:
@@ -153,6 +165,27 @@ public class DefaultKubernetesClientTest
                     .set("capacity", newConfig().set("storage", "10Gi"))
                     .set("accessModes", ImmutableList.of("ReadWriteOnce"))
                     .set("persistentVolumeReclaimPolicy", "Retain")));
+    }
+
+    @Test
+    public void testRunPod()
+            throws Exception
+    {
+        String podName = "testPod";
+        doReturn(objectMeta).when(fabricPod).getMetadata();
+        doReturn(podName).when(objectMeta).getName();
+        doReturn(pods).when(client).pods();
+        doReturn(namespace).when(pods).inNamespace(anyString());
+        doReturn(fabricPod).when(namespace).create(any(io.fabric8.kubernetes.api.model.Pod.class));
+
+        final DefaultKubernetesClient kubernetesClient = spy(new DefaultKubernetesClient(kubernetesClientConfig, client));
+        doReturn(testKubernetesConfig).when(kubernetesClient).extractTargetKindConfig(any(CommandContext.class), anyString());
+        doReturn(container).when(kubernetesClient).createContainer(any(CommandContext.class), any(CommandRequest.class), any(Config.class), anyString(), anyListOf(String.class), anyListOf(String.class));
+
+        List<String> commands =  new ArrayList<String>();
+        List<String> arguments =  new ArrayList<String>();
+        Pod pod = kubernetesClient.runPod(commandContext, commandRequest, podName, commands, arguments);
+        org.hamcrest.MatcherAssert.assertThat(pod.getName(), is(podName));
     }
 
     @Test
