@@ -39,6 +39,8 @@ public interface DatabaseConfig
 
     int getIdleTimeout();  // seconds
 
+    int getKeepaliveTime(); // seconds
+
     int getMaximumPoolSize();
 
     int getMinimumPoolSize();
@@ -98,6 +100,8 @@ public interface DatabaseConfig
                 config.get(keyPrefix + "." + "connectionTimeout", int.class, 30));  // HikariCP default: 30
         builder.idleTimeout(
                 config.get(keyPrefix + "." + "idleTimeout", int.class, 600));  // HikariCP default: 600
+        builder.keepaliveTime(
+                config.get(keyPrefix + "." + "keepaliveTime", int.class, 0)); // HikariCP default: 0 (disabled)
         builder.validationTimeout(
                 config.get(keyPrefix + "." + "validationTimeout", int.class, 5));  // HikariCP default: 5
 
@@ -175,6 +179,7 @@ public interface DatabaseConfig
         }
 
         config.set(keyPrefix + "." + "connectionTimeout", databaseConfig.getConnectionTimeout());
+        config.set(keyPrefix + "." + "keepaliveTime", databaseConfig.getKeepaliveTime());
         config.set(keyPrefix + "." + "idleTimeout", databaseConfig.getIdleTimeout());
         config.set(keyPrefix + "." + "validationTimeout", databaseConfig.getValidationTimeout());
         config.set(keyPrefix + "." + "maximumPoolSize", databaseConfig.getMaximumPoolSize());

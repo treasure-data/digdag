@@ -81,6 +81,7 @@ public class DataSourceProvider
 
         hikari.setConnectionTimeout(config.getConnectionTimeout() * 1000);
         hikari.setIdleTimeout(config.getIdleTimeout() * 1000);
+        hikari.setKeepaliveTime(config.getKeepaliveTime() * 1000);
         hikari.setValidationTimeout(config.getValidationTimeout() * 1000);
         hikari.setMaximumPoolSize(config.getMaximumPoolSize());
         hikari.setMinimumIdle(config.getMinimumPoolSize());
