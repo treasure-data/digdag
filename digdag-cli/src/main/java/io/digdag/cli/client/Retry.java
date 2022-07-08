@@ -10,6 +10,9 @@ import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.config.ConfigLoaderManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static java.util.Locale.ENGLISH;
 
@@ -91,6 +95,8 @@ public class Retry
         err.println("        --all                        retry all tasks");
         err.println("        --resume                     retry only non-successful tasks");
         err.println("        --resume-from <+name>        retry from a specific task");
+        err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         err.println("");
         return systemExit(error);
     }
@@ -128,11 +134,17 @@ public class Retry
             retryAttemptName = UUID.randomUUID().toString();
         }
 
+        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+
+        params = ParameterValidator.toMap(paramsList);
+        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
             .workflowId(workflowId)
             .sessionTime(attempt.getSessionTime().toInstant())
             .retryAttemptName(Optional.of(retryAttemptName))
-            .params(attempt.getParams())
+            .params(attempt.getParams().merge(overrideParams))
             .build();
 
         if (resumeFrom != null) {
