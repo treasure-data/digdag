@@ -112,8 +112,8 @@ public class EcsClientConfig
         return EcsClientConfig.builder()
                 .withClusterName(clusterName)
                 .withLaunchType(ecsConfig.getOptional("launch_type", String.class))
-                .withAccessKeyId(ecsConfig.get("access_key_id", String.class))
-                .withSecretAccessKey(ecsConfig.get("secret_access_key", String.class))
+                .withAccessKeyId(ecsConfig.getOptional("access_key_id", String.class))
+                .withSecretAccessKey(ecsConfig.getOptional("secret_access_key", String.class))
                 .withRegion(ecsConfig.get("region", String.class))
                 .withSubnets(ecsConfig.getOptional("subnets", String.class))
                 .withMaxRetries(ecsConfig.get("max_retries", int.class, DEFAULT_MAX_RETRIES))
@@ -133,8 +133,8 @@ public class EcsClientConfig
     }
 
     private final String clusterName;
-    private final String accessKeyId;
-    private final String secretAccessKey;
+    private final Optional<String> accessKeyId;
+    private final Optional<String> secretAccessKey;
     private final String region;
     private final int maxRetries;
     private boolean assignPublicIp;
@@ -164,12 +164,12 @@ public class EcsClientConfig
         return launchType;
     }
 
-    public String getAccessKeyId()
+    public Optional<String> getAccessKeyId()
     {
         return accessKeyId;
     }
 
-    public String getSecretAccessKey()
+    public Optional<String> getSecretAccessKey()
     {
         return secretAccessKey;
     }
