@@ -38,6 +38,7 @@ import {
   faAngleDown,
   faSignOutAlt,
   faCheckCircle,
+  faCopy,
   faExclamationCircle,
   faPlayCircle,
   faSyncAlt
@@ -2031,6 +2032,17 @@ class LogFileView extends React.Component<LogFileViewProps> {
 
           <div className='card bg-light my-2'>
             <div className='card-body p-2'>
+              <button
+                className="btn btn-sm btn-outline-secondary copy-btn"
+                title="Copy to clipboard"
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    pako.inflate(this.state.data, { to: "string" })
+                  )
+                }
+              >
+                <FontAwesomeIcon icon={faCopy} />
+              </button>
               <pre className='m-0 small'>
                 <code>
                   {pako.inflate(this.state.data, { to: 'string' })}
