@@ -13,7 +13,6 @@ export default function htmlTemplate ({ htmlWebpackPlugin }) {
     <body>
       <div id='app'></div>
       <script src='${configPath}/config.js' type='text/javascript'></script>
-      <script src='${files.chunks.bootstrap.entry}'></script>
       <script src='${files.chunks.app.entry}'></script>
       ${[...files.css].map((css) => `
         <link href='${css}' rel='stylesheet'>
