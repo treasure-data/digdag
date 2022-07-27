@@ -76,8 +76,20 @@ See [Python API documents](../python_api.html) for details including variable ma
     print("simple execution")
   ```
 
-  You can pass arguments to class for initialization using `_export` as the following:
+  You can pass arguments to class for initialization　by defining arguments under the `py>:` operation as the following:
+  ```yaml
+  # sample.dig
+  +some_task:
+    py>: tasks.MyWorkflow.my_task
+    required1_1: awesome execution
+    required1_2: "awesome execution"
+    required2: {a: "a"}
+    required3: 1
+    required4: 1.0
+    required5: [a, 1, 1.0, "a"]
+  ```
 
+  Also, you can do the same thing using `_export` as the following:
   ```yaml
   # sample.dig
   +some_task:
@@ -91,18 +103,7 @@ See [Python API documents](../python_api.html) for details including variable ma
     py>: tasks.MyWorkflow.my_task
   ```
 
-  Also, you can do the same thing by defining arguments under the `py>:` operation as the following:
-  ```yaml
-  # sample.dig
-  +some_task:
-    py>: tasks.MyWorkflow.my_task
-    required1_1: awesome execution
-    required1_2: "awesome execution"
-    required2: {a: "a"}
-    required3: 1
-    required4: 1.0
-    required5: [a, 1, 1.0, "a"]
-  ```
+  This example assume following Python script:
 
   ```python
   # tasks.py
@@ -128,20 +129,20 @@ See [Python API documents](../python_api.html) for details including variable ma
   Or, you can pass arguments to function as the following:
 
   ```yaml
+  # sample.dig
+  +some_task:
+    py>: simple_tasks.my_func
+    required1: simple execution
+    required2: {a: "a"}
+  ```
+
+  ```yaml
   # simple_sample.dig
   +some_task:
     _export:
       required1: simple execution
       required2: {a: "a"}
     py>: simple_tasks.my_func
-  ```
-
-  ```yaml
-  # sample.dig
-  +some_task:
-    py>: simple_tasks.my_func
-    required1: simple execution
-    required2: {a: "a"}
   ```
 
   ```python
@@ -155,21 +156,19 @@ See [Python API documents](../python_api.html) for details including variable ma
   ```yaml
   # sample.dig
   +some_task:
-    _export:
-      required_class_arg: awesome execution
-      required_method_arg: ["a", "b"]
-    py>: tasks.MyWorkflow.my_task
-  ```
-
-  ```yaml
-  # sample.dig
-  +some_task:
     py>: tasks.MyWorkflow.my_task
     required_class_arg: awesome execution
     required_method_arg: ["a", "b"]
   ```
 
-  This example assume following Python script:
+  ```yaml
+  # sample.dig
+  +some_task:
+    _export:
+      required_class_arg: awesome execution
+      required_method_arg: ["a", "b"]
+    py>: tasks.MyWorkflow.my_task
+  ```
 
   ```python
   # tasks.py
