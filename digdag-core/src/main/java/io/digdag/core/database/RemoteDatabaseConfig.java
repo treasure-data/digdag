@@ -27,6 +27,16 @@ public interface RemoteDatabaseConfig
 
     boolean getSsl();
 
+    String getSslfactory();
+
+    Optional<String> getSslmode();
+
+    Optional<String> getSslcert();
+
+    Optional<String> getSslkey();
+
+    Optional<String> getSslrootcert();
+
     String getDatabase();
 
     static ImmutableRemoteDatabaseConfig.Builder builder()
