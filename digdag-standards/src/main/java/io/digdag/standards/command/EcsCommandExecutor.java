@@ -5,6 +5,7 @@ import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
+import com.amazonaws.services.ecs.model.EnvironmentFile;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.LogConfiguration;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -639,7 +641,6 @@ public class EcsCommandExecutor
         final ContainerDefinition cd = td.getContainerDefinitions().get(0);
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
-        setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
         setEcsContainerOverrideResource(clientConfig, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
@@ -689,10 +690,35 @@ public class EcsCommandExecutor
             logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
+        // Create .env file and attach it to ECS Cluster because the max size of environment on ECS Task is 8KB.
+        // It's possible to set variables more than 8KB by using environment file instead of environment.
+        final Path envFilePath;
+        try {
+            envFilePath = Files.createTempFile(projectPath.resolve(".digdag/tmp"), "variables-", ".env");
+        }
+        catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+        try (BufferedWriter out = Files.newBufferedWriter(envFilePath)) {
+            for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
+                final String KeyValue = new StringBuilder()
+                                              .append(e.getKey())
+                                              .append("=")
+                                              .append(e.getValue())
+                                              .append("\n")
+                                              .toString();
+                out.write(KeyValue);
+            }
+        }
+        catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
 
         final Path relativeProjectArchivePath = projectPath.relativize(projectArchivePath); // relative
         final Path lastPathElementOfArchivePath = projectPath.resolve(".digdag/tmp").relativize(projectArchivePath);
         final String projectArchiveStorageKey = createStorageKey(commandContext.getTaskRequest(), lastPathElementOfArchivePath.toString());
+        final Path lastPathEnvFilePath = projectPath.resolve(".digdag/tmp").relativize(envFilePath);
+        final String envFileKey = createStorageKey(commandContext.getTaskRequest(), lastPathEnvFilePath.toString());
         final String projectArchiveDirectDownloadUrl;
         try {
             // Upload the temporal project archive on the temporal storage with the storage key
@@ -704,9 +730,23 @@ public class EcsCommandExecutor
             logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
+        final EnvironmentFile envFile = new EnvironmentFile();
+        try {
+            temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
+            String temporalBucket = temporalStorage.getBucketName(systemConfig);
+            final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
+            envFile.setValue(temporalStorageS3ARN);
+            envFile.setType("s3");
+        }
+        catch (IOException e) {
+            final String message = s("Cannot upload a environment file '%s'with storage key '%s'. It will be retried.", envFilePath.toString(), envFileKey);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
+            throw new RuntimeException(e);
+        }
         finally {
             try {
                 Files.deleteIfExists(projectArchivePath); // IOException but ignored
+                Files.deleteIfExists(envFilePath); // IOException but ignored
             }
             catch (IOException e) {
                 // can be ignored because agent will delete project dir once the task will be finished.
@@ -756,7 +796,7 @@ public class EcsCommandExecutor
                 .build();
         logger.debug("Submit command line arguments: " + bashCommand);
 
-        containerOverride.withCommand(bashCommand);
+        containerOverride.withCommand(bashCommand).withEnvironmentFiles(envFile);
     }
 
     protected List<String> setEcsContainerOverrideArgumentsBeforeCommand()
@@ -767,18 +807,6 @@ public class EcsCommandExecutor
     protected List<String> setEcsContainerOverrideArgumentsAfterCommand()
     {
         return ImmutableList.of();
-    }
-
-    protected void setEcsContainerOverrideEnvironment(
-            final CommandContext commandContext,
-            final CommandRequest commandRequest,
-            final ContainerOverride containerOverride)
-    {
-        final ImmutableList.Builder<KeyValuePair> environments = ImmutableList.builder();
-        for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
-            environments.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
-        }
-        containerOverride.withEnvironment(environments.build());
     }
 
     protected void setEcsContainerOverrideResource(
@@ -819,6 +847,17 @@ public class EcsCommandExecutor
         return new StringBuilder()
                 .append(request.getTaskId()).append("/")
                 .append(lastPathElementOfArchiveFile)
+                .toString();
+    }
+
+    private static String createS3BucketARN(final String Bucket, final String fileKey)
+    {
+        // S3 File ARN: "arn:aws:s3::{torage_bucket}/{env_file}"
+        return new StringBuilder()
+                .append("arn:aws:s3:::")
+                .append(Bucket)
+                .append("/")
+                .append(fileKey)
                 .toString();
     }
 
