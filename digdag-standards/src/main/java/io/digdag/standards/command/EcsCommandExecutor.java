@@ -690,8 +690,8 @@ public class EcsCommandExecutor
             logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
-        // Create .env file and attach it to ECS Cluster because the max size of environment on ECS Task is 8KB.
-        // It's possible to set variables more than 8KB by using environment file instead of environment.
+        // Create .env file and attach it to ECS Cluster to save the count of characters because the maximum size of characters of ECS container overrides is 8KB.
+        // It's possible to set larger size of variables by using environment file instead of passing values to a container one by one.
         final Path envFilePath;
         try {
             envFilePath = Files.createTempFile(projectPath.resolve(".digdag/tmp"), "variables-", ".env");
