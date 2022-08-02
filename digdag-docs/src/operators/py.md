@@ -151,8 +151,8 @@ See [Python API documents](../python_api.html) for details including variable ma
     print(f"{required1}: {required2}")
   ```
 
-  Finally, you can pass combination of class and mehtod arguments to Python script as the following:
-
+  Finally, you can pass combination (must have different names) of class and mehtod arguments to Python script as the following:
+  
   ```yaml
   # sample.dig
   +some_task:
