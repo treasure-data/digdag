@@ -85,6 +85,17 @@ ECS Command Executor try to search the tagged task definition.
 
 (This way lists and check all task definitions until found and take long time to run the task. See issue [#1488](https://github.com/treasure-data/digdag/issues/1488))
 
+If you need to use environment file, not passing environment variables to a container one by one, set `ecs.use_env_file: true` (default value is false).
+```
+_export:
+  ecs:
+    task_definition_arn: "arn:aws:ecs:us-east-1:..."
+    use_env_file: true
+
++task1:
+  py>: ...
+```
+
 ## Docker
 ### Setup
 No configuration is required to use Docker Command Executor.

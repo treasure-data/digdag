@@ -690,35 +690,10 @@ public class EcsCommandExecutor
             logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
-        // Create .env file and attach it to ECS Cluster to save the count of characters because the maximum size of characters of ECS container overrides is 8KB.
-        // It's possible to set larger size of variables by using environment file instead of passing values to a container one by one.
-        final Path envFilePath;
-        try {
-            envFilePath = Files.createTempFile(projectPath.resolve(".digdag/tmp"), "variables-", ".env");
-        }
-        catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-        try (BufferedWriter out = Files.newBufferedWriter(envFilePath)) {
-            for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
-                final String KeyValue = new StringBuilder()
-                                              .append(e.getKey())
-                                              .append("=")
-                                              .append(e.getValue())
-                                              .append("\n")
-                                              .toString();
-                out.write(KeyValue);
-            }
-        }
-        catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
 
         final Path relativeProjectArchivePath = projectPath.relativize(projectArchivePath); // relative
         final Path lastPathElementOfArchivePath = projectPath.resolve(".digdag/tmp").relativize(projectArchivePath);
         final String projectArchiveStorageKey = createStorageKey(commandContext.getTaskRequest(), lastPathElementOfArchivePath.toString());
-        final Path lastPathEnvFilePath = projectPath.resolve(".digdag/tmp").relativize(envFilePath);
-        final String envFileKey = createStorageKey(commandContext.getTaskRequest(), lastPathEnvFilePath.toString());
         final String projectArchiveDirectDownloadUrl;
         try {
             // Upload the temporal project archive on the temporal storage with the storage key
@@ -730,23 +705,9 @@ public class EcsCommandExecutor
             logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
             throw new RuntimeException(message, e);
         }
-        final EnvironmentFile envFile = new EnvironmentFile();
-        try {
-            temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
-            String temporalBucket = temporalStorage.getBucketName(systemConfig);
-            final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
-            envFile.setValue(temporalStorageS3ARN);
-            envFile.setType("s3");
-        }
-        catch (IOException e) {
-            final String message = s("Cannot upload a environment file '%s'with storage key '%s'. It will be retried.", envFilePath.toString(), envFileKey);
-            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
-            throw new RuntimeException(e);
-        }
         finally {
             try {
                 Files.deleteIfExists(projectArchivePath); // IOException but ignored
-                Files.deleteIfExists(envFilePath); // IOException but ignored
             }
             catch (IOException e) {
                 // can be ignored because agent will delete project dir once the task will be finished.
@@ -796,7 +757,70 @@ public class EcsCommandExecutor
                 .build();
         logger.debug("Submit command line arguments: " + bashCommand);
 
-        containerOverride.withCommand(bashCommand).withEnvironmentFiles(envFile);
+        // Pass environment variables to a container
+        boolean useEnvFile = false;
+        if (taskConfig.has("ecs")) {
+            final Config ecsConfig = taskConfig.getNested("ecs");
+            if (ecsConfig.has("use_env_file")) {
+                useEnvFile = ecsConfig.get("use_env_file", boolean.class);
+            }
+        }
+        if (useEnvFile) {
+            // Create .env file and attach it to ECS Cluster for saving the count of characters because the maximum size of characters of ECS container overrides is 8KB.
+            // It's possible to set larger size of variables by using environment file instead of passing values to a container one by one.
+            final Path envFilePath;
+            try {
+                envFilePath = Files.createTempFile(projectPath.resolve(".digdag/tmp"), "variables-", ".env");
+            }
+            catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            try (BufferedWriter out = Files.newBufferedWriter(envFilePath)) {
+                for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
+                    final String KeyValue = new StringBuilder()
+                                                  .append(e.getKey())
+                                                  .append("=")
+                                                  .append(e.getValue())
+                                                  .append("\n")
+                                                  .toString();
+                    out.write(KeyValue);
+                }
+            }
+            catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            final Path lastPathEnvFilePath = projectPath.resolve(".digdag/tmp").relativize(envFilePath);
+            final String envFileKey = createStorageKey(commandContext.getTaskRequest(), lastPathEnvFilePath.toString());
+            final EnvironmentFile envFile = new EnvironmentFile();
+            try {
+                temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
+                String temporalBucket = temporalStorage.getBucketName(systemConfig);
+                final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
+                envFile.setValue(temporalStorageS3ARN);
+                envFile.setType("s3");
+            }
+            catch (IOException e) {
+                final String message = s("Cannot upload a environment file '%s'with storage key '%s'. It will be retried.", envFilePath.toString(), envFileKey);
+                logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
+                throw new RuntimeException(e);
+            }
+            finally {
+                try {
+                    Files.deleteIfExists(envFilePath); // IOException but ignored
+                }
+                catch (IOException e) {
+                    logger.info(s("Cannot remove a environment file: %s", envFilePath.toString()));
+                }
+            }
+            containerOverride.withCommand(bashCommand).withEnvironmentFiles(envFile);
+        }
+        else {
+            final ImmutableList.Builder<KeyValuePair> environments = ImmutableList.builder();
+            for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
+                environments.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
+            }
+            containerOverride.withCommand(bashCommand).withEnvironment(environments.build());
+        }
     }
 
     protected List<String> setEcsContainerOverrideArgumentsBeforeCommand()
