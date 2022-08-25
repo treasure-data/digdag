@@ -170,11 +170,13 @@ class BqClient
                 .execute();
     }
 
-    Job jobStatus(String projectId, String jobId)
+    Job jobStatus(String projectId, String jobId, String location)
             throws IOException
     {
         return client.jobs()
                 .get(projectId, jobId)
+                // newer version of google-api-services-bigquery-v2 has setLocation()
+                .set("location", location)
                 .execute();
     }
 

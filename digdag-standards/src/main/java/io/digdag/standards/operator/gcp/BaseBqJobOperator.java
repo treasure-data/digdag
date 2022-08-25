@@ -22,7 +22,8 @@ abstract class BaseBqJobOperator
     protected TaskResult run(BqClient bq, String projectId)
     {
         BqJobRunner jobRunner = new BqJobRunner(request, bq, projectId);
-        Job completed = jobRunner.runJob(jobConfiguration(projectId));
+        String location = params.getOptional("location", String.class).orNull();
+        Job completed = jobRunner.runJob(jobConfiguration(projectId), location);
         return result(completed);
     }
 

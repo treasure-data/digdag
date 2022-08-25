@@ -49,7 +49,7 @@ class BqJobRunner
         this.projectId = Objects.requireNonNull(projectId, "projectId");
     }
 
-    Job runJob(JobConfiguration config)
+    Job runJob(JobConfiguration config, String location)
     {
         // Generate job id
         Optional<String> jobId = state.params().getOptional(JOB_ID, String.class);
@@ -97,7 +97,7 @@ class BqJobRunner
                             .withErrorMessage("BigQuery job status check failed: %s", canonicalJobId)
                             .run(s -> {
                                 logger.info("Checking BigQuery job status: {}", canonicalJobId);
-                                return bq.jobStatus(projectId, jobId.get());
+                                return bq.jobStatus(projectId, jobId.get(), location);
                             });
 
                     // Done yet?
