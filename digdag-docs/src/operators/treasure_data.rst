@@ -13,4 +13,5 @@ Treasure Data operators
     td_wait_table.md
     td_partial_delete.md
     td_table_export.md
+    td_result_export.md
 
