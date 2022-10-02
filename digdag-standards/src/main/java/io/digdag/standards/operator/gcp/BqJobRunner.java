@@ -49,7 +49,7 @@ class BqJobRunner
         this.projectId = Objects.requireNonNull(projectId, "projectId");
     }
 
-    Job runJob(JobConfiguration config, String location)
+    Job runJob(JobConfiguration config, Optional<String> location)
     {
         // Generate job id
         Optional<String> jobId = state.params().getOptional(JOB_ID, String.class);
