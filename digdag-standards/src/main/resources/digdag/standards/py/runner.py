@@ -162,7 +162,7 @@ try:
 except SystemExit as e:
     # SystemExit only shows an exit code and it is not kind to users. So this block creates a specific error message.
     # This error will happen if called python module name and method name are equal to those of the standard library module. (e.g. tokenize.main)
-    error = Exception("Failed to call python command with code:%d" % e.code, "Possible cause: Ivalid python module call, duplicae module name with standard library")
+    error = Exception("Failed to call python command with code:%d" % e.code, "Possible cause: Invalid python module call, duplicate module name with standard library")
     error_type, error_value, _tb = sys.exc_info()
     error_message = "%s %s" % (error.args[0], error.args[1])
     error_traceback = traceback.format_exception(error_type, error_value, _tb)
