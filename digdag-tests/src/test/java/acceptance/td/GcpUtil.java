@@ -36,6 +36,7 @@ public class GcpUtil
 
     static final String GCP_CREDENTIAL = System.getenv().getOrDefault("GCP_CREDENTIAL", "");
     static final String GCS_TEST_BUCKET = System.getenv().getOrDefault("GCS_TEST_BUCKET", "");
+    static final String GCS_TEST_BUCKET_ASIA = System.getenv().getOrDefault("GCS_TEST_BUCKET_ASIA", "");
 
     static final String GCP_PROJECT_ID;
 

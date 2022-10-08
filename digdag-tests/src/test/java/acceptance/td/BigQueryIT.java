@@ -287,6 +287,43 @@ public class BigQueryIT
             Table destinationTable = retryExecutor.run(() -> bq.tables().get(gcpProjectId, datasetId, tableId).execute());
             assertThat(destinationTable.getTableReference().getTableId(), is(tableId));
         }
+
+        @Test
+        public void testLoadAsia()
+                throws Exception
+        {
+            assertThat(GCS_TEST_BUCKET_ASIA, not(isEmptyOrNullString()));
+
+            // Create source data object
+            String objectName = GCS_PREFIX + "test.csv";
+            byte[] data = Joiner.on('\n').join("a,b", "c,d").getBytes(UTF_8);
+            InputStreamContent content = new InputStreamContent("text/csv", new ByteArrayInputStream(data))
+                    .setLength(data.length);
+            StorageObject metadata = new StorageObject().setName(objectName);
+            retryExecutor.run(() -> gcs.objects()
+                    .insert(GCS_TEST_BUCKET_ASIA, metadata, content)
+                    .execute());
+
+            // Create output dataset
+            String datasetId = BQ_TAG + "_load_test_asia";
+            createDataset(bq, gcpProjectId, datasetId, "asia-northeast1");
+
+            // Run load
+            String tableId = "data";
+            addWorkflow(projectDir, "acceptance/bigquery/load-asia.dig");
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "load-asia", ImmutableMap.of(
+                    "source_bucket", GCS_TEST_BUCKET_ASIA,
+                    "source_object", objectName,
+                    "target_dataset", datasetId,
+                    "target_table", tableId,
+                    "outfile", outfile.toString()));
+            expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+            assertThat(Files.exists(outfile), is(true));
+
+            // Check that destination table was created
+            Table destinationTable = retryExecutor.run(() -> bq.tables().get(gcpProjectId, datasetId, tableId).execute());
+            assertThat(destinationTable.getTableReference().getTableId(), is(tableId));
+        }
     }
 
     public static class ExtractIT
@@ -345,6 +382,67 @@ public class BigQueryIT
             retryExecutor.run(() -> {
                 try {
                     gcs.objects().get(GCS_TEST_BUCKET, objectName)
+                            .executeMediaAndDownloadTo(data);
+                }
+                catch (IOException e) {
+                    throw ThrowablesUtil.propagate(e);
+                }
+            });
+        }
+
+        @Test
+        public void testExtractAsia()
+                throws Exception
+        {
+            assertThat(GCS_TEST_BUCKET_ASIA, not(isEmptyOrNullString()));
+
+            // Create source table
+            String tableId = "data";
+            String datasetId = BQ_TAG + "_extract_test_asia";
+            createDataset(bq, gcpProjectId, datasetId, "asia-northeast1");
+            Table table = new Table().setTableReference(new TableReference()
+                            .setProjectId(gcpProjectId)
+                            .setTableId(tableId))
+                    .setSchema(new TableSchema()
+                            .setFields(ImmutableList.of(
+                                    new TableFieldSchema().setName("foo").setType("STRING"),
+                                    new TableFieldSchema().setName("bar").setType("STRING")
+                            )));
+            retryExecutor.run(() -> bq.tables().insert(gcpProjectId, datasetId, table)
+                    .execute());
+
+            // Populate source table
+            TableDataInsertAllRequest content = new TableDataInsertAllRequest()
+                    .setRows(ImmutableList.of(
+                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
+                                    "foo", "a",
+                                    "bar", "b")),
+                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
+                                    "foo", "c",
+                                    "bar", "d"))));
+            retryExecutor.run(() -> bq.tabledata().insertAll(gcpProjectId, datasetId, tableId, content)
+                    .execute());
+
+            // Run extract
+            String objectName = GCS_PREFIX + "test.csv";
+            addWorkflow(projectDir, "acceptance/bigquery/extract-asia.dig");
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "extract-asia", ImmutableMap.of(
+                    "src_dataset", datasetId,
+                    "src_table", tableId,
+                    "dst_bucket", GCS_TEST_BUCKET_ASIA,
+                    "dst_object", objectName,
+                    "outfile", outfile.toString()));
+            expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+            assertThat(Files.exists(outfile), is(true));
+
+            // Check that destination file was created
+            StorageObject metadata = retryExecutor.run(() -> gcs.objects().get(GCS_TEST_BUCKET_ASIA, objectName)
+                    .execute());
+            assertThat(metadata.getName(), is(objectName));
+            ByteArrayOutputStream data = new ByteArrayOutputStream();
+            retryExecutor.run(() -> {
+                try {
+                    gcs.objects().get(GCS_TEST_BUCKET_ASIA, objectName)
                             .executeMediaAndDownloadTo(data);
                 }
                 catch (IOException e) {
