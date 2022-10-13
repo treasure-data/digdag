@@ -107,6 +107,9 @@ See [Python API documents](../python_api.html) for details including variable ma
 
   ```python
   # tasks.py
+  from typing import Union
+
+
   class MyWorkflow(object):
       def __init__(
         self,
