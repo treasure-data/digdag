@@ -48,7 +48,17 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static acceptance.td.GcpUtil.*;
+import static acceptance.td.GcpUtil.BQ_TAG;
+import static acceptance.td.GcpUtil.GCP_CREDENTIAL;
+import static acceptance.td.GcpUtil.GCS_PREFIX;
+import static acceptance.td.GcpUtil.GCS_TEST_BUCKET;
+import static acceptance.td.GcpUtil.GCS_TEST_BUCKET_ASIA;
+import static acceptance.td.GcpUtil.createDataset;
+import static acceptance.td.GcpUtil.createTable;
+import static acceptance.td.GcpUtil.datasetExists;
+import static acceptance.td.GcpUtil.getDatasetLocation;
+import static acceptance.td.GcpUtil.listTables;
+import static acceptance.td.GcpUtil.tableExists;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
