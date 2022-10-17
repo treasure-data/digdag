@@ -13,6 +13,7 @@ import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
+import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.commons.ThrowablesUtil;
 import io.digdag.util.RetryExecutor;
@@ -35,6 +36,7 @@ public class GcpUtil
 
     static final String GCP_CREDENTIAL = System.getenv().getOrDefault("GCP_CREDENTIAL", "");
     static final String GCS_TEST_BUCKET = System.getenv().getOrDefault("GCS_TEST_BUCKET", "");
+    static final String GCS_TEST_BUCKET_ASIA = System.getenv().getOrDefault("GCS_TEST_BUCKET_ASIA", "");
 
     static final String GCP_PROJECT_ID;
 
@@ -138,6 +140,18 @@ public class GcpUtil
         return bq.tables().insert(projectId, datasetId, table).execute();
     }
 
+    static Dataset createDataset(Bigquery bq, String projectId, String datasetId, String location)
+            throws IOException, RetryExecutor.RetryGiveupException
+    {
+        Dataset dataset = new Dataset()
+                .setDatasetReference(new DatasetReference()
+                        .setDatasetId(datasetId))
+                .setLocation(location);
+        Dataset created = createDataset(bq, projectId, dataset);
+        assertThat(datasetExists(bq, projectId, datasetId), is(true));
+        return created;
+    }
+
     static Dataset createDataset(Bigquery bq, String projectId, String datasetId)
             throws IOException, RetryExecutor.RetryGiveupException
     {
@@ -168,6 +182,13 @@ public class GcpUtil
             }
             throw e;
         }
+    }
+
+    static Optional<String> getDatasetLocation(Bigquery bq, String projectId, String datasetId)
+        throws IOException
+    {
+            Dataset dataset = bq.datasets().get(projectId, datasetId).execute();
+            return Optional.fromNullable(dataset.getLocation());
     }
 
     static List<TableList.Tables> listTables(Bigquery bq, String projectId, String datasetId)

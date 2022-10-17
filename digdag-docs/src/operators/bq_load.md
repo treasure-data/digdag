@@ -80,6 +80,16 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   destination_table: some_dataset.some_partitioned_table$20160101
   ```
 
+* **location**: LOCATION
+
+  The location where the job should run. The source GCS bucket and the table must be in this location. See [BigQuery locations](https://cloud.google.com/bigquery/docs/locations) for a list of available locations.
+
+  Examples:
+
+  ```
+  location: asia-northeast1
+  ```
+
 * **project**: NAME
 
   The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
@@ -280,4 +290,3 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   The id of the BigQuery job that performed this import.
 
   Note: `bq.last_jobid` parameter is kept only for backward compatibility but you must not use it because it will be removed removed in a near future release.
-

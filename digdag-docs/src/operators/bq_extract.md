@@ -57,6 +57,15 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
     - gs://my_bucket/my_export_2.csv
   ```
 
+* **location**: LOCATION
+  The location where the job should run. The table and the destination must be in this location. See [BigQuery locations](https://cloud.google.com/bigquery/docs/locations) for a list of available locations.
+
+  Examples:
+
+  ```
+  location: asia-northeast1
+  ```
+
 * **print_header**: BOOLEAN
   Whether to print out a header row in the results. *Default*: `true`.
 
@@ -106,4 +115,3 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   The id of the BigQuery job that performed this export.
 
   Note: `bq.last_jobid` parameter is kept only for backward compatibility but you must not use it because it will be removed removed in a near future release.
-

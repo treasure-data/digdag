@@ -52,9 +52,11 @@ import static acceptance.td.GcpUtil.BQ_TAG;
 import static acceptance.td.GcpUtil.GCP_CREDENTIAL;
 import static acceptance.td.GcpUtil.GCS_PREFIX;
 import static acceptance.td.GcpUtil.GCS_TEST_BUCKET;
+import static acceptance.td.GcpUtil.GCS_TEST_BUCKET_ASIA;
 import static acceptance.td.GcpUtil.createDataset;
 import static acceptance.td.GcpUtil.createTable;
 import static acceptance.td.GcpUtil.datasetExists;
+import static acceptance.td.GcpUtil.getDatasetLocation;
 import static acceptance.td.GcpUtil.listTables;
 import static acceptance.td.GcpUtil.tableExists;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -220,8 +222,36 @@ public class BigQueryIT
         public void testQuery()
                 throws Exception
         {
+            String testQueryTokyoDataset1 = BQ_TAG + "_query_tokyo_dataset_1";
+            String testQueryTable1 = "test_query_table1";
+
+            createDataset(bq, gcpProjectId, testQueryTokyoDataset1, "asia-northeast1");
+            createTable(bq, gcpProjectId, testQueryTokyoDataset1, new Table()
+                    .setTableReference(new TableReference()
+                            .setProjectId(gcpProjectId)
+                            .setDatasetId(testQueryTokyoDataset1)
+                            .setTableId(testQueryTable1))
+                    .setSchema(new TableSchema()
+                            .setFields(ImmutableList.of(
+                                    new TableFieldSchema().setName("f1").setType("STRING"),
+                                    new TableFieldSchema().setName("f2").setType("STRING")
+                            ))));
+
+            retryExecutor.run(() ->
+                    bq.tabledata().insertAll(gcpProjectId, testQueryTokyoDataset1, testQueryTable1, new TableDataInsertAllRequest()
+                            .setRows(ImmutableList.of(
+                                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1a", "f2", "v2a")),
+                                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1b", "f2", "v2b"))
+                                    )
+                            )
+                    )
+            );
+
             addWorkflow(projectDir, "acceptance/bigquery/query.dig");
-            Id attemptId = pushAndStart(server.endpoint(), projectDir, "query", ImmutableMap.of("outfile", outfile.toString()));
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "query", ImmutableMap.of(
+                    "outfile", outfile.toString(),
+                    "test_query_tokyo_dataset_1", testQueryTokyoDataset1,
+                    "test_query_table_1", testQueryTable1));
             expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
             assertThat(Files.exists(outfile), is(true));
         }
@@ -249,17 +279,50 @@ public class BigQueryIT
 
             // Create output dataset
             String datasetId = BQ_TAG + "_load_test";
-            Dataset dataset = new Dataset().setDatasetReference(new DatasetReference()
-                    .setProjectId(gcpProjectId)
-                    .setDatasetId(datasetId));
-            retryExecutor.run(() -> bq.datasets().insert(gcpProjectId, dataset)
-                    .execute());
+            createDataset(bq, gcpProjectId, datasetId);
 
             // Run load
             String tableId = "data";
             addWorkflow(projectDir, "acceptance/bigquery/load.dig");
             Id attemptId = pushAndStart(server.endpoint(), projectDir, "load", ImmutableMap.of(
                     "source_bucket", GCS_TEST_BUCKET,
+                    "source_object", objectName,
+                    "target_dataset", datasetId,
+                    "target_table", tableId,
+                    "outfile", outfile.toString()));
+            expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+            assertThat(Files.exists(outfile), is(true));
+
+            // Check that destination table was created
+            Table destinationTable = retryExecutor.run(() -> bq.tables().get(gcpProjectId, datasetId, tableId).execute());
+            assertThat(destinationTable.getTableReference().getTableId(), is(tableId));
+        }
+
+        @Test
+        public void testLoadAsia()
+                throws Exception
+        {
+            assertThat(GCS_TEST_BUCKET_ASIA, not(isEmptyOrNullString()));
+
+            // Create source data object
+            String objectName = GCS_PREFIX + "test.csv";
+            byte[] data = Joiner.on('\n').join("a,b", "c,d").getBytes(UTF_8);
+            InputStreamContent content = new InputStreamContent("text/csv", new ByteArrayInputStream(data))
+                    .setLength(data.length);
+            StorageObject metadata = new StorageObject().setName(objectName);
+            retryExecutor.run(() -> gcs.objects()
+                    .insert(GCS_TEST_BUCKET_ASIA, metadata, content)
+                    .execute());
+
+            // Create output dataset
+            String datasetId = BQ_TAG + "_load_test_asia";
+            createDataset(bq, gcpProjectId, datasetId, "asia-northeast1");
+
+            // Run load
+            String tableId = "data";
+            addWorkflow(projectDir, "acceptance/bigquery/load-asia.dig");
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "load-asia", ImmutableMap.of(
+                    "source_bucket", GCS_TEST_BUCKET_ASIA,
                     "source_object", objectName,
                     "target_dataset", datasetId,
                     "target_table", tableId,
@@ -285,11 +348,7 @@ public class BigQueryIT
             // Create source table
             String tableId = "data";
             String datasetId = BQ_TAG + "_extract_test";
-            Dataset dataset = new Dataset().setDatasetReference(new DatasetReference()
-                    .setProjectId(gcpProjectId)
-                    .setDatasetId(datasetId));
-            retryExecutor.run(() -> bq.datasets().insert(gcpProjectId, dataset)
-                    .execute());
+            createDataset(bq, gcpProjectId, datasetId);
             Table table = new Table().setTableReference(new TableReference()
                     .setProjectId(gcpProjectId)
                     .setTableId(tableId))
@@ -340,6 +399,67 @@ public class BigQueryIT
                 }
             });
         }
+
+        @Test
+        public void testExtractAsia()
+                throws Exception
+        {
+            assertThat(GCS_TEST_BUCKET_ASIA, not(isEmptyOrNullString()));
+
+            // Create source table
+            String tableId = "data";
+            String datasetId = BQ_TAG + "_extract_test_asia";
+            createDataset(bq, gcpProjectId, datasetId, "asia-northeast1");
+            Table table = new Table().setTableReference(new TableReference()
+                            .setProjectId(gcpProjectId)
+                            .setTableId(tableId))
+                    .setSchema(new TableSchema()
+                            .setFields(ImmutableList.of(
+                                    new TableFieldSchema().setName("foo").setType("STRING"),
+                                    new TableFieldSchema().setName("bar").setType("STRING")
+                            )));
+            retryExecutor.run(() -> bq.tables().insert(gcpProjectId, datasetId, table)
+                    .execute());
+
+            // Populate source table
+            TableDataInsertAllRequest content = new TableDataInsertAllRequest()
+                    .setRows(ImmutableList.of(
+                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
+                                    "foo", "a",
+                                    "bar", "b")),
+                            new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
+                                    "foo", "c",
+                                    "bar", "d"))));
+            retryExecutor.run(() -> bq.tabledata().insertAll(gcpProjectId, datasetId, tableId, content)
+                    .execute());
+
+            // Run extract
+            String objectName = GCS_PREFIX + "test.csv";
+            addWorkflow(projectDir, "acceptance/bigquery/extract-asia.dig");
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "extract-asia", ImmutableMap.of(
+                    "src_dataset", datasetId,
+                    "src_table", tableId,
+                    "dst_bucket", GCS_TEST_BUCKET_ASIA,
+                    "dst_object", objectName,
+                    "outfile", outfile.toString()));
+            expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+            assertThat(Files.exists(outfile), is(true));
+
+            // Check that destination file was created
+            StorageObject metadata = retryExecutor.run(() -> gcs.objects().get(GCS_TEST_BUCKET_ASIA, objectName)
+                    .execute());
+            assertThat(metadata.getName(), is(objectName));
+            ByteArrayOutputStream data = new ByteArrayOutputStream();
+            retryExecutor.run(() -> {
+                try {
+                    gcs.objects().get(GCS_TEST_BUCKET_ASIA, objectName)
+                            .executeMediaAndDownloadTo(data);
+                }
+                catch (IOException e) {
+                    throw ThrowablesUtil.propagate(e);
+                }
+            });
+        }
     }
 
     public static class DdlIT
@@ -363,11 +483,13 @@ public class BigQueryIT
             String testCreateTable2EmptyDataset = BQ_TAG + "_create_table_2_empty_dataset";
             String testCreateTable3CreateDataset = BQ_TAG + "_create_table_3_create_dataset";
             String testCreateTable4ExistingDataset = BQ_TAG + "_create_table_4_existing_dataset";
+            String testCreateTableAtTokyo1CreateDataset = BQ_TAG + "_create_table_at_tokyo_1_create_dataset";
             String testCreateTable1 = "test_create_table_1";
             String testCreateTable2 = "test_create_table_2";
             String testCreateTable3 = "test_create_table_3";
             String testCreateTable4 = "test_create_table_4";
             String testCreateTable5 = "test_create_table_5";
+            String testCreateTableAtTokyo1 = "test_create_table_at_tokyo_1";
             String testDeleteTable1 = "test_delete_table_1";
             String testDeleteTable2 = "test_delete_table_2";
             String testEmptyTable2EmptyDataset = BQ_TAG + "_empty_table_2_empty_dataset";
@@ -426,9 +548,11 @@ public class BigQueryIT
                     .put("test_create_table_3", testCreateTable3)
                     .put("test_create_table_4", testCreateTable4)
                     .put("test_create_table_5", testCreateTable5)
+                    .put("test_create_table_at_tokyo_1", testCreateTableAtTokyo1)
                     .put("test_create_table_2_empty_dataset", testCreateTable2EmptyDataset)
                     .put("test_create_table_3_create_dataset", testCreateTable3CreateDataset)
                     .put("test_create_table_4_existing_dataset", testCreateTable4ExistingDataset)
+                    .put("test_create_table_at_tokyo_1_create_dataset", testCreateTableAtTokyo1CreateDataset)
                     .put("test_delete_table_2_dataset", testDeleteTable2ExistingDataset)
                     .put("test_delete_table_1", testDeleteTable1)
                     .put("test_delete_table_2", testDeleteTable2)
@@ -453,6 +577,7 @@ public class BigQueryIT
             assertThat(datasetExists(bq, gcpProjectId, testEmptyDataset2), is(true));
             assertThat(datasetExists(bq, gcpProjectId, testDeleteDataset1), is(false));
             assertThat(datasetExists(bq, gcpProjectId, testDeleteDataset2), is(false));
+            assertThat(getDatasetLocation(bq, gcpProjectId, testCreateTableAtTokyo1CreateDataset), is(Optional.of("asia-northeast1")));
 
             assertThat(listTables(bq, gcpProjectId, testEmptyDataset1), is(empty()));
             assertThat(listTables(bq, gcpProjectId, testEmptyDataset2), is(empty()));
@@ -462,6 +587,7 @@ public class BigQueryIT
             assertThat(tableExists(bq, gcpProjectId, testCreateTable3CreateDataset, testCreateTable3), is(true));
             assertThat(tableExists(bq, gcpProjectId, testCreateTable4ExistingDataset, testCreateTable4), is(true));
             assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testCreateTable5), is(true));
+            assertThat(tableExists(bq, gcpProjectId, testCreateTableAtTokyo1CreateDataset, testCreateTableAtTokyo1), is(true));
 
             assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testDeleteTable1), is(false));
             assertThat(tableExists(bq, gcpProjectId, testDeleteTable2ExistingDataset, testDeleteTable2), is(false));

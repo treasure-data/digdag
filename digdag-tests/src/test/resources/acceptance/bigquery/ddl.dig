@@ -15,6 +15,8 @@ timezone: UTC
         l2: v2
     - ${test_create_table_3_create_dataset}
     - ${test_empty_table_3_create_dataset}
+    - id: ${test_create_table_at_tokyo_1_create_dataset}
+      location: asia-northeast1
 
   delete_datasets:
     - ${test_delete_dataset_1}
@@ -43,6 +45,7 @@ timezone: UTC
         fields:
           - {name: f1, type: STRING}
           - {name: f2, type: STRING}
+    - ${test_create_table_at_tokyo_1_create_dataset}.${test_create_table_at_tokyo_1}
 
   delete_tables:
     - ${test_delete_table_1}

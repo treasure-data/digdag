@@ -2,6 +2,7 @@ package io.digdag.standards.operator.gcp;
 
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
+import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
@@ -22,7 +23,8 @@ abstract class BaseBqJobOperator
     protected TaskResult run(BqClient bq, String projectId)
     {
         BqJobRunner jobRunner = new BqJobRunner(request, bq, projectId);
-        Job completed = jobRunner.runJob(jobConfiguration(projectId));
+        Optional<String> location = params.getOptional("location", String.class);
+        Job completed = jobRunner.runJob(jobConfiguration(projectId), location);
         return result(completed);
     }
 
