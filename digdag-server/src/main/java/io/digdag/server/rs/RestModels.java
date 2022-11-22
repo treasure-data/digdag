@@ -460,7 +460,7 @@ public final class RestModels
         return Id.of(Long.toString(id));
     }
 
-    static int parseProjectId(Id id)
+    public static int parseProjectId(Id id)
     {
         return Integer.parseInt(id.get());
     }

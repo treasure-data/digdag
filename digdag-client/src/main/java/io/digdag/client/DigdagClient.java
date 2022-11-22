@@ -452,7 +452,13 @@ public class DigdagClient implements AutoCloseable
         return putProjectRevision(projName, revision, body, scheduleFrom, Collections.emptyList(), Optional.absent());
     }
 
-    public RestProject putProjectRevision(String projName, String revision, File body, Optional<Instant> scheduleFrom, List<String> clearSchedule, Optional<Boolean> clearAllSchedules )
+    public RestProject putProjectRevision(
+            String projName,
+            String revision,
+            File body,
+            Optional<Instant> scheduleFrom,
+            List<String> clearSchedule,
+            Optional<Boolean> clearAllSchedules)
         throws IOException
     {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(projName), "projName");

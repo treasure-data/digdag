@@ -2,8 +2,7 @@ package io.digdag.core.repository;
 
 import java.util.List;
 import java.time.ZoneId;
-import java.time.Instant;
-import com.google.common.base.Optional;
+
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStatus;
 import io.digdag.spi.ScheduleTime;
@@ -15,6 +14,11 @@ public interface ProjectControlStore
 
     void insertRevisionArchiveData(int revId, byte[] data)
             throws ResourceConflictException;
+
+    void insertProjectMetadata(int projId, int siteId, ProjectMetadataMap metadataMap)
+            throws ResourceConflictException;
+
+    void deleteProjectMetadata(int projId);
 
     StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition workflow, ZoneId workflowTimeZone)
         throws ResourceConflictException;
