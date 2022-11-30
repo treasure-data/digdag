@@ -12,6 +12,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
@@ -43,6 +45,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RequireIT
 {
+    private static Logger logger = LoggerFactory.getLogger(RequireIT.class);
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -559,5 +563,72 @@ public class RequireIT
 
         assertThat(requireOperatorStateParams.get("target_attempt_id", Id.class), is(targetAttemptId));
         assertThat(requireOperatorStateParams.get("target_session_id", Id.class), is(targetSessionId));
+    }
+
+    @Test
+    public void testRunningHitMaxAttempt()
+            throws Exception {
+        // Only two attempts are able to run.
+        // In this situation, both parent_wait_long and child_wait_long must run successfully
+        try {
+            server.close();
+            server = TemporaryDigdagServer.builder()
+                    .configuration("executor.attempt_max_run = 2")
+                    .build();
+            server.start();
+
+            // Create a new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
+
+            copyResource("acceptance/require/parent_wait_long.dig", projectDir.resolve("parent_wait_long.dig"));
+            copyResource("acceptance/require/child_wait_long.dig", projectDir.resolve("child_wait_long.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "require",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+            Id attemptId;
+            {
+                CommandStatus startStatus = main("start",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        "require", "parent_wait_long",
+                        "--session", "now");
+                assertThat(startStatus.code(), is(0));
+                attemptId = getAttemptId(startStatus);
+            }
+
+            // Wait for the attempt to complete
+            boolean success = false;
+            for (int i = 0; i < 120; i++) {
+                CommandStatus attemptsStatus = main("attempts",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        attemptId.toString());
+                String statusStr = attemptsStatus.outUtf8();
+                if (statusStr.contains("status: success")) {
+                    success = true;
+                    break;
+                } else if (statusStr.contains("status: error")) {
+                    success = false;
+                    logger.error("attempt failed: {}", statusStr);
+                    break;
+                }
+                Thread.sleep(1000);
+            }
+            assertThat(success, is(true));
+        }
+        finally {
+            if (server != null) {
+                server.close();
+            }
+        }
     }
 }
