@@ -38,7 +38,7 @@
     "path": "0.12.7",
     "popper.js": "^1.15.0",
     "react": "16.8.6",
-    "react-addons-pure-render-mixin": "15.6.2",
+    "react-addons-pure-render-mixin": "15.6.3",
     "react-dom": "16.8.6",
     "react-interval": "2.1.0",
     "react-json-pretty": "1.5.0",
