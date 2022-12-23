@@ -309,6 +309,16 @@ public class DigdagClient implements AutoCloseable
                 target("/api/projects"));
     }
 
+    public RestProjectCollection getProjects(Optional<Id> lastId, int count, Optional<String> namePattern)
+    {
+        return doGet(RestProjectCollection.class,
+                target("/api/projects")
+                .queryParam("last_id", lastId.orNull())
+                .queryParam("count", count)
+                .queryParam("name_pattern", namePattern.orNull())
+        );
+    }
+
     public RestProject getProject(Id projId)
     {
         return doGet(RestProject.class,
