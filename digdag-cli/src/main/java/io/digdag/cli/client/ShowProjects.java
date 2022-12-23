@@ -1,18 +1,31 @@
 package io.digdag.cli.client;
 
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
 
 import javax.ws.rs.NotFoundException;
+
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowProjects
         extends ClientCommand
 {
+    @Parameter(names = {"--last-id"})
+    Id lastId = null;
+
+    @Parameter(names = {"--count"})
+    int count = 100;
+
+    @Parameter(names = {"--name"})
+    String namePattern = null;
+
     @Override
     public void mainWithClientException()
             throws Exception
@@ -34,7 +47,7 @@ public class ShowProjects
     {
         DigdagClient client = buildClient();
 
-        RestProjectCollection projects = client.getProjects();
+        RestProjectCollection projects = client.getProjects(Optional.fromNullable(lastId), count, Optional.fromNullable(namePattern));
         ln("Projects");
         for (RestProject project : projects.getProjects()) {
             showProjectDetail(project);
@@ -71,6 +84,10 @@ public class ShowProjects
     public SystemExitException usage(String error)
     {
         err.println("Usage: " + programName + " projects [name]");
+        err.println("  Options:");
+        err.println("    --count number   number of workflows");
+        err.println("    --last-id id     last id of workflow");
+        err.println("    --name name      search by part of project name. work only without `name` argument");
         showCommonOptions();
         return systemExit(error);
     }

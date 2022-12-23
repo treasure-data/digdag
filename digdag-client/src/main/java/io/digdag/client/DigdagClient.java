@@ -309,6 +309,16 @@ public class DigdagClient implements AutoCloseable
                 target("/api/projects"));
     }
 
+    public RestProjectCollection getProjects(Optional<Id> lastId, int count, Optional<String> namePattern)
+    {
+        return doGet(RestProjectCollection.class,
+                target("/api/projects")
+                .queryParam("last_id", lastId.orNull())
+                .queryParam("count", count)
+                .queryParam("name_pattern", namePattern.orNull())
+        );
+    }
+
     public RestProject getProject(Id projId)
     {
         return doGet(RestProject.class,
@@ -343,12 +353,16 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public RestWorkflowDefinitionCollection getWorkflowDefinitions(Optional<Id> lastId, int count)
+    public RestWorkflowDefinitionCollection getWorkflowDefinitions(Optional<Id> lastId, int count, String order,
+                                                                   Optional<String> namePattern)
     {
         return doGet(RestWorkflowDefinitionCollection.class,
                 target("/api/workflows")
                 .queryParam("last_id", lastId.orNull())
-                .queryParam("count", count));
+                .queryParam("count", count)
+                .queryParam("order", order)
+                .queryParam("name_pattern", namePattern.orNull())
+        );
     }
     
     public RestWorkflowDefinitionCollection getWorkflowDefinitions(Id projId)
