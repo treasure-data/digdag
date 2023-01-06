@@ -641,6 +641,7 @@ public class EcsCommandExecutor
         final ContainerDefinition cd = td.getContainerDefinitions().get(0);
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
+        setEcsContainerOverrideEnvironment(commandContext, commandRequest, clientConfig, containerOverride);
         setEcsContainerOverrideResource(clientConfig, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
@@ -757,18 +758,30 @@ public class EcsCommandExecutor
                 .build();
         logger.debug("Submit command line arguments: " + bashCommand);
 
-        // Pass environment variables to a container
-        boolean useEnvFile = false;
-        if (taskConfig.has("ecs")) {
-            final Config ecsConfig = taskConfig.getNested("ecs");
-            if (ecsConfig.has("use_env_file")) {
-                useEnvFile = ecsConfig.get("use_env_file", boolean.class);
-            }
-        }
-        if (useEnvFile) {
+        containerOverride.withCommand(bashCommand);
+    }
+
+    protected List<String> setEcsContainerOverrideArgumentsBeforeCommand()
+    {
+        return ImmutableList.of();
+    }
+
+    protected List<String> setEcsContainerOverrideArgumentsAfterCommand()
+    {
+        return ImmutableList.of();
+    }
+
+    protected void setEcsContainerOverrideEnvironment(
+            final CommandContext commandContext,
+            final CommandRequest commandRequest,
+            final EcsClientConfig clientConfig,
+            final ContainerOverride containerOverride)
+    {
+        if (clientConfig.isUseEnvironmentFile()) {
             // Create .env file and attach it to ECS Cluster for saving the count of characters because the maximum size of characters of ECS container overrides is 8KB.
             // It's possible to set larger size of variables by using environment file instead of passing values to a container one by one.
             final Path envFilePath;
+            final Path projectPath = commandContext.getLocalProjectPath();
             try {
                 envFilePath = Files.createTempFile(projectPath.resolve(".digdag/tmp"), "variables-", ".env");
             }
@@ -789,48 +802,48 @@ public class EcsCommandExecutor
             catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
-            final Path lastPathEnvFilePath = projectPath.resolve(".digdag/tmp").relativize(envFilePath);
-            final String envFileKey = createStorageKey(commandContext.getTaskRequest(), lastPathEnvFilePath.toString());
-            final EnvironmentFile envFile = new EnvironmentFile();
-            try {
-                temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
-                String temporalBucket = temporalStorage.getBucketName(systemConfig);
-                final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
-                envFile.setValue(temporalStorageS3ARN);
-                envFile.setType("s3");
-            }
-            catch (IOException e) {
-                final String message = s("Cannot upload a environment file '%s'with storage key '%s'. It will be retried.", envFilePath.toString(), envFileKey);
-                logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
-                throw new RuntimeException(e);
-            }
-            finally {
-                try {
-                    Files.deleteIfExists(envFilePath); // IOException but ignored
-                }
-                catch (IOException e) {
-                    logger.info(s("Cannot remove a environment file: %s", envFilePath.toString()));
-                }
-            }
-            containerOverride.withCommand(bashCommand).withEnvironmentFiles(envFile);
-        }
-        else {
+            final Path lastEnvFilePath = projectPath.resolve(".digdag/tmp").relativize(envFilePath);
+            final EnvironmentFile environmentFile = new EnvironmentFile();
+            uploadEnvironmentFileToTemporalStorage(commandContext, lastEnvFilePath, environmentFile, envFilePath);
+            containerOverride.withEnvironmentFiles(environmentFile);
+        } else {
             final ImmutableList.Builder<KeyValuePair> environments = ImmutableList.builder();
             for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
                 environments.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
             }
-            containerOverride.withCommand(bashCommand).withEnvironment(environments.build());
+            containerOverride.withEnvironment(environments.build());
         }
     }
 
-    protected List<String> setEcsContainerOverrideArgumentsBeforeCommand()
+    protected void uploadEnvironmentFileToTemporalStorage(
+        final CommandContext commandContext,
+        final Path lastEnvFilePath,
+        final EnvironmentFile environmentFile,
+        final Path envFilePath)
     {
-        return ImmutableList.of();
-    }
-
-    protected List<String> setEcsContainerOverrideArgumentsAfterCommand()
-    {
-        return ImmutableList.of();
+        final String envFileKey = createStorageKey(commandContext.getTaskRequest(), lastEnvFilePath.toString());
+        final Config taskConfig = commandContext.getTaskRequest().getConfig();
+        final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(taskConfig); // config exception
+        try {
+            temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
+            String temporalBucket = temporalStorage.getBucketName(systemConfig);
+            final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
+            environmentFile.setValue(temporalStorageS3ARN);
+            environmentFile.setType("s3");
+        }
+        catch (IOException e) {
+            final String message = s("Cannot upload a environment file '%s'with storage key '%s'. It will be retried.", envFilePath.toString(), envFileKey);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
+            throw new RuntimeException(e);
+        }
+        finally {
+            try {
+                Files.deleteIfExists(envFilePath); // IOException but ignored
+            }
+            catch (IOException e) {
+                logger.info(s("Cannot remove a environment file: %s", envFilePath.toString()));
+            }
+        }
     }
 
     protected void setEcsContainerOverrideResource(

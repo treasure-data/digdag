@@ -45,6 +45,7 @@ Each sub keys of `agent.command_executor` are as follows:
 | ecs.&lt;name&gt;.region            | AWS region                                       |
 | ecs.&lt;name&gt;.subnets           | AWS subnet                                       |
 | ecs.&lt;name&gt;.max_retries       | Number of retry for AWS client                   |
+| ecs.&lt;name&gt;.use_environment_file       | (Optional) whether use environmentFiles or environment when setting variables to ECS. Default value is false and set variables individually.                   |
 
 Following keys are for configuration of temporal storage with AWS S3.
 
@@ -84,17 +85,6 @@ You need to set a tag `digdag.docker.image` in the task definition.
 ECS Command Executor try to search the tagged task definition.
 
 (This way lists and check all task definitions until found and take long time to run the task. See issue [#1488](https://github.com/treasure-data/digdag/issues/1488))
-
-If you need to use environment file, not passing environment variables to a container one by one, set `ecs.use_env_file: true` (default value is false).
-```
-_export:
-  ecs:
-    task_definition_arn: "arn:aws:ecs:us-east-1:..."
-    use_env_file: true
-
-+task1:
-  py>: ...
-```
 
 ## Docker
 ### Setup
