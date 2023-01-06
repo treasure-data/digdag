@@ -631,4 +631,88 @@ public class RequireIT
             }
         }
     }
+
+    @Test
+    public void testDelayWithMaxAttempt()
+            throws Exception {
+        // Scenario:
+        //  Only two attempts are able to run.
+        //  One attempt running firstly and run for some duration (reuse 'child_wait_long')
+        //  Then create new attempt which has `require>` (kick 'parent_wait_long')
+        // Expected:
+        //  The new attempt keep running. The task of `require>` will be retried after 10 min
+        // The way to confirm:
+        //   To reduce the time of test, only check attempt log shows "Number of attempts or tasks exceed limit"
+        //
+        try {
+            server.close();
+            server = TemporaryDigdagServer.builder()
+                    .configuration("executor.attempt_max_run = 2")
+                    .build();
+            server.start();
+
+            // Create a new project
+            CommandStatus initStatus = main("init",
+                    "-c", config.toString(),
+                    projectDir.toString());
+            assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
+
+            copyResource("acceptance/require/parent_wait_long.dig", projectDir.resolve("parent_wait_long.dig"));
+            copyResource("acceptance/require/child_wait_long.dig", projectDir.resolve("child_wait_long.dig"));
+
+            // Push the project
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "require",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+            { // create an attempt
+                CommandStatus startStatus = main("start",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        "require", "child_wait_long",
+                        "--session", "now");
+                assertThat(startStatus.code(), is(0));
+            }
+
+            Id attemptId;
+            {
+                CommandStatus startStatus = main("start",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        "require", "parent_wait_long",
+                        "--session", "2022-12-01 12:34:56");
+                assertThat(startStatus.code(), is(0));
+                attemptId = getAttemptId(startStatus);
+            }
+
+            {
+                CommandStatus status = main("attempts",
+                        "-c", config.toString(),
+                        "-e", server.endpoint());
+                logger.info("{}", status.outUtf8());
+            }
+
+            String logStr = "";
+            for (int i = 0; i < 60; i++) {
+                CommandStatus attemptLog = main("log",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        attemptId.toString());
+                logStr = attemptLog.outUtf8();
+                if (logStr.contains("Number of attempts or tasks exceed limit")) {
+                    return; // OK
+                }
+                Thread.sleep(1000);
+            }
+            fail("Cannot confirm retry happen. log:\n" + logStr);
+        }
+        finally {
+            if (server != null) {
+                server.close();
+            }
+        }
+    }
 }
