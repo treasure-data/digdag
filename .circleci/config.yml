@@ -102,6 +102,8 @@ workflows:
           context:
             - aws-rd
       - docs_deployment: # master branch only
+          context:
+            - github
           filters:
             branches:
               only:
