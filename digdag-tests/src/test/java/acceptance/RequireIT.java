@@ -235,13 +235,15 @@ public class RequireIT
 
     @Test
     public void testRequireToAnotherProjectById()
-            throws Exception {
+            throws Exception
+    {
         testRequireToAnotherProject(true, "parent_by_id", "2020-06-05 00:00:01");
     }
 
     @Test
     public void testRequireToAnotherProjectByName()
-            throws Exception {
+            throws Exception
+    {
         testRequireToAnotherProject(false, "parent_by_name", "2020-06-05 00:00:02");
     }
 
@@ -254,7 +256,8 @@ public class RequireIT
      * @throws Exception
      */
     private void testRequireToAnotherProject(boolean useProjectId, String parentProjectName, String sessionTime)
-            throws Exception {
+            throws Exception
+    {
         final String childProjectName = "child_another";
 
         // Push child project
@@ -412,7 +415,10 @@ public class RequireIT
         return attempts;
     }
 
-    private static boolean isAttemptSuccess(CommandStatus status) { return status.outUtf8().contains("status: success"); }
+    private static boolean isAttemptSuccess(CommandStatus status)
+    {
+        return status.outUtf8().contains("status: success");
+    }
 
     private CommandStatus startAndWait(String... args) throws InterruptedException
     {
@@ -567,7 +573,8 @@ public class RequireIT
 
     @Test
     public void testRunningHitMaxAttempt()
-            throws Exception {
+            throws Exception
+    {
         // Only two attempts are able to run.
         // In this situation, both parent_wait_long and child_wait_long must run successfully
         try {
@@ -634,7 +641,8 @@ public class RequireIT
 
     @Test
     public void testDelayWithMaxAttempt()
-            throws Exception {
+            throws Exception
+    {
         // Scenario:
         //  Only two attempts are able to run.
         //  One attempt running firstly and run for some duration (reuse 'child_wait_long')
@@ -714,5 +722,65 @@ public class RequireIT
                 server.close();
             }
         }
+    }
+
+    @Test
+    public void testMultipleAttemptsInSession()
+            throws Exception
+    {
+        // Check the issue that 'require>' will fail when run multiple attempts in a session in very short term
+        // Scenario:
+        //  run "parent_multiple" for a specific session
+        //  the workflow run tasks as follows:
+        //    - firstly run `child_wait` for a session
+        //    - run multiple attempts of `child_wait` for the session in parallel.
+        // Way to check:
+        //  all attempts finish successfully
+        CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.errUtf8(), initStatus.code(), is(0));
+
+        copyResource("acceptance/require/parent_multiple.dig", projectDir.resolve("parent_multiple.dig"));
+        copyResource("acceptance/require/child_wait.dig", projectDir.resolve("child_wait.dig"));
+
+        // Push the project
+        CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "require",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        Id attemptId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "require", "parent_multiple",
+                    "--session", "now");
+            assertThat(startStatus.code(), is(0));
+            attemptId = getAttemptId(startStatus);
+        }
+
+        // Wait for the attempt to complete
+        boolean success = false;
+        for (int i = 0; i < 180; i++) {
+            CommandStatus attemptsStatus = main("attempts",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    attemptId.toString());
+            String statusStr = attemptsStatus.outUtf8();
+            if (statusStr.contains("status: success")) {
+                success = true;
+                break;
+            } else if (statusStr.contains("status: error")) {
+                success = false;
+                logger.error("attempt failed: {}", statusStr);
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        assertThat(success, is(true));
     }
 }
