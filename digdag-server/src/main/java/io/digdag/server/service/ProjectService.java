@@ -114,6 +114,7 @@ public class ProjectService
 
     public RestProject putProject(
             int siteId,
+            Config userInfo,
             AuthenticatedUser authenticatedUser,
             Supplier<Map<String, String>> secrets,
             String name,
@@ -149,7 +150,7 @@ public class ProjectService
                     if (md5Count.getCount() != contentLength) {
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
-                    validateWorkflowAndSchedule(authenticatedUser, projectTarget, meta, scheduleClearParam);
+                    validateWorkflowAndSchedule(userInfo, authenticatedUser, projectTarget, meta, scheduleClearParam);
                 }
 
                 ArchiveManager.Location location =
@@ -187,7 +188,7 @@ public class ProjectService
                                     throw new InternalServerErrorException("Failed to load archive data in memory", ex);
                                 }
                                 rev = lockedProj.insertRevision(
-                                        Revision.builderFromArchive(revision, meta, authenticatedUser.getUserInfo())
+                                        Revision.builderFromArchive(revision, meta, userInfo)
                                                 .archiveType(ArchiveType.DB)
                                                 .archivePath(Optional.absent())
                                                 .archiveMd5(Optional.of(md5))
@@ -198,7 +199,7 @@ public class ProjectService
                             else {
                                 // store location of the uploaded file in db
                                 rev = lockedProj.insertRevision(
-                                        Revision.builderFromArchive(revision, meta, authenticatedUser.getUserInfo())
+                                        Revision.builderFromArchive(revision, meta, userInfo)
                                                 .archiveType(location.getArchiveType())
                                                 .archivePath(Optional.of(location.getPath()))
                                                 .archiveMd5(Optional.of(md5))
@@ -283,7 +284,12 @@ public class ProjectService
         return totalSize;
     }
 
-    private void validateWorkflowAndSchedule(AuthenticatedUser authenticatedUser, ProjectTarget projectTarget, ArchiveMetadata meta, ProjectClearScheduleParam scheduleParam)
+    private void validateWorkflowAndSchedule(
+            Config userInfo,
+            AuthenticatedUser authenticatedUser,
+            ProjectTarget projectTarget,
+            ArchiveMetadata meta,
+            ProjectClearScheduleParam scheduleParam)
             throws AccessControlException
     {
         List<Config> taskConfigs = new ArrayList<>();
@@ -300,7 +306,7 @@ public class ProjectService
                 // collect task configs for later access control check
                 taskConfigs.add(taskConfig);
             }
-            Revision rev = Revision.builderFromArchive("check", meta, authenticatedUser.getUserInfo())
+            Revision rev = Revision.builderFromArchive("check", meta, userInfo)
                     .archiveType(ArchiveType.NONE)
                     .build();
             // raise an exception if "schedule:" is invalid.

@@ -680,6 +680,7 @@ public class ProjectResource
     {
         return projectService.putProject(
                 getSiteId(),
+                getUserInfo(),
                 getAuthenticatedUser(),
                 getSecrets(),
                 name,
