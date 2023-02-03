@@ -56,10 +56,9 @@ public class TemporalProjectArchiveStorage
         }
     }
 
-    public String getBucketName(final Config systemConfig)
+    public String getS3BucketName(final Config systemConfig)
     {
-        String type = systemConfig.get(PARAMS_PREFIX + "type", String.class);
-        String bucket = systemConfig.get(PARAMS_PREFIX + type + ".bucket", String.class);
+        String bucket = systemConfig.get(PARAMS_PREFIX + "s3.bucket", String.class);
         return bucket;
     }
 }

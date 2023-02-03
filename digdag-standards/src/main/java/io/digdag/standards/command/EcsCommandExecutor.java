@@ -826,7 +826,7 @@ public class EcsCommandExecutor
         final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(taskConfig); // config exception
         try {
             temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
-            String temporalBucket = temporalStorage.getBucketName(systemConfig);
+            String temporalBucket = temporalStorage.getS3BucketName(systemConfig);
             final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
             environmentFile.setValue(temporalStorageS3ARN);
             environmentFile.setType("s3");
@@ -887,12 +887,12 @@ public class EcsCommandExecutor
                 .toString();
     }
 
-    private static String createS3BucketARN(final String Bucket, final String fileKey)
+    private static String createS3BucketARN(final String bucket, final String fileKey)
     {
-        // S3 File ARN: "arn:aws:s3::{torage_bucket}/{env_file}"
+        // S3 File ARN: "arn:aws:s3::{storage_bucket}/{env_file}"
         return new StringBuilder()
                 .append("arn:aws:s3:::")
-                .append(Bucket)
+                .append(bucket)
                 .append("/")
                 .append(fileKey)
                 .toString();
