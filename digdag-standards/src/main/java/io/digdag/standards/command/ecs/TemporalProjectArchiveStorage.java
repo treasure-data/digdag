@@ -55,4 +55,10 @@ public class TemporalProjectArchiveStorage
             throw ThrowablesUtil.propagate(e);
         }
     }
+
+    public String getS3BucketName(final Config systemConfig)
+    {
+        String bucket = systemConfig.get(PARAMS_PREFIX + "s3.bucket", String.class);
+        return bucket;
+    }
 }

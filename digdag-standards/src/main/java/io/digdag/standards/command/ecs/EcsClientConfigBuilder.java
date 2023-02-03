@@ -20,6 +20,7 @@ public class EcsClientConfigBuilder
     private Optional<Integer> containerMemory;
     private Optional<String> taskCpu;
     private Optional<String> taskMemory;
+    private boolean useEnvironmentFile;
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
@@ -130,6 +131,12 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withUseEnvironmentFile(boolean useEnvironmentFile)
+    {
+        this.useEnvironmentFile = useEnvironmentFile;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -208,5 +215,10 @@ public class EcsClientConfigBuilder
     public Optional<String> getTaskMemory()
     {
         return taskMemory;
+    }
+
+    public boolean isUseEnvironmentFile()
+    {
+        return useEnvironmentFile;
     }
 }

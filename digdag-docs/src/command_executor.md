@@ -45,6 +45,7 @@ Each sub keys of `agent.command_executor` are as follows:
 | ecs.&lt;name&gt;.region            | AWS region                                       |
 | ecs.&lt;name&gt;.subnets           | AWS subnet                                       |
 | ecs.&lt;name&gt;.max_retries       | Number of retry for AWS client                   |
+| ecs.&lt;name&gt;.use_environment_file       | (Optional) whether use environmentFiles or environment when setting variables to ECS. Default value is false and set variables individually.                   |
 
 Following keys are for configuration of temporal storage with AWS S3.
 

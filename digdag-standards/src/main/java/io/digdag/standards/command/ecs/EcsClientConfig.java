@@ -37,6 +37,7 @@ public class EcsClientConfig
         this.placementStrategyField = builder.getPlacementStrategyField();
         this.taskCpu = builder.getTaskCpu();
         this.taskMemory = builder.getTaskMemory();
+        this.useEnvironmentFile = builder.isUseEnvironmentFile();
 
         // All PlacementStrategyFields must be used with a PlacementStrategyType.
         // But some PlacementStrategyTypes can be used without any PlacementStrategyFields.
@@ -64,6 +65,7 @@ public class EcsClientConfig
         // - started_by (optional/String)
         // - task_cpu (optional/String) e.g. `1 vcpu` or `1024` (CPU unit)
         // - task_memory (optional/String) e.g. `1 GB` or `1024` (MiB)
+        // - use_environment_file (boolean)
         // For more detail of the value format of `task_cpu` and `task_memory`, please see
         // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
         final Config ecsConfig = taskConfig.getNested(TASK_CONFIG_ECS_KEY).deepCopy();
@@ -129,6 +131,7 @@ public class EcsClientConfig
                 .withPlacementStrategyField(ecsConfig.getOptional("placement_strategy_field", String.class))
                 .withTaskCpu(ecsConfig.getOptional("task_cpu", String.class))
                 .withTaskMemory(ecsConfig.getOptional("task_memory", String.class))
+                .withUseEnvironmentFile(ecsConfig.get("use_environment_file", boolean.class, false))
                 .build();
     }
 
@@ -145,6 +148,7 @@ public class EcsClientConfig
     private final Optional<Integer> containerMemory;
     private final Optional<String> taskCpu;
     private final Optional<String> taskMemory;
+    private final boolean useEnvironmentFile;
     private final Optional<String> startedBy;
     // In aws-sdk 1.11.686, only `random`, `spread`, and `binpack` are supported.
     // https://github.com/aws/aws-sdk-java/blob/1.11.686/aws-java-sdk-ecs/src/main/java/com/amazonaws/services/ecs/model/PlacementStrategyType.java#L23-L25
@@ -226,5 +230,10 @@ public class EcsClientConfig
     public Optional<String> getTaskMemory()
     {
         return taskMemory;
+    }
+
+    public boolean isUseEnvironmentFile()
+    {
+        return useEnvironmentFile;
     }
 }
