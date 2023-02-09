@@ -40,8 +40,8 @@ public class EcsClientConfigTest
                                 .set("placement_strategy_type", "random"));
 
         final EcsClientConfig ecsConfig = EcsClientConfig.createFromTaskConfig(Optional.absent(), taskConfig, systemConfig);
-        assertEquals("cluster_specific_access_key", ecsConfig.getAccessKeyId());
-        assertEquals("cluster_specific_secret_access_key", ecsConfig.getSecretAccessKey());
+        assertEquals("cluster_specific_access_key", ecsConfig.getAccessKeyId().get());
+        assertEquals("cluster_specific_secret_access_key", ecsConfig.getSecretAccessKey().get());
     }
 
     @Test
@@ -55,8 +55,8 @@ public class EcsClientConfigTest
                                 .set("placement_strategy_type", "random"));
 
         final EcsClientConfig ecsConfig = EcsClientConfig.createFromTaskConfig(Optional.absent(), taskConfig, systemConfig);
-        assertEquals("default_custom_access_key", ecsConfig.getAccessKeyId());
-        assertEquals("default_custom_secret_access_key", ecsConfig.getSecretAccessKey());
+        assertEquals("default_custom_access_key", ecsConfig.getAccessKeyId().get());
+        assertEquals("default_custom_secret_access_key", ecsConfig.getSecretAccessKey().get());
     }
 
     @Test
