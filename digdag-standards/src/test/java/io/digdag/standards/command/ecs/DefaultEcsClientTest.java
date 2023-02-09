@@ -1,10 +1,13 @@
 package io.digdag.standards.command.ecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
+import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.ListTagsForResourceRequest;
 import com.amazonaws.services.ecs.model.ListTagsForResourceResult;
 import com.amazonaws.services.ecs.model.ListTaskDefinitionsRequest;
 import com.amazonaws.services.ecs.model.ListTaskDefinitionsResult;
+import com.amazonaws.services.ecs.model.RunTaskRequest;
+import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.Tag;
 import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.logs.AWSLogs;
@@ -32,8 +35,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
@@ -57,7 +62,7 @@ public class DefaultEcsClientTest
     @Before
     public void setUp()
     {
-        ecsClient = spy(new DefaultEcsClient(ecsClientConfig, rawEcsClient, logs, 10, 2, 1, 5));
+        ecsClient = spy(new DefaultEcsClient(ecsClientConfig, rawEcsClient, logs, 10, 2, 1, 5, 1));
     }
 
     @Test
@@ -132,6 +137,42 @@ public class DefaultEcsClientTest
         final Predicate<List<Tag>> condition = tags -> tags.stream().allMatch(t -> t.getKey().startsWith("l"));
         final Optional<TaskDefinition> actual = ecsClient.getTaskDefinitionByTags(condition);
         assertFalse(actual.isPresent());
+    }
+
+    @Test
+    public void testSubmitTask()
+    {
+        final RunTaskResult expectedResult = mock(RunTaskResult.class);
+        doReturn(expectedResult).when(rawEcsClient).runTask(any());
+
+        final RunTaskRequest request = mock(RunTaskRequest.class);
+        final RunTaskResult actualResult = ecsClient.submitTask(request);
+
+        assertThat(actualResult, is(expectedResult));
+        Mockito.verify(rawEcsClient, times(1)).runTask(any());
+        Mockito.verify(ecsClient, times(0)).waitWithRandomJitter(anyLong(), anyLong());
+    }
+
+    @Test
+    public void testSumbitTaskRetryOnceOnAgentError()
+    {
+        final RunTaskResult failureResult = mock(RunTaskResult.class);
+        final Failure failure = mock(Failure.class);
+        doReturn("AGENT").when(failure).getReason();
+        doReturn(Arrays.asList(failure)).when(failureResult).getFailures();
+
+        final RunTaskResult expectedResult = mock(RunTaskResult.class);
+
+        when(rawEcsClient.runTask(any()))
+            .thenReturn(failureResult)
+            .thenReturn(expectedResult);
+
+        final RunTaskRequest request = mock(RunTaskRequest.class);
+        final RunTaskResult actualResult = ecsClient.submitTask(request);
+
+        assertThat(actualResult, is(expectedResult));
+        Mockito.verify(rawEcsClient, times(2)).runTask(any());
+        Mockito.verify(ecsClient, times(1)).waitWithRandomJitter(anyLong(), anyLong());
     }
 
     @Test
