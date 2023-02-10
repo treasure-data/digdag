@@ -39,7 +39,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
         include: [path.join(__dirname, 'node_modules'), path.join(__dirname, 'public')]
-      }, {  
+      }, {
         test: /\.(scss)$/,
         use: [
           MiniCssExtractPlugin.loader,
@@ -52,7 +52,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
                   return [
                     require('precss'),
                     require('autoprefixer')
-                  ];
+                  ]
                 }
               }
             }
@@ -60,7 +60,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
             loader: 'sass-loader'
           }
         ]
-      },{
+      }, {
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
         loader: 'file-loader'
       }, {
