@@ -2034,13 +2034,13 @@ class LogFileView extends React.Component<LogFileViewProps> {
           <div className='card bg-light my-2'>
             <div className='card-body p-2'>
               <button
-                className="btn btn-sm btn-outline-secondary copy-btn"
-                title="Copy to clipboard"
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    pako.inflate(this.state.data, { to: "string" })
-                  )
-                }
+                className='btn btn-sm btn-outline-secondary copy-btn'
+                title='Copy to clipboard'
+                onClick={async () =>
+                  await navigator.clipboard.writeText(
+                    // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
+                    pako.inflate(this.state.data, { to: 'string' })
+                  )}
               >
                 <FontAwesomeIcon icon={faCopy} />
               </button>
