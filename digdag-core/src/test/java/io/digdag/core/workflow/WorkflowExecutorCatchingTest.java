@@ -11,7 +11,9 @@ import io.digdag.core.Limits;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskAttemptSummary;
+import io.digdag.core.session.TaskControlStore;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.metrics.DigdagMetrics;
 import org.junit.After;
@@ -143,7 +145,8 @@ public class WorkflowExecutorCatchingTest
         }
 
         @Override
-        protected Function<Long, Boolean> funcEnqueueTask()
+        protected boolean enqueueLockedTask(final TaskQueueDispatcher dispatcher,
+                final TaskControlStore store, final StoredTask task)
         {
             funcEnqueueTaskCounter++;
             logger.debug("funcEnqueueTask called:" + funcEnqueueTaskCounter);
@@ -151,7 +154,7 @@ public class WorkflowExecutorCatchingTest
                 logger.info("funcEnqueueTask() throw Exception. counter=" + funcEnqueueTaskCounter);
                 throw new RuntimeException("Unknown exception");
             }
-            return super.funcEnqueueTask();
+            return super.enqueueLockedTask(dispatcher, store, task);
         }
 
         @Override

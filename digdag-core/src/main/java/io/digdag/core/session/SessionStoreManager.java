@@ -26,16 +26,12 @@ public interface SessionStoreManager
     // for WorkflowExecutor.runUntilAny
     boolean isAnyNotDoneAttempts();
 
-    // for WorkflowExecutor.enqueueReadyTasks (Keep for compatibility)
-    default List<Long> findAllReadyTaskIds(int maxEntries) { return findAllReadyTaskIds(maxEntries, false); }
-
     /**
      * for WorkflowExecutor.enqueueReadyTasks
-     * @param maxEntries  max number to fetch
      * @param randomFetch fetch randomly or not(original behavior)
      * @return
      */
-    List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch);
+    <T> Optional<T> tryLockReadyTask(TaskLockActionWithDetails<T> func);
 
 
     // for AttemptTimeoutEnforcer.enforceAttemptTTLs

@@ -33,6 +33,7 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskAttemptSummary;
+import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.metrics.DigdagTimed;
@@ -62,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -178,8 +180,7 @@ public class WorkflowExecutor
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
     private volatile boolean propagatorNotice = false;
-    private final boolean enqueueRandomFetch;
-    private final Integer enqueueFetchSize;
+    private final int bulkEnqueueSize;
 
     @Inject
     public WorkflowExecutor(
@@ -204,8 +205,7 @@ public class WorkflowExecutor
         this.systemConfig = systemConfig;
         this.limits = limits;
         this.metrics = metrics;
-        this.enqueueRandomFetch = systemConfig.get("executor.enqueue_random_fetch", Boolean.class, false);
-        this.enqueueFetchSize = systemConfig.get("executor.enqueue_fetch_size", Integer.class, 100);
+        this.bulkEnqueueSize = systemConfig.get("executor.bulk_enqueue_size", Integer.class, 100);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -500,7 +500,7 @@ public class WorkflowExecutor
         try (TaskQueuer queuer = new TaskQueuer()) {
             propagateBlockedChildrenToReady();
             retryRetryWaitingTasks();
-            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+            enqueueReadyTasks(queuer);
             propagateAllPlannedToDone();
             propagateSessionArchive();
 
@@ -519,7 +519,10 @@ public class WorkflowExecutor
 
                 propagateBlockedChildrenToReady();
                 retryRetryWaitingTasks();
-                enqueueReadyTasks(queuer);
+
+                // enqueue at most bulkEnqueueSize tasks. It may leave some
+                // ready tasks on the database not to be enqueued.
+                boolean hasMoreReadyTasks = enqueueReadyTasks(queuer);
 
                 /**
                  *  propagateSessionArchive() should be always called.
@@ -531,7 +534,7 @@ public class WorkflowExecutor
                  */
                 boolean hasModification = propagateAllPlannedToDone();
                 propagateSessionArchive();
-                if (hasModification) {
+                if (hasMoreReadyTasks || hasModification) {
                     //propagateSessionArchive();
                 }
                 else {
@@ -928,101 +931,98 @@ public class WorkflowExecutor
         //}
     }
 
-    @VisibleForTesting
-    protected Function<Long, Boolean> funcEnqueueTask()
-    {
-        return (tId) ->
-                tm.begin(() -> {
-                    enqueueTask(dispatcher, tId);
-                    return true;
-                });
-    }
-
     @DigdagTimed(category = "executor", appendMethodName = true)
-    protected void enqueueReadyTasks(TaskQueuer queuer)
+    protected boolean enqueueReadyTasks(TaskQueuer queuer)
     {
-        List<Long> readyTaskIds = tm.begin(() -> sm.findAllReadyTaskIds(enqueueFetchSize, enqueueRandomFetch));
-        logger.trace("readyTaskIds:{}", readyTaskIds);
-        for (long taskId : readyTaskIds) {  // TODO randomize this result to achieve concurrency
-            catching(()->funcEnqueueTask().apply(taskId), true, "Failed to call enqueueTask. taskId:" + taskId);
-            //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
+        for (int i = 0; i < bulkEnqueueSize; i++) {
+            boolean changed = tm.begin(() -> sm.tryLockReadyTask((store, task) -> {
+                catching(()->enqueueLockedTask(dispatcher, store, task), true, "Failed to call enqueueTask. taskId:" + task.getId());
+                return true;
+            })).or(false);
+            if (!changed) {
+                // Break and return false if no tasks are ready
+                return false;
+            }
         }
+        return true;  // Run next enqueueReadyTasks immediately without sleep at runWhile
     }
 
     @DigdagTimed(category="executor", appendMethodName = true)
-    protected void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
+    @VisibleForTesting
+    protected boolean enqueueLockedTask(final TaskQueueDispatcher dispatcher,
+            final TaskControlStore store, final StoredTask task)
     {
-        sm.lockTaskIfNotLocked(taskId, (store, task) -> {
-            TaskControl lockedTask = new TaskControl(store, task, limits);
-            if (lockedTask.getState() != TaskStateCode.READY) {
-                return false;
-            }
+        final long taskId = task.getId();
 
-            if (task.getTaskType().isGroupingOnly()) {
-                return retryGroupingTask(lockedTask);
-            }
+        TaskControl lockedTask = new TaskControl(store, task, limits);
+        if (lockedTask.getState() != TaskStateCode.READY) {
+            return false;
+        }
 
-            // NOTE: Nothing to do here because CANCEL_REQUESTED task will be handled by　an agent.
-            // See also state transitions.
+        if (task.getTaskType().isGroupingOnly()) {
+            return retryGroupingTask(lockedTask);
+        }
 
-            int siteId;
+        // NOTE: Nothing to do here because CANCEL_REQUESTED task will be handled by　an agent.
+        // See also state transitions.
+
+        int siteId;
+        try {
+            siteId = sm.getSiteIdOfTask(taskId);
+        }
+        catch (ResourceNotFoundException ex) {
+            tm.reset();
+            Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
+            logger.error("Database state error enqueuing task.", error);
+            return false;
+        }
+
+        try {
+            // TODO make queue name configurable. note that it also needs a new REST API and/or
+            //      CLI ccommands to create/delete/manage queues.
+            Optional<String> queueName = Optional.absent();
+
+            String encodedUnique = encodeUniqueQueuedTaskName(lockedTask.get());
+
+            TaskQueueRequest request = TaskQueueRequest.builder()
+                .priority(0)  // TODO make this configurable
+                .uniqueName(encodedUnique)
+                .data(Optional.absent())
+                .build();
+
+            logger.debug("Queuing task of attempt_id={}: id={} {}", task.getAttemptId(), task.getId(), task.getFullName());
             try {
-                siteId = sm.getSiteIdOfTask(taskId);
+                dispatcher.dispatch(siteId, queueName, request);
             }
-            catch (ResourceNotFoundException ex) {
+            catch (TaskConflictException ex) {
                 tm.reset();
-                Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
-                logger.error("Database state error enqueuing task.", error);
-                return false;
+                logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
+                        encodedUnique, queueName.or("<shared>"), siteId);
             }
 
-            try {
-                // TODO make queue name configurable. note that it also needs a new REST API and/or
-                //      CLI ccommands to create/delete/manage queues.
-                Optional<String> queueName = Optional.absent();
+            ////
+            // don't throw exceptions after here. task is already dispatched to a queue
+            //
 
-                String encodedUnique = encodeUniqueQueuedTaskName(lockedTask.get());
-
-                TaskQueueRequest request = TaskQueueRequest.builder()
-                    .priority(0)  // TODO make this configurable
-                    .uniqueName(encodedUnique)
-                    .data(Optional.absent())
-                    .build();
-
-                logger.debug("Queuing task of attempt_id={}: id={} {}", task.getAttemptId(), task.getId(), task.getFullName());
-                try {
-                    dispatcher.dispatch(siteId, queueName, request);
-                }
-                catch (TaskConflictException ex) {
-                    tm.reset();
-                    logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
-                            encodedUnique, queueName.or("<shared>"), siteId);
-                }
-
-                ////
-                // don't throw exceptions after here. task is already dispatched to a queue
-                //
-
-                boolean updated = lockedTask.setReadyToRunning();
-                if (!updated) {
-                    // return value of setReadyToRunning must be true because this task is locked
-                    // (won't be updated by other machines concurrently) and confirmed that
-                    // current state is READY.
-                    logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
-                }
-
-                return updated;
+            boolean updated = lockedTask.setReadyToRunning();
+            if (!updated) {
+                // return value of setReadyToRunning must be true because this task is locked
+                // (won't be updated by other machines concurrently) and confirmed that
+                // current state is READY.
+                logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
             }
-            catch (Exception ex) {
-                tm.reset();
-                logger.error(
-                        LogMarkers.UNEXPECTED_SERVER_ERROR,
-                        "Enqueue error, making this task failed: {}", task, ex);
-                // TODO retry here?
-                return taskFailed(lockedTask,
-                        buildExceptionErrorConfig(ex).toConfig(cf));
-            }
-        }).or(false);
+
+            return updated;
+        }
+        catch (Exception ex) {
+            tm.reset();
+            logger.error(
+                    LogMarkers.UNEXPECTED_SERVER_ERROR,
+                    "Enqueue error, making this task failed: {}", task, ex);
+            // TODO retry here?
+            return taskFailed(lockedTask,
+                    buildExceptionErrorConfig(ex).toConfig(cf));
+        }
     }
 
     private static String encodeUniqueQueuedTaskName(StoredTask task)
