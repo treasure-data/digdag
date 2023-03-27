@@ -1,5 +1,6 @@
 
 dependencies {
+    testImplementation(testFixtures(project(':digdag-commons')))
     compile project(':digdag-core')
     compile project(':digdag-client')
     compile project(':digdag-guice-rs-server-undertow')

@@ -30,6 +30,7 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
+import io.digdag.server.rs.project.PutProjectsValidator;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.Authenticator;
 import io.digdag.spi.AuthenticatorFactory;
@@ -86,7 +87,6 @@ public class ServerModule
         bindExceptionhandlers(builder);
         bindSecrets();
         bindUiApplication();
-
         if (serverConfig.getEnableSwagger()) {
             enableSwagger(builder);
         }

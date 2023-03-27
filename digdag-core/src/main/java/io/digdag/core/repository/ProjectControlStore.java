@@ -19,9 +19,39 @@ public interface ProjectControlStore
     StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition workflow, ZoneId workflowTimeZone)
         throws ResourceConflictException;
 
+    public class ScheduleTimeWithInfo
+    {
+        final ScheduleTime scheduleTime;
+        final boolean clearSchedule;
+
+        ScheduleTimeWithInfo(ScheduleTime scheduleTime, boolean clearSchedule)
+        {
+            this.scheduleTime = scheduleTime;
+            this.clearSchedule = clearSchedule;
+        }
+
+        public ScheduleTime getScheduleTime() {
+            return scheduleTime;
+        }
+
+        public boolean isClearSchedule() {
+            return clearSchedule;
+        }
+
+        public static ScheduleTimeWithInfo of(ScheduleTime scheduleTime)
+        {
+            return new ScheduleTimeWithInfo(scheduleTime, false);
+        }
+
+        public static ScheduleTimeWithInfo of(ScheduleTime scheduleTime, boolean clearSchedule)
+        {
+            return new ScheduleTimeWithInfo(scheduleTime, clearSchedule);
+        }
+    }
+
     interface ScheduleUpdateAction <T extends Schedule>
     {
-        ScheduleTime apply(ScheduleStatus oldStatus, T newSchedule);
+        ScheduleTimeWithInfo apply(ScheduleStatus oldStatus, T newSchedule);
     }
 
     <T extends Schedule> void updateSchedules(int projId, List<T> schedules, ScheduleUpdateAction<T> func)

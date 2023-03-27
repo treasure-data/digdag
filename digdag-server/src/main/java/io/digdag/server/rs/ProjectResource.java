@@ -1,16 +1,17 @@
 package io.digdag.server.rs;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.net.URI;
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
 import java.nio.file.Files;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -33,7 +34,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestProjectCollection;
-import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestSecret;
@@ -81,6 +81,8 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.metrics.DigdagTimed;
 import io.digdag.server.GenericJsonExceptionHandler;
+import io.digdag.server.rs.project.ProjectClearScheduleParam;
+import io.digdag.server.rs.project.PutProjectsValidator;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
@@ -90,6 +92,7 @@ import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
+import io.digdag.spi.ac.ProjectContentTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.SecretTarget;
 import io.digdag.spi.ac.SiteTarget;
@@ -163,6 +166,7 @@ public class ProjectResource
     private final TransactionManager tm;
     private final ProjectArchiveLoader projectArchiveLoader;
     private final DigdagMetrics metrics;
+    private final PutProjectsValidator putProjectsValidator;
 
     @Inject
     public ProjectResource(
@@ -196,7 +200,7 @@ public class ProjectResource
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
         this.metrics = metrics;
-
+        this.putProjectsValidator = new PutProjectsValidator();
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
         MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
@@ -696,36 +700,26 @@ public class ProjectResource
             InputStream body,
             @HeaderParam("Content-Length") long contentLength,
             @ApiParam(value="start scheduling of new workflows from the given time instead of current time", required=false)
-            @QueryParam("schedule_from") String scheduleFromString)
+            @QueryParam("schedule_from") String scheduleFromString,
+            @ApiParam(value="clear_schedule", required=false)
+            @QueryParam("clear_schedule") List<String> clearSchedules,
+            @ApiParam(value="clear_schedule_all", required=false)
+            @DefaultValue("false") @QueryParam("clear_schedule_all") boolean clearAllSchedules
+    )
             throws ResourceConflictException, IOException, ResourceNotFoundException, AccessControlException
     {
+        ProjectTarget projectTarget = ProjectTarget.of(getSiteId(), name);
         ac.checkPutProject( // AccessControl
-                ProjectTarget.of(getSiteId(), name),
+                projectTarget,
                 getAuthenticatedUser());
 
         return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
 
-            Instant scheduleFrom;
-            if (scheduleFromString == null || scheduleFromString.isEmpty()) {
-                scheduleFrom = Instant.now();
-            }
-            else {
-                try {
-                    scheduleFrom = Instant.parse(scheduleFromString);
-                }
-                catch (DateTimeParseException ex) {
-                    throw new IllegalArgumentException("Invalid schedule_from= parameter format. Expected yyyy-MM-dd'T'HH:mm:ss'Z' format", ex);
-                }
-            }
-
-            if (contentLength > MAX_ARCHIVE_TOTAL_SIZE_LIMIT) {
-                throw new IllegalArgumentException(String.format(ENGLISH,
-                        "Size of the uploaded archive file exceeds limit (%d bytes)",
-                        MAX_ARCHIVE_TOTAL_SIZE_LIMIT));
-            }
-            int size = (int) contentLength;
+            Instant scheduleFrom = putProjectsValidator.validateAndGetScheduleFrom(scheduleFromString);
+            int size = putProjectsValidator.validateAndGetContentLength(contentLength, MAX_ARCHIVE_TOTAL_SIZE_LIMIT);
+            ProjectClearScheduleParam scheduleClearParam = new ProjectClearScheduleParam(clearSchedules, clearAllSchedules);
 
             try (TempFile tempFile = tempFiles.createTempFile("upload-", ".tar.gz")) {
                 // Read uploaded data to the temp file and following variables
@@ -738,8 +732,7 @@ public class ProjectResource
                     if (md5Count.getCount() != contentLength) {
                         throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
                     }
-
-                    validateWorkflowAndSchedule(meta);
+                    validateWorkflowAndSchedule(projectTarget, meta, scheduleClearParam);
                 }
 
                 ArchiveManager.Location location =
@@ -799,6 +792,7 @@ public class ProjectResource
                             List<StoredWorkflowDefinition> defs =
                                     lockedProj.insertWorkflowDefinitions(rev,
                                             meta.getWorkflowList().get(),
+                                            scheduleClearParam.checkClearList(meta.getWorkflowList().get().stream().map(w->w.getName()).collect(Collectors.toList())),
                                             srm, scheduleFrom);
                             return RestModels.project(storedProject, rev);
                         });
@@ -850,7 +844,7 @@ public class ProjectResource
                 // do nothing
             }
             else {
-                validateTarEntry(entry);
+                putProjectsValidator.validateTarEntry(entry, MAX_ARCHIVE_FILE_SIZE_LIMIT);
                 totalSize += entry.getSize();
 
                 java.nio.file.Path file = dir.resolve(entry.getName());
@@ -863,33 +857,33 @@ public class ProjectResource
         return totalSize;
     }
 
-    private void validateTarEntry(TarArchiveEntry entry)
+    private void validateWorkflowAndSchedule(ProjectTarget projectTarget, ArchiveMetadata meta, ProjectClearScheduleParam scheduleParam)
+            throws AccessControlException
     {
-        if (entry.getSize() > MAX_ARCHIVE_FILE_SIZE_LIMIT) {
-            throw new IllegalArgumentException(String.format(ENGLISH,
-                        "Size of a file in the archive exceeds limit (%d > %d bytes): %s",
-                        entry.getSize(), MAX_ARCHIVE_FILE_SIZE_LIMIT, entry.getName()));
-        }
-    }
-
-    private void validateWorkflowAndSchedule(ArchiveMetadata meta)
-    {
+        List<Config> taskConfigs = new ArrayList<>();
         WorkflowDefinitionList defs = meta.getWorkflowList();
+        scheduleParam.validateWorkflowNames(defs.get().stream().map(wf -> wf.getName()).collect(Collectors.toList()));
+
         for (WorkflowDefinition def : defs.get()) {
             Workflow wf = compiler.compile(def.getName(), def.getConfig());
 
             // validate workflow and schedule
             for (WorkflowTask task : wf.getTasks()) {
                 // raise an exception if task doesn't valid.
-                task.getConfig();
+                Config taskConfig = task.getConfig();
+                // collect task configs for later access control check
+                taskConfigs.add(taskConfig);
             }
             Revision rev = Revision.builderFromArchive("check", meta, getUserInfo())
                     .archiveType(ArchiveType.NONE)
                     .build();
             // raise an exception if "schedule:" is invalid.
             srm.tryGetScheduler(rev, def);
-
         }
+
+        ac.checkPutProjectContent(
+                ProjectContentTarget.of(projectTarget, taskConfigs),
+                getAuthenticatedUser());
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)
