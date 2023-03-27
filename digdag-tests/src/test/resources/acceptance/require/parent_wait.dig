@@ -1,0 +1,2 @@
++require:
+  require>: child_wait

@@ -86,8 +86,9 @@ public class RequireOperatorFactory
 
             Optional<ProjectIdentifier> projectIdentifier = Optional.absent();
             /**
-             *  First of all, try to start attempt by startSession()
-             *  If no attempt exists (no conflict), it return new StoredSessionAttempt.
+             *  Check "task_finish_success" state param. If exists, post-process will be executed and task will finish.
+             *  Try to start attempt by startSession()
+             *  If no attempt exists (no conflict), it returns new StoredSessionAttempt.
              *    - set state param "require_kicked" to true.
              *    - task is retried to wait for done by nextPolling.
              *  If something errors happen, it will throw following exceptions.
@@ -104,9 +105,23 @@ public class RequireOperatorFactory
              *          - else finished with exception.
              */
             try {
+                //  Check whether the task finished
+                if (lastStateParams.has("task_finish_success")) {
+                    if (lastStateParams.get("task_finish_success", Boolean.class)) {
+                        return TaskResult.empty(cf);
+                    }
+                    else {
+                        throw new TaskExecutionException(String.format(ENGLISH,
+                                "Dependent workflow failed. Session id: %d, attempt id: %d",
+                                lastStateParams.get("target_session_id", Long.class, 0L),
+                                lastStateParams.get("target_attempt_id", Long.class, 0L)
+                                ));
+                    }
+                }
+
                 projectIdentifier = Optional.of(makeProjectIdentifier());
 
-                callback.startSession(
+                StoredSessionAttempt kickedAttempt = callback.startSession(
                         context,
                         request.getSiteId(),
                         projectIdentifier.get(),
@@ -114,7 +129,10 @@ public class RequireOperatorFactory
                         instant,
                         retryAttemptName,
                         overrideParams);
-                throw nextPolling(request.getLastStateParams().deepCopy().set("require_kicked", true));
+                throw nextPolling(request.getLastStateParams().deepCopy()
+                        .set("require_kicked", true)
+                        .set("target_session_id", kickedAttempt.getSessionId())
+                        .set("target_attempt_id", kickedAttempt.getId()));
             }
             catch (SessionAttemptConflictException ex) {
                 return processAttempt(ex.getConflictedSession(), lastStateParams, rerunOn, ignoreFailure);
@@ -130,6 +148,10 @@ public class RequireOperatorFactory
 
         private TaskResult processAttempt(StoredSessionAttempt attempt, Config lastStateParams, OptionRerunOn rerunOn, boolean ignoreFailure)
         {
+            Config nextSateParams = lastStateParams.deepCopy()
+                    .set("target_session_id", attempt.getSessionId())
+                    .set("target_attempt_id", attempt.getId());
+
             if (attempt.getStateFlags().isDone()) {
                 // A flag to distinguish whether the attempt is kicked by require> or previous attempt.
                 boolean requireKicked = lastStateParams.get("require_kicked", boolean.class, false);
@@ -137,29 +159,36 @@ public class RequireOperatorFactory
                         rerunOn == OptionRerunOn.ALL ||
                                 rerunOn == OptionRerunOn.FAILED && !attempt.getStateFlags().isSuccess())) {
 
-                    //To force run, set flag gen_retry_attempt_name and do polling
+                    //To force run, set flag rerun_on_retry_attempt_name and do polling
                     throw nextPolling(lastStateParams.deepCopy().set("rerun_on_retry_attempt_name", UUID.randomUUID().toString()));
                 }
                 if (!ignoreFailure && !attempt.getStateFlags().isSuccess()) {
-                    // ignore_failure is false and the attempt is in error state. Make this operator failed.
-                    throw new TaskExecutionException(String.format(ENGLISH,
-                            "Dependent workflow failed. Session id: %d, attempt id: %d",
-                            attempt.getSessionId(), attempt.getId()));
+                    // ignore_failure is false and the attempt is in error state. Make this operator fail.
+                    // In next polling, "task_finish_success" is checked and task will finish with failure.
+                    nextSateParams.set("task_finish_success", false);
+                    throw nextPolling(nextSateParams, 1);
                 }
-                return TaskResult.empty(cf);
+                // In next polling, "task_finish_success" is checked and task will finish successfully
+                nextSateParams.set("task_finish_success", true);
+                throw nextPolling(nextSateParams, 1);
             }
             else {
                 // Wait for finish running attempt
-                throw nextPolling(lastStateParams.deepCopy());
+                throw nextPolling(nextSateParams);
             }
         }
 
         private TaskExecutionException nextPolling(Config stateParams)
         {
             int iteration = stateParams.get("retry", int.class, 0);
-            stateParams.set("retry", iteration + 1);
             int interval = (int) Math.min(1 * Math.pow(2, iteration), MAX_TASK_RETRY_INTERVAL);
+            return nextPolling(stateParams, interval);
+        }
 
+        private TaskExecutionException nextPolling(Config stateParams, int interval)
+        {
+            int iteration = stateParams.get("retry", int.class, 0);
+            stateParams.set("retry", iteration + 1);
             return TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(stateParams));
         }
 
