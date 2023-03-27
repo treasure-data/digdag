@@ -9,7 +9,7 @@ General Changes
 * Logging/TD related improvements [#1751 #1765]
 * Retry if plugin fails to load [#1728]
 * Support for ``ecs.<name>.use_environment_file`` config on EcsCommandExecutor [#1762]
-* Support for ``location`` option on ``bq`` operator [#1762]
+* Support for ``location`` option on ``bq`` operator [#1767]
 * Support for ``retry`` command to overwrite parameter [#1725]
 * Support for ``ssl`` related config for RemoteDatabaseConfig [#1690]
 * Support for CLI options regarding API improvements [#1778]
