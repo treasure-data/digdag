@@ -20,6 +20,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import io.digdag.commons.ThrowablesUtil;
+import io.digdag.core.acroute.AccountRoutingModule;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;
@@ -189,6 +190,7 @@ public class DigdagEmbed
                     new NotificationModule(),
                     new StorageModule(),
                     new EnvironmentModule(environment),
+                    new AccountRoutingModule(),
                     (binder) -> {
                         binder.bind(ProjectArchiveLoader.class);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);

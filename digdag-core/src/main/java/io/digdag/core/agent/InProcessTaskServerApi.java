@@ -2,6 +2,7 @@ package io.digdag.core.agent;
 
 import com.google.inject.Inject;
 import com.google.common.collect.ImmutableList;
+import io.digdag.spi.AccountRouting;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskQueueClient;
@@ -27,9 +28,9 @@ public class InProcessTaskServerApi
     @Override
     public List<TaskRequest> lockSharedAgentTasks(
             int count, AgentId agentId,
-            int lockSeconds, long maxSleepMillis)
+            int lockSeconds, long maxSleepMillis, AccountRouting accountRouting)
     {
-        List<TaskQueueLock> locks = directQueueClient.lockSharedAgentTasks(count, agentId.toString(), lockSeconds, maxSleepMillis);
+        List<TaskQueueLock> locks = directQueueClient.lockSharedAgentTasks(count, agentId.toString(), lockSeconds, maxSleepMillis, accountRouting);
         if (locks.isEmpty()) {
             return ImmutableList.of();
         }

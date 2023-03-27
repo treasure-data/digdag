@@ -5,12 +5,17 @@ import java.util.*;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.digdag.client.config.Config;
+import io.digdag.core.acroute.DefaultAccountRoutingFactory;
+import io.digdag.spi.AccountRouting;
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.spi.ScheduleTime;
+
+import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.hamcrest.Matchers.closeTo;
@@ -31,6 +36,10 @@ public class DatabaseScheduleStoreManagerTest
     private ScheduleStoreManager schedManager;
     private ScheduleStore schedStore;
 
+    private AccountRouting accountRoutingDisabled;
+    private AccountRouting accountRoutingInclude0; // account_routing.include = 0;
+    private AccountRouting accountRoutingExclude0; // account_routing.exclude = 0;
+
     @Before
     public void setUp()
             throws Exception
@@ -42,6 +51,19 @@ public class DatabaseScheduleStoreManagerTest
             schedManager = factory.getScheduleStoreManager();
             schedStore = schedManager.getScheduleStore(0);
         });
+        setUpAccountRouting();
+    }
+
+    private void setUpAccountRouting()
+    {
+        Config cf1 = newConfig();
+        this.accountRoutingDisabled = DefaultAccountRoutingFactory.fromConfig(cf1, Optional.of(AccountRouting.ModuleType.SCHEDULER.toString()));
+        cf1.set("scheduler.account_routing.enabled", "true")
+                .set("scheduler.account_routing.include", "0");
+        this.accountRoutingInclude0 = DefaultAccountRoutingFactory.fromConfig(cf1, Optional.of(AccountRouting.ModuleType.SCHEDULER.toString()));
+        cf1.remove("scheduler.account_routing.include")
+                .set("scheduler.account_routing.exclude", "0");
+        this.accountRoutingExclude0 = DefaultAccountRoutingFactory.fromConfig(cf1, Optional.of(AccountRouting.ModuleType.SCHEDULER.toString()));
     }
 
     @After
@@ -207,20 +229,20 @@ public class DatabaseScheduleStoreManagerTest
             assertEquals(sched4.getId(), (long) schedStore.lockScheduleById(sched4.getId(), (store, schedule) -> schedule.getId()));
 
             List<Integer> lockedByRuntime1 = new ArrayList<>();
-            schedManager.lockReadySchedules(runTime1, 10, (store, schedule) -> {
+            schedManager.lockReadySchedules(runTime1, 10, accountRoutingDisabled, (store, schedule) -> {
                 lockedByRuntime1.add(schedule.getId());
             });
             assertEquals(ImmutableList.of(sched1.getId()), lockedByRuntime1);
 
             List<Integer> lockedByRuntime2 = new ArrayList<>();
-            schedManager.lockReadySchedules(runTime2, 10, (store, schedule) -> {
+            schedManager.lockReadySchedules(runTime2, 10, accountRoutingDisabled, (store, schedule) -> {
                 lockedByRuntime2.add(schedule.getId());
             });
             assertEquals(ImmutableList.of(sched3.getId(), sched4.getId()), lockedByRuntime2);
 
             // exception during lockReadySchedules
             try {
-                schedManager.lockReadySchedules(runTime2, 10, (store, schedule) -> {
+                schedManager.lockReadySchedules(runTime2, 10, accountRoutingDisabled, (store, schedule) -> {
                     throw new RuntimeException("processing " + schedule.getId());
                 });
                 fail();
@@ -238,7 +260,7 @@ public class DatabaseScheduleStoreManagerTest
             Instant schedTime4 = now.plusSeconds(40);
 
             try {
-                schedManager.lockReadySchedules(runTime2, 10, (store, schedule) -> {
+                schedManager.lockReadySchedules(runTime2, 10, accountRoutingDisabled, (store, schedule) -> {
                     if (schedule.getId() == sched3.getId()) {
                         throw new RuntimeException();
                     }
@@ -257,7 +279,7 @@ public class DatabaseScheduleStoreManagerTest
             }
 
             List<Integer> updated = new ArrayList<>();
-            schedManager.lockReadySchedules(runTime2, 10, (store, schedule) -> {
+            schedManager.lockReadySchedules(runTime2, 10, accountRoutingDisabled, (store, schedule) -> {
                 updated.add(schedule.getId());
                 try {
                     store.updateNextScheduleTimeAndLastSessionTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4), schedTime1);
@@ -332,7 +354,7 @@ public class DatabaseScheduleStoreManagerTest
             });
             {
                 List<Integer> ready = new ArrayList<>();
-                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule.getId()));
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingDisabled, (store, schedule) -> ready.add(schedule.getId()));
                 assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
             }
 
@@ -343,7 +365,7 @@ public class DatabaseScheduleStoreManagerTest
             });
             {
                 List<Integer> ready = new ArrayList<>();
-                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule.getId()));
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingDisabled, (store, schedule) -> ready.add(schedule.getId()));
                 assertThat(ready, contains(sched2.getId()));
             }
 
@@ -371,7 +393,7 @@ public class DatabaseScheduleStoreManagerTest
             });
             {
                 List<Integer> ready = new ArrayList<>();
-                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule.getId()));
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingDisabled, (store, schedule) -> ready.add(schedule.getId()));
                 assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
             }
 
@@ -382,8 +404,72 @@ public class DatabaseScheduleStoreManagerTest
             });
             {
                 List<Integer> ready = new ArrayList<>();
-                schedManager.lockReadySchedules(Instant.now(), 10, (store, schedule) -> ready.add(schedule.getId()));
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingDisabled, (store, schedule) -> ready.add(schedule.getId()));
                 assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
+            }
+        });
+    }
+
+    @Test
+    public void testAccountRouting()
+            throws Exception
+    {
+        factory.begin(() -> {
+            Project srcProj1 = Project.of("proj1");
+            Revision srcRev1 = createRevision("rev1");
+            WorkflowDefinition srcWf1Rev1 = createWorkflow("wf1");
+            WorkflowDefinition srcWf2 = createWorkflow("wf2");
+
+            Instant yesterday = Instant.now().minus(Duration.ofDays(1)).truncatedTo(SECONDS);
+
+            final AtomicReference<StoredRevision> revRef = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRefA = new AtomicReference<>();
+            final AtomicReference<StoredWorkflowDefinition> wfRefB = new AtomicReference<>();
+
+            StoredProject proj1 = store.putAndLockProject(
+                    srcProj1,
+                    (store, stored) -> {
+                        ProjectControl lock = new ProjectControl(store, stored);
+                        revRef.set(lock.insertRevision(srcRev1));
+                        wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev1)).get(0));
+                        wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf2)).get(0));
+                        store.updateSchedules(
+                                stored.getId(),
+                                ImmutableList.of(
+                                        Schedule.of(
+                                                srcWf1Rev1.getName(),
+                                                wfRefA.get().getId(),
+                                                yesterday,
+                                                yesterday),
+                                        Schedule.of(
+                                                srcWf2.getName(),
+                                                wfRefB.get().getId(),
+                                                yesterday,
+                                                yesterday)
+                                ),
+                                (oldStatus, newSched) -> {
+                                    return oldStatus.getNextScheduleTime();
+                                });
+                        return lock.get();
+                    });
+
+            List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent(), () -> "true");
+            assertEquals(2, schedList1.size());
+
+            {
+                List<Integer> ready = new ArrayList<>();
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingDisabled, (store, schedule) -> ready.add(schedule.getId()));
+                assertThat(ready.size(), is(2));
+            }
+            {
+                List<Integer> ready = new ArrayList<>();
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingInclude0, (store, schedule) -> ready.add(schedule.getId()));
+                assertThat(ready.size(), is(2));
+            }
+            {
+                List<Integer> ready = new ArrayList<>();
+                schedManager.lockReadySchedules(Instant.now(), 10, accountRoutingExclude0, (store, schedule) -> ready.add(schedule.getId()));
+                assertThat(ready.size(), is(0));
             }
         });
     }

@@ -10,9 +10,9 @@ import io.digdag.core.schedule.ScheduleControlStore;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
+import io.digdag.spi.AccountRouting;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.ac.AccessController;
-import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
@@ -22,14 +22,11 @@ import org.skife.jdbi.v2.sqlobject.customizers.Define;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import javax.sql.DataSource;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DatabaseScheduleStoreManager
@@ -61,21 +58,30 @@ public class DatabaseScheduleStoreManager
     }
 
     @Override
-    public int lockReadySchedules(Instant currentTime, int limit, ScheduleAction func)
+    public int lockReadySchedules(Instant currentTime, int limit, AccountRouting accountRouting, ScheduleAction func)
     {
         List<RuntimeException> exceptions = new ArrayList<>();
 
         long count = transaction((handle, dao) -> {
             Stream<StoredSchedule> schedStream;
             if (dao instanceof PgDao) {
-                schedStream = ((PgDao) dao).lockReadySchedulesSkipLocked(currentTime.getEpochSecond(), limit)
-                    .stream();
+                if (accountRouting.enabled()) {
+                    schedStream = ((PgDao) dao).lockReadySchedulesSkipLockedWithAccountFilter(currentTime.getEpochSecond(), limit, accountRouting.getFilterSQL()).stream();
+                }
+                else {
+                    schedStream = ((PgDao) dao).lockReadySchedulesSkipLocked(currentTime.getEpochSecond(), limit).stream();
+                }
             }
             else {
                 // H2 database doesn't support JOIN + FOR UPDATE OF
-                schedStream = dao.lockReadyScheduleIds(currentTime.getEpochSecond(), limit)
-                    .stream()
-                    .map(dao::getScheduleByIdInternal);
+                List<Integer> list1;
+                if (accountRouting.enabled()) {
+                    list1 = dao.lockReadyScheduleIdsWithAccountFilter(currentTime.getEpochSecond(), limit, accountRouting.getFilterSQL());
+                }
+                else {
+                    list1 = dao.lockReadyScheduleIds(currentTime.getEpochSecond(), limit);
+                }
+                schedStream = list1.stream().map(dao::getScheduleByIdInternal);
             }
             return schedStream.mapToInt(sched -> {
                     try {
@@ -260,6 +266,16 @@ public class DatabaseScheduleStoreManager
                 " limit :limit" +
                 " for update of s skip locked")
         List<StoredSchedule> lockReadySchedulesSkipLocked(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
+
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " where s.next_run_time \\<= :currentTime" +
+                " and s.disabled_at is null" +
+                " and exists ( select site_id from projects p where s.project_id = p.id" +
+                " and <accountFilter> )" +
+                " limit :limit" +
+                " for update of s skip locked")
+        List<StoredSchedule> lockReadySchedulesSkipLockedWithAccountFilter(@Bind("currentTime") long currentTime, @Bind("limit") int limit, @Define("accountFilter") String accountFilter);
     }
 
     public interface Dao
@@ -334,6 +350,15 @@ public class DatabaseScheduleStoreManager
                 " limit :limit" +
                 " for update")
         List<Integer> lockReadyScheduleIds(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
+
+        @SqlQuery("select id from schedules" +
+                " where next_run_time \\<= :currentTime" +
+                " and disabled_at is null" +
+                " and exists ( select site_id from projects p where schedules.project_id = p.id" +
+                " and <accountFilter> )" +
+                " limit :limit" +
+                " for update")
+        List<Integer> lockReadyScheduleIdsWithAccountFilter(@Bind("currentTime") long currentTime, @Bind("limit") int limit, @Define("accountFilter") String accountFilter);
 
         @SqlQuery("select * from schedules" +
                 " where id = :id" +
