@@ -1,10 +1,11 @@
 package io.digdag.server.rs;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.net.URI;
-import java.time.Instant;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,7 +23,6 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.Response;
 
@@ -47,7 +47,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
-import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
@@ -55,7 +54,6 @@ import io.digdag.core.archive.WorkflowResourceMatcher;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ArchiveType;
-import io.digdag.core.repository.Project;
 import io.digdag.core.repository.ProjectControl;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
@@ -83,6 +81,7 @@ import io.digdag.metrics.DigdagTimed;
 import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.server.rs.project.ProjectClearScheduleParam;
 import io.digdag.server.rs.project.PutProjectsValidator;
+import io.digdag.server.service.ProjectService;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
@@ -98,7 +97,6 @@ import io.digdag.spi.ac.SecretTarget;
 import io.digdag.spi.ac.SiteTarget;
 import io.digdag.spi.ac.WorkflowTarget;
 import io.digdag.spi.metrics.DigdagMetrics;
-import io.digdag.util.Md5CountInputStream;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -108,15 +106,13 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
 import static java.util.Locale.ENGLISH;
 
 @Api("Project")
 @Path("/")
 @Produces("application/json")
 public class ProjectResource
-    extends AuthenticatedResource
+        extends AuthenticatedResource
 {
     // GET  /api/projects                                # list projects
     // GET  /api/projects?name=<name>                    # lookup a project by name, or return an empty array
@@ -144,66 +140,41 @@ public class ProjectResource
     // GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectResource.class);
-    private static int MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
-    private static final int DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
-    // TODO: we may want to limit bytes of one file for `MAX_ARCHIVE_FILE_SIZE_LIMIT ` in the future instead of total size limit.
-    // See also: https://github.com/treasure-data/digdag/pull/994#discussion_r258402647
-    private static int MAX_ARCHIVE_FILE_SIZE_LIMIT;
     private static int MAX_SESSIONS_PAGE_SIZE;
     private static final int DEFAULT_SESSIONS_PAGE_SIZE = 100;
-
-    private final ConfigFactory cf;
-    private final YamlConfigLoader rawLoader;
-    private final WorkflowCompiler compiler;
     private final ArchiveManager archiveManager;
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final AccessController ac;
-    private final SchedulerManager srm;
-    private final TempFileManager tempFiles;
     private final SessionStoreManager ssm;
     private final SecretControlStoreManager scsp;
     private final TransactionManager tm;
-    private final ProjectArchiveLoader projectArchiveLoader;
     private final DigdagMetrics metrics;
-    private final PutProjectsValidator putProjectsValidator;
+    private final ProjectService projectService;
 
     @Inject
     public ProjectResource(
-            ConfigFactory cf,
-            YamlConfigLoader rawLoader,
-            WorkflowCompiler compiler,
             ArchiveManager archiveManager,
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             AccessController ac,
-            SchedulerManager srm,
-            TempFileManager tempFiles,
             SessionStoreManager ssm,
             SecretControlStoreManager scsp,
             TransactionManager tm,
-            ProjectArchiveLoader projectArchiveLoader,
             Config systemConfig,
-            DigdagMetrics metrics)
+            DigdagMetrics metrics,
+            ProjectService projectService)
     {
-        this.cf = cf;
-        this.rawLoader = rawLoader;
-        this.srm = srm;
-        this.compiler = compiler;
         this.archiveManager = archiveManager;
         this.rm = rm;
         this.sm = sm;
         this.ac = ac;
-        this.tempFiles = tempFiles;
         this.ssm = ssm;
         this.tm = tm;
         this.scsp = scsp;
-        this.projectArchiveLoader = projectArchiveLoader;
         this.metrics = metrics;
-        this.putProjectsValidator = new PutProjectsValidator();
+        this.projectService = projectService;
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
-        MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
-        MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -693,197 +664,33 @@ public class ProjectResource
     @Path("/api/projects")
     @ApiOperation("Upload a project archive as a new project or a new revision of an existing project")
     public RestProject putProject(
-            @ApiParam(value="project name", required=true)
+            @ApiParam(value = "project name", required = true)
             @QueryParam("project") String name,
-            @ApiParam(value="revision", required=true)
+            @ApiParam(value = "revision", required = true)
             @QueryParam("revision") String revision,
             InputStream body,
             @HeaderParam("Content-Length") long contentLength,
-            @ApiParam(value="start scheduling of new workflows from the given time instead of current time", required=false)
+            @ApiParam(value = "start scheduling of new workflows from the given time instead of current time", required = false)
             @QueryParam("schedule_from") String scheduleFromString,
-            @ApiParam(value="clear_schedule", required=false)
+            @ApiParam(value = "clear_schedule", required = false)
             @QueryParam("clear_schedule") List<String> clearSchedules,
-            @ApiParam(value="clear_schedule_all", required=false)
-            @DefaultValue("false") @QueryParam("clear_schedule_all") boolean clearAllSchedules
-    )
+            @ApiParam(value = "clear_schedule_all", required = false)
+            @DefaultValue("false") @QueryParam("clear_schedule_all") boolean clearAllSchedules)
             throws ResourceConflictException, IOException, ResourceNotFoundException, AccessControlException
     {
-        ProjectTarget projectTarget = ProjectTarget.of(getSiteId(), name);
-        ac.checkPutProject( // AccessControl
-                projectTarget,
-                getAuthenticatedUser());
-
-        return tm.<RestProject, IOException, ResourceConflictException, ResourceNotFoundException, AccessControlException>begin(() -> {
-            Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
-            Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
-
-            Instant scheduleFrom = putProjectsValidator.validateAndGetScheduleFrom(scheduleFromString);
-            int size = putProjectsValidator.validateAndGetContentLength(contentLength, MAX_ARCHIVE_TOTAL_SIZE_LIMIT);
-            ProjectClearScheduleParam scheduleClearParam = new ProjectClearScheduleParam(clearSchedules, clearAllSchedules);
-
-            try (TempFile tempFile = tempFiles.createTempFile("upload-", ".tar.gz")) {
-                // Read uploaded data to the temp file and following variables
-                ArchiveMetadata meta;
-                byte[] md5;
-                try (OutputStream writeToTemp = Files.newOutputStream(tempFile.get())) {
-                    Md5CountInputStream md5Count = new Md5CountInputStream(body);
-                    meta = readArchiveMetadata(new DuplicateInputStream(md5Count, writeToTemp), name);
-                    md5 = md5Count.getDigest();
-                    if (md5Count.getCount() != contentLength) {
-                        throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
-                    }
-                    validateWorkflowAndSchedule(projectTarget, meta, scheduleClearParam);
-                }
-
-                ArchiveManager.Location location =
-                        archiveManager.newArchiveLocation(getSiteId(), name, revision, size);
-                boolean storeInDb = location.getArchiveType().equals(ArchiveType.DB);
-
-                if (!storeInDb) {
-                    // upload to storage
-                    try {
-                        archiveManager
-                                .getStorage(location.getArchiveType())
-                                .put(location.getPath(), size, () -> Files.newInputStream(tempFile.get()));
-                    }
-                    catch (RuntimeException | IOException ex) {
-                        throw new InternalServerErrorException("Failed to upload archive to a remote storage", ex);
-                    }
-                }
-
-                // Getting secrets might fail. To avoid ending up with a project without secrets, get the secrets _before_ storing the project.
-                // If getting the project secrets fails, the project will not be stored and the push can then be retried with the same revision.
-                Map<String, String> secrets = getSecrets().get();
-
-                RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
-                        Project.of(name),
-                        (store, storedProject) -> {
-                            ProjectControl lockedProj = new ProjectControl(store, storedProject);
-                            StoredRevision rev;
-                            if (storeInDb) {
-                                // store data in db
-                                byte[] data = new byte[size];
-                                try (InputStream in = Files.newInputStream(tempFile.get())) {
-                                    ByteStreams.readFully(in, data);
-                                }
-                                catch (RuntimeException | IOException ex) {
-                                    throw new InternalServerErrorException("Failed to load archive data in memory", ex);
-                                }
-                                rev = lockedProj.insertRevision(
-                                        Revision.builderFromArchive(revision, meta, getUserInfo())
-                                                .archiveType(ArchiveType.DB)
-                                                .archivePath(Optional.absent())
-                                                .archiveMd5(Optional.of(md5))
-                                                .build()
-                                );
-                                lockedProj.insertRevisionArchiveData(rev.getId(), data);
-                            }
-                            else {
-                                // store location of the uploaded file in db
-                                rev = lockedProj.insertRevision(
-                                        Revision.builderFromArchive(revision, meta, getUserInfo())
-                                                .archiveType(location.getArchiveType())
-                                                .archivePath(Optional.of(location.getPath()))
-                                                .archiveMd5(Optional.of(md5))
-                                                .build()
-                                );
-                            }
-
-                            List<StoredWorkflowDefinition> defs =
-                                    lockedProj.insertWorkflowDefinitions(rev,
-                                            meta.getWorkflowList().get(),
-                                            scheduleClearParam.checkClearList(meta.getWorkflowList().get().stream().map(w->w.getName()).collect(Collectors.toList())),
-                                            srm, scheduleFrom);
-                            return RestModels.project(storedProject, rev);
-                        });
-
-                SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-                secrets.forEach((k, v) -> secretControlStore.setProjectSecret(
-                        RestModels.parseProjectId(restProject.getId()),
-                        SecretScopes.PROJECT_DEFAULT,
-                        k, v));
-                return restProject;
-            }
-        }, IOException.class, ResourceConflictException.class, ResourceNotFoundException.class, AccessControlException.class);
-    }
-
-    private ArchiveMetadata readArchiveMetadata(InputStream in, String projectName)
-        throws IOException
-    {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(projectName), "projectName");
-        try (TempDir dir = tempFiles.createTempDir("push", projectName)) {
-            long totalSize = 0;
-            try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in, 32*1024)))) {
-                totalSize = extractConfigFiles(dir.get(), archive);
-            }
-
-            if (totalSize > MAX_ARCHIVE_TOTAL_SIZE_LIMIT) {
-                throw new IllegalArgumentException(String.format(ENGLISH,
-                            "Total size of the archive exceeds limit (%d > %d bytes)",
-                            totalSize, MAX_ARCHIVE_TOTAL_SIZE_LIMIT));
-            }
-
-            ProjectArchive archive = projectArchiveLoader.load(dir.get(), WorkflowResourceMatcher.defaultMatcher(), cf.create());
-
-            return archive.getArchiveMetadata();
-        }
-    }
-
-    // TODO: only write .dig files
-    private long extractConfigFiles(java.nio.file.Path dir, TarArchiveInputStream archive)
-        throws IOException
-    {
-        long totalSize = 0;
-        TarArchiveEntry entry;
-        while (true) {
-            entry = archive.getNextTarEntry();
-            if (entry == null) {
-                break;
-            }
-            if (entry.isDirectory()) {
-                // do nothing
-            }
-            else {
-                putProjectsValidator.validateTarEntry(entry, MAX_ARCHIVE_FILE_SIZE_LIMIT);
-                totalSize += entry.getSize();
-
-                java.nio.file.Path file = dir.resolve(entry.getName());
-                Files.createDirectories(file.getParent());
-                try (OutputStream out = Files.newOutputStream(file)) {
-                    ByteStreams.copy(archive, out);
-                }
-            }
-        }
-        return totalSize;
-    }
-
-    private void validateWorkflowAndSchedule(ProjectTarget projectTarget, ArchiveMetadata meta, ProjectClearScheduleParam scheduleParam)
-            throws AccessControlException
-    {
-        List<Config> taskConfigs = new ArrayList<>();
-        WorkflowDefinitionList defs = meta.getWorkflowList();
-        scheduleParam.validateWorkflowNames(defs.get().stream().map(wf -> wf.getName()).collect(Collectors.toList()));
-
-        for (WorkflowDefinition def : defs.get()) {
-            Workflow wf = compiler.compile(def.getName(), def.getConfig());
-
-            // validate workflow and schedule
-            for (WorkflowTask task : wf.getTasks()) {
-                // raise an exception if task doesn't valid.
-                Config taskConfig = task.getConfig();
-                // collect task configs for later access control check
-                taskConfigs.add(taskConfig);
-            }
-            Revision rev = Revision.builderFromArchive("check", meta, getUserInfo())
-                    .archiveType(ArchiveType.NONE)
-                    .build();
-            // raise an exception if "schedule:" is invalid.
-            srm.tryGetScheduler(rev, def);
-        }
-
-        ac.checkPutProjectContent(
-                ProjectContentTarget.of(projectTarget, taskConfigs),
-                getAuthenticatedUser());
+        return projectService.putProject(
+                getSiteId(),
+                getUserInfo(),
+                getAuthenticatedUser(),
+                getSecrets(),
+                name,
+                revision,
+                body,
+                contentLength,
+                scheduleFromString,
+                clearSchedules,
+                clearAllSchedules,
+                Optional.absent());
     }
 
     @DigdagTimed(category = "api", appendMethodName = true)

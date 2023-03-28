@@ -36,6 +36,7 @@ public class ProjectControl
             ProjectControl control = new ProjectControl(store, proj);
             T res = callback.call(control, proj);
             control.deleteSchedules();
+            control.deleteProjectMetadata();
             return res;
         });
     }
@@ -64,6 +65,17 @@ public class ProjectControl
         throws ResourceConflictException
     {
         store.insertRevisionArchiveData(revId, data);
+    }
+
+    public void insertProjectMetadata(ProjectMetadataMap projectMetadataMap)
+            throws ResourceConflictException
+    {
+        store.insertProjectMetadata(project.getId(), project.getSiteId(), projectMetadataMap);
+    }
+
+    public void deleteProjectMetadata()
+    {
+        store.deleteProjectMetadata(project.getId());
     }
 
     public List<StoredWorkflowDefinition> insertWorkflowDefinitions(

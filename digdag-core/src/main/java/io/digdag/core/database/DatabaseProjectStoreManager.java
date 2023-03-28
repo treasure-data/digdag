@@ -13,6 +13,7 @@ import io.digdag.core.repository.ImmutableStoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.Project;
 import io.digdag.core.repository.ProjectControlStore;
 import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectMetadataMap;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -48,6 +49,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -475,6 +477,30 @@ public class DatabaseProjectStoreManager
                     return true;
                 },
                 "revision archive=%d", revId);
+        }
+
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
+        @Override
+        public void insertProjectMetadata(int projId, int siteId, ProjectMetadataMap metadataMap)
+                throws ResourceConflictException
+        {
+            for (Map.Entry<String, Collection<String>> entry : metadataMap.toMap().entrySet()) {
+                String k = entry.getKey();
+                for (String v : entry.getValue()) {
+                    catchConflict(() -> {
+                                dao.insertProjectMetadata(siteId, projId, k, v);
+                                return true;
+                            },
+                            "metadata(key=%s, value=%s) in project id=%d", k, v, projId);
+                }
+            }
+        }
+
+        @DigdagTimed(value = "dpcst_", category = "db", appendMethodName = true)
+        @Override
+        public void deleteProjectMetadata(int projId)
+        {
+            dao.deleteProjectMetadata(projId);
         }
 
         /**
@@ -941,6 +967,18 @@ public class DatabaseProjectStoreManager
                 " (id, archive_data)" +
                 " values (:revId, :data)")
         void insertRevisionArchiveData(@Bind("revId") int revId, @Bind("data") byte[] data);
+
+        @SqlUpdate("delete from project_metadata where project_id = :projId")
+        void deleteProjectMetadata(@Bind("projId") int projId);
+
+        @SqlUpdate("insert into project_metadata" +
+                " (site_id, project_id, key, value, created_at)" +
+                " values (:siteId, :projId, :key, :value, now())")
+        void insertProjectMetadata(
+                @Bind("siteId") int siteId,
+                @Bind("projId") int projId,
+                @Bind("key") String key,
+                @Bind("value") String value);
 
         @SqlUpdate("insert into workflow_definitions" +
                 " (revision_id, name, config_id)" +
