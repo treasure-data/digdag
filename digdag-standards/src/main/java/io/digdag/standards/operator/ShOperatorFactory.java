@@ -158,12 +158,9 @@ public class ShOperatorFactory
             final List<String> shell = getShell(params, winOS);
 
             final ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-            if (params.has("shell")) {
-                cmdline.addAll(shell);
-            }
-            else {
-                cmdline.addAll(shell);
-            }
+
+            cmdline.addAll(shell);
+
             cmdline.add(workingDirectory.relativize(runnerPath).toString()); // relative
 
             final String shScript = UserSecretTemplate.of(params.get("_command", String.class))
