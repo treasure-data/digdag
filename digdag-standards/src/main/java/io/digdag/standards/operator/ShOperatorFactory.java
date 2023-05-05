@@ -242,10 +242,8 @@ public class ShOperatorFactory
         {
             final String os = System.getProperty("os.name").toLowerCase();
             if ( os.startsWith("windows")) {
-                System.out.println("windows!!");
                 return true;
             }
-            System.out.println("not windows");
             return false;
         }
     }
