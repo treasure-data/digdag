@@ -128,20 +128,34 @@ public class ShOperatorFactory
             }
         }
 
+        private List<String> getShell(Config params, Boolean winOS){
+            // Until digdag ver. 0.9, it was necessary to write ["powershell.exe","-"] to specify shell, 
+            // but since ver. 0.10, jobs are not executed unless ["powershell.exe"] is written.
+            // To resolve this incompatibility, change the shell specification ["powershell.exe","-"]
+            // to ["powershell.exe"].            
+            List<String> temp_shell;
+            if (params.has("shell")) {
+                temp_shell = params.getListOrEmpty("shell", String.class);
+                if (temp_shell.get(0).toLowerCase().contains("powershell") && temp_shell.size() == 2){
+                    temp_shell.remove(1);
+                    logger.info("removed \"-\" from shell specification --- from [\"powershell.exe\",\"-\"] to [\"powershell.exe\"] .");
+                }
+            }
+            else {
+                temp_shell = ImmutableList.of(winOS ? "PowerShell.exe" : "/bin/sh");
+            }
+            return temp_shell;
+        }
+
         private CommandStatus runCommand(final Config params, final CommandContext commandContext)
                 throws IOException, InterruptedException
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-sh-%d-", request.getTaskId()));
             final Path workingDirectory = workspace.getPath(); // absolute
-            final Path runnerPath = tempDir.resolve("runner.sh"); // absolute
+            final Boolean winOS = isWindowsPlatform();
+            final Path runnerPath = tempDir.resolve(winOS ? "runner.ps1" : "runner.sh"); // absolute
 
-            final List<String> shell;
-            if (params.has("shell")) {
-                shell = params.getListOrEmpty("shell", String.class);
-            }
-            else {
-                shell = ImmutableList.of("/bin/sh");
-            }
+            final List<String> shell = getShell(params, winOS);
 
             final ImmutableList.Builder<String> cmdline = ImmutableList.builder();
             if (params.has("shell")) {
@@ -222,6 +236,17 @@ public class ShOperatorFactory
                     .commandLine(cmdline)
                     .ioDirectory(ioDirectory)
                     .build();
+        }
+
+        private boolean isWindowsPlatform()
+        {
+            final String os = System.getProperty("os.name").toLowerCase();
+            if ( os.startsWith("windows")) {
+                System.out.println("windows!!");
+                return true;
+            }
+            System.out.println("not windows");
+            return false;
         }
     }
 }
