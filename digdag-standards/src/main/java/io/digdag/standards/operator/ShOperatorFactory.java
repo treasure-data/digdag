@@ -128,7 +128,7 @@ public class ShOperatorFactory
             }
         }
 
-        private List<String> getShell(Config params, Boolean winOS){
+        private List<String> getShell(final Config params, final Boolean winOS){
             // Until digdag ver. 0.9, it was necessary to write ["powershell.exe","-"] to specify shell, 
             // but since ver. 0.10, jobs are not executed unless ["powershell.exe"] is written.
             // To resolve this incompatibility, change the shell specification ["powershell.exe","-"]
