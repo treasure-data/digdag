@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.gcp;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.util.Maps;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
@@ -8,7 +9,6 @@ import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.state.TaskState;
@@ -52,9 +52,9 @@ class BqJobRunner
     Job runJob(JobConfiguration config, Optional<String> location)
     {
         // Generate job id
-        Optional<String> jobId = state.params().getOptional(JOB_ID, String.class);
+        Optional<String> jobId = getJobId();
         if (!jobId.isPresent()) {
-            state.params().set(JOB_ID, uniqueJobId());
+            setJobId(uniqueJobId());
             throw state.pollingTaskExecutionException(0);
         }
         String canonicalJobId = projectId + ":" + jobId.get();
@@ -164,5 +164,19 @@ class BqJobRunner
     private static String truncate(String s, int n)
     {
         return s.substring(0, Math.min(s.length(), n));
+    }
+
+    private Optional<String> getJobId()
+    {
+        Map<String, String> commandStatus = state.params().getMapOrEmpty("commandStatus", String.class, String.class);
+        return Optional.fromNullable(commandStatus.get(JOB_ID));
+    }
+
+    private void setJobId(String jobId)
+    {
+        Map<String, String> commandStatus = Maps.newHashMap();
+        commandStatus.putAll(state.params().getMapOrEmpty("commandStatus", String.class, String.class));
+        commandStatus.put(JOB_ID, jobId);
+        state.params().set("commandStatus", commandStatus);
     }
 }
