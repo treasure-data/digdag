@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.gcp;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.util.Maps;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
@@ -166,5 +165,4 @@ class BqJobRunner
     {
         return s.substring(0, Math.min(s.length(), n));
     }
-
 }
