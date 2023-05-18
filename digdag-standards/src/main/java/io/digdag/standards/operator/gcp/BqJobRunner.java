@@ -51,10 +51,11 @@ class BqJobRunner
 
     Job runJob(JobConfiguration config, Optional<String> location)
     {
+        TaskState state = this.state.nestedState("commandStatus");
         // Generate job id
-        Optional<String> jobId = getJobId();
+        Optional<String> jobId = state.params().getOptional(JOB_ID, String.class);
         if (!jobId.isPresent()) {
-            setJobId(uniqueJobId());
+            state.params().set(JOB_ID, uniqueJobId());
             throw state.pollingTaskExecutionException(0);
         }
         String canonicalJobId = projectId + ":" + jobId.get();
@@ -67,7 +68,7 @@ class BqJobRunner
         pollingRetryExecutor(state, START)
                 .withErrorMessage("BigQuery job submission failed: %s", canonicalJobId)
                 .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
-                .runOnce((TaskState state) -> {
+                .runOnce((TaskState s) -> {
                     logger.info("Submitting BigQuery job: {}", canonicalJobId);
                     Job job = new Job()
                             .setJobReference(reference)
@@ -166,17 +167,4 @@ class BqJobRunner
         return s.substring(0, Math.min(s.length(), n));
     }
 
-    private Optional<String> getJobId()
-    {
-        Map<String, String> commandStatus = state.params().getMapOrEmpty("commandStatus", String.class, String.class);
-        return Optional.fromNullable(commandStatus.get(JOB_ID));
-    }
-
-    private void setJobId(String jobId)
-    {
-        Map<String, String> commandStatus = Maps.newHashMap();
-        commandStatus.putAll(state.params().getMapOrEmpty("commandStatus", String.class, String.class));
-        commandStatus.put(JOB_ID, jobId);
-        state.params().set("commandStatus", commandStatus);
-    }
 }
