@@ -137,8 +137,10 @@ public class ShOperatorFactory
             if (params.has("shell")) {
                 temp_shell = params.getListOrEmpty("shell", String.class);
                 if (temp_shell.get(0).toLowerCase().contains("powershell") && temp_shell.size() == 2){
-                    temp_shell.remove(1);
-                    logger.info("removed \"-\" from shell specification --- from [\"powershell.exe\",\"-\"] to [\"powershell.exe\"] .");
+                    if (temp_shell.get(1).contains("-")){
+                        temp_shell.remove(1);
+                        logger.info("removed \"-\" from shell specification --- from [\"powershell.exe\",\"-\"] to [\"powershell.exe\"] .");
+                    }
                 }
             }
             else {
