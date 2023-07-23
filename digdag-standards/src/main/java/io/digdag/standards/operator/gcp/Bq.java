@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 
 class Bq
 {
-    private static final Pattern TABLE_REFERENCE_PATTERN = Pattern.compile("^(?:(?<project>[^:]+):)?(?:(?<dataset>[^.]+)\\.)?(?<table>[a-zA-Z0-9_]{1,1024}(?:\\$[0-9]{8})?)$");
+    private static final Pattern TABLE_REFERENCE_PATTERN = Pattern.compile(
+            "^(?:(?<project>[^:]+):)?(?:(?<dataset>[^.]+)\\.)?(?<table>[a-zA-Z0-9_]{1,1024}(?:\\$[0-9]{4,10})?)$");
 
     static TableReference tableReference(String defaultProjectId, Optional<DatasetReference> defaultDataset, String s)
     {

@@ -205,7 +205,7 @@ public class BqOperatorFactoryTest {
     public void testBqTimePartitioningDay() throws IOException {
             Config config = newConfig();
             config.set("query", dummyQuery);
-            config.set("destination_table", dummyDataset + "." + dummyTable);
+            config.set("destination_table", dummyDataset + "." + dummyTable + "$20230723");
             config.set("time_partitioning", ImmutableMap.of(
                             "type", "DAY",
                             "field", "date",
@@ -227,9 +227,29 @@ public class BqOperatorFactoryTest {
             Config config = newConfig();
             config.set("query", dummyQuery);
             config.set("use_legacy_sql", true);
-            config.set("destination_table", dummyDataset + "." + dummyTable);
+            config.set("destination_table", dummyDataset + "." + dummyTable + "$2023");
             config.set("time_partitioning", ImmutableMap.of(
                             "type", "YEAR",
+                            "field", "date",
+                            "requirePartitionFilter", true,
+                            "expirationMs", 3600000L));
+            config.set("clustering", ImmutableMap.of(
+                            "fields", ImmutableList.of("field1", "field2")));
+            config.set("schema_update_options", ImmutableList.of("ALLOW_FIELD_ADDITION"));
+            config.set("maximum_bytes_billed", 1024L);
+            config.set("priority", "BATCH");
+
+            doTestBq(config);
+    }
+
+    @Test
+    public void testBqTimePartitioningHour() throws IOException {
+            Config config = newConfig();
+            config.set("query", dummyQuery);
+            config.set("use_legacy_sql", true);
+            config.set("destination_table", dummyDataset + "." + dummyTable + "$2023072301");
+            config.set("time_partitioning", ImmutableMap.of(
+                            "type", "HOUR",
                             "field", "date",
                             "requirePartitionFilter", true,
                             "expirationMs", 3600000L));
