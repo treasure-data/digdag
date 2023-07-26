@@ -2,8 +2,10 @@ package io.digdag.standards.command.ecs;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
@@ -16,9 +18,19 @@ public class DefaultEcsClientFactory
     public EcsClient createClient(final EcsClientConfig ecsClientConfig)
             throws ConfigException
     {
-        // TODO improve to enable several types of credentials providers
-        final AWSStaticCredentialsProvider credentials = new AWSStaticCredentialsProvider(
-                new BasicAWSCredentials(ecsClientConfig.getAccessKeyId(), ecsClientConfig.getSecretAccessKey()));
+        final AWSCredentialsProvider credentials;
+        if (ecsClientConfig.getAccessKeyId().isPresent()) {
+                credentials = new AWSStaticCredentialsProvider(
+                        new BasicAWSCredentials(
+                                ecsClientConfig.getAccessKeyId().get(),
+                                ecsClientConfig.getSecretAccessKey().get()
+                                )
+                        );
+                }
+        else {
+                credentials = new DefaultAWSCredentialsProviderChain();
+        }
+
         // TODO improve to enable more options
         final ClientConfiguration clientConfig = new ClientConfiguration()
                 .withProtocol(Protocol.HTTPS)

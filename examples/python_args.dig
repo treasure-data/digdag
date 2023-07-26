@@ -19,3 +19,9 @@ timezone: UTC
   key1: "a"
   key2: "val2"
 
++e:
+  _export:
+    key1: "a"
+    key2: {b: "c"}
+  py>: tasks.python_args.exported_arguments
+

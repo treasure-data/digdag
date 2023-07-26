@@ -235,7 +235,7 @@ public class Run
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                     binder.bind(LogModule.class).in(Scopes.SINGLETON);
                     binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
-                    binder.bind(AccessController.class).to(DefaultAccessController.class);
+                    binder.bind(AccessController.class).to(DefaultAccessController.class).in(Scopes.SINGLETON);
                 })
                 .overrideModulesWith((binder) ->
                         binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON));
@@ -680,7 +680,7 @@ public class Run
         {
             String fullName = request.getTaskName();
             TaskResult result = cmd.skipTaskReports.apply(fullName);
-            String origThreadName = String.format("[%d:%s]%s", request.getSiteId(), request.getProjectName().or("----"), request.getTaskName());
+            String origThreadName = String.format("[%d:%s:%d:%d]%s", request.getSiteId(), request.getProjectName().or("----"), request.getSessionId(), request.getAttemptId(), request.getTaskName());
             if (result != null) {
                 try (SetThreadName threadName = new SetThreadName(origThreadName)) {
                     logger.warn("Skipped");

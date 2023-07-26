@@ -27,6 +27,8 @@ import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredDelayedSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.spi.AccountRouting;
+import io.digdag.spi.AccountRoutingFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
@@ -55,7 +57,7 @@ public class ScheduleExecutor
         implements BackgroundExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleExecutor.class);
-    public static final List<String> BUILT_IN_SCHEDULE_PARAMS = Arrays.asList("skip_on_overtime", "skip_delayed_by");
+    public static final List<String> BUILT_IN_SCHEDULE_PARAMS = Arrays.asList("skip_on_overtime", "skip_delayed_by", "start", "end");
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
@@ -67,6 +69,9 @@ public class ScheduleExecutor
     private final ConfigFactory cf;
     private final ScheduleConfig scheduleConfig;
     private ScheduledExecutorService executor;
+    private final AccountRoutingFactory accountRoutingFactory;
+    private final AccountRouting accountRouting;
+
 
     @Inject(optional = true)
     private ErrorReporter errorReporter = ErrorReporter.empty();
@@ -84,7 +89,8 @@ public class ScheduleExecutor
             AttemptBuilder attemptBuilder,
             WorkflowExecutor workflowExecutor,
             ConfigFactory cf,
-            ScheduleConfig scheduleConfig)
+            ScheduleConfig scheduleConfig,
+            AccountRoutingFactory accountRoutingFactory)
     {
         this.rm = rm;
         this.sm = sm;
@@ -95,6 +101,9 @@ public class ScheduleExecutor
         this.workflowExecutor = workflowExecutor;
         this.cf = cf;
         this.scheduleConfig = scheduleConfig;
+        this.accountRoutingFactory = accountRoutingFactory;
+        this.accountRouting = this.accountRoutingFactory.newAccountRouting(AccountRouting.ModuleType.SCHEDULER);
+
     }
 
     @VisibleForTesting
@@ -168,7 +177,7 @@ public class ScheduleExecutor
         int count = tm.begin(() -> {
             // here uses limit=1 because selecting multiple rows with FOR UPDATE
             // has risk of too often deadlock.
-            return sm.lockReadySchedules(now, 1, (store, storedSchedule) -> {
+            return sm.lockReadySchedules(now, 1, accountRouting, (store, storedSchedule) -> {
                 runSchedule(new ScheduleControl(store, storedSchedule), now);
             });
         });

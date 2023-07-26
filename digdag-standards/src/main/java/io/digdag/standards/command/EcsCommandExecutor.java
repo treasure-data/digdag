@@ -5,6 +5,7 @@ import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
+import com.amazonaws.services.ecs.model.EnvironmentFile;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.LogConfiguration;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -395,8 +397,13 @@ public class EcsCommandExecutor
             // To fetch log until all logs is written in CloudWatch,
             // finish this poll once and wait finish marker in head of this method in next poll, considering risk of crushing in this poll.
             nextStatus.put("task_finished_at", Instant.now().getEpochSecond());
-            // Set exit code of container finished to nextStatus
-            nextStatus.put("status_code", task.getContainers().get(0).getExitCode());
+            // Set exit code of container finished to nextStatus.
+            // If exit code doesn't exist, something's wrong with execution, so set status code to 1 to make workflow fail
+            Integer exitCode = task.getContainers().get(0).getExitCode();
+            if (exitCode == null) {
+                logger.debug("Container has no exit code. The status code will be set as error (1)");
+            }
+            nextStatus.put("status_code", exitCode != null ? exitCode : 1);
         }
 
         // always return false to check if all logs are fetched. (return in head of this method after checking finish marker.)
@@ -639,7 +646,7 @@ public class EcsCommandExecutor
         final ContainerDefinition cd = td.getContainerDefinitions().get(0);
         setEcsContainerOverrideName(commandContext, commandRequest, containerOverride, cd);
         setEcsContainerOverrideCommand(commandContext, commandRequest, containerOverride); // RuntimeException,ConfigException
-        setEcsContainerOverrideEnvironment(commandContext, commandRequest, containerOverride);
+        setEcsContainerOverrideEnvironment(commandContext, commandRequest, clientConfig, containerOverride);
         setEcsContainerOverrideResource(clientConfig, containerOverride);
 
         final TaskOverride taskOverride = new TaskOverride();
@@ -772,13 +779,76 @@ public class EcsCommandExecutor
     protected void setEcsContainerOverrideEnvironment(
             final CommandContext commandContext,
             final CommandRequest commandRequest,
+            final EcsClientConfig clientConfig,
             final ContainerOverride containerOverride)
     {
-        final ImmutableList.Builder<KeyValuePair> environments = ImmutableList.builder();
-        for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
-            environments.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
+        if (clientConfig.isUseEnvironmentFile()) {
+            // Create .env file and attach it to ECS Cluster for saving the count of characters because the maximum size of characters of ECS container overrides is 8KB.
+            // It's possible to set larger size of variables by using environment file instead of passing values to a container one by one.
+            final Path envFilePath;
+            final Path projectPath = commandContext.getLocalProjectPath();
+            try {
+                envFilePath = Files.createTempFile(projectPath.resolve(".digdag/tmp"), "variables-", ".env");
+            }
+            catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            try (BufferedWriter out = Files.newBufferedWriter(envFilePath)) {
+                for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
+                    final String KeyValue = new StringBuilder()
+                                                  .append(e.getKey())
+                                                  .append("=")
+                                                  .append(e.getValue())
+                                                  .append("\n")
+                                                  .toString();
+                    out.write(KeyValue);
+                }
+            }
+            catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            final Path lastEnvFilePath = projectPath.resolve(".digdag/tmp").relativize(envFilePath);
+            final EnvironmentFile environmentFile = new EnvironmentFile();
+            uploadEnvironmentFileToTemporalStorage(commandContext, lastEnvFilePath, environmentFile, envFilePath);
+            containerOverride.withEnvironmentFiles(environmentFile);
+        } else {
+            final ImmutableList.Builder<KeyValuePair> environments = ImmutableList.builder();
+            for (final Map.Entry<String, String> e : commandRequest.getEnvironments().entrySet()) {
+                environments.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
+            }
+            containerOverride.withEnvironment(environments.build());
         }
-        containerOverride.withEnvironment(environments.build());
+    }
+
+    protected void uploadEnvironmentFileToTemporalStorage(
+        final CommandContext commandContext,
+        final Path lastEnvFilePath,
+        final EnvironmentFile environmentFile,
+        final Path envFilePath)
+    {
+        final String envFileKey = createStorageKey(commandContext.getTaskRequest(), lastEnvFilePath.toString());
+        final Config taskConfig = commandContext.getTaskRequest().getConfig();
+        final TemporalProjectArchiveStorage temporalStorage = createTemporalProjectArchiveStorage(taskConfig); // config exception
+        try {
+            temporalStorage.uploadFile(envFileKey, envFilePath); // IOException
+            String temporalBucket = temporalStorage.getS3BucketName(systemConfig);
+            final String temporalStorageS3ARN = createS3BucketARN(temporalBucket, envFileKey);
+            environmentFile.setValue(temporalStorageS3ARN);
+            environmentFile.setType("s3");
+        }
+        catch (IOException e) {
+            final String message = s("Cannot upload a environment file '%s'with storage key '%s'. It will be retried.", envFilePath.toString(), envFileKey);
+            logger.error(LogMarkers.UNEXPECTED_SERVER_ERROR, message, e);
+            throw new RuntimeException(e);
+        }
+        finally {
+            try {
+                Files.deleteIfExists(envFilePath); // IOException but ignored
+            }
+            catch (IOException e) {
+                logger.info(s("Cannot remove a environment file: %s", envFilePath.toString()));
+            }
+        }
     }
 
     protected void setEcsContainerOverrideResource(
@@ -819,6 +889,17 @@ public class EcsCommandExecutor
         return new StringBuilder()
                 .append(request.getTaskId()).append("/")
                 .append(lastPathElementOfArchiveFile)
+                .toString();
+    }
+
+    private static String createS3BucketARN(final String bucket, final String fileKey)
+    {
+        // S3 File ARN: "arn:aws:s3::{storage_bucket}/{env_file}"
+        return new StringBuilder()
+                .append("arn:aws:s3:::")
+                .append(bucket)
+                .append("/")
+                .append(fileKey)
                 .toString();
     }
 

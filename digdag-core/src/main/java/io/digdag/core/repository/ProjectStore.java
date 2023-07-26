@@ -64,7 +64,18 @@ public interface ProjectStore
     StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(int projId, String name)
             throws ResourceNotFoundException;
 
-    List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int pageSize, Optional<Long> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
+    // For backward compatibility
+    default List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
+            int pageSize, Optional<Long> lastId, Optional<String> namePattern, AccessController.ListFilter acFilter)
+            throws ResourceNotFoundException
+    {
+        // ascending is true and searchProjectName is disabled.
+        return getLatestActiveWorkflowDefinitions(pageSize, lastId, true, namePattern, false, acFilter);
+    }
+
+    List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(
+            int pageSize, Optional<Long> lastId, boolean ascending, Optional<String> namePattern,
+            boolean searchProjectName, AccessController.ListFilter acFilter)
             throws ResourceNotFoundException;
 
     TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList);

@@ -4,6 +4,7 @@ import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.ac.AccessControlException;
 import io.digdag.spi.ac.AccessController;
 import io.digdag.spi.ac.AttemptTarget;
+import io.digdag.spi.ac.ProjectContentTarget;
 import io.digdag.spi.ac.ProjectTarget;
 import io.digdag.spi.ac.ScheduleTarget;
 import io.digdag.spi.ac.SecretTarget;
@@ -15,6 +16,11 @@ public class DefaultAccessController
 {
     @Override
     public void checkPutProject(ProjectTarget target, AuthenticatedUser user)
+            throws AccessControlException
+    { }
+
+    @Override
+    public void checkPutProjectContent(ProjectContentTarget target, AuthenticatedUser user)
             throws AccessControlException
     { }
 

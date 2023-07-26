@@ -39,12 +39,13 @@ Each sub keys of `agent.command_executor` are as follows:
 | key                                |  description                                     |
 | :--------------------------------- | :----------------------------------------------- |
 | ecs.name                           | ECS Cluster name. The value &lt;name&gt; is used as the key of following configuration |
-| ecs.&lt;name&gt;.access_key_id     | AWS access key for ECS. The key needs permissions for ECS and CloudWatch  |
-| ecs.&lt;name&gt;.secret_access_key | AWS secret key                                   |
+| ecs.&lt;name&gt;.access_key_id     | (Optional)AWS access key for ECS. The key needs permissions for ECS and CloudWatch. If it is not specified, other credentials are used for authorization.  |
+| ecs.&lt;name&gt;.secret_access_key | (Optional)AWS secret key                                   |
 | ecs.&lt;name&gt;.launch_type       | The launch type of container. `FARGATE` or `EC2` |
 | ecs.&lt;name&gt;.region            | AWS region                                       |
 | ecs.&lt;name&gt;.subnets           | AWS subnet                                       |
 | ecs.&lt;name&gt;.max_retries       | Number of retry for AWS client                   |
+| ecs.&lt;name&gt;.use_environment_file       | (Optional) whether use environmentFiles or environment when setting variables to ECS. Default value is false |
 
 Following keys are for configuration of temporal storage with AWS S3.
 
@@ -53,8 +54,13 @@ Following keys are for configuration of temporal storage with AWS S3.
 | ecs.temporal_storage.type                             | The bucket type. `s3` for AWS S3 |
 | ecs.temporal_storage.s3.bucket                        | Bucket name                      |
 | ecs.temporal_storage.s3.endpoint                      | The end point URL for S3         |
-| ecs.temporal_storage.s3.credentials.access-key-id     | AWS access key for the bucket    |
-| ecs.temporal_storage.s3.credentials.secret-access-key | AWS secret key                   |
+| ecs.temporal_storage.s3.credentials.access-key-id     | (Optional) AWS access key for the bucket    |
+| ecs.temporal_storage.s3.credentials.secret-access-key | (Optional) AWS secret key                   |
+
+#### The ways of authorizing to ECS cluster, tasks and S3 temporal storage.
+[DefaultAWSCredentialsProviderChain](https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html) besides AWS access key and secret can be used as a credential for connecting with ECS on version 0.10.5 or above . As a result of that, if `ecs.<name>.access_key_id` is not specified, digdag server looks for one of the credentials described in the document.
+Digdag server uses the same credentials when connecting with S3 temporal storage, thus if `ecs.temporal_storage.s3.credentials.access-key-id` is not specified, digdag server also looks for credentials same as ECS.
+
 
 ### How to use from workflow
 

@@ -30,6 +30,9 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
+import io.digdag.server.rs.project.PutProjectsValidator;
+import io.digdag.server.service.ProjectService;
+import io.digdag.server.service.WorkflowService;
 import io.digdag.spi.AuthenticatedUser;
 import io.digdag.spi.Authenticator;
 import io.digdag.spi.AuthenticatorFactory;
@@ -86,7 +89,6 @@ public class ServerModule
         bindExceptionhandlers(builder);
         bindSecrets();
         bindUiApplication();
-
         if (serverConfig.getEnableSwagger()) {
             enableSwagger(builder);
         }
@@ -101,6 +103,8 @@ public class ServerModule
 
     protected void bindResources(ApplicationBindingBuilder builder)
     {
+        binder().bind(WorkflowService.class).in(Scopes.SINGLETON);
+        binder().bind(ProjectService.class).in(Scopes.SINGLETON);
         builder.addResources(
                 ProjectResource.class,
                 WorkflowResource.class,
@@ -122,7 +126,7 @@ public class ServerModule
 
     protected void bindAuthorization()
     {
-        binder().bind(AccessController.class).to(DefaultAccessController.class);
+        binder().bind(AccessController.class).to(DefaultAccessController.class).in(Scopes.SINGLETON);
     }
 
     protected void bindExceptionhandlers(ApplicationBindingBuilder builder)

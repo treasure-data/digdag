@@ -241,7 +241,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.10.4
+    $ digdag selfupdate 0.10.5
 
 Server-mode commands
 ----------------------------------
@@ -361,8 +361,14 @@ In the config file, following parameters are available
 * database.loginTimeout (seconds in integer, default: 30)
 * database.socketTimeout (seconds in integer, default: 1800)
 * database.ssl (boolean, default: false)
+* database.sslfactory (string, default: "org.postgresql.ssl.NonValidatingFactory", "org.postgresql.ssl.LibPQFactory" is also available)
+* database.sslmode (string, "disable", "allow", "prefer", "require", "verify-ca" or "verify-full". enable if sslfactory is set to "org.postgresql.ssl.LibPQFactory")
+* database.sslcert (path to ssl cert file in string. enable if sslfactory is set to "org.postgresql.ssl.LibPQFactory")
+* database.sslkey (path to ssl key file in string. enable if sslfactory is set to "org.postgresql.ssl.LibPQFactory")
+* database.sslrootcert (path to ssl root cert file. enable if sslfactory is set to "org.postgresql.ssl.LibPQFactory")
 * database.connectionTimeout (seconds in integer, default: 30)
 * database.idleTimeout (seconds in integer, default: 600)
+* database.keepaliveTime (seconds in integer, default: 0)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
 * database.minimumPoolSize (integer, default: same as database.maximumPoolSize)

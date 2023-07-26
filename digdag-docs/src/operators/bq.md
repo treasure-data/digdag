@@ -46,6 +46,16 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   bq>: queries/step1.sql
   ```
 
+* **location**: LOCATION
+
+  The location where the query job should run. See [locations](https://cloud.google.com/bigquery/docs/locations) for a list of available locations.
+
+  Examples:
+
+  ```
+  location: asia-northeast1
+  ```
+
 * **dataset**: NAME
 
   Specifies the default dataset to use in the query and in the `destination_table` parameter.
@@ -164,4 +174,3 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   The id of the BigQuery job that executed this query.
 
   Note: `bq.last_jobid` parameter is kept only for backward compatibility but you must not use it because it will be removed removed in a near future release.
-

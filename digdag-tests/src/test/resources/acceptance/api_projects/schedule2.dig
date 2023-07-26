@@ -1,0 +1,7 @@
+timezone: UTC
+
+schedule:
+  daily>: 00:00:00
+
++t1:
+  echo>: "schedule2 called"

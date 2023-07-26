@@ -6,12 +6,15 @@ import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TestUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static utils.TestUtils.copyResource;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -39,5 +42,22 @@ public class PluginIT
         assertThat(
                 new String(Files.readAllBytes(root().resolve("example.out")), UTF_8).trim(),
                 is("Worked? yes"));
+    }
+
+    @Test
+    public void testRetryLoadPlugin()
+            throws Exception {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            System.setOut(new PrintStream(out));
+            copyResource("acceptance/plugin/plugin.dig", root().resolve("plugin.dig"));
+            copyResource("acceptance/plugin/template.txt", root().resolve("template.txt"));
+            TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "plugin.dig", "-p", "repository_path=test", "-X", "plugin.local-path=" + root().resolve(".digdag/plugins"), "--log-level", "debug");
+            assertThat(
+                    out.toString(),
+                    containsString("Failed to resolve artifacts: retry 3 of 3"));
+        } finally {
+            System.setOut(System.out);
+        }
     }
 }

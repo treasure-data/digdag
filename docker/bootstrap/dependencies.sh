@@ -2,6 +2,7 @@
 
 apt-get -y update
 apt-get -y install software-properties-common apt-transport-https wget git sudo
+apt-get -y install ca-certificates
 
 # Maven
 apt-get -y install maven
@@ -18,6 +19,7 @@ apt-get -y install docker-compose
 # Postgres
 sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 7FCC7D46ACCC4CF8 # To fix failure at add-apt-repository
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main"
+add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ bionic main restricted"
 wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 apt-get -y update
 apt-get -y install postgresql-11 postgresql-client-11

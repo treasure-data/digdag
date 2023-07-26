@@ -49,6 +49,9 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.tls.HandshakeCertificates;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -98,6 +101,7 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
@@ -133,6 +137,8 @@ public class TestUtils
     public static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
 
     public static final Pattern PROJECT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
+
+    public static final Pattern STATE_PARAMS_PATTERN = Pattern.compile("\\s*state params:\\s*(.*)\\s*");
 
     public static CommandStatus main(String... args)
     {
@@ -465,6 +471,20 @@ public class TestUtils
         return Id.of(matcher.group(1));
     }
 
+    public static List<Config> getStateParams(CommandStatus pushStatus)
+            throws IOException
+    {
+        Matcher matcher = STATE_PARAMS_PATTERN.matcher(pushStatus.outUtf8());
+        List<Config> l = new ArrayList<>();
+        while(matcher.find()) {
+            l.add(
+                Config.deserializeFromJackson(objectMapper(),
+                        objectMapper().readTree(matcher.group(1)))
+            );
+        }
+        return l;
+    }
+
     public static String getAttemptLogs(DigdagClient client, Id attemptId)
             throws IOException
     {
@@ -692,6 +712,37 @@ public class TestUtils
             throws IOException
     {
         copyResource(resource, project.resolve(workflowName));
+    }
+
+    public static void archiveProject(Path archivePath, Path projectPath)
+            throws IOException
+    {
+        List<Path> listFiles;
+        try (Stream<Path> stream = Files.walk(projectPath, 10)) {
+            listFiles = stream
+                    .filter(file -> !Files.isDirectory(file))
+                    .collect(Collectors.toList());
+        }
+        try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(archivePath)))) {
+            tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+
+            listFiles.forEach((path) -> {
+                try {
+                    if (Files.isReadable(path.toAbsolutePath())) {
+                        TarArchiveEntry e  = new TarArchiveEntry(path.toFile(), path.toFile().getName());
+                        tar.putArchiveEntry(e);
+                        try (InputStream in = Files.newInputStream(path)) {
+                            ByteStreams.copy(in, tar);
+                        }
+                        tar.closeArchiveEntry();
+                    }
+                }
+                catch (IOException ioe) {
+                    ioe.printStackTrace();
+                    throw new RuntimeException(ioe);
+                }
+            });
+        }
     }
 
     public static CommandStatus runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params)

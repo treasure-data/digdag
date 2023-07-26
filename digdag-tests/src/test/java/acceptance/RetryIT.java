@@ -17,11 +17,9 @@ import java.nio.file.Path;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RetryIT
@@ -160,6 +158,25 @@ public class RetryIT
         assertOutputExists("3-1", false);  // skipped
         assertOutputExists("3-2a", true);
         assertOutputExists("3-2b", true);
+
+        // Retry with parameters
+        Id retry5;
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--all",
+                    "-p", "key=value",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry5 = getAttemptId(retryStatus);
+        }
+
+        // Wait for the attempt to success
+        RestSessionAttempt retry5Attempt = joinAttempt(client, retry5);
+        assertThat(retry5Attempt.getSuccess(), is(true));
+        assertThat(retry5Attempt.getParams().get("key", String.class), is("value"));
     }
 
     private void pushRevision(String resourceName, String workflowName)

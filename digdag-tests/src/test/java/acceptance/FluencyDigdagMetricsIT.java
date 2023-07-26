@@ -85,7 +85,7 @@ public class FluencyDigdagMetricsIT
                     binder.bind(CommandExecutor.class).toInstance(cmdExecutor);
                     binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
                     binder.bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
-                    binder.bind(AccessController.class).to(DefaultAccessController.class);
+                    binder.bind(AccessController.class).to(DefaultAccessController.class).in(Scopes.SINGLETON);
                 })
                 .withWorkflowExecutor(true)
                 .withScheduleExecutor(false)

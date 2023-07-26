@@ -4,19 +4,26 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.time.Instant;
 import java.time.ZoneId;
+
+import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
-import io.digdag.spi.Scheduler;
 import it.sauronsoftware.cron4j.SchedulingPattern;
 import it.sauronsoftware.cron4j.Predictor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CronScheduler
-        implements Scheduler
+        extends BaseScheduler
 {
+    private static final Logger logger = LoggerFactory.getLogger(CronScheduler.class);
+
     private final SchedulingPattern pattern;
     private final ZoneId timeZone;
     private final long delaySeconds;
+    protected final Optional<Instant> start;
+    protected final Optional<Instant> end;
 
-    CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds)
+    CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds, Optional<Instant> start, Optional<Instant> end)
     {
         this.pattern = new SchedulingPattern(cronPattern) {
             // workaround for a bug of cron4j:
@@ -29,6 +36,8 @@ public class CronScheduler
         };
         this.timeZone = timeZone;
         this.delaySeconds = delaySeconds;
+        this.start = start;
+        this.end = end;
     }
 
     @Override
@@ -40,13 +49,11 @@ public class CronScheduler
     @Override
     public ScheduleTime getFirstScheduleTime(Instant currentTime)
     {
-        Instant startTime = currentTime;  // TODO make this from config
-
         // truncate to seconds
         Instant truncated = Instant.ofEpochSecond(currentTime.getEpochSecond());
         if (truncated.equals(currentTime)) {
             // in this particular case, minus 1 second to include this currentTime
-            // because Predictor doesn't include this time at "next"MatchingTime() method
+            // because Predictor doesn't include this time at nextMatchingTime() method
             truncated = truncated.minusSeconds(1);
         }
         Instant lastTime = truncated.minusSeconds(delaySeconds);
@@ -57,8 +64,14 @@ public class CronScheduler
     @Override
     public ScheduleTime nextScheduleTime(Instant lastScheduleTime)
     {
-        Instant next = next(lastScheduleTime);
-        return ScheduleTime.of(next, next.plusSeconds(delaySeconds));
+        Instant next = nextWithStartEnd(lastScheduleTime);
+
+        if (isScheduleFinished(next)) {
+            return ScheduleTime.of(next, next);
+        }
+        else {
+            return ScheduleTime.of(next, next.plusSeconds(delaySeconds));
+        }
     }
 
     @Override
@@ -91,5 +104,21 @@ public class CronScheduler
         Predictor predictor = new Predictor(pattern, Date.from(time));
         predictor.setTimeZone(TimeZone.getTimeZone(timeZone));
         return Instant.ofEpochMilli(predictor.nextMatchingTime());
+    }
+
+    private Instant nextWithStartEnd(Instant lastScheduleTime)
+    {
+        Instant next = next(lastScheduleTime);
+        Instant nextRun = next.plusSeconds(delaySeconds);
+        if (end.isPresent() && (end.get().equals(nextRun) || end.get().isBefore(nextRun))) {
+            logger.debug("next run time is after to end. next_run:{}, end:{}", nextRun, end.get());
+            next = SCHEDULE_END;
+        }
+        else if (start.isPresent() && start.get().isAfter(nextRun)) {
+            logger.debug("next run time is before the start. next_run:{}, end:{}", nextRun, start.get());
+            // next run is earlier than start. recalculate from start
+            next = next(start.get().minusSeconds(1)); // -1s is required because predictor doesn't include this time at nextMatchingTime() method
+        }
+        return next;
     }
 }

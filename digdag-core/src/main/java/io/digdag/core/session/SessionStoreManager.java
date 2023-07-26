@@ -5,6 +5,7 @@ import java.time.Instant;
 import com.google.common.base.*;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.spi.AccountRouting;
 
 public interface SessionStoreManager
 {
@@ -26,17 +27,13 @@ public interface SessionStoreManager
     // for WorkflowExecutor.runUntilAny
     boolean isAnyNotDoneAttempts();
 
-    // for WorkflowExecutor.enqueueReadyTasks (Keep for compatibility)
-    default List<Long> findAllReadyTaskIds(int maxEntries) { return findAllReadyTaskIds(maxEntries, false); }
-
     /**
      * for WorkflowExecutor.enqueueReadyTasks
      * @param maxEntries  max number to fetch
      * @param randomFetch fetch randomly or not(original behavior)
      * @return
      */
-    List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch);
-
+    List<Long> findAllReadyTaskIds(int maxEntries, boolean randomFetch, AccountRouting accountRouting);
 
     // for AttemptTimeoutEnforcer.enforceAttemptTTLs
     List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit);
@@ -56,17 +53,17 @@ public interface SessionStoreManager
     List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId);
 
     // for WorkflowExecutorManager.propagateAllPlannedToDone
-    List<Long> findTasksByState(TaskStateCode state, long lastId);
+    List<Long> findTasksByState(TaskStateCode state, long lastId, AccountRouting accountRouting);
 
     // for WorkflowExecutorManager.propagateSessionArchive
-    List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId);
+    List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId, AccountRouting accountRouting);
 
-    // for WorkflowExecutorManager.propagateBlockedChildrenToReady
-    List<Long> findDirectParentsOfBlockedTasks(long lastId);
+    // for WorkflowExecutor.propagateBlockedChildrenToReady
+    List<Long> findDirectParentsOfBlockedTasks(long lastId, AccountRouting accountRouting);
 
     boolean requestCancelAttempt(long attemptId);
 
-    int trySetRetryWaitingToReady();
+    int trySetRetryWaitingToReady(AccountRouting accountRouting);
 
     interface TaskLockAction <T>
     {

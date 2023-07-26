@@ -10,5 +10,11 @@ timezone: UTC
       ORDER BY weight_pounds DESC LIMIT 10;
   dataset: publicdata:samples
 
++run_tokyo1:
+  bq>:
+    data: SELECT f1, f2 FROM ${test_query_table_1};
+  dataset: ${test_query_tokyo_dataset_1}
+  location: asia-northeast1
+
 +post:
   sh>: touch ${outfile}

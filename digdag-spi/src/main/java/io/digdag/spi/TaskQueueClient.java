@@ -1,10 +1,12 @@
 package io.digdag.spi;
 
+import com.google.common.base.Optional;
+
 import java.util.List;
 
 public interface TaskQueueClient
 {
-    List<TaskQueueLock> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis);
+    List<TaskQueueLock> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis, AccountRouting accountRouting);
 
     // TODO multi-queue is not implemented yet.
     //   List<TaskQueueLock> lockAgentBoundTasks(int queueId)

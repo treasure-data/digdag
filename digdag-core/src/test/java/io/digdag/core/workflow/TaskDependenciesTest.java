@@ -306,21 +306,26 @@ public class TaskDependenciesTest {
             assertThat(tasks.get(9).getUpstreams(), is(Collections.singletonList(tasks.get(8).getId())));
             assertThat(tasks.get(10).getUpstreams(), is(Collections.singletonList(tasks.get(9).getId())));
 
-            assertThat(tasks.get(11).getUpstreams(), is(Stream.of(tasks.get(3).getId(), tasks.get(7).getId()).collect(Collectors.toList())));
+            assertThat(sorted(tasks.get(11).getUpstreams()), is(Stream.of(tasks.get(3).getId(), tasks.get(7).getId()).sorted().collect(Collectors.toList())));
             assertThat(tasks.get(12).getUpstreams(), is(Collections.emptyList()));
             assertThat(tasks.get(13).getUpstreams(), is(Collections.singletonList(tasks.get(12).getId())));
             assertThat(tasks.get(14).getUpstreams(), is(Collections.singletonList(tasks.get(13).getId())));
 
-            assertThat(tasks.get(15).getUpstreams(), is(Stream.of(tasks.get(3).getId(), tasks.get(7).getId()).collect(Collectors.toList())));
+            assertThat(sorted(tasks.get(15).getUpstreams()), is(Stream.of(tasks.get(3).getId(), tasks.get(7).getId()).sorted().collect(Collectors.toList())));
             assertThat(tasks.get(16).getUpstreams(), is(Collections.emptyList()));
             assertThat(tasks.get(17).getUpstreams(), is(Collections.singletonList(tasks.get(16).getId())));
             assertThat(tasks.get(18).getUpstreams(), is(Collections.singletonList(tasks.get(17).getId())));
 
-            assertThat(tasks.get(19).getUpstreams(), is(Stream.of(tasks.get(11).getId(), tasks.get(15).getId()).collect(Collectors.toList())));
+            assertThat(sorted(tasks.get(19).getUpstreams()), is(Stream.of(tasks.get(11).getId(), tasks.get(15).getId()).sorted().collect(Collectors.toList())));
             assertThat(tasks.get(20).getUpstreams(), is(Collections.emptyList()));
             assertThat(tasks.get(21).getUpstreams(), is(Collections.singletonList(tasks.get(20).getId())));
             assertThat(tasks.get(22).getUpstreams(), is(Collections.singletonList(tasks.get(21).getId())));
             return null;
         });
+    }
+
+    private static List<Long> sorted(List<Long> ids)
+    {
+        return ids.stream().sorted().collect(Collectors.toList());
     }
 }

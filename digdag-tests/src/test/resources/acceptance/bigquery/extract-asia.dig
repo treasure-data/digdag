@@ -1,0 +1,9 @@
+timezone: UTC
+
++run:
+  bq_extract>: ${src_dataset}.${src_table}
+  destination: gs://${dst_bucket}/${dst_object}
+  location: asia-northeast1
+
++post:
+  sh>: touch ${outfile}

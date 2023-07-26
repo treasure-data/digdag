@@ -1,6 +1,8 @@
 package io.digdag.cli.client;
 
+import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
@@ -22,6 +24,12 @@ public class ShowWorkflow
         
     @Parameter(names = {"--count"})
     int count = 100;
+
+    @Parameter(names = {"--name"})
+    String namePattern = null;
+
+    @Parameter(names = {"--order"}, validateWith = OrderValidator.class)
+    String order = "asc";
 
     @Override
     public void mainWithClientException()
@@ -46,8 +54,10 @@ public class ShowWorkflow
     {
         err.println("Usage: " + programName + " workflows [project-name] [name]");
         err.println("  Options:");
-        err.println("  --count number   number of workflows");
-        err.println("  --last-id id      last id of workflow");
+        err.println("    --count number   number of workflows");
+        err.println("    --last-id id     last id of workflow");
+        err.println("    --order (asc|desc) order of listing default is `asc`. work only without `project-name` argument");
+        err.println("    --name name      search by part of workflow name. work only without `project-name` argument");
         showCommonOptions();
         return systemExit(error);
     }
@@ -65,7 +75,12 @@ public class ShowWorkflow
             }
         }
         else {
-            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(Optional.fromNullable(lastId), count).getWorkflows();
+            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(
+                    Optional.fromNullable(lastId),
+                    count,
+                    order,
+                    Optional.fromNullable(namePattern)
+            ).getWorkflows();
             String lastProjName = null;
             for (RestWorkflowDefinition def : defs) {
                 if (!def.getProject().getName().equals(lastProjName)) {
@@ -102,6 +117,20 @@ public class ShowWorkflow
                 }
             }
             throw systemExit("Workflow definition '" + defName + "' does not exist.");
+        }
+    }
+
+    //ToDo move to outer of the class if other command need same parameter
+    public static class OrderValidator implements IParameterValidator
+    {
+        @Override
+        public void validate(String name, String value)
+                throws ParameterException
+        {
+            if (value.equals("asc") || value.equals("desc")) {
+                return;
+            }
+            throw new ParameterException("Invalid parameter value for " + name + ": " + value);
         }
     }
 }

@@ -8,11 +8,11 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Limits;
+import io.digdag.core.acroute.DefaultAccountRoutingFactory;
 import io.digdag.core.database.TransactionManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.TaskAttemptSummary;
-import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.metrics.DigdagMetrics;
 import org.junit.After;
 import org.junit.Before;
@@ -139,7 +139,7 @@ public class WorkflowExecutorCatchingTest
                                                    DigdagMetrics metrics,
                                                    Limits limits)
         {
-            super(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, limits, metrics);
+            super(rm, sm, tm, dispatcher, compiler, cf, archiveMapper, systemConfig, limits, metrics, new DefaultAccountRoutingFactory(systemConfig));
         }
 
         @Override

@@ -2,8 +2,7 @@ package io.digdag.core.repository;
 
 import java.util.List;
 import java.time.ZoneId;
-import java.time.Instant;
-import com.google.common.base.Optional;
+
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStatus;
 import io.digdag.spi.ScheduleTime;
@@ -16,12 +15,47 @@ public interface ProjectControlStore
     void insertRevisionArchiveData(int revId, byte[] data)
             throws ResourceConflictException;
 
+    void insertProjectMetadata(int projId, int siteId, ProjectMetadataMap metadataMap)
+            throws ResourceConflictException;
+
+    void deleteProjectMetadata(int projId);
+
     StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition workflow, ZoneId workflowTimeZone)
         throws ResourceConflictException;
 
+    public class ScheduleTimeWithInfo
+    {
+        final ScheduleTime scheduleTime;
+        final boolean clearSchedule;
+
+        ScheduleTimeWithInfo(ScheduleTime scheduleTime, boolean clearSchedule)
+        {
+            this.scheduleTime = scheduleTime;
+            this.clearSchedule = clearSchedule;
+        }
+
+        public ScheduleTime getScheduleTime() {
+            return scheduleTime;
+        }
+
+        public boolean isClearSchedule() {
+            return clearSchedule;
+        }
+
+        public static ScheduleTimeWithInfo of(ScheduleTime scheduleTime)
+        {
+            return new ScheduleTimeWithInfo(scheduleTime, false);
+        }
+
+        public static ScheduleTimeWithInfo of(ScheduleTime scheduleTime, boolean clearSchedule)
+        {
+            return new ScheduleTimeWithInfo(scheduleTime, clearSchedule);
+        }
+    }
+
     interface ScheduleUpdateAction <T extends Schedule>
     {
-        ScheduleTime apply(ScheduleStatus oldStatus, T newSchedule);
+        ScheduleTimeWithInfo apply(ScheduleStatus oldStatus, T newSchedule);
     }
 
     <T extends Schedule> void updateSchedules(int projId, List<T> schedules, ScheduleUpdateAction<T> func)

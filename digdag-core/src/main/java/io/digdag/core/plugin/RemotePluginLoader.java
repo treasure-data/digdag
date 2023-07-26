@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import com.google.common.collect.ImmutableList;
 
 import io.digdag.commons.ThrowablesUtil;
+import io.digdag.util.RetryExecutor;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
@@ -44,6 +45,10 @@ public class RemotePluginLoader
         implements PluginLoader
 {
     private static final Logger logger = LoggerFactory.getLogger(RemotePluginLoader.class);
+
+    private static final int EXTRACT_RETRIES = 3;
+    private static final int EXTRACT_MIN_RETRY_WAIT_MS = 1000;
+    private static final int EXTRACT_MAX_RETRY_WAIT_MS = 10000;
 
     private static final List<RemoteRepository> DEFAULT_REPOSITORIES = ImmutableList.copyOf(new RemoteRepository[] {
         new RemoteRepository.Builder("central", "default", "https://repo1.maven.org/maven2/").build(),
@@ -161,10 +166,16 @@ public class RemotePluginLoader
     {
         DependencyRequest depRequest = buildDependencyRequest(repositories, dep, JavaScopes.RUNTIME);
         try {
-            return system.resolveDependencies(session, depRequest).getArtifactResults();
-        }
-        catch (DependencyResolutionException ex) {
-            throw ThrowablesUtil.propagate(ex);
+            return RetryExecutor.retryExecutor()
+                    .retryIf(exception -> true)
+                    .withInitialRetryWait(EXTRACT_MIN_RETRY_WAIT_MS)
+                    .withMaxRetryWait(EXTRACT_MAX_RETRY_WAIT_MS)
+                    .onRetry((exception, retryCount, retryLimit, retryWait) ->
+                            logger.warn("Failed to resolve artifacts: retry {} of {}", retryCount, retryLimit, exception))
+                    .withRetryLimit(EXTRACT_RETRIES)
+                    .run(() -> system.resolveDependencies(session, depRequest).getArtifactResults());
+        } catch (RetryExecutor.RetryGiveupException e) {
+            throw ThrowablesUtil.propagate(e.getCause());
         }
     }
 

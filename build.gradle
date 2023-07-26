@@ -10,7 +10,7 @@ apply plugin: 'idea'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.10.4'
+    version = '0.10.6-SNAPSHOT'
 
     ext {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
@@ -26,6 +26,7 @@ allprojects {
 
     apply plugin: 'idea'
     apply plugin: 'java'
+    apply plugin: 'java-test-fixtures'
     apply plugin: 'jacoco'
     apply plugin: 'net.ltgt.apt-idea'
     // 'maven' plugin is deprecated and replaced by 'maven-publish'.
@@ -77,12 +78,15 @@ subprojects {
         testCompile 'org.hamcrest:hamcrest-library:1.3'
         testCompile 'org.mockito:mockito-core:1.10.19'
         testCompile 'pl.pragmatists:JUnitParams:1.0.5'
+        testImplementation 'org.powermock:powermock-api-mockito:1.6.6'
+        testImplementation 'org.powermock:powermock-module-junit4:1.6.6'
+        testFixturesImplementation 'junit:junit:4.13.2'
     }
 
     ext {
         jacksonVersion = "2.9.10"
         jacksonDatabindVersion = "2.9.10"
-        awsJavaSdkVersion = "1.11.686"
+        awsJavaSdkVersion = "1.12.270"
         guavaVersion = "30.1.1-jre"
         guiceVersion = "5.0.1"
     }
@@ -358,45 +362,64 @@ coveralls {
 
 wrapper {
     // Find the latest version at https://gradle.org/releases/
-    gradleVersion = '6.8.3'
+    gradleVersion = '6.9.2'
 }
 
 project(':digdag-ui') {
-    task buildUi {
-        inputs.files fileTree(dir: ".", include: ["*.js", "*.jsx", "config/*"])
-        outputs.dir "public"
-
+    task dependenciesUi {
         doFirst {
             exec {
                 // npm ci requires npm version 5.7 or more.
                 commandLine System.env.NPM ?: "npm", "ci"
             }
+        }
+    }
+
+    task buildUi {
+        inputs.files fileTree(dir: ".", include: ["*.js", "*.jsx", "*.ts", "*.tsx", "config/*"])
+        outputs.dir "public"
+
+        doFirst {
             exec {
                 commandLine System.env.NPM ?: "npm", "run", "build"
                 environment "SHA", "assets"
             }
         }
+
+        dependsOn('dependenciesUi')
+
+        // include public/* in the jar file
+        processResources {
+            from '.'
+            include 'public/**/*'
+        }
+        processResources.dependsOn('buildUi')
     }
 
     task testUi {
         doFirst {
             exec {
-                // npm ci requires npm version 5.7 or more.
-                commandLine System.env.NPM ?: "npm", "ci"
-            }
-            exec {
                 commandLine System.env.NPM ?: "npm", "run", "test"
             }
         }
+
+        dependsOn('dependenciesUi')
     }
     test.dependsOn('testUi')
 
-    // include public/* in the jar file
-    processResources {
-        from '.'
-        include 'public/**/*'
+    task checkUi {
+        doFirst {
+            exec {
+                commandLine System.env.NPM ?: "npm", "run", "lint"
+            }
+            exec {
+                commandLine System.env.NPM ?: "npm", "run", "type"
+            }
+        }
+
+        dependsOn('dependenciesUi')
     }
-    processResources.dependsOn('buildUi')
+    check.dependsOn('checkUi')
 }
 
 project(':digdag-cli') {

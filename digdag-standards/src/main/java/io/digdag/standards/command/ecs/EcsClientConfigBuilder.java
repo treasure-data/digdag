@@ -8,8 +8,8 @@ import java.util.List;
 public class EcsClientConfigBuilder
 {
     private String clusterName;
-    private String accessKeyId;
-    private String secretAccessKey;
+    private Optional<String> accessKeyId;
+    private Optional<String> secretAccessKey;
     private String region;
     private int maxRetries;
     private boolean assignPublicIp;
@@ -20,6 +20,7 @@ public class EcsClientConfigBuilder
     private Optional<Integer> containerMemory;
     private Optional<String> taskCpu;
     private Optional<String> taskMemory;
+    private boolean useEnvironmentFile;
     private Optional<String> startedBy;
     private Optional<String> placementStrategyType;
     private Optional<String> placementStrategyField;
@@ -41,13 +42,13 @@ public class EcsClientConfigBuilder
         return this;
     }
 
-    public EcsClientConfigBuilder withAccessKeyId(String accessKeyId)
+    public EcsClientConfigBuilder withAccessKeyId(Optional<String> accessKeyId)
     {
         this.accessKeyId = accessKeyId;
         return this;
     }
 
-    public EcsClientConfigBuilder withSecretAccessKey(String secretAccessKey)
+    public EcsClientConfigBuilder withSecretAccessKey(Optional<String> secretAccessKey)
     {
         this.secretAccessKey = secretAccessKey;
         return this;
@@ -130,6 +131,12 @@ public class EcsClientConfigBuilder
         return this;
     }
 
+    public EcsClientConfigBuilder withUseEnvironmentFile(boolean useEnvironmentFile)
+    {
+        this.useEnvironmentFile = useEnvironmentFile;
+        return this;
+    }
+
     public String getClusterName()
     {
         return clusterName;
@@ -140,12 +147,12 @@ public class EcsClientConfigBuilder
         return launchType;
     }
 
-    public String getAccessKeyId()
+    public Optional<String> getAccessKeyId()
     {
         return accessKeyId;
     }
 
-    public String getSecretAccessKey()
+    public Optional<String> getSecretAccessKey()
     {
         return secretAccessKey;
     }
@@ -208,5 +215,10 @@ public class EcsClientConfigBuilder
     public Optional<String> getTaskMemory()
     {
         return taskMemory;
+    }
+
+    public boolean isUseEnvironmentFile()
+    {
+        return useEnvironmentFile;
     }
 }

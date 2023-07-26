@@ -43,7 +43,7 @@ dependencies {
     }
 
     // kubernetes
-    compile ('io.fabric8:kubernetes-client:4.6.2') {
+    compile ('io.fabric8:kubernetes-client:5.12.1') {
         // Avoid compilation failures due to dependencies
         exclude group: 'org.slf4j', module: 'slf4j-api'
         // TODO: digdag use version 3.12.0, upgrade to version 3.12.6.

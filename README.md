@@ -1,6 +1,6 @@
 # Digdag
 
-[![Circle CI](https://circleci.com/gh/treasure-data/digdag.svg?style=svg&circle-token=8ccc5c665022ce4d1ee05cf7b829c84877387a6c)](https://circleci.com/gh/treasure-data/digdag)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/treasure-data/digdag/tree/master.svg?style=svg&circle-token=5a93079551888e4dc43ad75fe6e2bd312153995c)](https://dl.circleci.com/status-badge/redirect/gh/treasure-data/digdag/tree/master)
 
 [![CI](https://github.com/treasure-data/digdag/workflows/CI/badge.svg)](https://github.com/treasure-data/digdag/actions)
 

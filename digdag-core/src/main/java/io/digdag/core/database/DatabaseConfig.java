@@ -39,6 +39,8 @@ public interface DatabaseConfig
 
     int getIdleTimeout();  // seconds
 
+    int getKeepaliveTime(); // seconds
+
     int getMaximumPoolSize();
 
     int getMinimumPoolSize();
@@ -88,6 +90,11 @@ public interface DatabaseConfig
                     .loginTimeout(config.get(keyPrefix + "." + "loginTimeout", int.class, 30))
                     .socketTimeout(config.get(keyPrefix + "." + "socketTimeout", int.class, 1800))
                     .ssl(config.get(keyPrefix + "." + "ssl", boolean.class, false))
+                    .sslfactory(config.get(keyPrefix + "." + "sslfactory", String.class, "org.postgresql.ssl.NonValidatingFactory"))
+                    .sslmode(config.getOptional(keyPrefix + "." + "sslmode", String.class))
+                    .sslcert(config.getOptional(keyPrefix + "." + "sslcert", String.class))
+                    .sslkey(config.getOptional(keyPrefix + "." + "sslkey", String.class))
+                    .sslrootcert(config.getOptional(keyPrefix + "." + "sslrootcert", String.class))
                     .build()));
             break;
         default:
@@ -98,6 +105,8 @@ public interface DatabaseConfig
                 config.get(keyPrefix + "." + "connectionTimeout", int.class, 30));  // HikariCP default: 30
         builder.idleTimeout(
                 config.get(keyPrefix + "." + "idleTimeout", int.class, 600));  // HikariCP default: 600
+        builder.keepaliveTime(
+                config.get(keyPrefix + "." + "keepaliveTime", int.class, 0)); // HikariCP default: 0 (disabled)
         builder.validationTimeout(
                 config.get(keyPrefix + "." + "validationTimeout", int.class, 5));  // HikariCP default: 5
 
@@ -169,12 +178,18 @@ public interface DatabaseConfig
                 config.set(keyPrefix + "." + "loginTimeout", remoteDatabaseConfig.getLoginTimeout());
                 config.set(keyPrefix + "." + "socketTimeout", remoteDatabaseConfig.getSocketTimeout());
                 config.set(keyPrefix + "." + "ssl", remoteDatabaseConfig.getSsl());
+                config.set(keyPrefix + "." + "sslfactory", remoteDatabaseConfig.getSslfactory());
+                config.setOptional(keyPrefix + "." + "sslmode", remoteDatabaseConfig.getSslmode());
+                config.setOptional(keyPrefix + "." + "sslcert", remoteDatabaseConfig.getSslcert());
+                config.setOptional(keyPrefix + "." + "sslkey", remoteDatabaseConfig.getSslkey());
+                config.setOptional(keyPrefix + "." + "sslrootcert", remoteDatabaseConfig.getSslrootcert());
                 break;
             default:
                 throw new AssertionError("Unknown database.type: " + databaseConfig.getType());
         }
 
         config.set(keyPrefix + "." + "connectionTimeout", databaseConfig.getConnectionTimeout());
+        config.set(keyPrefix + "." + "keepaliveTime", databaseConfig.getKeepaliveTime());
         config.set(keyPrefix + "." + "idleTimeout", databaseConfig.getIdleTimeout());
         config.set(keyPrefix + "." + "validationTimeout", databaseConfig.getValidationTimeout());
         config.set(keyPrefix + "." + "maximumPoolSize", databaseConfig.getMaximumPoolSize());
@@ -268,7 +283,19 @@ public interface DatabaseConfig
             props.setProperty("password", rc.get().getPassword());
             if (rc.get().getSsl()) {
                 props.setProperty("ssl", "true");
-                props.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");  // disable server certificate validation
+                props.setProperty("sslfactory", rc.get().getSslfactory());
+                if (rc.get().getSslmode().isPresent()) {
+                    props.setProperty("sslmode", rc.get().getSslmode().get());
+                }
+                if (rc.get().getSslcert().isPresent()) {
+                    props.setProperty("sslcert", rc.get().getSslcert().get());
+                }
+                if (rc.get().getSslkey().isPresent()) {
+                    props.setProperty("sslkey", rc.get().getSslkey().get());
+                }
+                if (rc.get().getSslrootcert().isPresent()) {
+                    props.setProperty("sslrootcert", rc.get().getSslrootcert().get());
+                }
             }
         }
 
