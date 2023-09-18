@@ -131,15 +131,16 @@ public class ShOperatorFactory
         private List<String> getShell(final Config params, final Boolean winOS){
             // Until digdag ver. 0.9, it was necessary to write ["powershell.exe","-"] to specify shell, 
             // but since ver. 0.10, jobs are not executed unless ["powershell.exe"] is written.
-            // To resolve this incompatibility, change the shell specification ["powershell.exe","-"]
-            // to ["powershell.exe"].            
+            // To cope with the sudden incompatibility, change the shell specification ["powershell.exe","-"]
+            // to ["powershell.exe"].
+            // In addition, a deprecation message is output. This conversion will be removed in the future.
             List<String> temp_shell;
             if (params.has("shell")) {
                 temp_shell = params.getListOrEmpty("shell", String.class);
-                if (temp_shell.get(0).toLowerCase().contains("powershell") && temp_shell.size() == 2){
-                    if (temp_shell.get(1).contains("-")){
+                if (temp_shell.get(0).toLowerCase().equals("powershell.exe") && temp_shell.size() == 2){
+                    if (temp_shell.get(1).equals("-")){
                         temp_shell.remove(1);
-                        logger.info("removed \"-\" from shell specification --- from [\"powershell.exe\",\"-\"] to [\"powershell.exe\"] .");
+                        logger.info("Removed \"-\" from shell specification --- from [\"powershell.exe\",\"-\"] to [\"powershell.exe\"] .");
                     }
                 }
             }
