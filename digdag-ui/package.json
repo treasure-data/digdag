@@ -110,7 +110,7 @@
     "less": "2.7.2",
     "less-loader": "4.1.0",
     "mini-css-extract-plugin": "^0.5.0",
-    "postcss": "^8.4.14",
+    "postcss": "^8.4.31",
     "postcss-loader": "^4.2.0",
     "resolve-url-loader": "^2.3.1",
     "rimraf": "^2.6.1",
