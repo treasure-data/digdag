@@ -3,6 +3,8 @@
 **bq>** operator runs a query on Google BigQuery.
 
     _export:
+      gcp:
+        project: my_project_id
       bq:
         dataset: my_dataset
 
@@ -54,6 +56,17 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
   ```
   location: asia-northeast1
+  ```
+
+* **gcp.project**: NAME
+
+  Specifies the default Google Cloud project to use in the query and in the `destination_table` parameter.
+
+  Examples:
+
+  ```
+  gcp:
+    project: my_project_id
   ```
 
 * **dataset**: NAME
@@ -166,6 +179,70 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
 
   Describes user-defined function resources used in the query. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.userDefinedFunctionResources).
 
+
+* **clustering**: OBJECT
+
+  Clustering specification for the destination table. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering).
+
+  Examples:
+
+  ```yaml
+  clustering:
+    fields:
+      - field1
+  ```
+
+* **encryption_configuration**: OBJECT
+
+  Custom encryption configuration. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/EncryptionConfiguration).
+
+  Examples:
+
+  ```yaml
+  encryption_configuration:
+    kmsKeyName: key_name
+  ```
+
+* **maximum_bytes_billed**: LONG
+
+  Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationquery).
+
+* **schema_update_options**: LIST
+
+  Allows the schema of the destination table to be updated as a side effect of the query job. Schema update options are supported in two cases: when writeDisposition is WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE and the destination table is a partition of a table, specified by partition decorators. For normal tables, WRITE_TRUNCATE will always overwrite the schema. One or more of the following values are specified:
+  - ALLOW_FIELD_ADDITION: allow adding a nullable field to the schema.
+  - ALLOW_FIELD_RELAXATION: allow relaxing a required field in the original schema to nullable.
+
+  For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationquery).
+
+* **range_partitioning**: OBJECT
+
+  Range partitioning specification for the destination table. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#RangePartitioning).
+
+  Examples:
+
+  ```yaml
+  range_partitioning:
+    field: id
+    range:
+      start: 0
+      interval: 10
+      end: 100
+  ```
+
+* **time_partitioning**: OBJECT
+
+  Time-based partitioning specification for the destination table. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning).
+
+  Examples:
+
+  ```yaml
+  time_partitioning:
+    type: DAY
+    field: date
+    requirePartitionFilter: true
+    
+  ```
 
 ## Output parameters
 
