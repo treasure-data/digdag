@@ -1309,19 +1309,14 @@ interface SessionViewProps {
   session: Session
   sessionRunning: boolean
 }
-interface SessionViewState {
-  sessionRunning: boolean
+const SessionViewState = {
+  sessionRunning: false,
 }
 
-class SessionView extends React.Component<SessionViewProps, SessionViewState> {
-  constructor(props: Readonly<SessionViewProps>) {
-    super(props)
-    this.state = {
-      sessionRunning: props.sessionRunning
-    }
-  }
+class SessionView extends React.Component<SessionViewProps, typeof SessionViewState> {
+  public readonly state = SessionViewState
 
-  componentWillReceiveProps(props: SessionViewProps) {
+  componentWillReceiveProps(props: Readonly<SessionViewProps>) {
     this.setState({
       sessionRunning: props.sessionRunning,
     })
