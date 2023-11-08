@@ -2740,7 +2740,6 @@ export class SessionPage extends React.Component<SessionPageProps> {
 
   state: {
     session?: Session | null
-    sessionRunning: boolean
     tasks: Task[]
     attempts: Attempt[]
   }
@@ -2749,7 +2748,6 @@ export class SessionPage extends React.Component<SessionPageProps> {
     super(props)
     this.state = {
       session: null,
-      sessionRunning: false,
       tasks: [],
       attempts: []
     }
@@ -2785,7 +2783,7 @@ export class SessionPage extends React.Component<SessionPageProps> {
 
   session () {
     return (this.state.session != null)
-      ? <SessionView session={this.state.session} sessionRunning={this.state.sessionRunning} />
+      ? <SessionView session={this.state.session} sessionRunning={false} />
       : null
   }
 
