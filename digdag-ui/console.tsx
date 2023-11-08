@@ -1347,7 +1347,6 @@ class SessionView extends React.Component<SessionViewProps, typeof SessionViewSt
     const { lastAttempt, project, workflow } = session
     const canRetryAll = attemptCanRetryAll(lastAttempt)
     const canResume = attemptCanResume(lastAttempt)
-
     return (
       <div className='session'>
         <h2 className='d-inline-flex'>
@@ -1885,11 +1884,7 @@ class AttemptTasksView extends React.Component<AttemptTasksViewProps> {
       if (!this.ignoreLastFetch) {
         const tasks = Array.from(taskMap.values())
         const done = tasks.every(task => taskDone(task))
-        this.setState({
-          sessionRunning: false,
-          tasks: taskMap,
-          done
-        })
+        this.setState({ tasks: taskMap, done })
       }
     })
   }
