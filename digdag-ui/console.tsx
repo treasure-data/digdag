@@ -1307,10 +1307,24 @@ class AttemptView extends React.Component<AttemptViewProps> {
 
 interface SessionViewProps {
   session: Session
+  sessionRunning: boolean
+}
+const SessionViewState = {
+  sessionRunning: false,
 }
 
-class SessionView extends React.Component<SessionViewProps> {
+class SessionView extends React.Component<SessionViewProps, typeof SessionViewState> {
+  public readonly state = SessionViewState
+
+  componentWillReceiveProps(props: Readonly<SessionViewProps>) {
+    this.setState({
+      sessionRunning: props.sessionRunning,
+    })
+  }
+
+
   retryFailed () {
+    this.state.sessionRunning = true
     const { session } = this.props
     const { lastAttempt } = session
     if (lastAttempt != null) {
@@ -1321,6 +1335,7 @@ class SessionView extends React.Component<SessionViewProps> {
   }
 
   retryAll () {
+    this.state.sessionRunning = true
     const { session } = this.props
     model()
       .retrySessionWithLatestRevision(session, uuidv4())
@@ -1340,6 +1355,7 @@ class SessionView extends React.Component<SessionViewProps> {
         {canRetryAll &&
           <button
             className='btn btn-sm btn-primary float-right'
+            disabled={this.state.sessionRunning}
             onClick={this.retryAll.bind(this)}
           >
             RETRY ALL
@@ -1347,6 +1363,7 @@ class SessionView extends React.Component<SessionViewProps> {
         {canResume &&
           <button
             className='btn btn-sm btn-success mr-2 float-right'
+            disabled={this.state.sessionRunning}
             onClick={this.retryFailed.bind(this)}
           >
             RETRY FAILED
@@ -2756,7 +2773,7 @@ export class SessionPage extends React.Component<SessionPageProps> {
 
   session () {
     return (this.state.session != null)
-      ? <SessionView session={this.state.session} />
+      ? <SessionView session={this.state.session} sessionRunning={false} />
       : null
   }
 
