@@ -225,6 +225,8 @@ public class KubernetesCommandExecutor
         nextStatus.set("cluster_name", FACTORY.textNode(client.getConfig().getName()));
         nextStatus.set("pod_name", FACTORY.textNode(pod.getName()));
         nextStatus.set("pod_creation_timestamp", FACTORY.numberNode(pod.getCreationTimestamp()));
+        nextStatus.set("in_temporal_config_storage_expiration", FACTORY.numberNode(inConfigStorage.getDirectDownloadExpiration().get()));
+        nextStatus.set("out_temporal_config_storage_expiration", FACTORY.numberNode(outConfigStorage.getDirectUploadExpiration().get()));
         nextStatus.set("io_directory", FACTORY.textNode(ioDirectoryPath.toString()));
         nextStatus.set("executor_state", FACTORY.objectNode());
         return createCommandStatus(pod, false, nextStatus);
@@ -256,6 +258,21 @@ public class KubernetesCommandExecutor
             log(logMessage, clog);
             nextExecutorState.set("log_offset", FACTORY.numberNode(offset + logMessage.length())); // update log_offset
         }
+        else if(isLaunchingLongerThanInConfigStorageExpiration(previousStatusJson)) {
+            // Throw error because launching pod time is longer than inTemporalConfigStorage expires.
+            TaskRequest request = context.getTaskRequest();
+            long attemptId = request.getAttemptId();
+            long taskId = request.getTaskId();
+
+            final String message = s("Pod launch timeout: attempt=%d, task=%d", attemptId, taskId);
+            logger.warn(message);
+
+            logger.info(s("Delete pod %d", pod.getName()));
+            client.deletePod(pod.getName());
+
+            // Throw exception to stop the task as failure
+            throw new TaskExecutionException(message);
+        }
         else { // 'waiting'
             // Write pod status to the command logger to avoid users confusing. For example, the container
             // waits starting if it will take long time to download container images.
@@ -277,7 +294,7 @@ public class KubernetesCommandExecutor
             ProjectArchives.extractTarArchive(context.getLocalProjectPath(), in); // runtime exception
             client.deletePod(pod.getName());
         }
-        else if (defaultPodTTL.isPresent() && isRunningLongerThanTTL(previousStatusJson)) {
+        else if (isRunningLongerThanOutConfigStorageExpiration(previousStatusJson) || (defaultPodTTL.isPresent() && isRunningLongerThanTTL(previousStatusJson))) {
             TaskRequest request = context.getTaskRequest();
             long attemptId = request.getAttemptId();
             long taskId = request.getTaskId();
@@ -306,6 +323,22 @@ public class KubernetesCommandExecutor
     protected List<String> setArgumentsAfterScriptCommandLine()
     {
         return ImmutableList.of();
+    }
+
+    private boolean isLaunchingLongerThanInConfigStorageExpiration(final ObjectNode previousStatusJson)
+    {
+        long creationTimestamp = previousStatusJson.get("pod_creation_timestamp").asLong();
+        long inTemporalConfigStorageExpiration = previousStatusJson.get("in_temporal_config_storage_expiration").asLong();
+        long currentTimestamp = Instant.now().getEpochSecond();
+        return currentTimestamp > creationTimestamp + inTemporalConfigStorageExpiration;
+    }
+
+    private boolean isRunningLongerThanOutConfigStorageExpiration(final ObjectNode previousStatusJson)
+    {
+        long creationTimestamp = previousStatusJson.get("pod_creation_timestamp").asLong();
+        long outTemporalConfigStorageExpiration = previousStatusJson.get("out_temporal_config_storage_expiration").asLong();
+        long currentTimestamp = Instant.now().getEpochSecond();
+        return currentTimestamp > creationTimestamp + outTemporalConfigStorageExpiration;
     }
 
     private boolean isRunningLongerThanTTL(final ObjectNode previousStatusJson)
