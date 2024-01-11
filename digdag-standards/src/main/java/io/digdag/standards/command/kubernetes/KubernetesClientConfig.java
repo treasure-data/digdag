@@ -4,12 +4,15 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.storage.StorageManager;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static io.digdag.client.DigdagClient.objectMapper;
 
 public class KubernetesClientConfig
 {
@@ -19,42 +22,41 @@ public class KubernetesClientConfig
             final Config systemConfig,
             final Config requestConfig)
     {
-        if (requestConfig.has("kubernetes")) {
-            // from task request config
-            return KubernetesClientConfig.createFromTaskRequestConfig(name, requestConfig.getNested("kubernetes"));
+        if (!systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
+            throw new ConfigException("agent.command_executor.type: is not 'kubernetes'");
         }
-        else {
-            // from system config
-            return KubernetesClientConfig.createFromSystemConfig(name, systemConfig);
-        }
-    }
-
-    private static KubernetesClientConfig createFromTaskRequestConfig(final Optional<String> name,
-            final Config config)
-    {
-        // TODO
-        // We'd better to customize cluster config by task request config??
-        throw new UnsupportedOperationException("Not support yet");
-    }
-
-    @VisibleForTesting
-    static KubernetesClientConfig createFromSystemConfig(final Optional<String> name,
-            final io.digdag.client.config.Config systemConfig)
-    {
-        final String clusterName;
+        String clusterName;
         if (!name.isPresent()) {
-            if (!systemConfig.get("agent.command_executor.type", String.class, "").equals("kubernetes")) {
-                throw new ConfigException("agent.command_executor.type: is not 'kubernetes'");
-            }
-            clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class);
-        }
-        else {
+            clusterName = systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "name", String.class); // ConfigException
+        } else {
             clusterName = name.get();
         }
         final String keyPrefix = KUBERNETES_CLIENT_PARAMS_PREFIX + clusterName + ".";
-        final Config extracted = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);
-        if (extracted.has("kube_config_path")) {
-            String kubeConfigPath = extracted.get("kube_config_path", String.class);
+        Config extractedSystemConfig = StorageManager.extractKeyPrefix(systemConfig, keyPrefix);;
+        Config extractedRequestConfig;
+        if (systemConfig.get(KUBERNETES_CLIENT_PARAMS_PREFIX + "allow_configure_workflow_definition", Boolean.class, false)
+            && requestConfig != null
+            && requestConfig.has("kubernetes")) {
+            if (clusterName == null) {
+                clusterName = requestConfig.get("name", String.class); // ConfigException
+            }
+            extractedRequestConfig = requestConfig.getNested("kubernetes");
+        } else {
+            extractedRequestConfig = newEmptyConfig();
+        }
+
+        // Create a config that merges RequestConfig with SystemConfig
+        final Config config = extractedSystemConfig.merge(extractedRequestConfig);
+        return KubernetesClientConfig.createKubeConfig(clusterName, config);
+    }
+
+    private static Config newEmptyConfig() {
+        return new ConfigFactory(objectMapper()).create();
+    }
+
+    private static KubernetesClientConfig createKubeConfig(final String clusterName, final Config config){
+        if (config.has("kube_config_path")) {
+            String kubeConfigPath = config.get("kube_config_path", String.class);
             io.fabric8.kubernetes.client.Config validatedKubeConfig;
             validatedKubeConfig = validateKubeConfig(getKubeConfigFromPath(kubeConfigPath));
             return create(clusterName,
@@ -63,7 +65,7 @@ public class KubernetesClientConfig
                     validatedKubeConfig.getOauthToken(),
                     validatedKubeConfig.getNamespace());
         } else {
-            final Config validatedConfig = validateConfig(extracted);
+            final Config validatedConfig = validateConfig(config);
             return create(clusterName,
                     validatedConfig.get("master", String.class),
                     validatedConfig.get("certs_ca_data", String.class),
