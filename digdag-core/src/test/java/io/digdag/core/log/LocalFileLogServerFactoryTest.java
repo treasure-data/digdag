@@ -6,6 +6,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.spi.LogFilePrefix;
+import io.digdag.spi.StorageFileNotFoundException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import com.google.common.base.Optional;
 import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertThrows;
 
 import io.digdag.core.log.LocalFileLogServerFactory.LocalFileLogServer.LocalFileDirectTaskLogger;
 
@@ -141,5 +143,31 @@ public class LocalFileLogServerFactoryTest
             b.append(v);
         }
         return b.toString();
+    }
+
+    @Test
+    public void testGetFile() throws StorageFileNotFoundException
+    {
+        setUpTaskLogger(Optional.absent());
+        String fileName = localServer.putFile(prefix, "+task", Instant.now(), "agent", "foo".getBytes(UTF_8));
+        byte[] data = localServer.getFile(prefix, fileName);
+        assertThat(new String(data, UTF_8), is("foo"));
+    }
+
+    @Test
+    public void testGetFileNotFound()
+    {
+        setUpTaskLogger(Optional.absent());
+        assertThrows(StorageFileNotFoundException.class, () -> localServer.getFile(prefix, "foo"));
+    }
+
+    @Test
+    public void testGetFileInvalidFileName()
+    {
+        setUpTaskLogger(Optional.absent());
+        assertThrows(IllegalArgumentException.class, () -> localServer.getFile(prefix, ".."));
+        assertThrows(IllegalArgumentException.class, () -> localServer.getFile(prefix, "../foo"));
+        assertThrows(IllegalArgumentException.class, () -> localServer.getFile(prefix, "/foo"));
+        assertThrows(IllegalArgumentException.class, () -> localServer.getFile(prefix, "foo/../../bar"));
     }
 }

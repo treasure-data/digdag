@@ -10,12 +10,15 @@ import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static utils.TestUtils.*;
 
@@ -91,5 +94,8 @@ public class LogIT {
 
         final String regex = "\\[\\d+:\\w+:\\d+:\\d+]";
         assertTrue(Pattern.compile(regex, Pattern.DOTALL).matcher(logs).find());
+
+        assertThrows(NotFoundException.class, () -> client.getLogFile(attemptId, "foo"));
+        assertThrows(BadRequestException.class, () -> client.getLogFile(attemptId, "/foo"));
     }
 }
