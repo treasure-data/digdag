@@ -1,5 +1,6 @@
 package io.digdag.core.log;
 
+import java.nio.file.NoSuchFileException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -122,11 +123,15 @@ public class LocalFileLogServerFactory
         protected byte[] getFile(String dateDir, String attemptDir, String fileName)
             throws StorageFileNotFoundException
         {
-            Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
+            Path prefixDir = getPrefixDir(dateDir, attemptDir);
+            Path path = prefixDir.resolve(fileName).normalize();
+            if (!path.startsWith(prefixDir)) {
+                throw new IllegalArgumentException("Invalid file name: " + fileName);
+            }
             try (InputStream in = Files.newInputStream(path)) {
                 return ByteStreams.toByteArray(in);
             }
-            catch (FileNotFoundException ex) {
+            catch (FileNotFoundException | NoSuchFileException ex) {
                 throw new StorageFileNotFoundException(ex);
             }
             catch (IOException ex) {
