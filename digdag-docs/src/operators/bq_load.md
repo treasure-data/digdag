@@ -90,9 +90,16 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
   location: asia-northeast1
   ```
 
-* **project**: NAME
+* **gcp.project**: NAME
 
   The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
+
+  Examples:
+
+  ```
+  gcp:
+    project: my_project_id
+  ```
 
 * **source_format**: CSV | NEWLINE_DELIMITED_JSON | AVRO | DATASTORE_BACKUP
 
@@ -281,6 +288,98 @@ When you set those parameters, use [digdag secrets command](https://docs.digdag.
     schema: path/to/schema.json
     # or
     # schema: path/to/schema.yml
+  ```
+
+* **clustering**: OBJECT
+
+  Clustering specification for the destination table. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering).
+
+  Examples:
+
+  ```yaml
+  clustering:
+    fields:
+      - field1
+  ```
+
+* **decimal_target_types**: STRING
+
+  Defines the list of possible SQL data types to which the source decimal values are converted. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#decimaltargettype).
+
+* **encryption_configuration**: OBJECT
+
+  Custom encryption configuration. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/EncryptionConfiguration).
+
+  Examples:
+
+  ```yaml
+  encryption_configuration:
+    kmsKeyName: key_name
+  ```
+
+* **hive_partitioning_options**: OBJECT
+
+  Options for configuring hive partitioning detect. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#hivepartitioningoptions).
+
+  Examples:
+
+  ```yaml
+  hive_partitioning_options:
+    mode: AUTO
+    sourceUriPrefix: gs://my_bucket/path
+  ```
+
+* **json_extension**: STRING
+
+  If sourceFormat is set to newline-delimited JSON, indicates whether it should be processed as a JSON variant such as GeoJSON. For a sourceFormat other than JSON, omit this field. If the sourceFormat is newline-delimited JSON: - for newline-delimited GeoJSON: set to GEOJSON.
+
+* **null_marker**: STRING
+
+  Specifies a string that represents a null value in a CSV file. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload).
+
+* **parquet_options**: OBJECT
+
+  Parquet Options for load and make external tables. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#parquetoptions).
+
+  Examples:
+
+  ```yaml
+  parquet_options:
+    enableListInference: true
+    enumAsString: true
+  ```
+
+* **use_avro_logical_types**: BOOLEAN
+
+  If sourceFormat is set to "AVRO", indicates whether to interpret logical types as the corresponding BigQuery data type (for example, TIMESTAMP), instead of using the raw type (for example, INTEGER). For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload).
+
+* **range_partitioning**: OBJECT
+
+  Range partitioning specification for the destination table. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#RangePartitioning).
+
+  Examples:
+
+  ```yaml
+  range_partitioning:
+    field: id
+    range:
+      start: 0
+      interval: 10
+      end: 100
+  ```
+
+* **time_partitioning**: OBJECT
+
+  Time-based partitioning specification for the destination table. For more information see [BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning).
+
+  Examples:
+
+  ```yaml
+  time_partitioning:
+    type: DAY
+    field: date
+    requirePartitionFilter: true
+    
   ```
 
 ## Output parameters
