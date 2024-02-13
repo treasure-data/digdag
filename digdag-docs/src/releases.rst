@@ -5,6 +5,7 @@ Release Notes
     :maxdepth: 1
 
     # add new version here
+    releases/release-0.10.5.1
     releases/release-0.10.5
     releases/release-0.10.4
     releases/release-0.10.3

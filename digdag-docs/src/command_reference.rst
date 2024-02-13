@@ -241,7 +241,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.10.5
+    $ digdag selfupdate 0.10.5.1
 
 Server-mode commands
 ----------------------------------
@@ -432,7 +432,7 @@ CommandExecutor Plugins
 
 CommandExecutor implementation is to be provided by a system plugin (See `System plugins section in Internal architecture <internal.html#system-plugins>`). Interface is ``io.digdag.spi.CommandExecutorFactory``.
 
-You can specify the command executor to use by `agent.command_executor.type`. (digdag version v0.10.4 and up)
+You can specify the command executor to use by `agent.command_executor.type`. (digdag version v0.10.5.1 and up)
 
 The following executors can be set by default.
 
@@ -484,7 +484,7 @@ You can include following parameters in ~/.config/digdag/config file:
 
 * client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
-* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.10.0 or later.)
+* client.http.disable_direct_download=true (disable direct download in `log` and `download`. effect to server v0.10.5.1 or later.)
 
 
 start
