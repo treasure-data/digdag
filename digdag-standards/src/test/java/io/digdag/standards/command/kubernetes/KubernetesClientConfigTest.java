@@ -59,7 +59,16 @@ public class KubernetesClientConfigTest
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default");
 
-        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        final Config kubernetesConfig = cf.create()
+                .set("test.master", "https://127.0.0.1")
+                .set("test.certs_ca_data", "test=")
+                .set("test.oauth_token", "test=")
+                .set("test.namespace", "default");
+
+        final Config requestConfig = cf.create()
+                .setNested("kubernetes", kubernetesConfig);
+
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, null);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -79,7 +88,7 @@ public class KubernetesClientConfigTest
           .set("agent.command_executor.type", "kubernetes")
           .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.kube_config_path", kubeConfigPath);
 
-        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.createFromSystemConfig(clusterName, systemConfig);
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, null);
 
         String masterUrl = "https://127.0.0.1";
         String namespace = "default";
@@ -90,4 +99,99 @@ public class KubernetesClientConfigTest
         assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
         assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
     }
+
+    @Test
+    public void testCreateFromRequestConfig()
+            throws Exception
+    {
+        final Config systemConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set("agent.command_executor.kubernetes.allow_configure_workflow_definition", true);
+
+        final Config kubernetesConfig = cf.create()
+                .set("master", "https://127.0.0.1")
+                .set("certs_ca_data", "test=")
+                .set("oauth_token", "test=")
+                .set("namespace", "default");
+
+        final Config requestConfig = cf.create()
+                .setNested("kubernetes", kubernetesConfig);
+
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, requestConfig);
+
+        String masterUrl = "https://127.0.0.1";
+        String namespace = "default";
+        String caCertData = "test=";
+        String oauthToken = "test=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
+    }
+
+    @Test
+    public void testCreateFromRequestConfigAndSystemConfigMerge()
+            throws Exception
+    {
+
+        final Config systemConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.master", "https://127.0.0.1")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.certs_ca_data", "test=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default")
+                .set("agent.command_executor.kubernetes.allow_configure_workflow_definition", true);
+
+        final Config kubernetesConfig = cf.create()
+                .set("master", "https://localhost")
+//                .set("certs_ca_data", "test=")
+//                .set("oauth_token", "test=")
+                .set("namespace", "request");
+
+        final Config requestConfig = cf.create()
+                .setNested("kubernetes", kubernetesConfig);
+
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, requestConfig);
+
+        String masterUrl = "https://localhost";
+        String namespace = "request";
+        String caCertData = "test=";
+        String oauthToken = "test=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
+    }
+
+    @Test
+    public void testCreateFromRequestConfigAndSystemConfigNotMerge()
+            throws Exception
+    {
+
+        final Config systemConfig = cf.create()
+                .set("agent.command_executor.type", "kubernetes")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.master", "https://127.0.0.1")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.certs_ca_data", "test=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.oauth_token", "test=")
+                .set(KUBERNETES_CLIENT_PARAMS_PREFIX+"test.namespace", "default");
+
+        final Config kubernetesConfig = cf.create()
+                .set("master", "https://localhost")
+                .set("namespace", "request");
+
+        final Config requestConfig = cf.create()
+                .setNested("kubernetes", kubernetesConfig);
+
+        KubernetesClientConfig kubernetesClientConfig = KubernetesClientConfig.create(clusterName, systemConfig, requestConfig);
+
+        String masterUrl = "https://127.0.0.1";
+        String namespace = "default";
+        String caCertData = "test=";
+        String oauthToken = "test=";
+        assertThat(masterUrl, is(kubernetesClientConfig.getMaster()));
+        assertThat(caCertData, is(kubernetesClientConfig.getCertsCaData()));
+        assertThat(oauthToken, is(kubernetesClientConfig.getOauthToken()));
+        assertThat(namespace, is(kubernetesClientConfig.getNamespace()));
+    }
+
 }
