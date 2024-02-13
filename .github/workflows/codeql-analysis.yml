@@ -1,6 +1,10 @@
 name: "Code scanning"
 
 on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
   schedule:
     # Friday 8AM UTC / Friday 5PM JST
     - cron: '0 8 * * 5'
@@ -9,13 +13,13 @@ jobs:
   CodeQL-Build:
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ref: [ master ]
+
+    permissions:
+      security-events: write
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ matrix.ref }}
 
