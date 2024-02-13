@@ -100,8 +100,8 @@ public class PyIT
         assertThat(attempt.getSuccess(), is(true));
 
         final String logs = getAttemptLogs(client, attempt.getId());
-        assertThat(logs, containsString("python python"));
-        assertThat(logs, containsString("python [u'python', u'-v']"));
+        assertThat(logs, containsString("python python3"));
+        assertThat(logs, containsString("python ['python3', '-v']"));
     }
 
     @Test

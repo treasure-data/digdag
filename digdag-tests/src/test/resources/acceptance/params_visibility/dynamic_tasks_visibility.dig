@@ -2,6 +2,7 @@
 +initialize:
   +task:
     py>: helper.store_v
+    python: python3
     value: initial
 
 +loop:
@@ -20,6 +21,7 @@
         if>: true
         _do:
           py>: helper.store_v
+          python: python3
           value: override_${outer}_${inner}
 
       +dynamic_get_in_parallel:

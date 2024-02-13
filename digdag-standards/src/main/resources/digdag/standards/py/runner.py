@@ -49,12 +49,7 @@ class Env(object):
 
     def add_subtask(self, function=None, **params):
         if function is not None and not isinstance(function, dict):
-            if hasattr(function, "im_class"):
-                # Python 2
-                command = ".".join([function.im_class.__module__, function.im_class.__name__, function.__name__])
-            else:
-                # Python 3
-                command = ".".join([function.__module__, function.__qualname__])
+            command = ".".join([function.__module__, function.__qualname__])
             config = params
             config["py>"] = command
         else:
@@ -66,7 +61,7 @@ class Env(object):
         try:
             json.dumps(config)
         except Exception as error:
-            raise TypeError("Parameters must be serializable using JSON: %s" % str(error))
+            raise TypeError(f"Parameters must be serializable using JSON: {str(error)}")
         self.subtask_config["+subtask" + str(self.subtask_index)] = config
         self.subtask_index += 1
 
@@ -87,14 +82,14 @@ def digdag_inspect_command(command):
         try:
             callable_type = getattr(mod, method_name)
         except AttributeError as error:
-            raise AttributeError("Module '%s' has no attribute '%s'" % (".".join(fragments), method_name))
+            raise AttributeError(f"Module '{'.'.join(fragments)}' has no attribute '{method_name}'")
     except ImportError as error:
         class_name = fragments.pop()
         mod = __import__(".".join(fragments), fromlist=[class_name])
         try:
             class_type = getattr(mod, class_name)
         except AttributeError as error:
-            raise AttributeError("Module '%s' has no attribute '%s'" % (".".join(fragments), method_name))
+            raise AttributeError(f"Module '{'.'.join(fragments)}' has no attribute '{method_name}'")
 
     if type(callable_type) == type:
         class_type = callable_type
@@ -109,12 +104,8 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
     if callable_type == object.__init__:
         # object.__init__ accepts *varargs and **keywords but it throws exception
         return {}
-    if hasattr(inspect, 'getfullargspec'): # Python3
-        spec = inspect.getfullargspec(callable_type)
-        keywords_ = spec.varkw
-    else: # Python 2
-        spec = inspect.getargspec(callable_type)
-        keywords_ = spec.keywords
+    spec = inspect.getfullargspec(callable_type)
+    keywords_ = spec.varkw
 
     args = {}
     for idx, key in enumerate(spec.args):
@@ -125,15 +116,8 @@ def digdag_inspect_arguments(callable_type, exclude_self, params):
         else:
             if spec.defaults is None or idx < len(spec.args) - len(spec.defaults):
                 # this keyword is required but not in params. raising an error.
-                if hasattr(callable_type, '__qualname__'):
-                    # Python 3
-                    name = callable_type.__qualname__
-                elif hasattr(callable_type, 'im_class'):
-                    # Python 2
-                    name = "%s.%s" % (callable_type.im_class.__name__, callable_type.__name__)
-                else:
-                    name = callable_type.__name__
-                raise TypeError("Method '%s' requires parameter '%s' but not set" % (name, key))
+                name = callable_type.__qualname__
+                raise TypeError(f"Method '{name}' requires parameter '{key}' but not set")
     if keywords_:
         # above code was only for validation
         return params
@@ -162,9 +146,9 @@ try:
 except SystemExit as e:
     # SystemExit only shows an exit code and it is not kind to users. So this block creates a specific error message.
     # This error will happen if called python module name and method name are equal to those of the standard library module. (e.g. tokenize.main)
-    error = Exception("Failed to call python command with code:%d" % e.code, "Possible cause: Invalid python module call, duplicate module name with standard library")
+    error = Exception(f"Failed to call python command with code:{str(e.code)}", "Possible cause: Ivalid python module call, duplicate module name with standard library")
     error_type, error_value, _tb = sys.exc_info()
-    error_message = "%s %s" % (error.args[0], error.args[1])
+    error_message = " ".join(error.args[:2])
     error_traceback = traceback.format_exception(error_type, error_value, _tb)
 except Exception as e:
     error = e
