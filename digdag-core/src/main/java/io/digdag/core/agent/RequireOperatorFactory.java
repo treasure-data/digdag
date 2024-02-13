@@ -23,12 +23,15 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.UUID;
 
+import static java.lang.Math.abs;
 import static java.util.Locale.ENGLISH;
 
 public class RequireOperatorFactory
         implements OperatorFactory
 {
     private static final int MAX_TASK_RETRY_INTERVAL = 10;
+    // ToDo configurable in server config to run test solidly
+    private static final int DELAY_SECONDS_KICK_IN_RESOURCE_LIMIT = 60 * 10; // 10 min.
 
     private static Logger logger = LoggerFactory.getLogger(RequireOperatorFactory.class);
 
@@ -142,7 +145,8 @@ public class RequireOperatorFactory
                         projectIdentifier.transform(ProjectIdentifier::toString).or(""), workflowName));
             }
             catch (ResourceLimitExceededException ex) {
-                throw new TaskExecutionException(ex);
+                logger.warn("Number of attempts or tasks exceed limit. Retry {} seconds later", DELAY_SECONDS_KICK_IN_RESOURCE_LIMIT);
+                throw TaskExecutionException.ofNextPolling(DELAY_SECONDS_KICK_IN_RESOURCE_LIMIT, ConfigElement.copyOf(lastStateParams));
             }
         }
 

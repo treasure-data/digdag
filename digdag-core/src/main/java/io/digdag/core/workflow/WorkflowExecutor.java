@@ -297,9 +297,6 @@ public class WorkflowExecutor
             SessionStore ss = sm.getSessionStore(siteId);
 
             long activeAttempts = ss.getActiveAttemptCount();
-            if (activeAttempts + 1 > limits.maxAttempts()) {
-                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + limits.maxAttempts() + ", Current: " + activeAttempts);
-            }
 
             stored = ss
                 // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
@@ -327,6 +324,12 @@ public class WorkflowExecutor
 
                     return storedAttemptWithSession;
                 });
+
+            if (activeAttempts + 1 > limits.maxAttempts()) {
+                tm.reset();
+                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + limits.maxAttempts() + ", Current: " + activeAttempts);
+            }
+
         }
         catch (WorkflowTaskLimitExceededException ex) {
             throw ex.getCause();

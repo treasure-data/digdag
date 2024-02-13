@@ -1,0 +1,15 @@
++t1:
+  require>: child_wait
+  session_time: ${session_time}
+
++t2:
+  loop>: 20
+  _parallel: true
+  _do:
+    +t2_1:
+      require>: child_wait
+      rerun_on: all
+      session_time: ${session_time}
+
++t3:
+  echo>: "Finished successfully: ${session_time}"

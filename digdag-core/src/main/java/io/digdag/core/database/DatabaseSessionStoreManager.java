@@ -1562,12 +1562,23 @@ public class DatabaseSessionStoreManager
             throws ResourceConflictException, ResourceNotFoundException
         {
             long attemptId = catchForeignKeyNotFound(() ->
-                    catchConflict(() ->
-                        dao.insertAttempt(siteId, projId, sessionId,
-                                attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
-                                AttemptStateFlags.empty().get(), attempt.getTimeZone().getId(), attempt.getParams()),
-                        "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId),
-                    "workflow definition id=%d", attempt.getWorkflowDefinitionId().orNull());
+                    catchConflict(
+                            () -> {
+                                // select id from sessions where id = <sessionId> for update
+                                return dao.insertAttempt(
+                                        siteId,
+                                        projId,
+                                        sessionId,
+                                        attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
+                                        AttemptStateFlags.empty().get(), attempt.getTimeZone().getId(), attempt.getParams()
+                                );
+                            },
+                            "session attempt name=%s in session id=%d",
+                            attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId
+                    ),
+                    "workflow definition id=%d",
+                    attempt.getWorkflowDefinitionId().orNull()
+            );
             dao.updateLastAttemptId(sessionId, attemptId);
             try {
                 return requiredResource(
@@ -1660,7 +1671,8 @@ public class DatabaseSessionStoreManager
 
             // select first so that conflicting insert (postgresql) or foreign key constraint violation (h2)
             // doesn't increment sequence of primary key unnecessarily
-            storedSession = dao.getSessionByConflictedNamesInternal(
+            // the session must be locked same as `dao.upsertAndLockSession()`
+            storedSession = dao.getAndLockSessionByConflictedNamesInternal(
                     session.getProjectId(),
                     session.getWorkflowName(),
                     session.getSessionTime().getEpochSecond());
@@ -1676,7 +1688,7 @@ public class DatabaseSessionStoreManager
                             return 0;
                         },
                         "project id=%d", session.getProjectId());
-                    storedSession = dao.getSessionByConflictedNamesInternal(
+                    storedSession = dao.getAndLockSessionByConflictedNamesInternal(
                             session.getProjectId(),
                             session.getWorkflowName(),
                             session.getSessionTime().getEpochSecond());
@@ -2082,9 +2094,9 @@ public class DatabaseSessionStoreManager
                 " where project_id = :projectId" +
                 " and workflow_name = :workflowName" +
                 " and session_time = :sessionTime" +
-                " limit 1")  // here allows last_attempt_id == NULL
-        StoredSession getSessionByConflictedNamesInternal(@Bind("projectId") int projectId,
-                @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+                " limit 1 for update")  // here allows last_attempt_id == NULL
+        StoredSession getAndLockSessionByConflictedNamesInternal(@Bind("projectId") int projectId,
+                                                                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
         @SqlQuery("select session_time from sessions" +
                 " where project_id = :projectId" +
