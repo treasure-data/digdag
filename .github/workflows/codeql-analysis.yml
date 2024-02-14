@@ -1,12 +1,9 @@
 name: "Code scanning"
 
 on:
-  # schedule:
-  #   # Friday 8AM UTC / Friday 5PM JST
-  #   - cron: '0 8 * * 5'
-  pull_request:
-    branches:
-    - master
+  schedule:
+    # Friday 8AM UTC / Friday 5PM JST
+    - cron: '0 8 * * 5'
 
 jobs:
   CodeQL-Build:
