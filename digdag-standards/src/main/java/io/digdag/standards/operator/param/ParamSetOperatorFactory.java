@@ -89,6 +89,8 @@ public class ParamSetOperatorFactory
                     }
                 }
             });
+            System.out.println("request ----=====");
+            System.out.println(request);
 
             return TaskResult.empty(request);
         }

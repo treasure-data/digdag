@@ -42,6 +42,7 @@ public class CallOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
+        System.out.println("=============== newOperator ================"); // きてない
         return new CallOperator(context);
     }
 

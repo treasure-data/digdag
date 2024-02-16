@@ -412,6 +412,8 @@ public class Config
         else if (!value.isObject()) {
             throw new ConfigException("Parameter '"+key+"' must be an object");
         }
+        System.out.println("getNestedOrSetEmptyーーーーーーーーーーーーーーーーーーーーーー");
+        System.out.println(key + " : " + value);
         return new Config(mapper, (ObjectNode) value);
     }
 

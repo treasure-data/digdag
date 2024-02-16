@@ -50,6 +50,7 @@ public class ProjectArchiveLoader
                     validator.error("workflow " + path, null, ex.getMessage());
                     errors.add(ex);
                 }
+                System.out.println("listFiles ーーーーーーーーーーーーーーー");
             }
             return true;
         });
@@ -68,6 +69,9 @@ public class ProjectArchiveLoader
                 WorkflowDefinitionList.of(defs.build()),
                 overrideParams);
 
+        System.out.println("metadeta出力 ーーーーーーーーーーーーーー");
+        System.out.println("ここでもまだ全て展開されていない");
+        System.out.println(metadata);
         return new ProjectArchive(projectPath, metadata);
     }
 
@@ -77,6 +81,7 @@ public class ProjectArchiveLoader
     {
         String workflowName = resourceNameToWorkflowName(resourceName);
 
+        System.out.println("ここは通っている ーーーーーーーーーーーーーー");
         WorkflowFile workflowFile = WorkflowFile.fromConfig(workflowName,
                 configLoader.loadParameterizedFile(path.toFile(), overrideParams));
 

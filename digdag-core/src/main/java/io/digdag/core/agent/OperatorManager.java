@@ -377,13 +377,17 @@ public class OperatorManager
 
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(secretContext, secretMounts, secretStore);
 
+        System.out.println("localConfig ===========");
+        Config localConfig = mergedRequest.getLocalConfig();
+        System.out.println(localConfig);
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
-                mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
+                localConfig.getNestedOrGetEmpty("_env"),
                 GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretStore));
 
         OperatorContext context = new DefaultOperatorContext(
                 projectPath, mergedRequest, secretProvider, privilegedVariables, limits);
 
+        System.out.println("OperatorManager#callExecutor newOperator呼ぶところ===========");
         Operator operator = factory.newOperator(context);
 
         if (mergedRequest.isCancelRequested()) {

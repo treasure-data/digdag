@@ -43,6 +43,7 @@ public class WorkflowFile
             Config topLevelExport,
             Config otherTopLevelConfig)
     {
+        System.out.println("coreのWorkflofileきた ＋＋＋＋＋＋＋＋＋＋＋＋＋＋");
         this.workflowName = workflowName;
         this.tasks = tasks;
         this.timeZone = timeZone;
@@ -80,6 +81,8 @@ public class WorkflowFile
 
         Config topLevelExport = copy.getNestedOrGetEmpty("_export");
         copy.remove("_export");
+        System.out.println("fromConfig methodーーーーーーーーーーーーーーーーーーーーーー");
+        System.out.println("topLevelExport: " + topLevelExport);
 
         Config otherTopLevelConfig = copy.getFactory().create();
         for (String key : TOP_LEVEL_CONFIG) {

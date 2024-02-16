@@ -79,6 +79,9 @@ public class LocalSite
 
         public List<StoredWorkflowDefinition> getWorkflowDefinitions()
         {
+            System.out.println("getWokflowDefinitions ===============");
+            System.out.println(workflowDefinitions);
+            
             return workflowDefinitions;
         }
     }

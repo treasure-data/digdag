@@ -41,6 +41,8 @@ public class ProjectArchiveLoaderTest
     {
         ProjectArchiveLoader loader = new ProjectArchiveLoader(
                 new ConfigLoaderManager(configFactory, new YamlConfigLoader()));
+        System.out.println("loadProject ーーーーーーーーーーーーーーーーーー");
+        System.out.println("ここは通っていない");
         return loader.load(
                 path(),
                 WorkflowResourceMatcher.defaultMatcher(),
