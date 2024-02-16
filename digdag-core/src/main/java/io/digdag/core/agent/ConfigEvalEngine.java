@@ -192,7 +192,7 @@ public class ConfigEvalEngine
                 else if (value.isTextual()) {
                     // eval using template engine
                     String code = value.textValue();
-                    evaluated = evalValue(built, code);
+                    evaluated = evalValueRecursive(built, code);
                 }
                 else {
                     evaluated = value;
@@ -217,7 +217,7 @@ public class ConfigEvalEngine
                 else if (value.isTextual()) {
                     // eval using template engine
                     String code = value.textValue();
-                    evaluated = evalValue(local, code);
+                    evaluated = evalValueRecursive(local, code);
                 }
                 else {
                     evaluated = value;
@@ -227,7 +227,7 @@ public class ConfigEvalEngine
             return built;
         }
 
-        private JsonNode evalValue(ObjectNode local, String code)
+        private JsonNode evalValueRecursive(ObjectNode local, String code)
             throws TemplateException
         {
             Config scopedParams = params.deepCopy();
