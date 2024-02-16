@@ -35,6 +35,9 @@ public class ProjectArchive
 
     ProjectArchive(Path projectPath, ArchiveMetadata metadata)
     {
+        System.out.println("ProjectArchive ================");
+        System.out.println(metadata);
+        
         checkArgument(projectPath.isAbsolute(), "project path must be absolute: %s", projectPath);
         this.projectPath = projectPath;
         this.metadata = metadata;
@@ -47,6 +50,8 @@ public class ProjectArchive
 
     public ArchiveMetadata getArchiveMetadata()
     {
+        System.out.println("getArchiveMetadata ＝ーーーーーーーーーー");
+        System.out.println(metadata); // まだ展開されていない
         return metadata;
     }
 

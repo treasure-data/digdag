@@ -274,8 +274,12 @@ public class Run
         params = ParameterValidator.toMap(paramsList);
         Config overrideParams = loadParams(cf, loader, systemProps, paramsFile, params);
 
+        System.out.println("cli/Run.java ーーーーーーーーーーーーー");
+        System.out.println("ここは通っている");
         // load workflow definitions
         ProjectArchive project = loadProject(projectLoader, projectDirName, overrideParams);
+        System.out.println("loadProjectしたところ ーーーーーーーーーーーーー");
+        System.out.println(project);
 
         String workflowName = normalizeWorkflowName(project, workflowNameArg);
 
@@ -296,6 +300,8 @@ public class Run
                         "default",
                         Instant.now().toString(),  // TODO revision name
                         project.getArchiveMetadata()), ResourceConflictException.class);
+        System.out.println("project.getArchiveMetadata()したところ ーーーーーーーーー");
+        System.out.println(stored); // この時点で多分どこかに保存されている
 
         // submit workflow
         StoredSessionAttemptWithSession attempt = tm.begin(() ->
@@ -306,8 +312,11 @@ public class Run
 
         // TODO catch error when workflowName doesn't exist and suggest to cd to another dir
 
+        System.out.println("これからrunUntilDone ーーーーーーーーー");
+        System.out.println(attempt);
         // wait until it's done
         localSite.runUntilDone(attempt.getId());
+        System.out.println("runUntilDoneが終わったところ ーーーーーーーーーーー");
         rsm.sync();
 
         // show results
@@ -382,6 +391,8 @@ public class Run
         final SchedulerManager srm = injector.getInstance(SchedulerManager.class);
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
+        System.out.println("submitWorkflow ーーーーーーーーーーーーー");
+
         // compile the target workflow
         StoredWorkflowDefinition def = null;
         for (StoredWorkflowDefinition candidate : defs) {
@@ -390,6 +401,8 @@ public class Run
                 break;
             }
         }
+        System.out.println(defs);
+
         if (def == null) {
             if (projectDirName == null) {
                 if (workflowName.contains("/")) {
@@ -411,6 +424,8 @@ public class Run
             }
         }
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
+        System.out.println("compileしたところ =================");
+        System.out.println(workflow); //まだ展開されてない...！
 
         // extract subtasks if necessary from the workflow
         WorkflowTaskList tasks;
@@ -440,6 +455,7 @@ public class Run
             logger.info("Using session {}.", resumeStatePath);
         }
 
+        System.out.println(" =================");
         // process --rerun, --start, --goal, and --end options
         List<Long> resumeStateFileEnabledTaskIndexList = USE_ALL;
         List<Long> runTaskIndexList = USE_ALL;
@@ -447,6 +463,8 @@ public class Run
             // --goal
             long taskIndex = TaskMatchPattern.compile(runStartStop).findIndex(tasks);
             TaskTree taskTree = makeIndexTaskTree(tasks);
+            System.out.println("taskTree ======");
+            System.out.println(taskTree); // ここは通っていなさそう
             // tasks before this: resume
             // the others (tasks after this and this task): force run
             resumeStateFileEnabledTaskIndexList = new ArrayList<>(
@@ -483,6 +501,8 @@ public class Run
                     taskTree.getRecursiveParentsUpstreamChildrenIdListFromFar(endIndex)
                     );
         }
+        System.out.println("resumeStateFileEnabledTaskIndexList =================");
+        System.out.println(resumeStateFileEnabledTaskIndexList); // 空
 
         Set<String> resumeStateFileEnabledTaskNames =
             (resumeStateFileEnabledTaskIndexList == USE_ALL)
@@ -492,6 +512,8 @@ public class Run
                     .map(index -> tasks.get(index.intValue()).getFullName())
                     .collect(Collectors.toList()));
 
+        System.out.println("resumeStateFileEnabledTaskNames=================");
+        System.out.println(resumeStateFileEnabledTaskNames);
         Set<String> runTaskNames =
             (runTaskIndexList == USE_ALL)
             ? null
@@ -525,6 +547,7 @@ public class Run
 
         StoredSessionAttemptWithSession attempt = executor.submitTasks(0, ar, tasks);
         logger.debug("Submitting {}", attempt);
+        System.out.println("attempt =================");
 
         if (!noSave) {
             rsm.startUpdate(resumeStatePath, attempt);

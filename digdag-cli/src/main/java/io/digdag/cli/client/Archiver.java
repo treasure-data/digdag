@@ -49,6 +49,7 @@ class Archiver
     {
         out.println("Creating " + output + "...");
 
+        System.out.println("createArchive ーーーーーーーーーーーーーーーーーーー");
         ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), cf.create());
 
         ImmutableList.Builder<String> workflowResources = ImmutableList.builder();

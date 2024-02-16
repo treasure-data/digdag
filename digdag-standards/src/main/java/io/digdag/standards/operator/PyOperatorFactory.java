@@ -93,6 +93,8 @@ public class PyOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
+        System.out.println("PyOperatorFactory newOperator ================");
+        System.out.println(context);
         return new PyOperator(context);
     }
 
@@ -112,7 +114,11 @@ public class PyOperatorFactory
         {
             final Config data;
             try {
+                System.out.println("PyOperator runTask ================");
+                System.out.println("runCode ----");
                 data = runCode(TaskState.of(request).params());
+                System.out.println("data ===");
+                System.out.println(data);
             }
             catch (IOException | InterruptedException e) {
                 throw ThrowablesUtil.propagate(e);
@@ -153,6 +159,8 @@ public class PyOperatorFactory
             final Path projectPath = workspace.getProjectPath(); // absolute
             final CommandContext commandContext = buildCommandContext(projectPath);
 
+            System.out.println("runCode params ================");
+            System.out.println(params);
             final CommandStatus status;
             if (!state.has("commandStatus")) {
                 // Run the code since command state doesn't exist
