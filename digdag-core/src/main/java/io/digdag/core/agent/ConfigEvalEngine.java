@@ -236,7 +236,12 @@ public class ConfigEvalEngine
             }
             String resultText = null;
             if (isInvokeTemplateRequired(code)) {
-                resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
+                String evalueted = evaluator.evaluate(code, scopedParams, jsonMapper);
+                while (!evalueted.equals(code) && isInvokeTemplateRequired(evalueted)) {
+                    code = evalueted;
+                    evalueted = evaluator.evaluate(evalueted, scopedParams, jsonMapper);
+                }
+                resultText = evalueted;
             }
             else {
                 resultText = code;
