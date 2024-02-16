@@ -73,6 +73,17 @@ public class ConfigEvalEngineTest
     }
 
     @Test
+    public void testNested()
+            throws Exception
+    {
+        for (ConfigEvalEngine engine : engines) {
+            assertThat(
+                    engine.eval(loadYamlResource("/io/digdag/core/agent/eval/nested.dig"), params()),
+                    is(loadYamlResource("/io/digdag/core/agent/eval/nested_expected.dig")));
+        }
+    }
+
+    @Test
     public void testTemplate()
             throws Exception
     {
