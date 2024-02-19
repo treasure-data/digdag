@@ -1,0 +1,11 @@
+_export:
+  rb:
+    require: 'tasks/initialize'
+  arg1: var1
+  arg2: var2
+
++step1:
+  rb>: InstanceVariable.step1
+
++step2:
+  rb>: InstanceVariable.step2
