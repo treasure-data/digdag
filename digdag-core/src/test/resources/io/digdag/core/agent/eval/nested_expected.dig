@@ -5,5 +5,5 @@ c: ccc
 d: aaa-bbb-ccc
 e: aaa-bbb-ccc
 f:
-  g: ${d}
-h: ${f.g}
+  g: aaa-bbb-ccc
+h: aaa-bbb-ccc
