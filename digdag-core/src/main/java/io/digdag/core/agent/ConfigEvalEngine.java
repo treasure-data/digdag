@@ -240,6 +240,7 @@ public class ConfigEvalEngine
                 // ここで、展開されていない状態の変数の連想配列に対してlocalのデータをupsertしている
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
+            System.out.println("scopedParams :"+scopedParams);
             String resultText = null;
             if (isInvokeTemplateRequired(code)) {
                 resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
