@@ -176,6 +176,7 @@ public class ConfigEvalEngine
             throws TemplateException
         {
             ObjectNode built = local.objectNode();
+            System.out.println("evalObjectRecursive =======");
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 JsonNode value = pair.getValue();
                 JsonNode evaluated;
@@ -184,6 +185,7 @@ public class ConfigEvalEngine
                     evaluated = value;
                 }
                 else if (value.isObject()) {
+                    System.out.println("isObject: "+value);
                     evaluated = evalObjectRecursive((ObjectNode) value);
                 }
                 else if (value.isArray()) {
@@ -192,7 +194,9 @@ public class ConfigEvalEngine
                 else if (value.isTextual()) {
                     // eval using template engine
                     String code = value.textValue();
+                    System.out.println("isTextual code: "+code+", evalValueのbuilt: "+built);
                     evaluated = evalValue(built, code);
+                    System.out.println("isTextual code: "+code+", evaluated: "+evaluated);
                 }
                 else {
                     evaluated = value;
@@ -230,6 +234,7 @@ public class ConfigEvalEngine
         private JsonNode evalValue(ObjectNode local, String code)
             throws TemplateException
         {
+            // System.out.println("params :"+params);
             Config scopedParams = params.deepCopy();
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
