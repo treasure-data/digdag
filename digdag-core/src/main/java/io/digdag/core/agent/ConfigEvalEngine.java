@@ -235,8 +235,9 @@ public class ConfigEvalEngine
             throws TemplateException
         {
             // System.out.println("params :"+params);
-            Config scopedParams = params.deepCopy();
+            Config scopedParams = params.deepCopy(); // <- こいつに展開されていない状態の変数が全部入っている
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
+                // ここで、展開されていない状態の変数の連想配列に対してlocalのデータをupsertしている
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
             String resultText = null;
