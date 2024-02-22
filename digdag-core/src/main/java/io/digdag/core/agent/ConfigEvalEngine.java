@@ -187,22 +187,23 @@ public class ConfigEvalEngine
                     evaluated = evalObjectRecursive((ObjectNode) value);
                 }
                 else if (value.isArray()) {
-                    evaluated = evalArrayRecursive(built, (ArrayNode) value);
+                    evaluated = evalArrayRecursive((ArrayNode) value);
                 }
                 else if (value.isTextual()) {
                     // eval using template engine
                     String code = value.textValue();
-                    evaluated = evalValue(built, code);
+                    evaluated = evalValue(code);
                 }
                 else {
                     evaluated = value;
                 }
                 built.set(pair.getKey(), evaluated);
+                params.set(pair.getKey(), evaluated);
             }
             return built;
         }
 
-        private ArrayNode evalArrayRecursive(ObjectNode local, ArrayNode array)
+        private ArrayNode evalArrayRecursive(ArrayNode array)
             throws TemplateException
         {
             ArrayNode built = array.arrayNode();
@@ -212,12 +213,12 @@ public class ConfigEvalEngine
                     evaluated = evalObjectRecursive((ObjectNode) value);
                 }
                 else if (value.isArray()) {
-                    evaluated = evalArrayRecursive(local, (ArrayNode) value);
+                    evaluated = evalArrayRecursive((ArrayNode) value);
                 }
                 else if (value.isTextual()) {
                     // eval using template engine
                     String code = value.textValue();
-                    evaluated = evalValue(local, code);
+                    evaluated = evalValue(code);
                 }
                 else {
                     evaluated = value;
@@ -227,16 +228,12 @@ public class ConfigEvalEngine
             return built;
         }
 
-        private JsonNode evalValue(ObjectNode local, String code)
+        private JsonNode evalValue(String code)
             throws TemplateException
         {
-            Config scopedParams = params.deepCopy();
-            for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
-                scopedParams.set(pair.getKey(), pair.getValue());
-            }
             String resultText = null;
             if (isInvokeTemplateRequired(code)) {
-                resultText = evaluator.evaluate(code, scopedParams, jsonMapper);
+                resultText = evaluator.evaluate(code, params, jsonMapper);
             }
             else {
                 resultText = code;
