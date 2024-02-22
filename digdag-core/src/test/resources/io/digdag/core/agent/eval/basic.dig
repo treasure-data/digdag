@@ -2,5 +2,5 @@ a: ${timezone}
 b: ${a}
 c: ${a}${b}
 nested:
-  value: v
+  value: ${c}
 ref: ${nested.value}
