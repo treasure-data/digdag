@@ -133,23 +133,22 @@ public class ShOperatorFactory
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-sh-%d-", request.getTaskId()));
             final Path workingDirectory = workspace.getPath(); // absolute
-            final Path runnerPath = tempDir.resolve("runner.sh"); // absolute
+            final Path runnerPath = tempDir.resolve(getScriptName()); // absolute
 
             final List<String> shell;
             if (params.has("shell")) {
-                shell = params.getListOrEmpty("shell", String.class);
+                List<String> temp_shell;
+                temp_shell = params.getListOrEmpty("shell", String.class);
+                shell = supportLegacyPowershellParm(temp_shell);
             }
             else {
-                shell = ImmutableList.of("/bin/sh");
+                shell = ImmutableList.of(getDefaultShell());
             }
 
             final ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-            if (params.has("shell")) {
-                cmdline.addAll(shell);
-            }
-            else {
-                cmdline.addAll(shell);
-            }
+
+            cmdline.addAll(shell);
+
             cmdline.add(workingDirectory.relativize(runnerPath).toString()); // relative
 
             final String shScript = UserSecretTemplate.of(params.get("_command", String.class))
@@ -222,6 +221,31 @@ public class ShOperatorFactory
                     .commandLine(cmdline)
                     .ioDirectory(ioDirectory)
                     .build();
+        }
+
+        private List<String> supportLegacyPowershellParm (List<String> temp_shell)
+        {
+            if (temp_shell.get(0).toLowerCase().equals("powershell.exe") && temp_shell.size() == 2){
+                if (temp_shell.get(1).equals("-")){
+                    temp_shell.remove(1);
+                    logger.warn("Deprecated shell entry: [\"powershell.exe\", \"-\"]");
+                }
+            }
+            return temp_shell;
+        }
+        private String getScriptName()
+        {
+            return (isWindowsPlatform() ? "runner.ps1" : "runner.sh");
+        }
+        private String getDefaultShell()
+        {
+            return (isWindowsPlatform() ? "powershell.exe" : "/bin/sh");
+        }
+
+        private boolean isWindowsPlatform()
+        {
+            final String os = System.getProperty("os.name").toLowerCase();
+            return (os.startsWith("windows") ? true : false);
         }
     }
 }
