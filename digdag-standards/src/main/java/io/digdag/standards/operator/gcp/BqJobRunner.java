@@ -8,7 +8,6 @@ import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.state.TaskState;
@@ -51,6 +50,7 @@ class BqJobRunner
 
     Job runJob(JobConfiguration config, Optional<String> location)
     {
+        TaskState state = this.state.nestedState("commandStatus");
         // Generate job id
         Optional<String> jobId = state.params().getOptional(JOB_ID, String.class);
         if (!jobId.isPresent()) {
@@ -67,7 +67,7 @@ class BqJobRunner
         pollingRetryExecutor(state, START)
                 .withErrorMessage("BigQuery job submission failed: %s", canonicalJobId)
                 .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
-                .runOnce((TaskState state) -> {
+                .runOnce((TaskState s) -> {
                     logger.info("Submitting BigQuery job: {}", canonicalJobId);
                     Job job = new Job()
                             .setJobReference(reference)
