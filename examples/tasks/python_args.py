@@ -1,4 +1,3 @@
-from __future__ import print_function
 import digdag
 
 def required_arguments(required1, required2):

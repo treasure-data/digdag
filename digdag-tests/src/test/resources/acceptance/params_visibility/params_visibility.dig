@@ -14,6 +14,7 @@
 +stores:
   +store:
     py>: helper.store_v
+    python: python3
     value: simple_store
 
   +simple_store:
@@ -21,6 +22,7 @@
 
   +overwrite:
     py>: helper.store_v
+    python: python3
     value: store_overwrite
 
   +store_overwrite:
@@ -29,6 +31,7 @@
 +parallel_store_fork:
   +prepare:
     py>: helper.store_v
+    python: python3
     value: prepare
 
   +fork:
@@ -37,6 +40,7 @@
     +a:
       +store:
         py>: helper.store_v
+        python: python3
         value: a
 
       +dump:
@@ -45,6 +49,7 @@
     +b:
       +store:
         py>: helper.store_v
+        python: python3
         value: b
 
       +dump:
@@ -62,15 +67,18 @@
 
     +a:
       py>: helper.store_v
+      python: python3
       value: a
 
     +b:
       py>: helper.store_v
+      python: python3
       value: b
       _after: [+a]
 
     +c:
       py>: helper.store_v
+      python: python3
       value: c
 
   +dump:
