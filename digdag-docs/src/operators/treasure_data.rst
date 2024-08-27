@@ -11,7 +11,7 @@ Treasure Data operators
     td_for_each.md
     td_wait.md
     td_wait_table.md
-    td_partial_delete.md
+    td_partial_delete.rst
     td_table_export.md
     td_result_export.md
 
