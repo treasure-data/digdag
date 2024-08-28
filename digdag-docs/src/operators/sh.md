@@ -37,7 +37,7 @@ On Windows, you can set PowerShell.exe to the `shell` option:
 
     _export:
       sh:
-        shell: ["powershell.exe", "-"]
+        shell: ["powershell.exe"]
 
     +step1:
       sh>: step1.exe
