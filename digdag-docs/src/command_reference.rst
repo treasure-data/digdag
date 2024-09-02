@@ -334,6 +334,26 @@ Runs a digdag server. --memory or --database option is required. Examples:
 
   Example: ``-c digdag-server/server.properties``
 
+:command:`-L, --log PATH`
+  Configuration output log messages to a file. (default: ``-``)
+
+  Example: ``-L path/to/log``
+
+:command:`-l, --log-level LEVEL`
+  Configuration log level(``error``, ``warn``, ``info``, ``debug`` or ``trace``).
+
+  Example: ``-l debug``
+
+:command:`--admin-port PORT`
+  Configuration port number to bind admin api on (default: no admin port).
+
+  Example: ``--admin-port 9999``
+
+:command:`--admin-bind ADDRESS`
+  Configuration IP address to bind admin api on (default: same address with `--bind`).
+
+  Example: ``--admin-bind 192.168.10.10``
+
 
 In the config file, following parameters are available
 
