@@ -133,7 +133,7 @@ public class ShOperatorFactory
         {
             final Path tempDir = workspace.createTempDir(String.format("digdag-sh-%d-", request.getTaskId()));
             final Path workingDirectory = workspace.getPath(); // absolute
-            final Path runnerPath = tempDir.resolve("runner.sh"); // absolute
+            final Path runnerPath = tempDir.resolve(params.get("script_name", String.class, "runner.sh")); // absolute
 
             final List<String> shell;
             if (params.has("shell")) {

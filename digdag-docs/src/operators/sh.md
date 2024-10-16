@@ -35,6 +35,21 @@ The shell defaults to `/bin/sh`. If an alternate shell such as `zsh` is desired,
 
 On Windows, you can set PowerShell.exe to the `shell` option:
 
+>= 0.10.4
+
+    _export:
+      sh:
+        shell: ["powershell.exe"]
+        script_name: runner.ps1
+
+    +step1:
+      sh>: step1.exe
+
+    +step2:
+      sh>: step2.ps1
+
+< 0.10
+
     _export:
       sh:
         shell: ["powershell.exe", "-"]
