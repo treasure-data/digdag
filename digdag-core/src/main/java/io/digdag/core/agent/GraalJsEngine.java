@@ -131,11 +131,12 @@ public class GraalJsEngine
             }
             catch (IllegalStateException e) {
                 /**
-                 *  When shutdown sequence started, engine is closed before call and tasks will fail.
+                 *  When shutdown sequence started, engine or context is closed before call and tasks will fail.
                  *  To avoid it, create new engine and retry.
                  */
-                if (e.getMessage().equals("Engine is already closed.")) {
-                    logger.debug("Engine is already closed. Retry with new engine");
+                String message = e.getMessage();
+                if ("Engine is already closed.".equals(message) || "The Context is already closed.".equals(message)) {
+                    logger.warn("Retry with new engine. Because: {}", message);
                     return new GraalEvaluator(createContextSupplier(Optional.empty(), params, libraryJsSources)
                             , extendedSyntax).evaluate(code, scopedParams, jsonMapper);
                 }
