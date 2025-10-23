@@ -135,7 +135,7 @@ public class GraalJsEngine
                  *  To avoid it, create new engine and retry.
                  */
                 String message = e.getMessage();
-                if ("Engine is already closed.".equals(message) || "The Context is already closed.".equals(message)) {
+                if ("Engine is already closed.".equals(message) || "The Context is already closed.".equals(message) || message.matches("^Multi threaded access requested.*")) {
                     logger.warn("Retry with new engine. Because: {}", message);
                     return new GraalEvaluator(createContextSupplier(Optional.empty(), params, libraryJsSources)
                             , extendedSyntax).evaluate(code, scopedParams, jsonMapper);
