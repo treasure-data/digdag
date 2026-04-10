@@ -119,7 +119,7 @@
     "ts-standard": "^11.0.0",
     "url-loader": "^1.1.2",
     "webpack": "4.41.2",
-    "webpack-cli": "^3.3.10",
+    "webpack-cli": "^3.3.12",
     "webpack-dev-server": "3.11.3"
   },
   "ts-standard": {
