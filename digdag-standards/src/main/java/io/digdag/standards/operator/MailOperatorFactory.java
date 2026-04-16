@@ -118,13 +118,13 @@ public class MailOperatorFactory
 
             List<String> toList;
             try {
-                toList = params.getList("to", String.class);
+                toList = params.parseList("to", String.class);
             }
             catch (ConfigException ex) {
                 toList = ImmutableList.of(params.get("to", String.class));
             }
-            List<String> bccList = params.getListOrEmpty("bcc", String.class);
-            List<String> ccList = params.getListOrEmpty("cc", String.class);
+            List<String> bccList = params.parseListOrGetEmpty("bcc", String.class);
+            List<String> ccList = params.parseListOrGetEmpty("cc", String.class);
 
             boolean isHtml = params.get("html", boolean.class, false);
 

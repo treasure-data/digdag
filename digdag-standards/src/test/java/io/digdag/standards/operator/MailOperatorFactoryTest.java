@@ -354,6 +354,60 @@ public class MailOperatorFactoryTest
         }
     }
 
+    @Test
+    public void sendToWithArrayVariable()
+    {
+        Config config = mailConfig.deepCopy();
+        config.set("to", "${address_list}");
+        config.getNestedOrSetEmpty("_export")
+                .set("address_list", ImmutableList.of("bob@example.com", "charlie@example.com"));
+
+        Operator op = factory.newOperator(newContext(
+                tempPath,
+                newTaskRequest().withConfig(config)));
+        op.run();
+        receiveCheck("bob@example.com", 1);
+        receiveCheck("charlie@example.com", 1);
+    }
+
+    @Test
+    public void sendCcWithArrayVariable()
+    {
+        Config config = mailConfig.deepCopy();
+        config.set("to", "bob@example.com");
+        config.set("cc", "${cc_list}");
+        config.getNestedOrSetEmpty("_export")
+                .set("cc_list", ImmutableList.of("charlie@example.com", "david@example.com"));
+
+        Operator op = factory.newOperator(newContext(
+                tempPath,
+                newTaskRequest().withConfig(config)));
+        op.run();
+        greenMail.waitForIncomingEmail(5000, 3);
+        receiveCheck("bob@example.com", 1);
+        receiveCheck("charlie@example.com", 1);
+        receiveCheck("david@example.com", 1);
+    }
+
+    @Test
+    public void sendBccWithArrayVariable()
+    {
+        Config config = mailConfig.deepCopy();
+        config.set("to", "bob@example.com");
+        config.set("bcc", "${bcc_list}");
+        config.getNestedOrSetEmpty("_export")
+                .set("bcc_list", ImmutableList.of("charlie@example.com", "david@example.com"));
+
+        Operator op = factory.newOperator(newContext(
+                tempPath,
+                newTaskRequest().withConfig(config)));
+        op.run();
+        greenMail.waitForIncomingEmail(5000, 3);
+        receiveCheck("bob@example.com", 1);
+        receiveCheck("charlie@example.com", 1);
+        receiveCheck("david@example.com", 1);
+    }
+
     private void receiveCheck(String user, int size)
     {
         AbstractServer server = greenMail.getPop3();
