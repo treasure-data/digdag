@@ -357,15 +357,25 @@ public class MailOperatorFactoryTest
     @Test
     public void sendToWithArrayVariable()
     {
+        // This test simulates what happens when you write:
+        //   _export:
+        //     address_list: ["bob@example.com", "charlie@example.com"]
+        //   +task:
+        //     mail>:
+        //     to: ${address_list}
+        //
+        // After template substitution, the "to" parameter becomes a JSON string like:
+        // '["bob@example.com", "charlie@example.com"]'
+        //
+        // The parseList method should parse this JSON string and convert it to a List
         Config config = mailConfig.deepCopy();
-        config.set("to", "${address_list}");
-        config.getNestedOrSetEmpty("_export")
-                .set("address_list", ImmutableList.of("bob@example.com", "charlie@example.com"));
+        config.set("to", "[\"bob@example.com\", \"charlie@example.com\"]");
 
         Operator op = factory.newOperator(newContext(
                 tempPath,
                 newTaskRequest().withConfig(config)));
         op.run();
+        greenMail.waitForIncomingEmail(5000, 2);
         receiveCheck("bob@example.com", 1);
         receiveCheck("charlie@example.com", 1);
     }
@@ -373,11 +383,10 @@ public class MailOperatorFactoryTest
     @Test
     public void sendCcWithArrayVariable()
     {
+        // After template substitution, the "cc" parameter becomes a JSON string
         Config config = mailConfig.deepCopy();
         config.set("to", "bob@example.com");
-        config.set("cc", "${cc_list}");
-        config.getNestedOrSetEmpty("_export")
-                .set("cc_list", ImmutableList.of("charlie@example.com", "david@example.com"));
+        config.set("cc", "[\"charlie@example.com\", \"david@example.com\"]");
 
         Operator op = factory.newOperator(newContext(
                 tempPath,
@@ -392,11 +401,10 @@ public class MailOperatorFactoryTest
     @Test
     public void sendBccWithArrayVariable()
     {
+        // After template substitution, the "bcc" parameter becomes a JSON string
         Config config = mailConfig.deepCopy();
         config.set("to", "bob@example.com");
-        config.set("bcc", "${bcc_list}");
-        config.getNestedOrSetEmpty("_export")
-                .set("bcc_list", ImmutableList.of("charlie@example.com", "david@example.com"));
+        config.set("bcc", "[\"charlie@example.com\", \"david@example.com\"]");
 
         Operator op = factory.newOperator(newContext(
                 tempPath,
