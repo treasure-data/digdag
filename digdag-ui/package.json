@@ -120,7 +120,7 @@
     "url-loader": "^1.1.2",
     "webpack": "4.41.2",
     "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "3.11.3"
+    "webpack-dev-server": "5.2.4"
   },
   "ts-standard": {
     "globals": [
