@@ -29,7 +29,7 @@
     "jquery": "3.5.1",
     "js-untar": "^2.0.0",
     "js-yaml": "3.13.1",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "lru-cache": "4.0.2",
     "macaddress": "0.2.9",
     "moment": "^2.22.1",
