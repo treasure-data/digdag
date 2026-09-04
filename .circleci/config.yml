@@ -93,25 +93,25 @@ jobs:
       - checkout
       - run: ./gradlew releaseSnapshot
 
-workflows:
-  version: 2
-
-  test_and_docs_deployment:
-    jobs:
-      - test: # will be executed for topic branch not only default branches so that we can safely merge it
-          context:
-            - aws-rd
-      - docs_deployment: # master branch only
-          context:
-            - github
-          filters:
-            branches:
-              only:
-                - master
-      - release_snapshot: # v0_10 branch only
-          requires:
-            - test
-          filters:
-            branches:
-              only:
-                - v0_11
+#workflows:
+#  version: 2
+#
+#  test_and_docs_deployment:
+#    jobs:
+#      - test: # will be executed for topic branch not only default branches so that we can safely merge it
+#          context:
+#            - aws-rd
+#      - docs_deployment: # master branch only
+#          context:
+#            - github
+#          filters:
+#            branches:
+#              only:
+#                - master
+#      - release_snapshot: # v0_10 branch only
+#          requires:
+#            - test
+#          filters:
+#            branches:
+#              only:
+#                - v0_11
