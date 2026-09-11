@@ -869,6 +869,23 @@ Creates a project archive and upload it to the server. This command uploads work
 Digdag excludes files start with dot (``.``) from project archives.
 If you want to exclude other files, put a file named ``.digdagignore`` in the project root directory and write patterns to ignore in the same way as ``.gitignore``.
 
+
+upload
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag upload <path.tar.gz> <project>
+
+Uploads the archive file (<path.tar.gz>) to the server as the project archive for the project name (<project>). Examples:
+
+.. code-block:: console
+
+    $ tar -zcvf digdag-project.tar.gz -C mydag .
+    $ digdag upload digdag-project.tar.gz myproj
+
+The archive is uploaded as-is, so make sure it does not include sensitive files like credentials.
+
 download
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
